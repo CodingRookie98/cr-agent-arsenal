@@ -1,0 +1,13 @@
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Logs and runtime data
+*.log
+.goal-loop/
+.review-context/
+
+# Temporary files
+*.tmp
+*.swp
+*~
