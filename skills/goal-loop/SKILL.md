@@ -81,7 +81,7 @@ graph TD
     E2ERun --> DualRevGate["阶段 4: 双轮对抗终审硬门禁<br/>激活 dual-round-review (红队第一性原理 + 架构师元审判)"]
     
     DualRevGate --> RevPass{"双轮审查阻断项清零?"}
-    RevPass -->|"存在阻断项"| FixBlocker["根据终审意见定向修复"] --> LoopHeader
+    RevPass -->|"存在阻断项"| FixBlocker["实施阻断项修复并原子提交"] --> ReRev["强制再循环: 以修复提交为基线重新派发双轮审查"] --> DualRevGate
     RevPass -->|"Zero Blockers 通过"| Merged["合并功能分支并清理临时分支"]
     
     Merged --> P5["阶段 5: 文档全向归档与联动升级<br/>同步架构/API/配置/ADR"]
@@ -128,7 +128,9 @@ graph TD
 
 ### 8. 阶段 4：E2E 验收与双轮对抗终审 ➔ `dual-round-review`
 * **E2E 执行**：若涉及用户主干链路，运行 L3 端到端测试；
-* **终审硬门禁 (<HARD-GATE>)**：必须调用 `dual-round-review` 技能派发第一轮红队审计（R1）与第二轮资深架构师（R2），**取得 Zero Blockers（阻断项清零）终审裁决报告方可合并入库！**
+* **终审硬门禁 (<HARD-GATE>)**：必须调用 `dual-round-review` 技能派发第一轮红队审计（R1）与第二轮资深架构师（R2），**取得针对最新代码提交的 Zero Blockers（阻断项清零）终审裁决报告方可合并入库！**
+* **修复后强制再循环闭环**：若 R2 判定 `Blockers > 0`，当前阶段维持进行中。实施定向修复并原子提交后，**严禁自行判定通过，下一动作必须且只能是将修复提交作为新基线，重新派发 R1 启动再循环审查**，直至取得独立子智能体给出的 Zero Blockers 裁决；
+* **计划模板循环化**：在阶段 1 编写 `IMPLEMENTATION_PLAN.md` 时，双轮审查任务必须显式声明为循环结构（`循环 1 ➔ 修复 ➔ 循环 2 再循环直至 Zero Blockers`），杜绝线性单向执行引发的漏审。
 
 ### 9. 阶段 5：文档全向归档与联动同步
 * **同步规范**：对照 [documentation-sync-matrix.md](references/documentation-sync-matrix.md) 逐项核验并更新架构、API、用户手册、配置与 ADR 记录，将计划更新为 `[已完成]`。
