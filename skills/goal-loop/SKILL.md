@@ -11,6 +11,7 @@ description: Industrial-grade goal realization loop with context engineering, ti
 它融合了 **Ralph Loop 磁盘记忆持久化思维**、**Manus AI 上下文工程** 与 **faceFusionCpp 工业级 TDD 规程**，通过“主调度智能体长上下文统筹 + 执行子智能体短上下文物理隔离”的现代架构，深度串联全生命周期技能：
 * **阶段 -1 (意图对齐)** ➔ `brainstorming`
 * **阶段 0 (方案拷问)** ➔ `grilling` (`/grill-me`)
+* **阶段 0.5 (开源调研与选型)** ➔ `research` / `find-docs` / `gh` CLI
 * **阶段 1 (架构规划与测试定级)** ➔ `writing-plans`
 * **阶段 3 (执行委派)** ➔ `agy-delegation-workflow`
 * **阶段 4 (终审门禁)** ➔ `dual-round-review`
@@ -40,8 +41,12 @@ graph TD
     Brainstorm --> P0_Check{"阶段 0: 是否需要方案压力测试或代码评估?"}
     
     P0_Check -->|"是 - 需压力测试或评估"| Grill["阶段 0: 方案拷问与现状评估<br/>激活 grilling 压力拷问 + 产出 evaluation 报告"]
-    P0_Check -->|"否 - 方案已知且边界受控"| P1
-    Grill --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 IMPLEMENTATION_PLAN.md<br/>输出 测试级别判定矩阵"]
+    P0_Check -->|"否 - 方案已知且边界受控"| P05_Check
+    Grill --> P05_Check{"阶段 0.5: 是否涉及新依赖/通用能力/陌生领域?"}
+
+    P05_Check -->|"是 - 需选型调研"| Spike["阶段 0.5: 技术调研与开源选型<br/>派发 research 子智能体 + gh/web 检索<br/>产出选型备忘录 (自研需硬性理由)"]
+    P05_Check -->|"否 - 纯内部既有逻辑微调"| P1
+    Spike --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 IMPLEMENTATION_PLAN.md<br/>输出 测试级别判定矩阵"]
     
     P1 --> P2["阶段 2: 原子子任务拆解<br/>落地通用 7 维任务提示词或独立 task_*.md"]
     P2 --> Branch["阶段 3 准备: 隔离分支与环境检测"]
@@ -98,29 +103,34 @@ graph TD
 * **适用条件**：重大架构重构、安全核心链路、并发竞态或面对复杂遗留系统。
 * **协同契约**：调用 `grilling` 针对设计假设进行无情拷问，清空设计决策树未决分支；对既有代码库按需产出质量评估报告（参考 [evaluation-report-template.md](templates/evaluation-report-template.md)）。
 
-### 3. 阶段 1：计划制定与测试策略裁定 ➔ `writing-plans`
+### 3. 阶段 0.5：技术调研与开源选型 ➔ `research` / `find-docs`
+* **适用条件**：引入新第三方库、实现复杂通用功能（队列/调度/协议解析/并发等）、涉足陌生领域或技术路径待定。
+* **协同契约**：派发只读 `research` 子智能体，按照“代码库内排查 ➔ GitHub 社区 (`gh`) ➔ 官方权威文档 (`find-docs` / `web_search`)”逐级展开，产出轻量备忘录（参考 [research-spike-template.md](templates/research-spike-template.md)）。
+* **硬门禁 (<HARD-GATE>)**：**优先复用成熟方案；若决定自研，必须在备忘录中提供充分的自研辩护，未完成选型裁决前严禁进入阶段 1 编写计划！**
+
+### 4. 阶段 1：计划制定与测试策略裁定 ➔ `writing-plans`
 * **协同契约**：激活 `writing-plans` 技能，在磁盘编写 `docs/.../IMPLEMENTATION_PLAN.md`（参考 [goal-plan-template.md](templates/goal-plan-template.md)）；
 * **自适应测试定级**：依据 [testing-decision-matrix.md](references/testing-decision-matrix.md) 输出《测试策略裁定书》，明确当前任务必须执行的测试级别（L0~L3）与命令。
 
-### 4. 阶段 2：原子任务拆解与规约生成
+### 5. 阶段 2：原子任务拆解与规约生成
 * **拆解原则**：切分为 2~5 分钟的微型子任务（Bite-Sized），每个子任务具备独立测试断言；
 * **通用标准**：遵循 [atomic-task-template.md](templates/atomic-task-template.md) 规定的 7 维黄金标准，严禁让执行端推测数据契约与接口。
 
-### 5. 阶段 3：TDD 循环实现 ➔ `agy-delegation-workflow`
+### 6. 阶段 3：TDD 循环实现 ➔ `agy-delegation-workflow`
 * **宿主自适应**：
   - **Antigravity 原生环境**：前台直接调用原生 `invoke_subagent` 派发子任务，**严禁在终端套娃调用 `agy` 命令行**；
   - **非 agy 终端环境**：使用 `dispatch-agy.sh` 清除代理并注入 `Gemini 3.8 Flash (High)` 无头后台进程。
 * **TDD 铁律**：🔴 编写失败单测（L1）➔ 🟢 最简代码使测试通过 ➔ 🔵 保持测试全绿重构 ➔ ✅ 单元测试 Exit Code 0 ➔ 💾 原子提交 Git Commit。
 
-### 6. 阶段 3.5：集成验证与回归测试
+### 7. 阶段 3.5：集成验证与回归测试
 * **触发条件**：测试策略裁定书中包含 **L2 集成测试** 时必须执行；
 * **验证标准**：全量集成测试与全局编译构建（如 `pnpm build` / `cargo build`）全绿通过。
 
-### 7. 阶段 4：E2E 验收与双轮对抗终审 ➔ `dual-round-review`
+### 8. 阶段 4：E2E 验收与双轮对抗终审 ➔ `dual-round-review`
 * **E2E 执行**：若涉及用户主干链路，运行 L3 端到端测试；
 * **终审硬门禁 (<HARD-GATE>)**：必须调用 `dual-round-review` 技能派发第一轮红队审计（R1）与第二轮资深架构师（R2），**取得 Zero Blockers（阻断项清零）终审裁决报告方可合并入库！**
 
-### 8. 阶段 5：文档全向归档与联动同步
+### 9. 阶段 5：文档全向归档与联动同步
 * **同步规范**：对照 [documentation-sync-matrix.md](references/documentation-sync-matrix.md) 逐项核验并更新架构、API、用户手册、配置与 ADR 记录，将计划更新为 `[已完成]`。
 
 ---
@@ -140,7 +150,8 @@ graph TD
 详见 [failure-recovery-protocol.md](references/failure-recovery-protocol.md)。
 
 * **3-Tries Rule**：针对任何单一错误连续尝试上限为 **3 次**。
-* **熔断动作**：第 3 次失败时立即停止代码修改，生成结构化仲裁报告（`STOP -> RECORD -> RESEARCH -> ESCALATE`），向人类工程师请求决策。
+* **第 2 次失败微观排查**：第 2 次修复失败后强制暂停盲改，调用 `gh search issues` 或 `web_search`/`find-docs` 查证已知 Bug 与权威解法。
+* **第 3 次熔断升级**：第 3 次失败时立即停止代码修改，生成结构化仲裁报告（`STOP -> RECORD -> RESEARCH -> ESCALATE`），向人类工程师请求决策。
 
 ---
 
@@ -154,8 +165,8 @@ bash skills/goal-loop/scripts/goal-state-tracker.sh init "目标名称" "计划�
 # 查看当前看板
 bash skills/goal-loop/scripts/goal-state-tracker.sh status
 
-# 切换阶段
-bash skills/goal-loop/scripts/goal-state-tracker.sh set-phase P3
+# 切换阶段 (支持 P-1, P0, P0.5, P1, P2, P3, P3.5, P4, P5)
+bash skills/goal-loop/scripts/goal-state-tracker.sh set-phase P0.5
 
 # 标记子任务完成
 bash skills/goal-loop/scripts/goal-state-tracker.sh complete-task "task-2.1"
@@ -174,6 +185,7 @@ bash skills/goal-loop/scripts/goal-state-tracker.sh complete-task "task-2.1"
 
 ### 模板套件与辅助脚本
 * [goal-plan-template.md](templates/goal-plan-template.md) - 通用实施方案计划模板 (内嵌测试策略裁定书)
+* [research-spike-template.md](templates/research-spike-template.md) - 技术调研与开源选型备忘录模板
 * [atomic-task-template.md](templates/atomic-task-template.md) - 通用 7 维独立子任务规约模板
 * [evaluation-report-template.md](templates/evaluation-report-template.md) - 阶段零现状评估报告模板
 * [goal-state-tracker.sh](scripts/goal-state-tracker.sh) - 状态追踪与断点恢复辅助 CLI

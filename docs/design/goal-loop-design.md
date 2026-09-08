@@ -11,7 +11,7 @@
 >   - Manus AI Context Engineering (上下文工程与 2-Action Rule)
 >   - Ralph Loop (Ralph Wiggum 磁盘持久化自主闭环理念)
 >   - Claude Code `/goal` (自治目标收敛范式)
->   - 内部技能生态：`brainstorming`、`grilling`、`writing-plans`、`agy-delegation-workflow`、`dual-round-review`
+>   - 内部技能生态：`brainstorming`、`grilling`、`research` (`find-docs` / `gh` CLI)、`writing-plans`、`agy-delegation-workflow`、`dual-round-review`
 
 ---
 
@@ -56,7 +56,7 @@
 * **智能体自主裁定 (Autonomous Scoping)**：智能体在规划阶段必须基于 AST 改动范围、依赖拓扑与调用深度，显式论证并裁定测试范围，生成不可逾越的验证基线。
 
 ### 2.4 全生命周期技能闭环 (End-to-End Skills Ecosystem)
-* 拒绝单打独斗，在需求端（`brainstorming`、`grilling`）、规划端（`writing-plans`）、执行端（`agy-delegation-workflow`）和交付端（`dual-round-review`）深度串接成熟专用技能，打造工业级研发装配线。
+* 拒绝单打独斗，在需求端（`brainstorming`、`grilling`）、调研端（`research`、`find-docs`、`gh` CLI）、规划端（`writing-plans`）、执行端（`agy-delegation-workflow`）和交付端（`dual-round-review`）深度串接成熟专用技能，打造工业级研发装配线。
 
 ---
 
@@ -73,8 +73,12 @@ graph TD
     Brainstorm --> P0_Check{"阶段 0: 是否需要方案压力测试或代码评估?"}
     
     P0_Check -->|"是 - 需压力测试或评估"| Grill["阶段 0: 方案拷问与现状评估<br/>激活 grilling 压力拷问 + 产出 evaluation 报告"]
-    P0_Check -->|"否 - 方案已知且边界受控"| P1
-    Grill --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 IMPLEMENTATION_PLAN.md<br/>输出 测试级别判定矩阵"]
+    P0_Check -->|"否 - 方案已知且边界受控"| P05_Check
+    Grill --> P05_Check{"阶段 0.5: 是否涉及新依赖/通用能力/陌生领域?"}
+
+    P05_Check -->|"是 - 需选型调研"| Spike["阶段 0.5: 技术调研与开源选型<br/>派发 research 子智能体 + gh/web 检索<br/>产出选型备忘录 (自研需硬性理由)"]
+    P05_Check -->|"否 - 纯内部既有逻辑微调"| P1
+    Spike --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 IMPLEMENTATION_PLAN.md<br/>输出 测试级别判定矩阵"]
     
     P1 --> P2["阶段 2: 原子子任务拆解<br/>落地通用 7 维任务提示词或独立 task_*.md"]
     P2 --> Branch["阶段 3 准备: 隔离分支与环境检测"]
@@ -175,16 +179,16 @@ graph TD
 `goal-loop` 不是重复造轮子，而是作为**总调度中枢**，将现有经过严苛验证的技能编排为有机整体：
 
 ```
-                    ┌─────────────────────────────────────────────────────────┐
-                    │               goal-loop 总调度引擎                      │
-                    └─────────────────────────────────────────────────────────┘
-                                                 │
-         ┌───────────────────┬───────────────────┼───────────────────┬───────────────────┐
-         ▼                   ▼                   ▼                   ▼                   ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│  brainstorming  │ │    grilling     │ │  writing-plans  │ │ agy-delegation  │ │dual-round-review│
-│ (阶段 -1 意图对齐)│ │ (阶段 0 压力拷问) │ │(阶段 1 架构规划) │ │(阶段 3 委派执行) │ │(阶段 4 终审门禁) │
-└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
+                    ┌─────────────────────────────────────────────────────────────────────────┐
+                    │                        goal-loop 总调度引擎                             │
+                    └─────────────────────────────────────────────────────────────────────────┘
+                                                         │
+         ┌───────────────────┬───────────────────┼───────────────────┬───────────────────┬───────────────────┬───────────────────┐
+         ▼                   ▼                   ▼                   ▼                   ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  brainstorming  │ │    grilling     │ │ research / docs │ │  writing-plans  │ │ agy-delegation  │ │   regress-check │ │dual-round-review│
+│ (阶段 -1 意图对齐)│ │ (阶段 0 压力拷问) │ │(阶段 0.5 选型调研)│ │(阶段 1 架构规划) │ │(阶段 3 委派执行) │ │(阶段 3.5 集成验证)│ │(阶段 4 终审门禁) │
+└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
 
 ### 5.1 阶段 -1：意图探明与方案对齐 ➔ `brainstorming`
@@ -201,21 +205,30 @@ graph TD
   - 采用设计决策树（Design Tree）推演未决前沿（Frontier），直至所有隐藏分支清空；
   - 若涉及遗留代码重构，同步产出代码现状评估报告（`evaluation_*.md`）。
 
-### 5.3 阶段 1：实施方案制定与测试定级 ➔ `writing-plans`
+### 5.3 阶段 0.5：技术调研与开源选型 ➔ `research` / `find-docs` / `gh` CLI
+* **适用条件**：引入新第三方库、实现复杂通用功能（认证/队列/调度/协议解析/并发控制等）、技术路径待定或面临开源 vs 自研抉择。
+* **契约与工具链 SOP**：
+  - **3 级调研工具链**：① 本地代码库检索可复用封装 ➔ ② GitHub 开源生态检索 (`gh search repos/code/issues`) ➔ ③ 官方权威文档验证 (`find-docs` / `context7-cli` / `web_search`)；
+  - **上下文物理隔离**：调研任务由独立只读子智能体（`research`）在纯净上下文中执行，禁止原始网页与大批量文本污染主调度上下文；
+  - **成果落盘**：产出《技术调研与开源选型备忘录》（`docs/dev/research/research_<topic>.md`，参考 `templates/research-spike-template.md`）；
+* **硬门禁 (<HARD-GATE>)**：
+  - **优先复用成熟方案**；若决定放弃高星活跃开源库而选择自研，必须在备忘录中进行充分的技术/性能/许可合规辩护。未获得明确裁决前严禁进入阶段 1！
+
+### 5.4 阶段 1：实施方案制定与测试定级 ➔ `writing-plans`
 * **适用条件**：方案对齐且压力测试通过后，正式起草落盘计划。
 * **契约与产出**：
   - 激活 `writing-plans` 技能，在磁盘创建 `docs/superpowers/plans/YYYY-MM-DD-<goal-name>.md`（或用户指定位置）；
   - 严格将大目标分解为 2~5 分钟的微型子任务（Bite-Sized Tasks）；
-  - 强制在计划开头嵌入《测试特征与级别裁定书》（明确 L0/L1/L2/L3 范围）。
+  - 强制在计划开头嵌入《测试特征与级别裁定书》（明确 L0/L1/L2/L3 范围），并链接阶段 0.5 调研结论。
 
-### 5.4 阶段 3：宿主自适应委派与 TDD 执行 ➔ `agy-delegation-workflow`
+### 5.5 阶段 3：宿主自适应委派与 TDD 执行 ➔ `agy-delegation-workflow`
 * **适用条件**：执行具体的子任务编码与单元测试。
 * **契约与协同**：
   - **Antigravity 原生环境**：前台直接调用原生 `invoke_subagent` 派发子任务，执行隔离的 TDD 循环，**严禁在终端套娃调用 `agy` 命令行**；
   - **非 agy 终端环境（Claude Code / 通用命令行）**：使用 `dispatch-agy.sh` 清除代理并注入 `Gemini 3.8 Flash (High)` 无头后台进程；
   - **7 维黄金标准通用模板**：结合通用 `task-prompt-template.md` 约束子任务，禁止后台越权编写计划文档。
 
-### 5.5 阶段 4：双轮对抗终审硬门禁 ➔ `dual-round-review`
+### 5.6 阶段 4：双轮对抗终审硬门禁 ➔ `dual-round-review`
 * **适用条件**：所有子任务、L2 集成测试及 L3 E2E 测试全部通过后，合并分支前的最终门禁。
 * **契约与红线**：
   - **严禁自卖自夸**：主调度智能体绝对不允许自行宣布“审查通过”；
@@ -262,7 +275,10 @@ graph TD
 - **已尝试排查路径**:
   1. 尝试 A: [简要描述]，结果: [失败机理]
   2. 尝试 B: [简要描述]，结果: [失败机理]
-  3. 尝试 C: [简要描述]，结果: [失败机理]
+  3. 尝试 C: [基于微观调研所做修改]，结果: [失败机理]
+- **微观调研证据链 (Micro Research Evidence)**:
+  - GitHub Issue (`gh`): [社区已知缺陷/Issue 状态]
+  - 官方文档/Web (`web_search` / `find-docs`): [官方说明与 Workaround]
 - **争议焦点与瓶颈**: [分析为什么当前无法收敛，是否存在需求冲突或环境缺陷]
 - **建议解决方案选项**:
   - 选项 1: [建议方案 A]
@@ -287,6 +303,7 @@ skills/goal-loop/
 │   └── documentation-sync-matrix.md       # 全向文档联动复核清单 (架构/API/配置/ADR)
 ├── templates/
 │   ├── goal-plan-template.md              # 通用实施计划模板 (内嵌测试策略裁定书插槽)
+│   ├── research-spike-template.md         # 技术调研与开源选型备忘录模板
 │   ├── atomic-task-template.md            # 独立子任务文档模板 (通用 7 维标准)
 │   └── evaluation-report-template.md      # 阶段零代码现状评估报告模板
 └── scripts/

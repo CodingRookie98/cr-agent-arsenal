@@ -11,3 +11,5 @@ Thumbs.db
 *.tmp
 *.swp
 *~
+.agents/
+skills-lock.json

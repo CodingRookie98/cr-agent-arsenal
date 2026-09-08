@@ -22,7 +22,7 @@ usage() {
   init <目标名称> [计划文件路径]   初始化 goal-loop 状态机
   status                          显示当前状态（格式化看板）
   json                            以原生 JSON 格式输出当前状态
-  set-phase <阶段代码>            切换当前阶段 (P-1, P0, P1, P2, P3, P3.5, P4, P5, DONE)
+  set-phase <阶段代码>            切换当前阶段 (P-1, P0, P0.5, P1, P2, P3, P3.5, P4, P5, DONE)
   complete-task <任务标识>        将指定子任务标记为已完成
   block <受阻原因>                标记状态机处于熔断阻断状态并记录原因
   unblock                         解除当前阻断状态，恢复执行
@@ -30,14 +30,15 @@ usage() {
   -h, --help                      显示本帮助信息
 
 阶段代码说明:
-  P-1   阶段 -1: 意图探明与方案对齐 (brainstorming)
-  P0    阶段 0:  方案压力测试与评估 (grilling)
-  P1    阶段 1:  计划制定与测试定级 (writing-plans)
-  P2    阶段 2:  原子子任务拆解
-  P3    阶段 3:  TDD 循环实现 (agy-delegation-workflow)
+  P-1   阶段 -1:  意图探明与方案对齐 (brainstorming)
+  P0    阶段 0:   方案压力测试与评估 (grilling)
+  P0.5  阶段 0.5: 技术调研与开源选型 (research / find-docs)
+  P1    阶段 1:   计划制定与测试定级 (writing-plans)
+  P2    阶段 2:   原子子任务拆解
+  P3    阶段 3:   TDD 循环实现 (agy-delegation-workflow)
   P3.5  阶段 3.5: 集成验证与回归
-  P4    阶段 4:  E2E 验收与双轮终审 (dual-round-review)
-  P5    阶段 5:  文档全向归档
+  P4    阶段 4:   E2E 验收与双轮终审 (dual-round-review)
+  P5    阶段 5:   文档全向归档
   DONE  目标圆满达成
 
 示例:
