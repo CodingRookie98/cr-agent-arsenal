@@ -30,11 +30,15 @@ description: Industrial-grade goal realization loop with context engineering, ti
 
 ---
 
-## 总体架构与状态机拓扑 (State Machine Architecture)
+## 总体架构与双轨状态机拓扑 (State Machine Architecture)
 
 ```mermaid
 graph TD
-    Start(["🎯 目标输入 (Goal Input)"]) --> P_Minus1{"阶段 -1: 是否涉及方案创新或意图不明确?"}
+    Start(["🎯 目标输入 (Goal Input)"]) --> Triage{"执行通道判定 (Track Triage)<br/>跨模块重构/新功能 vs 局部微调/Bug修复"}
+    
+    Triage -->|"Fast-Track 敏捷通道"| FastP1["阶段 1: 编写精炼敏捷计划<br/>(1~3 个原子切片 + L0/L1 命令)"]
+    
+    Triage -->|"Heavy Track 重型航道"| P_Minus1{"阶段 -1: 是否涉及方案创新或意图不明确?"}
     
     P_Minus1 -->|"是 - 需澄清意图"| Brainstorm["阶段 -1: 头脑风暴与意图对齐<br/>激活 brainstorming 技能探明真实需求"]
     P_Minus1 -->|"否 - 目标已完全明确"| P0_Check
@@ -46,12 +50,13 @@ graph TD
 
     P05_Check -->|"是 - 需选型调研"| Spike["阶段 0.5: 技术调研与开源选型<br/>派发 research 子智能体 + gh/web 检索<br/>产出选型备忘录 (自研需硬性理由)"]
     P05_Check -->|"否 - 纯内部既有逻辑微调"| P1
-    Spike --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 IMPLEMENTATION_PLAN.md<br/>输出 测试级别判定矩阵"]
+    Spike --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 IMPLEMENTATION_PLAN.md<br/>输出 测试级别判定矩阵 + 检查点锚点"]
     
-    P1 --> P2["阶段 2: 原子子任务拆解<br/>落地通用 7 维任务提示词或独立 task_*.md"]
-    P2 --> Branch["阶段 3 准备: 隔离分支与环境检测"]
+    FastP1 --> Branch["阶段 3 准备: 锁定变更范围与检查点"]
+    P1 --> P2["阶段 2: 原子子任务拆解<br/>落地 7 维黄金标准任务块"]
+    P2 --> Branch
     
-    Branch --> LoopHeader["阶段 3: TDD 原子执行循环 (Task Iteration)"]
+    Branch --> LoopHeader["阶段 3: Surgical TDD 原子执行循环 (Task Iteration)"]
     
     subgraph TDDCycle["阶段 3: TDD 原子自愈闭环 (结合 agy 宿主自适应委派)"]
         T1["红灯: 编写失败测试 (L1 单测)"] --> T2["绿灯: 编写最简实现使测试通过"]
@@ -61,7 +66,7 @@ graph TD
         PassCheck -->|"否 - 重试不超过3次"| T2
         PassCheck -->|"连续3次失败"| Escalate["触发 3-Tries 熔断: 记录原因并上报人类"]
         PassCheck -->|"是"| Commit["原子提交当前子任务 Git Commit"]
-        Commit --> Persist["持久化更新任务状态与进度文件"]
+        Commit --> Persist["持久化更新计划复选框与检查点锚点"]
     end
     
     LoopHeader --> TDDCycle
@@ -70,7 +75,7 @@ graph TD
     
     AllDone -->|"是"| NeedInteg{"计划判定: 是否需要 L2 集成测试?"}
     NeedInteg -->|"是 - 涉及跨模块联动"| P35["阶段 3.5: 集成验证与跨模块回归测试"]
-    NeedInteg -->|"否 - 单一内联模块豁免"| NeedE2E
+    NeedInteg -->|"否 - 单一内联模块/Fast-Track 豁免"| NeedE2E
     
     P35 --> IntegCheck{"集成测试与构建全绿?"}
     IntegCheck -->|"否"| FixInteg["定向修复回归缺陷"] --> P35
@@ -78,15 +83,26 @@ graph TD
     
     NeedE2E -->|"是 - 涉及端到端主链路"| E2ERun["阶段 4 前置: 运行 E2E 系统测试"]
     NeedE2E -->|"否 - 无外部界面/链路豁免"| DualRevGate
-    E2ERun --> DualRevGate["阶段 4: 双轮对抗终审硬门禁<br/>激活 dual-round-review (红队第一性原理 + 架构师元审判)"]
+    E2ERun --> DualRevGate["阶段 4: 双轮对抗终审硬门禁<br/>激活 dual-round-review (Diff边界锁 + SSR沙盒 + Delta Re-Loop)"]
     
     DualRevGate --> RevPass{"双轮审查阻断项清零?"}
-    RevPass -->|"存在阻断项"| FixBlocker["实施阻断项修复并原子提交"] --> ReRev["强制再循环: 以修复提交为基线重新派发双轮审查"] --> DualRevGate
+    RevPass -->|"存在阻断项 Blockers > 0"| FixBlocker["实施针对性精准根因修复并原子提交"] --> ReRev["强制 Delta Re-Loop: 以修复提交为基线定向再循环审查"] --> DualRevGate
     RevPass -->|"Zero Blockers 通过"| Merged["合并功能分支并清理临时分支"]
     
-    Merged --> P5["阶段 5: 文档全向归档与联动升级<br/>同步架构/API/配置/ADR"]
+    Merged --> P5["阶段 5: 文档全向归档与联动升级<br/>同步架构/API/配置/ADR/待办清单"]
     P5 --> Finish(["🏁 目标圆满达成 (Goal Achieved) ✅"])
 ```
+
+---
+
+## 双轨制执行通道分流法则 (Tiered Execution Tracks)
+
+1. **Heavy Track (重型主航道)**：
+   - **适用**：跨越 3 个以上模块、涉及全局数据流、底层数据模型重构、全新复杂业务功能。
+   - **执行流**：严格执行 P-1 到 P5 完整 9 阶段，执行全量双轮对抗审查。
+2. **Fast-Track (敏捷轻量通道)**：
+   - **适用**：单文件或局部微调、已有页面空状态/交互补全、单函数工具封装、定向 Defect 修复。
+   - **执行流**：**豁免 P-1（头脑风暴）、P0（方案拷问）、P0.5（开源调研）**，直接以需求为输入在 `IMPLEMENTATION_PLAN.md` 编写轻量计划（阶段 1），进入阶段 3 Surgical TDD，走定向双轮审查（阶段 4），最后归档（阶段 5）。杜绝轻量任务陷入流程空转。
 
 ---
 
@@ -94,33 +110,31 @@ graph TD
 
 详见 [stage-progression-protocol.md](references/stage-progression-protocol.md)。
 
-### 1. 阶段 -1：头脑风暴与意图对齐 ➔ `brainstorming`
-* **适用条件**：目标需求不明确、涉及交互创意、或有多种架构选型可能。
+### 1. 阶段 -1：头脑风暴与意图对齐 ➔ `brainstorming` (仅 Heavy Track)
 * **协同契约**：调用 `brainstorming` 梳理意图，向用户呈现 2~3 个备选方案。
 * **硬门禁 (<HARD-GATE>)**：**未获得用户明确点头认可（User Nod）前，严禁动手写代码或编写实施方案！**
 
-### 2. 阶段 0：方案压力测试与技术债评估 ➔ `grilling`
-* **适用条件**：重大架构重构、安全核心链路、并发竞态或面对复杂遗留系统。
-* **协同契约**：调用 `grilling` 针对设计假设进行无情拷问，清空设计决策树未决分支；对既有代码库按需产出质量评估报告（参考 [evaluation-report-template.md](templates/evaluation-report-template.md)）。
+### 2. 阶段 0：方案压力测试与技术债评估 ➔ `grilling` (仅 Heavy Track)
+* **协同契约**：调用 `grilling` 针对设计假设进行无情拷问，清空设计决策树未决分支；产出现状评估报告（参考 [evaluation-report-template.md](templates/evaluation-report-template.md)）。
 
-### 3. 阶段 0.5：技术调研与开源选型 ➔ `research` / `find-docs`
-* **适用条件**：引入新第三方库、实现复杂通用功能（队列/调度/协议解析/并发等）、涉足陌生领域或技术路径待定。
+### 3. 阶段 0.5：技术调研与开源选型 ➔ `research` / `find-docs` (仅 Heavy Track)
 * **协同契约**：派发只读 `research` 子智能体，按照“代码库内排查 ➔ GitHub 社区 (`gh`) ➔ 官方权威文档 (`find-docs` / `web_search`)”逐级展开，产出轻量备忘录（参考 [research-spike-template.md](templates/research-spike-template.md)）。
 * **硬门禁 (<HARD-GATE>)**：**优先复用成熟方案；若决定自研，必须在备忘录中提供充分的自研辩护，未完成选型裁决前严禁进入阶段 1 编写计划！**
 
 ### 4. 阶段 1：计划制定与测试策略裁定 ➔ `writing-plans`
-* **协同契约**：激活 `writing-plans` 技能，在磁盘编写 `docs/.../IMPLEMENTATION_PLAN.md`（参考 [goal-plan-template.md](templates/goal-plan-template.md)）；
-* **自适应测试定级**：依据 [testing-decision-matrix.md](references/testing-decision-matrix.md) 输出《测试策略裁定书》，明确当前任务必须执行的测试级别（L0~L3）与命令。
+* **协同契约**：激活 `writing-plans` 技能，在磁盘编写 `IMPLEMENTATION_PLAN.md`（参考 [goal-plan-template.md](templates/goal-plan-template.md)）；
+* **自适应测试定级**：依据 [testing-decision-matrix.md](references/testing-decision-matrix.md) 输出《测试策略裁定书》，明确当前任务必须执行的测试级别（L0~L3）与命令；
+* **持久化检查点固化**：在计划文件头部必须显式维护 `## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)` 锚点。
 
-### 5. 阶段 2：原子任务拆解与规约生成
+### 5. 阶段 2：原子任务拆解与规约生成 (Heavy Track 必选，Fast-Track 视复杂度内联)
 * **拆解原则**：切分为 2~5 分钟的微型子任务（Bite-Sized），每个子任务具备独立测试断言；
-* **通用标准**：遵循 [atomic-task-template.md](templates/atomic-task-template.md) 规定的 7 维黄金标准，严禁让执行端推测数据契约与接口。
+* **通用标准**：遵循 [atomic-task-template.md](templates/atomic-task-template.md) 规定的 7 维黄金标准。
 
 ### 6. 阶段 3：TDD 循环实现 ➔ `agy-delegation-workflow`
 * **宿主自适应**：
   - **Antigravity 原生环境**：前台直接调用原生 `invoke_subagent` 派发子任务，**严禁在终端套娃调用 `agy` 命令行**；
   - **非 agy 终端环境**：使用 `dispatch-agy.sh` 清除代理并注入 `Gemini 3.8 Flash (High)` 无头后台进程。
-* **TDD 铁律**：🔴 编写失败单测（L1）➔ 🟢 最简代码使测试通过 ➔ 🔵 保持测试全绿重构 ➔ ✅ 单元测试 Exit Code 0 ➔ 💾 原子提交 Git Commit。
+* **TDD 铁律**：🔴 编写失败单测（L1）➔ 🟢 最简代码使测试通过 ➔ 🔵 保持测试全绿重构 ➔ ✅ 单元测试 Exit Code 0 ➔ 💾 原子提交 Git Commit ➔ 📌 更新检查点锚点。
 
 ### 7. 阶段 3.5：集成验证与回归测试
 * **触发条件**：测试策略裁定书中包含 **L2 集成测试** 时必须执行；
@@ -129,11 +143,13 @@ graph TD
 ### 8. 阶段 4：E2E 验收与双轮对抗终审 ➔ `dual-round-review`
 * **E2E 执行**：若涉及用户主干链路，运行 L3 端到端测试；
 * **终审硬门禁 (<HARD-GATE>)**：必须调用 `dual-round-review` 技能派发第一轮红队审计（R1）与第二轮资深架构师（R2），**取得针对最新代码提交的 Zero Blockers（阻断项清零）终审裁决报告方可合并入库！**
-* **修复后强制再循环闭环**：若 R2 判定 `Blockers > 0`，当前阶段维持进行中。实施定向修复并原子提交后，**严禁自行判定通过，下一动作必须且只能是将修复提交作为新基线，重新派发 R1 启动再循环审查**，直至取得独立子智能体给出的 Zero Blockers 裁决；
-* **计划模板循环化**：在阶段 1 编写 `IMPLEMENTATION_PLAN.md` 时，双轮审查任务必须显式声明为循环结构（`循环 1 ➔ 修复 ➔ 循环 2 再循环直至 Zero Blockers`），杜绝线性单向执行引发的漏审。
+* **Diff 边界锁与 SSR 安全**：R1 必须锁死在 Diff 范围内部，严禁将历史既有技术债定为 Blocker；重点核查 Rules of Hooks 早退调用与 Storage 沙盒防御；
+* **Delta Re-Loop 循环闭环**：若 R2 判定 `Blockers > 0`，实施针对性根因修复并提交后，**严禁自行宣布通过，必须以修复提交为基线激活 Delta Re-Loop 重新派发双轮审查**，直至取得独立子智能体给出的 Zero Blockers 裁决。
 
 ### 9. 阶段 5：文档全向归档与联动同步
-* **同步规范**：对照 [documentation-sync-matrix.md](references/documentation-sync-matrix.md) 逐项核验并更新架构、API、用户手册、配置与 ADR 记录，将计划更新为 `[已完成]`。
+* **同步规范**：对照 [documentation-sync-matrix.md](references/documentation-sync-matrix.md) 逐项核验并更新架构、API、用户手册、配置与待办清单，将计划更新为 `[已完成]`；
+* **未来技能解耦**：本阶段为通用基线层，若当前项目配置了专用文档治理技能，可在此阶段触发其执行。
+
 
 ---
 
