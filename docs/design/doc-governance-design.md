@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-DOC-GOVERNANCE-2026
-> - **当前版本**: V1.1.0 (重构定案：彻底摒弃瀑布生命周期妥协，确立 Diátaxis 四象限 + Agentic 原生现代目录标准)
+> - **当前版本**: V1.2.0 (合入初期 RFC 提案孵化结晶流转规程、项目语言习惯与文件命名规范)
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-10
@@ -10,6 +10,7 @@
 >   - **现代软件工程规范**: Daniele Procida 的 **Diátaxis 框架** (四象限系统化文档架构，Python/Canonical/Django/NumPy 官方标准)
 >   - **Docs-as-Code (DaC)**: Write the Docs 哲学 (文档即代码、版本化、CI/CD 自动化门禁)
 >   - **架构决策治理**: **MADR 3.0 / Michael Nygard ADR** (不可逆决策审计与演进追踪)
+>   - **需求演进标准**: **RFC / KEP / PEP 提案模型** (初期单文件多轮对齐与定案结晶机制)
 >   - **AI 智能体时代规范**:
 >     - **Dual-Audience 原则**: 人类可读性 (Human-Readable) 与智能体机器可读性 (Agent-Consumable) 统一
 >     - **Machine-Readable Index**: `llms.txt` + `index.md` 双重全局导航
@@ -112,6 +113,11 @@ docs/
 ├── llms.txt                 # 【AI 智能体机器地图】精炼的机器可读知识拓扑与关键参考入口
 ├── GOVERNANCE.md            # 【知识库治理规程】文档分类、生命周期与 CI 门禁规则
 │
+├── proposals/               # 💡 0. 需求与设计孵化层 (Inception / RFC Proposals)
+│   │                        # ⭐ 项目初期单文件聚焦对齐空间，定案后结晶下沉至 Diátaxis 稳态
+│   ├── RFC-0001-xxx.md      # 初期对齐提案草案 (Draft -> In Review -> Accepted)
+│   └── archive/             # 已结晶下沉的提案历史归档 (Implemented / Superseded)
+│
 ├── tutorials/               # 🎓 1. 教程象限 (Learning-Oriented / Newcomer Success)
 │   ├── quick-start.md       # 5 分钟上手开发与运行首个特性
 │   └── onboarding.md        # 新成员/新智能体工作流与环境就绪向导
@@ -146,6 +152,7 @@ docs/
 
 | 目录层级 | Diátaxis 定位 | 唯一事实来源 (Single Source of Truth) | 严禁承载内容 |
 |:---|:---|:---|:---|
+| `proposals/` | Inception / Proposals | **项目初期与重大特性需求、设计草案、权衡对齐的临时单文件孵化空间** | 长期已生效的运行态基线（定案后必须结晶下沉至 Diátaxis） |
 | `tutorials/` | Tutorials | 新手入门第一步体验 | 详细 API 错误码、深层架构选型争论 |
 | `how-to/` | How-To Guides | 具体的任务解决步骤（操作 SOP） | 领域理论长篇论述、接口数据模型声明 |
 | `reference/` | Technical Reference | **所有对外接口、数据模型、业务状态机与安全规则的唯一真相源** | 操作教程、方案背景为什么这么选的辩论 |
@@ -212,6 +219,70 @@ docs/
 
 ---
 
+### 4.4 初期探索向稳态演进：RFC 提案孵化与 Diátaxis 结晶流转规程 (Proposal-to-Crystallization Lifecycle Protocol)
+
+在项目初期（0-to-1 阶段）或重大特性立项探索期，需求具有高变动性，方案需经历多次反复对齐、争辩与设计推演。若在此阶段过早将未成熟设想生硬打散进 Diátaxis 各象限，不仅会导致极高的多文件对齐认知摩擦，更会严重污染 `reference/` 这一神圣的“当前机器权威真理源”。
+
+为此，`doc-governance` 确立**“两阶段生命周期演进模型 (Two-Phase Evolution Model)”**：
+
+```mermaid
+graph TD
+    subgraph 阶段一: 提案孵化与反复对齐期 [单文件聚焦 / 多轮对齐 / 快速试错]
+        Idea["💡 原始需求 / 架构设想"] --> Proposal["📄 创建单一自洽提案<br>docs/proposals/RFC-0001-xxx.md<br>(背景+用户故事+契约草案+权衡对比)"]
+        Proposal --> Align["🔄 深度对齐与多轮拷问 (Grill-Me / Review)<br>状态流转: Draft ➔ In Review"]
+        Align -->|"分歧迭代 / 方案翻修"| Proposal
+        Align -->|"评审通过"| Approved["✅ 方案定案 (Status: Accepted)"]
+    end
+
+    subgraph 阶段二: 实施与结晶沉淀期 [Diátaxis 解构 / 机器真实真理源]
+        Approved -->|"实施触发结晶<br>(Crystallization)"| Dissect{"解构下沉"}
+        Dissect -->|"定型 API / 模型 / 规则"| Ref["📖 docs/reference/<br>(api, models, rules)"]
+        Dissect -->|"重大不可逆决策权衡"| ADR["💡 docs/explanation/decisions/<br>(生成不可篡改 MADR)"]
+        Dissect -->|"系统全景架构图"| Arch["💡 docs/explanation/architecture/"]
+        Dissect -->|"环境装配与操作 SOP"| HowTo["🛠️ docs/how-to/"]
+        Dissect -->|"任务拆解录入"| Backlog["🚀 docs/project/backlog.md"]
+        
+        Approved --> Archive["📦 原 RFC 状态置为 Implemented 封存<br>(加注防腐备忘，保留历史溯源)"]
+    end
+```
+
+#### 1. 提案孵化规范 (RFC Proposal Standards)
+* **单文件自洽 (Self-Contained Unit)**：每个新功能或重大改动在 `docs/proposals/` 下创建单一文档（如 `RFC-0001-canvas-collab.md`），集中呈现背景、场景、契约草案、选型对比与未决问题列表；
+* **状态机流转控制**：提案头部 Frontmatter 必须标明状态：`Draft`（草拟） ➔ `In Review`（多轮对齐中） ➔ `Accepted`（定案批准） / `Rejected`（被否决）；
+* **对齐高内聚**：人类与 AI 针对该单一文件进行高效的批注、修改或使用 `/grill-me` 深度盘问，所有探讨在此闭环，绝不污染 `reference/`。
+
+#### 2. 定案结晶下沉 SOP (Crystallization SOP)
+当提案被正式批准（状态变更为 `Accepted`）并进入代码开发阶段时，严格执行**结晶解构**：
+1. **实体契约下沉**：将已定型的 API、Schema、错误信封提取至 `docs/reference/api/` 与 `docs/reference/models/`；
+2. **业务规则下沉**：将状态机流转与权限策略提取至 `docs/reference/rules/`；
+3. **决策证据沉淀**：将方案备选权衡与否决原因提炼为 MADR 记录存入 `docs/explanation/decisions/`；
+4. **宏观架构下沉**：将全景流程与分层拓扑更新至 `docs/explanation/architecture/`；
+5. **历史提案封存防腐**：将原 RFC 状态更新为 `Implemented`，并在文档头部显式声明防腐警示：
+   > ⚠️ **历史溯源备忘**：本提案已于 YYYY-MM-DD 定案结晶。当前系统权威接口与模型以 [`reference/...`](...) 为准，本文件仅作为立项决策历史溯源，不再增量维护。
+
+---
+
+### 4.5 项目语言习惯与文件命名规范 (Language Habit & Naming Standards)
+
+为了保证跨团队、跨项目、跨人机协作的认知连贯性，`doc-governance` 确立如下语言与命名基线：
+
+#### 1. 语言习惯继承铁律 (Language Continuity Rule)
+* **尊重既有工程语言基线**：
+  - 若目标工程既有文档以**中文**为主（如本工程及多数国内研发生态），后续所有新增、演进与修订的文档**强制统一使用中文**编写标题、正文与架构说明，严禁无故引入中英文混杂割裂；
+  - 若目标工程既有文档为**纯英文**，则后续文档继续严格保持英文。
+* **概念与术语正交分离**：
+  - 文档叙述、业务背景、操作指引使用项目主语言（如中文）；
+  - 计算机科学标准标识符、API Endpoint、JSON 字段名、Git Commit 规范前缀（`feat`, `fix`, `docs` 等）遵循行业通用英文，严禁生硬翻译或音译破坏代码可读性。
+
+#### 2. 文件命名规范 (File Naming Conventions)
+* **项目初期 (0-to-1 Inception Phase)**：
+  - 文件命名优先推荐使用**全小写中划线 (kebab-case)** 英文命名风格（如 `quick-start.md`, `canvas-collab.md`, `rfc-0001-multi-agent.md`），以保障在不同操作系统（Linux、macOS、Windows 大小写敏感度差异）、Git 索引以及 Web URL 路由解析中的最高兼容性与零歧义；
+* **既有项目与用户偏好确认 (Respect Existing & Inquire on Ambiguity)**：
+  - 若工程已有成体系的中文文件命名习惯（如 `前端功能设计文档.md`、`视觉设计规范.md`），智能体必须**优先尊重既有命名体系**，严禁擅自对既有稳定文件进行重命名；
+  - 在初期立项或面临中英文命名歧义时，智能体应**主动向用户询问确认**，将文件命名倾向的最终裁决权交予人类架构师。
+
+---
+
 ## 5. `doc-governance` 技能定位与核心运行模式 (Skill Architecture)
 
 技能物理定位为公共技能：`/home/hui/workspace/projects/cr-public-skills/skills/doc-governance/`。
@@ -249,7 +320,7 @@ graph TD
 | **`trim-revision.py`** | 修订历史滑动窗口自愈裁剪器 | 检查修订表格行数，`--fix --keep 5` 自动就地裁剪超额历史行，保持头部精悍。 |
 | **`audit-doc-health.py`** | 知识库全面健康度体检引擎 | 综合计算链接完整率、基线合规率、修订合规率、Diátaxis 拓扑覆盖率，检测孤儿文档并出具健康诊断报告。 |
 | **`generate-llms-txt.py`** | 机器可读 `llms.txt` 自动化生成器 | 基于知识库拓扑与各文件 Frontmatter 摘要，自动生成紧凑的 `docs/llms.txt`，赋能 AI 智能体秒级掌握全局知识。 |
-| **`scaffold-doc.sh`** | Diátaxis 标准脚手架生成脚本 | 快速生成符合教程、指南、参考规格、深度解释或 ADR 标准的文件模板。 |
+| **`scaffold-doc.sh`** | Diátaxis & RFC 标准脚手架生成脚本 | 快速生成符合教程、指南、参考规格、深度解释、ADR 或初期 RFC 提案的标准文件模板（支持按项目语言与命名规则参数初始化）。 |
 
 ---
 
@@ -277,13 +348,15 @@ planning/后续优化方向汇总.md   ───►  project/backlog.md (待办�
 
 ## 8. 实施计划与交付里程碑 (Implementation Roadmap)
 
-- [x] **阶段 1：现代架构设计方案编写与用户审批 (<当前已完成，等待裁决>)**
-  - 产出物：`/home/hui/workspace/projects/cr-public-skills/docs/design/doc-governance-design.md` (V1.1.0)
+- [x] **阶段 1：现代架构设计方案编写与用户审批 (<已由王辉正式审批定案>)**
+  - 产出物：`/home/hui/workspace/projects/cr-public-skills/docs/design/doc-governance-design.md` (V1.2.0)
 - [ ] **阶段 2：`doc-governance` 核心技能规程与参考库落地**
   - 目标目录：`/home/hui/workspace/projects/cr-public-skills/skills/doc-governance/`
   - 交付物：
     - `SKILL.md` (主规程：适用场景、三种运行模式 SOP、反模式清单与硬门禁)
     - `references/diataxis-standard.md` (Diátaxis 详细分层与写作边界标准)
+    - `references/rfc-crystallization-lifecycle.md` (初期 RFC 提案与结晶下沉生命周期规程)
+    - `references/language-naming-conventions.md` (项目语言习惯与文件命名规范)
     - `references/change-impact-matrix.md` (代码-文档全向联动触发矩阵)
     - `references/adr-specification.md` (MADR 3.0 决策规范与生命周期)
     - `references/legacy-migration-guide.md` (既有老项目平滑迁移映射操作手册)
