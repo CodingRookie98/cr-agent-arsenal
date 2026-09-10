@@ -78,9 +78,8 @@ docs/
 │   │                        # ⭐ AI 智能体生成代码的核心上下文真相源 (Single Source of Truth)!
 │   ├── api/                 # 外部与内部 API 契约规格、统一错误信封、Endpoint 清单
 │   ├── models/              # 领域数据模型、Schema 契约、数据库实体与 DTO 定义
-│   ├── rules/               # 平台业务规则、状态机状态图、权限角色矩阵与负向安全红线
-│   ├── ui/                  # 前端设计 Token、UI 基础组件规范、交互事件契约
-│   └── agent-protocols/     # 智能体行为协议、提示词资产契约 (*.prompt.md) 与通信信封
+│   ├── rules/               # 平台业务规则、状态机状态图、权限矩阵与智能体行为协议/提示词契约
+│   └── ui/                  # 前端设计 Token、UI 基础组件规范、交互事件契约
 │
 ├── explanation/             # 💡 4. 深度剖析象限 (Understanding-Oriented / The "Why")
 │   ├── architecture/        # 系统总体代码架构总纲 (Hub) 与各子系统深度剖析 (Spokes)

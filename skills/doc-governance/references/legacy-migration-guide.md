@@ -23,7 +23,7 @@
 
 | 既有老目录与文档形态 | Diátaxis 标准归属 | 映射目标路径 | 迁移操作要点 |
 |:---|:---|:---|:---|
-| `requirements/agent/*` | Technical Reference | `docs/reference/agent-protocols/` | 协议与契约提取为机械参考，去除多余教程背景 |
+| `requirements/agent/*` | Technical Reference | `docs/reference/rules/` (或 `rules/agent-protocols.md`) | 协议与契约作为行为规约收敛至 rules 目录 |
 | `requirements/backend/后端功能设计文档.md` | Reference + Explanation | 1. API 契约 ➔ `docs/reference/api/`<br>2. 数据模型 ➔ `docs/reference/models/`<br>3. 架构设计 ➔ `docs/explanation/architecture/` | 解构大杂烩：契约进参考，设计进剖析 |
 | `requirements/frontend/前端功能设计文档.md` | Reference + Explanation | 1. 视觉规范 ➔ `docs/reference/ui/`<br>2. 交互拓扑 ➔ `docs/explanation/architecture/` | 样式 Token 与组件规范独立下沉 |
 | `requirements/business/系统业务规则文档.md` | Technical Reference | `docs/reference/rules/` | 状态机流转图与权限规则作为绝对真理源保留 |
