@@ -69,16 +69,24 @@ def parse_frontmatter(content: str) -> Dict[str, str]:
                 metadata[k.strip().lower()] = v.strip()
         return metadata
 
-    # 模式 B: 引用块元数据 (> **文档控制信息** ... )
-    block_match = re.search(r"> \*\*文档控制信息\*\*(.*?)(?:\n---|\n#|\n\n[^\s>])", content, re.DOTALL)
-    if block_match:
-        for line in block_match.group(1).splitlines():
-            line = re.sub(r"^[>\s\-*]+", "", line).strip()
-            if ":" in line or "：" in line:
-                sep = ":" if ":" in line else "："
-                k, v = line.split(sep, 1)
+    # 模式 B: 引用块元数据 (支持 > **文档控制信息** 或直接 > **文档标识** / > **文档版本**)
+    for line in content.splitlines()[:50]:
+        trimmed = line.strip()
+        if trimmed.startswith(">"):
+            clean = re.sub(r"^[>\s\-*]+", "", trimmed).strip()
+            if ":" in clean or "：" in clean:
+                sep = ":" if ":" in clean else "："
+                k, v = clean.split(sep, 1)
                 k_clean = re.sub(r"[*_`]", "", k).strip().lower()
                 metadata[k_clean] = v.strip()
+
+    # 模式 C: 表格型元数据 (| **文档标识** | DR-xxx | 或 | 文档标识 | ... |)
+    if "文档标识" in content or "当前版本" in content or "version" in content.lower() or "文档版本" in content:
+        for m in re.finditer(r"\|\s*(?:\*\*)?([^|\n*]+?)(?:\*\*)?\s*\|\s*([^|\n]+?)\s*\|", content):
+            k_raw = m.group(1).strip().lower()
+            v_raw = m.group(2).strip()
+            if k_raw in ("文档标识", "当前版本", "规范版本", "文档版本", "version", "id", "文档所有者", "生效日期"):
+                metadata[k_raw] = v_raw
 
     return metadata
 
@@ -127,9 +135,10 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         content = f.read_text(encoding="utf-8", errors="replace")
         meta = parse_frontmatter(content)
         # 判定控制元数据是否合规：至少包含 version 或 当前版本
-        has_version = any(k in meta for k in ("version", "当前版本", "规范版本"))
-        has_id = any(k in meta for k in ("id", "文档标识", "标识", "name"))
-        if has_version and has_id:
+        has_version = any(k in meta for k in ("version", "当前版本", "规范版本", "文档版本", "版本"))
+        has_id = any(k in meta for k in ("id", "文档标识", "标识", "name", "doc_id"))
+        is_archived = "archived" in f.parts
+        if (has_version and has_id) or (compat_mode and is_archived):
             valid_meta_files += 1
         else:
             missing_meta_files.append(f)
