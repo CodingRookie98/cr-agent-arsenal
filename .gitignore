@@ -13,3 +13,8 @@ Thumbs.db
 *~
 .agents/
 skills-lock.json
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
