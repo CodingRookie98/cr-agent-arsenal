@@ -15,7 +15,7 @@
 >     - **Dual-Audience 原则**: 人类可读性 (Human-Readable) 与智能体机器可读性 (Agent-Consumable) 统一
 >     - **Machine-Readable Index**: `llms.txt` + `index.md` 双重全局导航
 >     - **Manus AI / Ralph Loop**: 上下文防腐与物理持久化唯一真相源
->     - **Paperclip 逐行凭证**: Line-pinned Citations 与显式物理文件链接 (`[xxx.md](./path/xxx.md)`)
+>     - **Paperclip 逐行凭证**: Line-pinned Citations 与显式物理文件链接 (`` `[xxx.md](./path/xxx.md)` ``)
 
 ---
 
@@ -93,7 +93,7 @@ Diátaxis 是被 Python 官方文档、Canonical/Ubuntu、Django、NumPy 等顶�
 ### 2.4 AI 智能体时代的文档革命：双受众与上下文防腐
 * **Dual-Audience (双受众公理)**：
   - **人类工程师**：需要可视化 Mermaid 架构图、清晰的层级、良好的排版体验；
-  - **AI 智能体 (Agent-Ready Context)**：需要精确的无歧义概念、显式物理文件链接 (`[xxx.md](./path/xxx.md)`)、严格的负向约束清单（Negative Invariants）、结构化表格；
+  - **AI 智能体 (Agent-Ready Context)**：需要精确的无歧义概念、显式物理文件链接 (`` `[xxx.md](./path/xxx.md)` ``)、严格的负向约束清单（Negative Invariants）、结构化表格；
 * **Machine-Readable Index (`llms.txt` + `index.md`)**：
   - 既有给人类浏览的全局 Markdown 索引（`index.md`），又有给 LLM 爬取和加载全局知识拓扑的机器地图（`llms.txt`）；
 * **总纲-子册架构 (Hub-and-Spoke Topology)**：
@@ -197,9 +197,9 @@ docs/
 
 ### 4.2 显式物理文件链接与断链零容忍 (Explicit Physical Links)
 * **链接格式铁律**：文档间的交叉引用必须采用**带 `.md` 后缀的相对路径物理文件链接**：
-  - ✅ 正确：`[视觉设计规范.md](../reference/ui/视觉设计规范.md)`
-  - ❌ 错误：`[视觉设计规范](/reference/ui/视觉设计规范)` (缺失后缀，破坏本地 IDE 与无头环境解析)
-  - ❌ 错误：`[视觉设计规范](file:///home/hui/...)` (硬编码绝对路径，破坏跨机器移植性)
+  - ✅ 正确：`` `[视觉设计规范.md](../reference/ui/视觉设计规范.md)` ``
+  - ❌ 错误：`` `[视觉设计规范](/reference/ui/视觉设计规范)` `` (缺失后缀，破坏本地 IDE 与无头环境解析)
+  - ❌ 错误：`` `[视觉设计规范](file:///home/hui/...)` `` (硬编码绝对路径，破坏跨机器移植性)
 * **全局索引同步**：任何新增、重命名、移动或归档文档的操作，**必须同步更新 `docs/index.md` 与 `docs/llms.txt`**，并运行链接检测工具确保全局零断链（Exit Code 0）。
 
 ---
@@ -258,7 +258,7 @@ graph TD
 3. **决策证据沉淀**：将方案备选权衡与否决原因提炼为 MADR 记录存入 `docs/explanation/decisions/`；
 4. **宏观架构下沉**：将全景流程与分层拓扑更新至 `docs/explanation/architecture/`；
 5. **历史提案封存防腐**：将原 RFC 状态更新为 `Implemented`，并在文档头部显式声明防腐警示：
-   > ⚠️ **历史溯源备忘**：本提案已于 YYYY-MM-DD 定案结晶。当前系统权威接口与模型以 [`reference/...`](...) 为准，本文件仅作为立项决策历史溯源，不再增量维护。
+   > ⚠️ **历史溯源备忘**：本提案已于 YYYY-MM-DD 定案结晶。当前系统权威接口与模型以 `` `[reference/...](...)` `` 为准，本文件仅作为立项决策历史溯源，不再增量维护。
 
 ---
 
@@ -350,7 +350,7 @@ planning/后续优化方向汇总.md   ───►  project/backlog.md (待办�
 
 - [x] **阶段 1：现代架构设计方案编写与用户审批 (<已由王辉正式审批定案>)**
   - 产出物：`/home/hui/workspace/projects/cr-public-skills/docs/design/doc-governance-design.md` (V1.2.0)
-- [ ] **阶段 2：`doc-governance` 核心技能规程与参考库落地**
+- [x] **阶段 2：`doc-governance` 核心技能规程与参考库落地 (<已交付并入库: cd4731b>)**
   - 目标目录：`/home/hui/workspace/projects/cr-public-skills/skills/doc-governance/`
   - 交付物：
     - `SKILL.md` (主规程：适用场景、三种运行模式 SOP、反模式清单与硬门禁)
@@ -360,8 +360,8 @@ planning/后续优化方向汇总.md   ───►  project/backlog.md (待办�
     - `references/change-impact-matrix.md` (代码-文档全向联动触发矩阵)
     - `references/adr-specification.md` (MADR 3.0 决策规范与生命周期)
     - `references/legacy-migration-guide.md` (既有老项目平滑迁移映射操作手册)
-- [ ] **阶段 3：自动化辅助脚本工具箱实现与自测**
+- [x] **阶段 3：自动化辅助脚本工具箱实现与自测 (<已交付并100%单测通过>)**
   - 目标目录：`/home/hui/workspace/projects/cr-public-skills/skills/doc-governance/scripts/`
-  - 交付物：`check-doc-links.py`、`trim-revision.py`、`audit-doc-health.py`、`generate-llms-txt.py`、`scaffold-doc.sh`，配套单测通过。
+  - 交付物：`check-doc-links.py`、`trim-revision.py`、`audit-doc-health.py`、`generate-llms-txt.py`、`scaffold-doc.sh`，配套单元测试 `test_doc_governance_scripts.py` 11/11 全绿通过。
 - [ ] **阶段 4：实战集成与全量体检验证**
   - 在项目中挂载技能，执行首轮全域健康体检并出具诊断报告。
