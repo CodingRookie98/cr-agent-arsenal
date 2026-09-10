@@ -348,7 +348,7 @@ planning/后续优化方向汇总.md   ───►  project/backlog.md (待办�
 ## 8. 实施计划与交付里程碑 (Implementation Roadmap)
 
 - [x] **阶段 1：现代架构设计方案编写与用户审批 (<已由王辉正式审批定案>)**
-  - 产出物：`/home/hui/workspace/projects/cr-public-skills/docs/design/doc-governance-design.md` (V1.2.0)
+  - 产出物：`/home/hui/workspace/projects/cr-public-skills/docs/explanation/architecture/doc-governance-design.md` (V1.2.0)
 - [x] **阶段 2：`doc-governance` 核心技能规程与参考库落地 (<已交付并入库: cd4731b>)**
   - 目标目录：`/home/hui/workspace/projects/cr-public-skills/skills/doc-governance/`
   - 交付物：

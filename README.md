@@ -11,6 +11,7 @@
 | **`goal-loop`** | [`skills/goal-loop`](./skills/goal-loop) | **工业级端到端长任务目标实现循环**。<br/>具备上下文工程（2-Action Rule）、自适应测试分级裁定（L0~L3）、外部技能深度编排（需求澄清/方案拷问/计划制定/TDD/双轮终审）与自动自愈机制。 | Claude Code / Antigravity / 全局 Shell |
 | **`dual-round-review`** | [`skills/dual-round-review`](./skills/dual-round-review) | **对抗性非讨好型双轮代码终审硬门禁**。<br/>第一轮红队第一性原理极限穿透 + 第二轮资深元架构师审判校准，彻底终结浅层创可贴补丁与大模型讨好型盲目交付。 | 具备子智能体派发能力的智能体 / CLI |
 | **`agy-delegation-workflow`** | [`skills/agy-delegation-workflow`](./skills/agy-delegation-workflow) | **Antigravity CLI (agy) 后台工人自适应委派规程**。<br/>无头后台长程任务派发、环境隔离、代理清洗、黄金 7 维任务规约、WSL 守护与前后台边界管控。 | Antigravity / Linux / WSL |
+| **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance) | **工业级文档工程与知识库治理体系**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转模型与 Docs-as-Code 自动化门禁，彻底杜绝文档与代码漂移。 | Claude Code / Antigravity / 全局 Shell |
 
 ---
 
@@ -29,6 +30,9 @@ npx skills add <repo-url> --skill dual-round-review
 
 # 安装后台委派工作流技能 (agy-delegation-workflow)
 npx skills add <repo-url> --skill agy-delegation-workflow
+
+# 安装文档治理技能 (doc-governance)
+npx skills add <repo-url> --skill doc-governance
 ```
 
 ### 方式 2：Git 克隆并软链接至 Agent 技能目录
@@ -43,13 +47,19 @@ mkdir -p .agents/skills
 ln -s ~/workspace/projects/cr-public-skills/skills/goal-loop .agents/skills/goal-loop
 ln -s ~/workspace/projects/cr-public-skills/skills/dual-round-review .agents/skills/dual-round-review
 ln -s ~/workspace/projects/cr-public-skills/skills/agy-delegation-workflow .agents/skills/agy-delegation-workflow
+ln -s ~/workspace/projects/cr-public-skills/skills/doc-governance .agents/skills/doc-governance
 ```
 
 ---
 
 ## 📚 架构与设计规范文档 (Documentation)
 
-* 📐 **`goal-loop` 总体架构设计书**: [docs/design/goal-loop-design.md](./docs/design/goal-loop-design.md) (V1.1.0)
+* 📖 **[知识库总索引 (Knowledge Base Index)](./docs/index.md)** & **[知识库治理规程 (Governance Specification)](./docs/GOVERNANCE.md)**
+* 📐 **`doc-governance` 总体架构设计书**: [docs/explanation/architecture/doc-governance-design.md](./docs/explanation/architecture/doc-governance-design.md) (V1.2.0)
+  - Diátaxis 两维四象限心智矩阵
+  - RFC 提案孵化与结晶流转模型 (RFC-to-Crystallization)
+  - Docs-as-Code 自动化断链与修订历史裁剪门禁
+* 📐 **`goal-loop` 总体架构设计书**: [docs/explanation/architecture/goal-loop-design.md](./docs/explanation/architecture/goal-loop-design.md) (V1.1.0)
   - Ralph Loop 物理本质与单次迭代纯净上下文
   - Manus AI 上下文工程规范与 Read-Modify-Verify
   - L0~L3 自适应分级测试决策矩阵
