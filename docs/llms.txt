@@ -1,0 +1,9 @@
+# CR Public Skills Machine-Readable Knowledge Base Map
+
+> 本文件遵循 llmstxt.org 规范，为 AI 智能体提供全景知识拓扑与物理文件导航地图。
+> 严禁凭空猜测路径，查阅具体模块前请通过下述相对链接精准索引对应文件。
+
+## Other Documentation (其他文档)
+
+- [doc-governance 文档工程与知识库治理技能架构设计书 (Architecture & Design Specification)](design/doc-governance-design.md): 在以大语言模型（LLM）为核心的 AI 智能体软件研发时代，传统的文档管理模式正在遭遇前所未有的范式危机。文档不再仅仅是给人类工程师偶尔查阅的静态参考书，更是**直接作为 AI 智能体生成代码、规划架构与执行 TDD 的核心上下文（Cont...
+- [goal-loop 目标实现循环技能架构设计书 (Architecture & Design Specification)](design/goal-loop-design.md): 在大语言模型（LLM）驱动的软件研发自动化进程中，单轮对话或无状态的多轮交互在应对跨模块、多阶段的长任务（Long-Horizon Tasks）时暴露出以下系统性缺陷：
