@@ -363,5 +363,5 @@ planning/后续优化方向汇总.md   ───►  project/backlog.md (待办�
 - [x] **阶段 3：自动化辅助脚本工具箱实现与自测 (<已交付并100%单测通过>)**
   - 目标目录：`/home/hui/workspace/projects/cr-public-skills/skills/doc-governance/scripts/`
   - 交付物：`check-doc-links.py`、`trim-revision.py`、`audit-doc-health.py`、`generate-llms-txt.py`、`scaffold-doc.sh`，配套单元测试 `test_doc_governance_scripts.py` 11/11 全绿通过。
-- [ ] **阶段 4：实战集成与全量体检验证**
-  - 在项目中挂载技能，执行首轮全域健康体检并出具诊断报告。
+- [x] **阶段 4：实战集成与全量体检验证 (<已完成: audit-doc-health 100/100 满分通过>)**
+  - 在项目中挂载技能，执行首轮全域健康体检并出具诊断报告，链接零断链，生成全局索引 `index.md` 与机器地图 `llms.txt`。
