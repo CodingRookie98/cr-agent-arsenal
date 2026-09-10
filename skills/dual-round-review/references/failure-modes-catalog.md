@@ -50,3 +50,22 @@
 ### 模式 9: 破坏性重构建议 (Cascading Destructive Suggestions)
 * **特征**：审查者为了修复一个轻微的局部问题，建议推翻已稳定运行的公共模块或进行大规模全库重写。
 * **对策**：第二轮元审查评估次生破坏代价（ROI 与风险比）。优先建议精准收敛（Surgical Fix），严禁为了修复小瑕疵引发系统级震荡。
+
+### 模式 10: 历史代码考古挑刺与范围蔓延 (Historical Archeology & Scope Creep)
+* **特征**：审查者扫描未改动上下文或既有遗留代码，抓取既有历史技术债（如历史遗留的 mock 数组、缺少 i18n、既有覆盖率容限等），并将其越界定级为当前 PR 的 P0/P1 阻断项。
+* **危害**：审查焦点严重偏离当前变更，阻塞正常交付节奏，迫使架构师耗费大量轮次回溯 git blame 辩护。
+* **对策**：**Diff-Scope Boundary Lock（Diff 范围边界锁）**。所有候选缺陷必须标注是否由本次变更行直接引入；既有历史遗留问题一律降级为 Suggestion/待办，严禁作为 Blocker 阻断本次 PR。
+
+### 模式 11: 运行时环境与 SSR 沙盒盲区 (Runtime Environment & SSR Sandbox Blindspot)
+* **特征**：单测在 Node.js / jsdom 环境下全绿，却掩盖了真实客户端或 Next.js SSR 运行时的致命问题：
+  1. 条件调用 Hook 违反 React Rules of Hooks（如在早退分支后调用 `useMemo`）；
+  2. 客户端组件未隔离 `window` / `localStorage`，导致服务端与客户端水合失配（Hydration Mismatch）或 Safari 无痕模式下抛出未捕获的 `SecurityError`；
+  3. 在 React 组件 `useState` 初始化器或 render 纯函数阶段对全局单例对象进行原地变异（In-place Mutation）。
+* **危害**：单测全绿但生产环境白屏、构建失败或跨组件数据不可逆污染。
+* **对策**：审查中引入 **Runtime Reality & SSR Safety Check**，核查客户端生命周期与沙盒防御。
+
+### 模式 12: 再循环审查漫游与次生缺陷漏检 (Re-Loop Wander & Secondary Regressions)
+* **特征**：在 Blocker 修复后的再循环（Re-Loop）中，审查者或者漫无目的地重新全盘发散攻击无关文件，或者仅核对单测通过即草率放行，遗漏了“修复代码本身是否引入新的次生破坏”。
+* **危害**：审查陷入无休止发散循环，或者“修复了 Bug A 却引入了更严重的 Bug B”被直接漏放。
+* **对策**：**Delta Re-Loop Protocol（增量定向再循环规程）**。在再循环中强制聚焦于上一轮 Blocker 根治证据核验与直接次生影响审计，收敛审查范围。
+
