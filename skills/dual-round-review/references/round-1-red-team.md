@@ -25,7 +25,7 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
 
 ## Context & Inputs
 - **Feature / Plan Spec**: [INSERT_SPEC_PATH_OR_SUMMARY]
-- **Review Mode**: [INITIAL_REVIEW (初始全量双轮) | DELTA_RE_LOOP (修复后再循环定向复核)]
+- **Review Mode**: [FULL_REVIEW (初始全量双轮) | LIGHT_REVIEW (单轮轻量) | DELTA_RE_LOOP (修复后再循环定向复核)]
 - **Previous Blockers (仅在 DELTA_RE_LOOP 模式下传入)**:
 [INSERT_PREVIOUS_BLOCKERS_IF_ANY]
 - **Git Range**: [BASE_SHA]..[HEAD_SHA]
@@ -33,7 +33,7 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
 ```bash
 [INSERT_GIT_DIFF_STAT]
 ```
-- **Git Diff Content** (注: 若全量 Diff 超过 800 行，建议优先内联核心模块 Diff，并授权审查者使用 `view_file` 或 `git diff <file>` 按需调阅细节):
+- **Git Diff Content** (注: 若全量 Diff 超过 800 行，建议优先内联核心模块 Diff，并授权审查者使用宿主代码库读取能力或 `git diff <file>` 按需调阅细节):
 ```diff
 [INSERT_GIT_DIFF_CONTENT]
 ```

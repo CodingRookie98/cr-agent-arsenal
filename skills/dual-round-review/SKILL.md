@@ -1,6 +1,6 @@
 ---
 name: dual-round-review
-description: Use when completing core architectural changes, major feature implementations, complex bug fixes, or before committing code and merging PRs. Triggers when high-confidence verification is needed to catch shallow patching, subtle concurrency/race conditions, resource leaks, or architectural regressions before delivery.
+description: Use when completing core architectural changes, major feature implementations, complex bug fixes, or before committing code and merging PRs. Triggers when high-confidence verification is needed to catch shallow patching, subtle concurrency/race conditions, resource leaks, or architectural regressions before delivery. Supports a full two-round adversarial review plus a single-round light mode for fast-track changes.
 ---
 
 # 双轮对抗审查技能 (Dual-Round Adversarial Review)
@@ -26,11 +26,27 @@ graph TD
 
 ---
 
+## 审查模式 (Review Modes)
+
+| 模式 | 轮次 | 适用场景 | 产出 |
+|---|---|---|---|
+| **Full（默认）** | R1 红队 → R2 元审判 | Heavy Track / 核心架构 / 关键业务链路 / Pre-Merge | 终审裁决明细表 |
+| **Light（单轮）** | 仅 R1 红队 + 轻量裁决 | Fast-Track / 局部定向改动 / 未触及公共契约与核心链路 | R1 报告 + 轻量裁决表 |
+| **Delta（再循环）** | Full 或 Light 的再循环 | 阻断项修复后，以修复提交为新基线 | 更新后的审查记录与终审 |
+
+**Light Mode 规程**：
+1. 仅派发 R1（使用 [round-1-red-team.md](references/round-1-red-team.md) 模板，`Review Mode: LIGHT_REVIEW`）；
+2. 主智能体对照 [verdict-rubric.md](references/verdict-rubric.md) 直接裁决，输出轻量裁决表（列：稳定 ID / 文件:行 / 变更归属 / 裁决 / 理由）；
+3. 阻断项修复后按 Delta 再循环；**升级为 Full 的触发条件**：改动触及公共契约、核心业务链路、鉴权/并发/数据一致性，或即将合并 PR/发布；
+4. Light 的豁免依据与升级决定写入审查记录（步骤 1.5）；若由 `goal-loop` 驱动，同步写入其计划检查点。
+
+---
+
 ## 适用场景 (When to Use)
 
 ### 必须触发 (Mandatory)
 * **核心架构改动**：涉及全局数据流、状态机、多模块契约或跨域架构调整。
-* **关键业务逻辑实现**：鉴权鉴权、支付交易、并发调度、复杂算法等核心主干链路。
+* **关键业务逻辑实现**：鉴权与授权、支付交易、并发调度、复杂算法等核心主干链路。
 * **高风险缺陷修复**：排查并修复隐蔽并发死锁、内存/句柄泄漏、以及多次尝试未解的问题。
 * **交付与合并准入 (Pre-Merge Gate)**：PR 最终合并或版本发布前。
 
@@ -48,20 +64,41 @@ graph TD
 ### 1. 锁定审查基线与规格上下文 (Pin Baseline & Context)
 确定审查模式（未提交改动、暂存区或 Commit 区间），并运行辅助脚本提取结构化上下文：
 ```bash
+# 技能目录随安装方式而定（源码仓库通常为 skills/dual-round-review，安装后通常为 .agents/skills/dual-round-review）
+SKILL_DIR="<dual-round-review 技能实际所在目录>"
+
 # 智能模式（优先未提交改动，无改动则检查最近一次 Commit）
-bash skills/dual-round-review/scripts/prepare-review-context.sh
+bash "$SKILL_DIR/scripts/prepare-review-context.sh"
 
 # 或指定提交区间
-bash skills/dual-round-review/scripts/prepare-review-context.sh [BASE_SHA] [HEAD_SHA]
+bash "$SKILL_DIR/scripts/prepare-review-context.sh" [BASE_SHA] [HEAD_SHA]
 ```
 * 确保准备好：① Git Diff 内容与变更统计；② 需求设计或任务描述（Spec）；③ 仓库编码标准。
 
+### 1.5 审查记录锚点 (Review Record Anchor)
+审查循环的短周期状态必须落盘，避免上下文截断后丢失 `Previous Blockers` 与迭代计数。每个基线创建一个记录文件 `.review-context/review-<baseline-sha>.md`（该目录已在 `.gitignore` 中忽略），schema 固定如下：
+
+```markdown
+# 审查记录 · <baseline-sha>
+- **模式**: [full | light | delta]
+- **基线**: <BASE_SHA>..<HEAD_SHA>
+- **轮次**: [1 | 2 | ...]
+- **迭代计数**: [n/3]
+- **Previous Blockers**: [上一轮坐实的 Blocker 稳定 ID 列表，或 无]
+- **Round 1 结论**: [报告摘要或报告文件路径]
+- **终审裁决**: [🔴 阻断交付 | ✅ 准予交付 | 未定]
+- **阻断项统计**: [🔴 X / 🟡 Y / ⚪ Z]
+```
+
+**恢复规则**：进入审查前若已存在同基线记录，先读取该文件恢复轮次、`Previous Blockers` 与迭代计数，再决定继续、再循环或升级。记录文件由 `prepare-review-context.sh` 生成，或按上述 schema 手工创建。
+
 ### 2. 委派第一轮审查：红队与第一性原理 (Dispatch Round 1)
 **上下文隔离红线**：分发独立的子智能体，**严禁传入主会话的聊天历史**。使用 [round-1-red-team.md](references/round-1-red-team.md) 提示词模板：
-* **调度方式**：
-  * *Antigravity 环境*：调用 `invoke_subagent` 工具（`TypeName: "self"` 或 `"research"`，`Role: "Red-Team Auditor"`）。
-  * *Claude Code 环境*：使用 `Agent` 工具分发。
-  * *命令行环境*：执行 `agy -p '<提示词>'` 或独立会话。
+* **派发能力（宿主无关）**：使用当前宿主实际的子智能体派发能力，按能力语义选择，不绑定具体工具名或平台（以本会话声明的工具为准）。
+* **派发模式判定**：
+  * **同步派发**（调用即在本次返回结果）：在当前回合直接取回 R1 报告后继续步骤 3；
+  * **异步派发**（先返回句柄、稍后以消息唤醒）：启动后结束当前回合等待唤醒，收到真实报告后再继续；
+  * 判定依据是工具的返回语义，而不是平台名称。
 * **角色预设**：极度苛刻、不讲客气（Non-Compliant）、预设代码必定有隐蔽缺陷。
 * **审查重点**：
   1. **⛔ Diff 范围边界锁 (Diff-Scope Boundary Lock)**：审查与攻击范围严格锁定在当前 Git Diff 变更行及其直接紧邻调用内。扫描中发现的历史既有代码缺陷必须显式标记为 `历史既有` 并强制限制为 P2/P3（优化建议），**严禁定级为阻断项（Blocker）**！
@@ -72,17 +109,13 @@ bash skills/dual-round-review/scripts/prepare-review-context.sh [BASE_SHA] [HEAD
      - React 纯函数渲染（严禁在 `useState` 初始化器或 render 阶段对全局单例对象进行原地变异）。
   4. **红队对抗压力测试**：构造极限并发竞态、异常注入、资源泄漏、契约破坏路径。
   5. **定向再循环核验 (Delta Re-Loop)**：若属于 Blocker 修复后的再循环，重点审计上一轮 Blocker 是否被根治，以及修复补丁本身是否引入次生缺陷。
-* 🛑 **强制等待红线 (Stop & Await Protocol)**：
-  - 调用 `invoke_subagent` 启动 R1 后，主智能体**必须立即停止调用工具并结束当前回复回合**，将执行权交回系统，等待子智能体异步消息唤醒。
-  - **严禁在同一回合内抢先输出任何审查预判或假想报告**；
-  - 严禁在未收到 R1 真实产出前提前派发 R2。
+* **真实产出纪律**：在 R1 真实报告返回前，不输出任何审查预判或假想报告，也不提前派发 R2；异步派发时结束回合并等待唤醒。
+* **落盘审查记录**：拿到 R1 报告后，立即写入 `.review-context/review-<baseline-sha>.md` 的 Round 1 字段（见步骤 1.5），再进入步骤 3。
 * 获取子智能体返回的《第一轮对抗审查报告》。
 
 ### 3. 委派第二轮审查：元架构师审判 (Dispatch Round 2)
 在 **完整收到第一轮审查子智能体的真实输出报告后**，方可分发第二个独立的子智能体，使用 [round-2-meta-architect.md](references/round-2-meta-architect.md) 模板：
-* **调度方式**：
-  * *Antigravity 环境*：调用 `invoke_subagent`（`Role: "Meta System Architect"`）。
-  * *Claude Code 环境*：使用 `Agent` 工具分发。
+* **派发能力与模式**：沿用步骤 2 的宿主无关派发规则与同步/异步判定（同步则本回合取回，异步则结束回合等唤醒）。
 * **传入内容**：Spec + Git Diff + **第一轮审查报告全文（必须使用 R1 真实返回的内容，严禁主智能体臆造）**。
 * **角色预设**：务实严谨的资深系统架构师——**专门审判第一轮审查者（Review the Reviewer）**。
 * **审查重点**：
@@ -90,9 +123,8 @@ bash skills/dual-round-review/scripts/prepare-review-context.sh [BASE_SHA] [HEAD
   2. **去伪存真**：排查 R1 是否因缺乏上下文而产生幻觉误报。
   3. **防过度工程 (YAGNI)**：否决 R1 提出的过度抽象、复杂分层或脱离实际的教条化建议。
   4. **次生破坏评估**：评估采纳修复建议是否会诱发更大范围的破坏性重构。
-* 🛑 **强制等待红线 (Stop & Await Protocol)**：
-  - 调用 `invoke_subagent` 启动 R2 后，主智能体**必须立即停止调用工具并结束当前回复回合**，等待 R2 子智能体完成并返回消息。
-  - **严禁在 R2 返回前擅自向用户输出“终审裁决书”**；终审裁决必须基于 R2 架构师的真实裁决结果生成。
+* **真实产出纪律**：在 R2 真实裁决返回前，不输出“终审裁决书”；终审裁决必须基于 R2 的真实结果生成（异步派发时结束回合等待唤醒）。
+* **落盘审查记录**：拿到 R2 裁决后写入 `.review-context/review-<baseline-sha>.md` 的终审字段（见步骤 1.5），再进入步骤 4。
 * 获取终审输出的《最终裁决明细表》。
 
 ### 4. 裁决分流与定性处理 (Verdict Triage)
