@@ -42,29 +42,34 @@ MODE="range"
 BASE_REF=""
 HEAD_REF=""
 
-# 2. 参数解析
+# 2. 参数解析（选项顺序无关）
 NO_RECORD=0
-if [[ "${1:-}" == "--no-record" ]]; then
-  NO_RECORD=1
-  shift
-fi
-if [[ "${1:-}" == "--working" || "${1:-}" == "-w" ]]; then
-  MODE="working"
-elif [[ "${1:-}" == "--staged" || "${1:-}" == "-s" ]]; then
-  MODE="staged"
-elif [[ -n "${1:-}" && -z "${2:-}" ]]; then
-  BASE_REF="${1}"
+POSITIONAL=()
+for arg in "$@"; do
+  case "${arg}" in
+    -h|--help) usage; exit 0 ;;
+    -w|--working) MODE="working" ;;
+    -s|--staged) MODE="staged" ;;
+    --no-record) NO_RECORD=1 ;;
+    -*) echo "❌ 错误: 未知选项 '${arg}'" >&2; usage >&2; exit 1 ;;
+    *) POSITIONAL+=("${arg}") ;;
+  esac
+done
+
+if [[ "${#POSITIONAL[@]}" -ge 2 ]]; then
+  BASE_REF="${POSITIONAL[0]}"
+  HEAD_REF="${POSITIONAL[1]}"
+  MODE="range"
+elif [[ "${#POSITIONAL[@]}" -eq 1 ]]; then
+  BASE_REF="${POSITIONAL[0]}"
   HEAD_REF="HEAD"
-elif [[ -n "${1:-}" && -n "${2:-}" ]]; then
-  BASE_REF="${1}"
-  HEAD_REF="${2}"
-else
-  # 未传参数时智能自适应：若工作区有改动，优先切换为未提交审查
+  MODE="range"
+elif [[ "${MODE}" != "working" && "${MODE}" != "staged" ]]; then
+  # 未指定模式与区间时智能自适应：有改动优先未提交审查，否则检查最近一次提交
   DIRTY_COUNT=$(git status --porcelain | wc -l)
   if [[ "${DIRTY_COUNT}" -gt 0 ]]; then
     MODE="working"
   else
-    # 检查历史 commit 总数
     COMMIT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo "0")
     if [[ "${COMMIT_COUNT}" -le 1 ]]; then
       MODE="root"
@@ -216,9 +221,6 @@ EOF
 fi
 
 echo "----------------------------------------------------------------------"
-echo "⛔ 边界锁提醒 (Diff-Scope Boundary Lock):"
-echo "   1. 审查与攻击范围严格锁定在上述变动文件及其实际修改行（绿/红行）；"
-echo "   2. 既有历史技术债若未被本次变更直接破坏，严禁定级为 Blocker，必须降级为 Suggestion；"
-echo "   3. 审查重点：第一性原理、并发竞态、契约与依赖破坏、测试保真度；运行时/SSR 维度仅在 diff 触及客户端代码时激活。"
+echo "⛔ 边界锁与审查重点见 verdict-rubric.md §3 与 round-1-red-team.md；运行时/SSR 维度仅在 diff 触及客户端代码时激活。"
 echo "======================================================================"
 

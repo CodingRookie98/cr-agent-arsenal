@@ -81,7 +81,7 @@ V2.0 的三项结构目标：
 
 ## 7. 环境专有维度 (Conditional Dimensions)
 
-React Rules of Hooks、SSR 水合、Storage 沙盒等维度**按 diff 文件特征条件激活**（`*.tsx`/`*.jsx`/`*.vue`/`*.svelte`/`next.config.*`，或含 `"use client"`/`"use server"`/`react`/`next/*` 导入）。非前端改动跳过该维度，不在报告中填 N/A。
+React Rules of Hooks、SSR 水合、Storage 沙盒等维度**按 diff 文件特征条件激活**（`*.tsx`/`*.jsx`/`*.vue`/`*.svelte`/`next.config.*`，或含 `"use client"`/`"use server"`/`react`/`next/*` 导入）。非前端改动跳过该维度，并在输出中标注 `本节未激活（非客户端/SSR 改动）`（不填 N/A 占位）。
 
 ---
 

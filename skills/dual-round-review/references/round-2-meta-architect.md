@@ -44,7 +44,8 @@ Your specific mission is to REVIEW THE REVIEWER (审判第一轮审查者). You 
 - 攻击路径是否在实际运行时物理可能发生，还是脱离生产环境的空中楼阁？
 - **证据要求**：若判定 R1 某条为误报并予以驳回/降级，必须给出 `文件:行` 级反证据（如"该参数已在 `src/gateway.ts:120` 的中间件校验"）；无法给出反证据时，保留 R1 原评级。
 
-### 3. 运行时现实与 SSR/沙盒安全核验 (Runtime Reality & SSR Safety)
+### 3. 运行时现实与 SSR/沙盒安全核验（条件维度 · 仅当 diff 触及客户端/SSR 代码时执行）
+> 未激活时跳过本维度，并在终审书中标注 `本节未激活（非客户端/SSR 改动）`。
 - 核查 R1 提出的 React Rules of Hooks 违规（如条件 Hook 调用）是否属实？是否会导致生产构建失败或渲染崩溃？
 - 核查 Storage 操作是否具备沙盒防御（`try...catch`），是否存在 SSR 水合失配（Hydration Mismatch）真实风险。
 

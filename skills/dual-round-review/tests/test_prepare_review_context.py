@@ -77,3 +77,40 @@ def test_invalid_base_ref_fails(tmp_path):
     repo = _repo(tmp_path)
     r = _run(repo, 'no-such-ref', 'HEAD')
     assert r.returncode != 0
+
+
+def test_help_does_not_scaffold(tmp_path):
+    repo = _repo(tmp_path)
+    _run(repo, '--help')
+    assert not (repo / '.review-context').exists()
+
+
+def test_staged_mode_scaffolds_record(tmp_path):
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    _git(repo, 'add', 'a.txt')
+    r = _run(repo, '--staged')
+    assert r.returncode == 0, r.stderr
+    assert (repo / '.review-context' / 'review-staged.md').is_file()
+
+
+def test_options_order_independent(tmp_path):
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--working', '--no-record')
+    assert r.returncode == 0, r.stderr
+    assert not (repo / '.review-context').exists()
+
+
+def test_root_mode_scaffolds_record(tmp_path):
+    repo = _repo(tmp_path)
+    r = _run(repo)
+    assert r.returncode == 0, r.stderr
+    root_sha = _git(repo, 'rev-parse', '--short', 'HEAD').stdout.strip()
+    assert (repo / '.review-context' / f'review-{root_sha}.md').is_file()
+
+
+def test_unknown_option_fails(tmp_path):
+    repo = _repo(tmp_path)
+    r = _run(repo, '--bogus')
+    assert r.returncode != 0
