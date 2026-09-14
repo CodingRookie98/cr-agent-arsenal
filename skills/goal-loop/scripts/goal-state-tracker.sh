@@ -1,369 +1,345 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # goal-state-tracker.sh
-# goal-loop 目标实现循环技能轻量级状态追踪与断点恢复辅助 CLI
-# 维护工作区 .goal-loop/state.json 状态机，保证跨会话、跨中断可恢复性
+# goal-loop 派生视图与计划文件编辑器
+#
+# 真相源：计划文件的复选框与 Active Checkpoint 锚点。
+# 本脚本不维护并行状态文件；.goal-loop/plan.path 仅是指向计划文件的指针。
+# 可用 GOAL_LOOP_ROOT 环境变量覆盖根目录（默认取 git 根，其次当前目录）。
 # ==============================================================================
+exec python3 - "$@" <<'PY'
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
 
-set -euo pipefail
 
-# 自动锚定工作区 Git 根目录，消除子目录调用陷阱
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-STATE_DIR="${REPO_ROOT}/.goal-loop"
-STATE_FILE="${STATE_DIR}/state.json"
-LOCK_FILE="${STATE_DIR}/.tracker.lock"
+def _git_root():
+    try:
+        out = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+                             capture_output=True, text=True)
+        if out.returncode == 0 and out.stdout.strip():
+            return out.stdout.strip()
+    except Exception:
+        pass
+    return None
 
-usage() {
-  local exit_code="${1:-1}"
-  cat <<EOF
-用法: $(basename "$0") <子命令> [参数...]
+
+REPO_ROOT = Path(os.environ.get('GOAL_LOOP_ROOT') or _git_root() or os.getcwd())
+STATE_DIR = REPO_ROOT / '.goal-loop'
+POINTER = STATE_DIR / 'plan.path'
+SCRATCH = STATE_DIR / 'scratchpad.md'
+
+PHASES = ['P-1', 'P0', 'P0.5', 'P1', 'P2', 'P3', 'P3.5', 'P4', 'P5', 'DONE']
+FIELDS = ['当前执行通道', '当前活跃阶段', '当前活跃子任务', '当前子任务重试计数',
+          '外层循环迭代', '最后一次验证状态', '最新有效提交', '阻断原因']
+
+TASK_RX = re.compile(
+    r'^(\s*-\s*)\[([ xX])\](\s*\*\*(?:Task\s+)?)([A-Za-z][0-9A-Za-z]*(?:[.\-][0-9A-Za-z]+)+)(.*)$'
+)
+
+
+def field_rx(key):
+    return re.compile(r'^(\s*(?:>\s*)?-\s*\*\*' + re.escape(key) + r'\*\*:\s*)(.*)$')
+
+
+def die(msg, code=1):
+    sys.stderr.write('❌ ' + msg + '\n')
+    sys.exit(code)
+
+
+def usage(code=0):
+    print('''用法: goal-state-tracker.sh <子命令> [参数...]
+
+真相源: 计划文件的复选框与 Active Checkpoint 锚点（本脚本不维护并行状态文件）。
 
 子命令:
-  init <目标名称> [计划文件路径]   初始化 goal-loop 状态机
-  status                          显示当前状态（格式化看板）
-  json                            以原生 JSON 格式输出当前状态
-  set-phase <阶段代码>            切换当前阶段 (P-1, P0, P0.5, P1, P2, P3, P3.5, P4, P5, DONE)
-  complete-task <任务标识>        将指定子任务标记为已完成
-  block <受阻原因>                标记状态机处于熔断阻断状态并记录原因
-  unblock                         解除当前阻断状态，恢复执行
-  reset                           重置/清除当前工作区下的状态机
-  -h, --help                      显示本帮助信息
+  init <目标名称> [计划文件路径]   绑定计划文件作为唯一可读真相源（缺省自动选取 plans 目录最新计划）
+  status                          显示派生状态看板
+  json                            以 JSON 输出派生状态
+  set-phase <阶段代码>            更新检查点当前阶段 (P-1, P0, P0.5, P1, P2, P3, P3.5, P4, P5, DONE)
+  set-current-task <任务标识>     更新检查点当前子任务
+  complete-task <任务标识>        将计划中匹配的 - [ ] **Task <id>** 勾选为完成
+  retry <n|n/max>                 更新当前子任务 3-Tries 重试计数
+  block <原因>                    标记为熔断受阻并记录原因
+  unblock                         解除阻断状态
+  reset                           清除指针与临时文件（不删除计划文件）
+  -h, --help                      显示本帮助信息''')
+    sys.exit(code)
 
-阶段代码说明:
-  P-1   阶段 -1:  意图探明与方案对齐 (brainstorming)
-  P0    阶段 0:   方案压力测试与评估 (grilling)
-  P0.5  阶段 0.5: 技术调研与开源选型 (research / find-docs)
-  P1    阶段 1:   计划制定与测试定级 (writing-plans)
-  P2    阶段 2:   原子子任务拆解
-  P3    阶段 3:   TDD 循环实现 (agy-delegation-workflow)
-  P3.5  阶段 3.5: 集成验证与回归
-  P4    阶段 4:   E2E 验收与双轮终审 (dual-round-review)
-  P5    阶段 5:   文档全向归档
-  DONE  目标圆满达成
 
-示例:
-  $(basename "$0") init "订单结算系统重构" "docs/superpowers/plans/order.md"
-  $(basename "$0") status
-  $(basename "$0") set-phase P3
-  $(basename "$0") complete-task "task-2.1"
-  $(basename "$0") block "支付网关超时，连续 3 次单测失败"
-EOF
-  exit "$exit_code"
-}
+def now():
+    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-# 并发临界区排他锁保障
-run_with_lock() {
-  mkdir -p "$STATE_DIR"
-  (
-    flock -x 200
-    "$@"
-  ) 200>"$LOCK_FILE"
-}
 
-# 安全读取单个 JSON 字段（拒绝 eval()）
-read_json_field() {
-  local field="$1"
-  if command -v jq >/dev/null 2>&1; then
-    jq -r "$field" "$STATE_FILE"
-  else
-    python3 -c '
-import sys, json
-field_name = sys.argv[1].lstrip(".").strip("[]").strip("\x27").strip("\"")
-with open(sys.argv[2]) as f:
-    d = json.load(f)
-val = d.get(field_name, "")
-print("" if val is None else val)
-' "$field" "$STATE_FILE"
-  fi
-}
+def resolve_plan(strict=True):
+    if not POINTER.is_file():
+        if strict:
+            die('未初始化：请先执行 init <目标名称> [计划文件路径]')
+        return None
+    raw = POINTER.read_text(encoding='utf-8').strip()
+    p = Path(raw)
+    if not p.is_absolute():
+        p = REPO_ROOT / p
+    if strict and not p.is_file():
+        die('计划文件不存在: %s' % p)
+    return p
 
-cmd_init_impl() {
-  local goal_name="$1"
-  local plan_file="$2"
-  local now
-  now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-  local tmp_file
-  tmp_file=$(mktemp -p "$STATE_DIR" state.json.XXXXXX)
+def read_lines(p):
+    return p.read_text(encoding='utf-8').splitlines()
 
-  if command -v jq >/dev/null 2>&1; then
-    jq -n \
-      --arg goal "$goal_name" \
-      --arg plan "$plan_file" \
-      --arg now "$now" \
-      '{
-        goal: $goal,
-        plan_file: $plan,
-        phase: "P-1",
-        status: "in_progress",
-        blocked_reason: null,
-        completed_tasks: [],
-        current_task: null,
-        created_at: $now,
-        updated_at: $now
-      }' > "$tmp_file"
-  else
-    python3 -c '
-import sys, json
-data = {
-  "goal": sys.argv[1],
-  "plan_file": sys.argv[2],
-  "phase": "P-1",
-  "status": "in_progress",
-  "blocked_reason": None,
-  "completed_tasks": [],
-  "current_task": None,
-  "created_at": sys.argv[3],
-  "updated_at": sys.argv[3]
-}
-with open(sys.argv[4], "w") as f:
-  json.dump(data, f, indent=2)
-' "$goal_name" "$plan_file" "$now" "$tmp_file"
-  fi
 
-  mv -f "$tmp_file" "$STATE_FILE"
+def write_lines(p, lines):
+    tmp = p.with_name(p.name + '.tmp')
+    tmp.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    os.replace(tmp, p)
 
-  echo "✅ goal-loop 状态机初始化完成！"
-  echo "📂 状态文件: ${STATE_FILE}"
-  echo "🎯 目标名称: ${goal_name}"
-  echo "📋 关联计划: ${plan_file}"
-  echo "🚀 当前阶段: P-1 (意图探明与方案对齐)"
-}
 
-cmd_init() {
-  local goal_name="${1:-}"
-  local plan_file="${2:-IMPLEMENTATION_PLAN.md}"
-  if [[ -z "$goal_name" ]]; then
-    echo "❌ 错误: 必须指定目标名称，如: $(basename "$0") init <目标名称>" >&2
-    exit 1
-  fi
-  run_with_lock cmd_init_impl "$goal_name" "$plan_file"
-}
+def get_field(lines, key):
+    rx = field_rx(key)
+    for ln in lines:
+        m = rx.match(ln)
+        if m:
+            return m.group(2).strip()
+    return ''
 
-cmd_status() {
-  if [[ ! -f "$STATE_FILE" ]]; then
-    echo "⚠️ 未检测到当前工作区的 goal-loop 状态机文件 (${STATE_FILE})。"
-    echo "💡 您可以运行 '$(basename "$0") init <目标名称>' 进行初始化。"
-    return 0
-  fi
 
-  local goal phase status updated_at blocked_reason completed_count
-  if command -v jq >/dev/null 2>&1; then
-    goal=$(jq -r '.goal' "$STATE_FILE")
-    phase=$(jq -r '.phase' "$STATE_FILE")
-    status=$(jq -r '.status' "$STATE_FILE")
-    updated_at=$(jq -r '.updated_at' "$STATE_FILE")
-    blocked_reason=$(jq -r '.blocked_reason // empty' "$STATE_FILE")
-    completed_count=$(jq '.completed_tasks | length' "$STATE_FILE")
-  else
-    goal=$(read_json_field ".goal")
-    phase=$(read_json_field ".phase")
-    status=$(read_json_field ".status")
-    updated_at=$(read_json_field ".updated_at")
-    blocked_reason=$(read_json_field ".blocked_reason")
-    completed_count=$(python3 -c '
-import sys, json
-with open(sys.argv[1]) as f:
-    d = json.load(f)
-print(len(d.get("completed_tasks", [])))
-' "$STATE_FILE")
-  fi
+def set_field(lines, key, value):
+    rx = field_rx(key)
+    for i, ln in enumerate(lines):
+        m = rx.match(ln)
+        if m:
+            lines[i] = m.group(1) + value
+            return True
+    return False
 
-  echo "======================================================================"
-  echo "📊 goal-loop 目标执行状态看板"
-  echo "======================================================================"
-  echo "🎯 当前目标: ${goal}"
-  echo "📍 执行阶段: ${phase}"
-  echo "🚦 运行状态: ${status}"
-  echo "✅ 已完任务: ${completed_count} 个"
-  echo "🕒 最后更新: ${updated_at}"
-  if [[ -n "$blocked_reason" && "$blocked_reason" != "null" ]]; then
-    echo "⚠️ 阻断原因: ${blocked_reason}"
-  fi
-  echo "======================================================================"
-}
 
-cmd_json() {
-  if [[ ! -f "$STATE_FILE" ]]; then
-    echo "{}"
-    return 0
-  fi
-  cat "$STATE_FILE"
-}
+def norm(t):
+    return re.sub(r'[^0-9a-z]', '', t.lower())
 
-# 安全事务更新 JSON
-apply_json_mutation() {
-  local action="$1"
-  local val="$2"
-  local now
-  now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-  local tmp_file
-  tmp_file=$(mktemp -p "$STATE_DIR" state.json.XXXXXX)
+def task_progress(lines):
+    total = done = 0
+    for ln in lines:
+        m = TASK_RX.match(ln)
+        if m:
+            total += 1
+            if m.group(2).lower() == 'x':
+                done += 1
+    return done, total
 
-  if command -v jq >/dev/null 2>&1; then
-    case "$action" in
-      set-phase)
-        jq --arg p "$val" --arg t "$now" '.phase = $p | .updated_at = $t' "$STATE_FILE" > "$tmp_file"
-        ;;
-      complete-task)
-        jq --arg tid "$val" --arg t "$now" '
-          if (.completed_tasks | index($tid)) then . else .completed_tasks += [$tid] end
-          | .current_task = null
-          | .updated_at = $t
-        ' "$STATE_FILE" > "$tmp_file"
-        ;;
-      block)
-        jq --arg r "$val" --arg t "$now" '.status = "blocked" | .blocked_reason = $r | .updated_at = $t' "$STATE_FILE" > "$tmp_file"
-        ;;
-      unblock)
-        jq --arg t "$now" '.status = "in_progress" | .blocked_reason = null | .updated_at = $t' "$STATE_FILE" > "$tmp_file"
-        ;;
-    esac
-  else
-    python3 -c '
-import sys, json
-state_file, action, val, now, tmp_file = sys.argv[1:6]
-with open(state_file) as f:
-    d = json.load(f)
 
-if action == "set-phase":
-    d["phase"] = val
-elif action == "complete-task":
-    if val not in d.get("completed_tasks", []):
-        d.setdefault("completed_tasks", []).append(val)
-    d["current_task"] = None
-elif action == "block":
-    d["status"] = "blocked"
-    d["blocked_reason"] = val
-elif action == "unblock":
-    d["status"] = "in_progress"
-    d["blocked_reason"] = None
+def mutate(fn):
+    p = resolve_plan()
+    lines = read_lines(p)
+    result = fn(lines)
+    write_lines(p, lines)
+    return result
 
-d["updated_at"] = now
-with open(tmp_file, "w") as f:
-    json.dump(d, f, indent=2)
-' "$STATE_FILE" "$action" "$val" "$now" "$tmp_file"
-  fi
 
-  mv -f "$tmp_file" "$STATE_FILE"
-}
+def cmd_init(rest):
+    if not rest:
+        die('必须指定目标名称，如: init "订单结算重构" "docs/project/plans/2026-01-01-order.md"')
+    plan_arg = rest[1] if len(rest) > 1 else None
+    if plan_arg:
+        plan = Path(plan_arg)
+    else:
+        cands = glob.glob(str(REPO_ROOT / 'docs' / 'project' / 'plans' / '*.md'))
+        if not cands:
+            die('未找到计划文件：请显式传入路径，或先在 docs/project/plans/ 下创建计划。')
+        plan = Path(sorted(cands, key=os.path.getmtime, reverse=True)[0]).relative_to(REPO_ROOT)
+    p = Path(plan)
+    if not p.is_absolute():
+        p = REPO_ROOT / p
+    if not p.is_file():
+        die('计划文件不存在: %s\n请先用 templates/goal-plan-template.md 创建计划文件。' % p)
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    POINTER.write_text(str(plan) + '\n', encoding='utf-8')
+    print('✅ goal-loop 已绑定计划文件（唯一可读真相源）')
+    print('📂 指针: %s' % POINTER)
+    print('📋 计划: %s' % plan)
+    print('🎯 目标: %s' % rest[0])
+    print('🚀 当前阶段: %s' % (get_field(read_lines(p), '当前活跃阶段') or '—'))
 
-cmd_set_phase_impl() {
-  local new_phase="$1"
-  apply_json_mutation "set-phase" "$new_phase"
-  echo "✅ 阶段已成功切换至: ${new_phase}"
-}
 
-cmd_set_phase() {
-  local new_phase="${1:-}"
-  if [[ -z "$new_phase" ]]; then
-    echo "❌ 错误: 必须指定新的阶段代码，如: set-phase P3" >&2
-    exit 1
-  fi
-  if [[ ! -f "$STATE_FILE" ]]; then
-    echo "❌ 错误: 状态机未初始化，请先执行 init。" >&2
-    exit 1
-  fi
-  run_with_lock cmd_set_phase_impl "$new_phase"
-}
+def cmd_status():
+    p = resolve_plan(strict=False)
+    if p is None:
+        print('⚠️ 未绑定计划文件。请运行 init <目标名称> [计划文件路径] 进行绑定。')
+        return
+    lines = read_lines(p)
+    title = next((l.lstrip('#').strip() for l in lines if l.startswith('# ')), p.name)
+    done, total = task_progress(lines)
+    print('=' * 70)
+    print('📊 goal-loop 状态看板（派生视图 · 真相源为计划文件）')
+    print('=' * 70)
+    print('📋 计划文件: %s' % (p.relative_to(REPO_ROOT) if str(p).startswith(str(REPO_ROOT)) else p))
+    print('🎯 当前目标: %s' % title)
+    print('🚦 运行状态: %s' % (get_field(lines, '状态') or '—'))
+    for k in FIELDS:
+        print('   %s: %s' % (k, get_field(lines, k) or '—'))
+    print('✅ 任务进度: %d/%d' % (done, total))
+    print('=' * 70)
 
-cmd_complete_task_impl() {
-  local task_id="$1"
-  apply_json_mutation "complete-task" "$task_id"
-  echo "✅ 子任务 [${task_id}] 已标记为完成！"
-}
 
-cmd_complete_task() {
-  local task_id="${1:-}"
-  if [[ -z "$task_id" ]]; then
-    echo "❌ 错误: 必须指定完成的任务标识，如: complete-task task-2.1" >&2
-    exit 1
-  fi
-  if [[ ! -f "$STATE_FILE" ]]; then
-    echo "❌ 错误: 状态机未初始化，请先执行 init。" >&2
-    exit 1
-  fi
-  run_with_lock cmd_complete_task_impl "$task_id"
-}
+def cmd_json():
+    p = resolve_plan(strict=False)
+    if p is None:
+        print('{}')
+        return
+    lines = read_lines(p)
+    done, total = task_progress(lines)
+    print(json.dumps({
+        'plan_file': str(p),
+        'goal': next((l.lstrip('#').strip() for l in lines if l.startswith('# ')), p.name),
+        'status': get_field(lines, '状态'),
+        'phase': get_field(lines, '当前活跃阶段'),
+        'current_task': get_field(lines, '当前活跃子任务'),
+        'retry': get_field(lines, '当前子任务重试计数'),
+        'iterations': get_field(lines, '外层循环迭代'),
+        'last_verification': get_field(lines, '最后一次验证状态'),
+        'last_commit': get_field(lines, '最新有效提交'),
+        'block_reason': get_field(lines, '阻断原因'),
+        'task_done': done,
+        'task_total': total,
+        'updated_at': now(),
+    }, ensure_ascii=False, indent=2))
 
-cmd_block_impl() {
-  local reason="$1"
-  apply_json_mutation "block" "$reason"
-  echo "⚠️ 状态机已标记为阻断状态！"
-  echo "📝 阻断原因: ${reason}"
-}
 
-cmd_block() {
-  local reason="${1:-未知阻断}"
-  if [[ ! -f "$STATE_FILE" ]]; then
-    echo "❌ 错误: 状态机未初始化，请先执行 init。" >&2
-    exit 1
-  fi
-  run_with_lock cmd_block_impl "$reason"
-}
+def cmd_set_phase(rest):
+    if not rest:
+        die('必须指定阶段代码，如: set-phase P3')
+    phase = rest[0]
+    if phase not in PHASES:
+        die('非法阶段代码: %s（可选: %s）' % (phase, ', '.join(PHASES)))
+    mutate(lambda lines: set_field(lines, '当前活跃阶段', phase)
+           or die('计划检查点缺少"当前活跃阶段"字段'))
+    print('✅ 阶段已更新为: %s' % phase)
 
-cmd_unblock_impl() {
-  apply_json_mutation "unblock" ""
-  echo "✅ 阻断已解除，恢复为 in_progress 状态。"
-}
 
-cmd_unblock() {
-  if [[ ! -f "$STATE_FILE" ]]; then
-    echo "❌ 错误: 状态机未初始化，请先执行 init。" >&2
-    exit 1
-  fi
-  run_with_lock cmd_unblock_impl
-}
+def cmd_set_current_task(rest):
+    if not rest:
+        die('必须指定任务标识，如: set-current-task P3.1')
+    mutate(lambda lines: set_field(lines, '当前活跃子任务', rest[0])
+           or die('计划检查点缺少"当前活跃子任务"字段'))
+    print('✅ 当前子任务已更新为: %s' % rest[0])
 
-cmd_reset() {
-  if [[ -d "$STATE_DIR" && "$STATE_DIR" == *".goal-loop"* ]]; then
-    rm -f "${STATE_DIR}/state.json"* "${STATE_DIR}/.tracker.lock"
-    rmdir "$STATE_DIR" 2>/dev/null || true
-    echo "🧹 已安全重置并清除 ${STATE_DIR} 状态机。"
-  fi
-}
 
-# 命令分发
-if [[ $# -eq 0 ]]; then
-  cmd_status
-  exit 0
-fi
+def cmd_complete_task(rest):
+    if not rest:
+        die('必须指定任务标识，如: complete-task P3.1')
+    target = norm(rest[0])
+    if not target:
+        die('任务标识需包含 ASCII 字母或数字，如 P3.1 或 A-1。')
+    found = {'hit': False, 'already': False}
 
-case "$1" in
-  init)
-    shift
-    cmd_init "$@"
-    ;;
-  status)
-    cmd_status
-    ;;
-  json)
-    cmd_json
-    ;;
-  set-phase)
-    shift
-    cmd_set_phase "$@"
-    ;;
-  complete-task)
-    shift
-    cmd_complete_task "$@"
-    ;;
-  block)
-    shift
-    cmd_block "$@"
-    ;;
-  unblock)
-    cmd_unblock
-    ;;
-  reset)
-    cmd_reset
-    ;;
-  -h|--help)
-    usage 0
-    ;;
-  *)
-    echo "❌ 错误: 未知子命令 '$1'" >&2
-    usage 1
-    ;;
-esac
+    def apply(lines):
+        for i, ln in enumerate(lines):
+            m = TASK_RX.match(ln)
+            if m and norm(m.group(4)) == target:
+                found['hit'] = True
+                if m.group(2).lower() == 'x':
+                    found['already'] = True
+                    return
+                lines[i] = m.group(1) + '[x]' + m.group(3) + m.group(4) + m.group(5)
+                set_field(lines, '当前活跃子任务', '无')
+                return
+
+    mutate(apply)
+    if not found['hit']:
+        die('未在计划中找到任务: %s' % rest[0])
+    if found['already']:
+        print('ℹ️ 任务 [%s] 早已完成。' % rest[0])
+    else:
+        print('✅ 子任务 [%s] 已勾选完成。' % rest[0])
+
+
+def cmd_retry(rest):
+    if not rest:
+        die('必须指定重试计数，如: retry 1/3')
+    mutate(lambda lines: set_field(lines, '当前子任务重试计数', rest[0])
+           or die('计划检查点缺少"当前子任务重试计数"字段'))
+    print('🔁 重试计数已更新为: %s' % rest[0])
+
+
+def cmd_block(rest):
+    reason = rest[0] if rest else '未知阻断'
+
+    def apply(lines):
+        if get_field(lines, '状态') == '已完成':
+            die('目标已标记为已完成，拒绝再标记阻断；如需重开请先更新计划状态。')
+        if not set_field(lines, '状态', '熔断受阻'):
+            die('计划元数据缺少"状态"字段')
+        set_field(lines, '阻断原因', reason)  # 字段缺失时不阻断，仍保留 Scratchpad 记录
+
+    mutate(apply)
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    with SCRATCH.open('a', encoding='utf-8') as f:
+        f.write('\n## [%s] 熔断受阻\n%s\n' % (now(), reason))
+    print('⚠️ 状态机已标记为熔断受阻')
+    print('📝 阻断原因: %s' % reason)
+    print('🗒️ 已写入 Scratchpad: %s' % SCRATCH)
+
+
+def cmd_unblock():
+    def apply(lines):
+        if get_field(lines, '状态') != '熔断受阻':
+            die('当前未处于阻断状态，无法解除。')
+        if not set_field(lines, '状态', '进行中'):
+            die('计划元数据缺少"状态"字段')
+        set_field(lines, '阻断原因', '无')
+
+    mutate(apply)
+    print('✅ 阻断已解除，状态恢复为进行中。')
+
+
+def cmd_reset():
+    removed = []
+    for f in [POINTER, SCRATCH, STATE_DIR / 'state.json', STATE_DIR / '.tracker.lock']:
+        if f.exists():
+            f.unlink()
+            removed.append(f.name)
+    for f in glob.glob(str(STATE_DIR / 'state.json.*')):
+        os.unlink(f)
+        removed.append(os.path.basename(f))
+    try:
+        STATE_DIR.rmdir()
+    except OSError:
+        pass
+    print('🧹 已清除指针与临时文件: %s' % (', '.join(removed) if removed else '无'))
+    print('ℹ️ 计划文件未被删除（它才是真相源）。')
+
+
+def main():
+    argv = sys.argv[1:]
+    if not argv:
+        cmd_status()
+        return
+    cmd, rest = argv[0], argv[1:]
+    table = {
+        'init': cmd_init,
+        'status': lambda _r: cmd_status(),
+        'json': lambda _r: cmd_json(),
+        'set-phase': cmd_set_phase,
+        'set-current-task': cmd_set_current_task,
+        'complete-task': cmd_complete_task,
+        'retry': cmd_retry,
+        'block': cmd_block,
+        'unblock': lambda _r: cmd_unblock(),
+        'reset': lambda _r: cmd_reset(),
+        '-h': lambda _r: usage(0),
+        '--help': lambda _r: usage(0),
+    }
+    if cmd not in table:
+        sys.stderr.write("❌ 未知子命令 '%s'\n" % cmd)
+        usage(1)
+    table[cmd](rest)
+
+
+main()
+PY

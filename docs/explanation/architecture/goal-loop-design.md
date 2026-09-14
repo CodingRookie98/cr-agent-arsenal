@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-GOAL-LOOP-2026
-> - **当前版本**: V1.1.0 (深度集成技能生态与自适应测试体系)
+> - **当前版本**: V2.0.0 (宿主无关适配器 + 计划文件唯一真相源)
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-08
@@ -10,7 +10,7 @@
 >   - `/home/hui/workspace/projects/faceFusionCpp/docs/dev/zh/process/workflow.md` (工业级 TDD 与阶段流转规程)
 >   - Manus AI Context Engineering (上下文工程与 2-Action Rule)
 >   - Ralph Loop (Ralph Wiggum 磁盘持久化自主闭环理念)
->   - Claude Code `/goal` (自治目标收敛范式)
+>   - 宿主原生 goal 状态原语 (如 `create_goal` / `get_goal` / `update_goal`)
 >   - 内部技能生态：`brainstorming`、`grilling`、`research` (`find-docs` / `gh` CLI)、`writing-plans`、`agy-delegation-workflow`、`dual-round-review`
 
 ---
@@ -48,7 +48,7 @@
 
 ### 2.2 Ralph Loop 的极简持久化机制 (Persistence over Perfection)
 * 循环的每次迭代（Iteration）均以磁盘状态为起点，以客观测试（Exit Code 0）为终点。
-* **物理本质与上下文隔离**：Ralph Loop 赖以克服上下文腐化的核心物理基石是“单次迭代纯净上下文 (Fresh Context)”。在 Agent 技能编排中，必须通过**派发独立子智能体（如 `invoke_subagent` 或后台 `agy`）切断长任务上下文膨胀**，主调度 Agent 仅负责持久化状态管理与阶段流转，严禁在单个长会话中塞入所有子任务的原始细节。
+* **物理本质与上下文隔离**：Ralph Loop 赖以克服上下文腐化的核心物理基石是“单次迭代纯净上下文 (Fresh Context)”。在 Agent 技能编排中，必须通过**派发独立子智能体（如宿主原生子智能体派发能力或后台 `agy`）切断长任务上下文膨胀**，主调度 Agent 仅负责持久化状态管理与阶段流转，严禁在单个长会话中塞入所有子任务的原始细节。
 * 支持跨会话、跨进程的平滑恢复：即使会话被清空或重启，新会话只需读取磁盘上的计划与状态文件，即可在秒级重构当前工作上下文并继续推进。
 
 ### 2.3 自适应分级测试哲学 (Surgical & Tiered Testing)
@@ -56,7 +56,7 @@
 * **智能体自主裁定 (Autonomous Scoping)**：智能体在规划阶段必须基于 AST 改动范围、依赖拓扑与调用深度，显式论证并裁定测试范围，生成不可逾越的验证基线。
 
 ### 2.4 全生命周期技能闭环 (End-to-End Skills Ecosystem)
-* 拒绝单打独斗，在需求端（`brainstorming`、`grilling`）、调研端（`research`、`find-docs`、`gh` CLI）、规划端（`writing-plans`）、执行端（`agy-delegation-workflow`）和交付端（`dual-round-review`）深度串接成熟专用技能，打造工业级研发装配线。
+* 拒绝单打独斗，在需求端（`brainstorming`、`grilling`）、调研端（`research`、`find-docs`、`gh` CLI）、规划端（`writing-plans`）、执行端（`host-adapters.md` 三档后端，`agy-delegation-workflow` 仅为其一）和交付端（`dual-round-review`）深度串接成熟专用技能，打造工业级研发装配线。
 
 ---
 
@@ -78,14 +78,14 @@ graph TD
 
     P05_Check -->|"是 - 需选型调研"| Spike["阶段 0.5: 技术调研与开源选型<br/>派发 research 子智能体 + gh/web 检索<br/>产出选型备忘录 (自研需硬性理由)"]
     P05_Check -->|"否 - 纯内部既有逻辑微调"| P1
-    Spike --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 IMPLEMENTATION_PLAN.md<br/>输出 测试级别判定矩阵"]
+    Spike --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 docs/project/plans/YYYY-MM-DD-<feature>.md<br/>输出 测试级别判定矩阵"]
     
     P1 --> P2["阶段 2: 原子子任务拆解<br/>落地通用 7 维任务提示词或独立 task_*.md"]
     P2 --> Branch["阶段 3 准备: 隔离分支与环境检测"]
     
     Branch --> LoopHeader["阶段 3: TDD 原子执行循环 (Task Iteration)"]
     
-    subgraph TDDCycle["阶段 3: TDD 原子自愈闭环 (结合 agy 宿主自适应委派)"]
+    subgraph TDDCycle["阶段 3: TDD 原子自愈闭环 (宿主执行后端适配)"]
         T1["红灯: 编写失败测试 (L1 单测)"] --> T2["绿灯: 编写最简实现使测试通过"]
         T2 --> T3["重构: 优化代码结构消除异味"]
         T3 --> T4["验证: 本地执行单测 (必须 Exit Code 0)"]
@@ -113,7 +113,7 @@ graph TD
     E2ERun --> DualRevGate["阶段 4: 双轮对抗终审硬门禁<br/>激活 dual-round-review (红队第一性原理 + 架构师元审判)"]
     
     DualRevGate --> RevPass{"双轮审查阻断项清零?"}
-    RevPass -->|"存在阻断项"| FixBlocker["根据终审意见定向修复"] --> LoopHeader
+    RevPass -->|"存在阻断项 (Blockers > 0)"| FixBlocker["根据终审意见定向修复并原子提交"] --> DeltaLoop["Delta Re-Loop: 以修复提交为基线再审查 (上限 5 次)"] --> DualRevGate
     RevPass -->|"Zero Blockers 通过"| Merged["合并功能分支并清理临时分支"]
     
     Merged --> P5["阶段 5: 文档全向归档与联动升级<br/>同步架构/API/配置/ADR"]
@@ -131,7 +131,7 @@ graph TD
 | 级别 | 测试类型 | 运行阶段 | 关注焦点与验证目标 | 执行成本 | 典型命令/工具 |
 |:---:|---|:---:|---|:---:|---|
 | **L0** | **静态门禁**<br/>(Static / Lint) | 阶段 3 每次代码变动 | 语法正确性、静态类型安全、代码异味、无未声明依赖与死代码 | 秒级 | `tsc --noEmit`, `eslint`, `cargo check`, `golangci-lint`, `mypy` |
-| **L1** | **单元测试**<br/>(Unit Test) | 阶段 3 TDD 循环内 | 纯函数、算法逻辑、边界分支、状态流转、无 I/O 外部依赖代码 | 极快 (<5s) | `vitest run <path>`, `pytest <path>`, `go test -run`, `cargo test --lib` |
+| **L1** | **单元测试**<br/>(Unit Test) | 阶段 3 TDD 循环内 | 纯函数、算法逻辑、边界分支、状态流转、无 I/O 外部依赖代码 | 极快 (<10s) | `vitest run <path>`, `pytest <path>`, `go test -run`, `cargo test --lib` |
 | **L2** | **集成测试**<br/>(Integration) | 阶段 3.5 集成验证 | 模块间接口契约、数据库/存储交互、中间件装配、状态管理联动 | 中等 (10s~1m) | `vitest run integration/`, `cargo test --test integration`, `python build.py --action test --test-label integration` |
 | **L3** | **端到端测试**<br/>(E2E / System) | 阶段 4 终审验收前 | 用户主干交互链路、CLI 命令全流程、生产环境构建包运行保真度 | 较高 (1m~5m) | `playwright test`, `run_e2e.py`, 全流程 CLI 验收脚本 |
 | **L-Doc** | **文档/元数据** | 阶段 5 归档阶段 | 链接有效性、拼写检查、Markdown 格式、图表渲染合法性 | 极快 | `markdownlint`, link-checker |
@@ -157,7 +157,7 @@ graph TD
 
 ### 4.3 智能体自主裁定测试范围的 4 步推理协议 (Autonomous Test Scoping SOP)
 
-若面对未完全覆盖的定制场景，智能体在**阶段 1（计划制定）**必须执行以下 4 步推理并在 `IMPLEMENTATION_PLAN.md` 中显式固化：
+若面对未完全覆盖的定制场景，智能体在**阶段 1（计划制定）**必须执行以下 4 步推理并在计划文件中显式固化：
 
 1. **第 1 步：改动影响面分析 (Blast Radius Analysis)**：
    - 提取待新增/修改文件的 AST 依赖树；
@@ -186,8 +186,8 @@ graph TD
          ┌───────────────────┬───────────────────┼───────────────────┬───────────────────┬───────────────────┬───────────────────┐
          ▼                   ▼                   ▼                   ▼                   ▼                   ▼                   ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│  brainstorming  │ │    grilling     │ │ research / docs │ │  writing-plans  │ │ agy-delegation  │ │   regress-check │ │dual-round-review│
-│ (阶段 -1 意图对齐)│ │ (阶段 0 压力拷问) │ │(阶段 0.5 选型调研)│ │(阶段 1 架构规划) │ │(阶段 3 委派执行) │ │(阶段 3.5 集成验证)│ │(阶段 4 终审门禁) │
+│  brainstorming  │ │    grilling     │ │ research / docs │ │  writing-plans  │ │  host-adapters  │ │     built-in    │ │dual-round-review│
+│ (阶段 -1 意图对齐)│ │ (阶段 0 压力拷问) │ │(阶段 0.5 选型调研)│ │(阶段 1 架构规划) │ │(阶段 3 后端适配) │ │(阶段 3.5 集成验证)│ │(阶段 4 终审门禁) │
 └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
 
@@ -210,29 +210,31 @@ graph TD
 * **契约与工具链 SOP**：
   - **3 级调研工具链**：① 本地代码库检索可复用封装 ➔ ② GitHub 开源生态检索 (`gh search repos/code/issues`) ➔ ③ 官方权威文档验证 (`find-docs` / `context7-cli` / `web_search`)；
   - **上下文物理隔离**：调研任务由独立只读子智能体（`research`）在纯净上下文中执行，禁止原始网页与大批量文本污染主调度上下文；
-  - **成果落盘**：产出《技术调研与开源选型备忘录》（`docs/dev/research/research_<topic>.md`，参考 `templates/research-spike-template.md`）；
+  - **成果落盘**：产出《技术调研与开源选型备忘录》（`docs/project/research/research_<topic>.md`，参考 `templates/research-spike-template.md`）；
 * **硬门禁 (<HARD-GATE>)**：
   - **优先复用成熟方案**；若决定放弃高星活跃开源库而选择自研，必须在备忘录中进行充分的技术/性能/许可合规辩护。未获得明确裁决前严禁进入阶段 1！
 
 ### 5.4 阶段 1：实施方案制定与测试定级 ➔ `writing-plans`
 * **适用条件**：方案对齐且压力测试通过后，正式起草落盘计划。
 * **契约与产出**：
-  - 激活 `writing-plans` 技能，在磁盘创建 `docs/superpowers/plans/YYYY-MM-DD-<goal-name>.md`（或用户指定位置）；
+  - 激活 `writing-plans` 技能，在磁盘创建 `docs/project/plans/YYYY-MM-DD-<goal-name>.md`（或用户指定位置）；
   - 严格将大目标分解为 2~5 分钟的微型子任务（Bite-Sized Tasks）；
   - 强制在计划开头嵌入《测试特征与级别裁定书》（明确 L0/L1/L2/L3 范围），并链接阶段 0.5 调研结论。
 
-### 5.5 阶段 3：宿主自适应委派与 TDD 执行 ➔ `agy-delegation-workflow`
+### 5.5 阶段 3：宿主自适应委派与 TDD 执行
 * **适用条件**：执行具体的子任务编码与单元测试。
 * **契约与协同**：
-  - **Antigravity 原生环境**：前台直接调用原生 `invoke_subagent` 派发子任务，执行隔离的 TDD 循环，**严禁在终端套娃调用 `agy` 命令行**；
-  - **非 agy 终端环境（Claude Code / 通用命令行）**：使用 `dispatch-agy.sh` 清除代理并注入 `Gemini 3.8 Flash (High)` 无头后台进程；
-  - **7 维黄金标准通用模板**：结合通用 `task-prompt-template.md` 约束子任务，禁止后台越权编写计划文档。
+  - **开工前先询问用户选择后端**（宿主原生子智能体 / `agy` 无头进程 / 当前会话内联），详见 `skills/goal-loop/references/host-adapters.md`；
+  - **具备原生子智能体能力的宿主**：直接调用宿主原生子智能体派发子任务，执行隔离的 TDD 循环，**严禁在终端套娃调用 `agy` 命令行**；
+  - **`agy` CLI 环境**：使用 `dispatch-agy.sh` 清除代理并派发无头后台进程，执行模型以本机 `agy` 配置为准；
+  - **7 维黄金标准通用模板**：结合通用 `atomic-task-template.md` 约束子任务，禁止后台越权编写计划文档。
 
 ### 5.6 阶段 4：双轮对抗终审硬门禁 ➔ `dual-round-review`
 * **适用条件**：所有子任务、L2 集成测试及 L3 E2E 测试全部通过后，合并分支前的最终门禁。
 * **契约与红线**：
   - **严禁自卖自夸**：主调度智能体绝对不允许自行宣布“审查通过”；
-  - **强制双轮派发**：
+  - **通道裁量**：Heavy Track 强制全量双轮；Fast-Track 执行定向单轮红队审查（Diff 边界锁），仅当改动触及公共契约、核心业务链路、鉴权/并发/数据一致性，或即将合并 PR/发布时，才升级为全量双轮；豁免依据写入计划的《测试策略裁定书》；
+  - **Heavy Track 双轮派发**：
     1. 第一轮：派发独立的红队审计子智能体（R1: First-Principles Red Team），以严苛视角挑刺、挖掘边界崩溃与架构异味；
     2. 第二轮：派发资深的元架构师子智能体（R2: Meta-Architect），审判第一轮意见、剔除过度工程、对真正的缺陷下达裁决；
   - **准入底线**：必须取得 **阻断项清零 (Zero Blockers)** 终审裁决方可合并代码并进入阶段 5。
@@ -294,24 +296,30 @@ graph TD
 
 ```
 skills/goal-loop/
-├── SKILL.md                               # 技能主入口 (状态机流转、SOP、生态技能调用总纲)
+├── SKILL.md                               # 技能路由层 (触发条件、12 条铁律、阶段指针)
 ├── references/
 │   ├── testing-decision-matrix.md         # 改动特征与测试级别判定规则 (L0~L3 详细对照表)
 │   ├── context-engineering.md             # 2-Action Rule、读写决策矩阵与持久化工程标准
 │   ├── stage-progression-protocol.md      # P-1~P5 各阶段详细执行细则、前置门禁与交付物
 │   ├── failure-recovery-protocol.md       # TDD/集成失败矩阵与 3-Tries 熔断操作指引
-│   └── documentation-sync-matrix.md       # 全向文档联动复核清单 (架构/API/配置/ADR)
+│   ├── documentation-sync-matrix.md       # 全向文档联动复核清单 (架构/API/配置/ADR)
+│   └── host-adapters.md                   # P3 宿主执行后端适配 (能力矩阵/用户选择/降级)
 ├── templates/
 │   ├── goal-plan-template.md              # 通用实施计划模板 (内嵌测试策略裁定书插槽)
 │   ├── research-spike-template.md         # 技术调研与开源选型备忘录模板
-│   ├── atomic-task-template.md            # 独立子任务文档模板 (通用 7 维标准)
+│   ├── atomic-task-template.md            # 独立子任务文档模板 (7 维标准 + 输出契约)
 │   └── evaluation-report-template.md      # 阶段零代码现状评估报告模板
-└── scripts/
-    └── goal-state-tracker.sh              # 跨中断/断点恢复轻量级状态追踪辅助 CLI
+├── scripts/
+│   └── goal-state-tracker.sh              # 计划文件派生视图 (读写复选框与检查点)
+└── tests/
+    └── test_goal_state_tracker.py         # 状态脚本单测 (pytest)
 ```
 
 同时在 `.agents/skills/goal-loop` 创建相对符号链接：
-`ln -sfn ../../skills/goal-loop .agents/skills/goal-loop`
+```bash
+mkdir -p .agents/skills
+ln -sfn ../../skills/goal-loop .agents/skills/goal-loop
+```
 
 ---
 
@@ -319,7 +327,26 @@ skills/goal-loop/
 
 | 阶段 | 任务目标 | 关键交付物 | 成功标准与验证方式 | 状态 |
 |:---:|---|---|---|:---:|
-| **阶段 1** | 核心参考规范与测试矩阵下沉 | `references/testing-decision-matrix.md`<br/>`references/context-engineering.md`<br/>`references/stage-progression-protocol.md`<br/>`references/failure-recovery-protocol.md`<br/>`references/documentation-sync-matrix.md` | 完整吸纳 `faceFusionCpp` 工作流，语言中立，交叉链接有效 | 未开始 |
-| **阶段 2** | 模板套件与辅助状态脚本开发 | `templates/goal-plan-template.md`<br/>`templates/atomic-task-template.md`<br/>`templates/evaluation-report-template.md`<br/>`scripts/goal-state-tracker.sh` | 模板内嵌测试裁定规范插槽；状态脚本通过参数测试 (Exit Code 0) | 未开始 |
-| **阶段 3** | 主技能编排与生态系统集成 | `skills/goal-loop/SKILL.md`<br/>`.agents/skills/goal-loop` (软链) | 串联 `brainstorming`、`grilling`、`writing-plans`、`agy`、`dual-round-review`；符合 `agentskills.io` 规范 | 未开始 |
-| **阶段 4** | 完整闭环自检、审查与 Git 交付 | 全量自审 + Git Commit | 经过 Diff 严审，零调试残留，提交 Conventional Commits | 未开始 |
+| **阶段 1** | 核心参考规范与测试矩阵下沉 | `references/testing-decision-matrix.md`<br/>`references/context-engineering.md`<br/>`references/stage-progression-protocol.md`<br/>`references/failure-recovery-protocol.md`<br/>`references/documentation-sync-matrix.md` | 完整吸纳 `faceFusionCpp` 工作流，语言中立，交叉链接有效 | 已完成 |
+| **阶段 2** | 模板套件与辅助状态脚本开发 | `templates/goal-plan-template.md`<br/>`templates/atomic-task-template.md`<br/>`templates/evaluation-report-template.md`<br/>`scripts/goal-state-tracker.sh` | 模板内嵌测试裁定规范插槽；状态脚本通过参数测试 (Exit Code 0) | 已完成 |
+| **阶段 3** | 主技能编排与生态系统集成 | `skills/goal-loop/SKILL.md`<br/>`.agents/skills/goal-loop` (软链) | 串联 `brainstorming`、`grilling`、`writing-plans`、`dual-round-review`，P3 经 `host-adapters.md` 适配三档后端；符合 `agentskills.io` 规范 | 已完成 |
+| **阶段 4** | 完整闭环自检、审查与 Git 交付 | 全量自审 + Git Commit | 经过 Diff 严审，零调试残留，提交 Conventional Commits | 已完成 |
+
+---
+
+## 10. V2.0 变更摘要 (V2.0 Refactor Summary)
+
+V2.0 是一次破坏性结构重构，依据四项锁定决策（D1–D4）完成：
+
+| 关注点 | V1.x | V2.0 |
+|---|---|---|
+| 可读真相源 | 计划复选框 + 检查点锚点 + `.goal-loop/state.json` 三方并行 | **计划文件唯一**；tracker 改为派生读写，`state.json` 仅清理遗留 |
+| P3 执行后端 | 绑定 Antigravity / `agy`，写死执行模型 | **宿主无关三档适配**，P3 开工前询问用户（见 `references/host-adapters.md`） |
+| 入口文件 | SKILL.md 209 行，含完整状态机图与 SOP（与 references 重复） | **路由层 95 行**：触发条件 + 12 条铁律 + 指针 |
+| 阶段编号 | 状态机 P-1~P5 与计划模板第二套编号并存 | 统一为 P-1~P5 |
+| 审查门禁 | 所有通道一律强制双轮 | Heavy 全量双轮；Fast-Track 定向单轮，触及契约再升级 |
+| 循环上限 | 3-Tries 仅内层，Delta Re-Loop 无上限 | 内层 3 次、Delta Re-Loop 5 次，计数落盘为检查点字段 |
+| 委派契约 | 仅 7 维输入规约 | 追加第 8 节输出契约与 `git status --porcelain` 证据要求 |
+| 验证 | 无测试 | `tests/` 24 项 tracker 单测 + 断链门禁 |
+
+重构实施计划与验收记录：`docs/project/plans/2026-09-14-goal-loop-v2-refactor.md`。

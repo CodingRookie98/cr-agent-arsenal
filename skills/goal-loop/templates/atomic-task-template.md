@@ -16,7 +16,7 @@
 ---
 
 ## 2. 数据契约与接口模型 (严格对齐，严禁猜测)
-```[目标语言]
+```text
 // 引用自项目核心公共契约: [相对路径]
 [贴出确切的数据结构、接口字段与类型声明，保证单一真相源]
 ```
@@ -59,7 +59,31 @@
 ---
 
 ## 7. 严禁事项与安全红线 (Strict Guardrails)
-1. **严禁越权编写任何计划、设计或总结文档**（如 `IMPLEMENTATION_PLAN.md`、`task.md`）！后台的唯一职责是编写目标生产代码与测试代码；
+1. **严禁越权编写任何计划、设计或总结文档**（如实施方案计划、`task.md`）！后台的唯一职责是编写目标生产代码与测试代码；计划复选框、检查点锚点与宿主 goal 状态由编排者按第 8 节输出契约更新；
 2. **严禁修改清单之外的任何文件**，严禁改动公共核心契约或未分配模块；
 3. **严禁为了跑通测试而降低断言门槛**、删除原有测试用例或注释报错代码；
 4. **严禁执行任何破坏性 Git 命令**（如 `git reset`、`git checkout .` 等）。
+
+---
+
+## 8. 输出契约 (Required Handoff to Orchestrator)
+
+执行完成后必须按以下结构回传；缺任一必填项视为未完成，编排者有权退回重做：
+
+```text
+status: done | blocked                # blocked 时禁止宣称交付
+changed_files:                        # 实际改动文件清单
+  - path: <相对路径>
+    kind: added | modified | deleted
+git_status_porcelain: |               # 原样粘贴 `git status --porcelain`，证明只改动清单内文件
+tests_run:                            # 真实执行过的验证命令与退出码，禁止伪造
+  - command: <命令>
+    exit_code: 0
+acceptance:                           # 与第 6 节验收命令逐条对应
+  - criterion: <验收项>
+    result: pass | fail
+risks: none                           # 遗留风险、未覆盖边界或与规约的偏差
+blockers: none                        # status=blocked 时必填，按 failure-recovery-protocol 熔断报告格式
+```
+
+**编排者职责**：收到本契约后先按 `git_status_porcelain` 与 `tests_run` 复核证据，再更新计划复选框、检查点锚点与宿主 goal 状态。
