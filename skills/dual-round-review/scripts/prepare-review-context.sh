@@ -7,6 +7,31 @@
 
 set -euo pipefail
 
+usage() {
+  cat <<'EOF'
+用法: prepare-review-context.sh [选项] [BASE_SHA [HEAD_SHA]]
+
+提取双轮审查所需上下文，并生成审查记录锚点 .review-context/review-<baseline>.md
+
+选项:
+  -w, --working      审查工作区未提交改动（默认有改动时自动选择）
+  -s, --staged       审查暂存区改动
+      --no-record    只打印上下文，不写审查记录锚点
+  -h, --help         显示本帮助
+
+参数:
+  BASE_SHA [HEAD_SHA]  审查指定提交区间（默认 BASE...HEAD）
+
+记录锚点: .review-context/review-<baseline>.md（已 gitignore），供 Delta Re-Loop 读取 Previous Blockers 与迭代计数。
+EOF
+}
+
+# 0. 帮助优先（无需位于 Git 仓库）
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
 # 1. 前置环境检查：必须在 Git 仓库工作区内运行
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "❌ 错误: 当前目录并非 Git 工作区。" >&2
@@ -18,6 +43,11 @@ BASE_REF=""
 HEAD_REF=""
 
 # 2. 参数解析
+NO_RECORD=0
+if [[ "${1:-}" == "--no-record" ]]; then
+  NO_RECORD=1
+  shift
+fi
 if [[ "${1:-}" == "--working" || "${1:-}" == "-w" ]]; then
   MODE="working"
 elif [[ "${1:-}" == "--staged" || "${1:-}" == "-s" ]]; then
@@ -52,6 +82,8 @@ echo "======================================================================"
 
 case "${MODE}" in
   "working")
+    RECORD_BASE="working"
+    RECORD_HEAD="$(git rev-parse --short HEAD 2>/dev/null || echo none)"
     echo "📌 审查模式: 工作区变更审查 (Working Tree & Staged vs HEAD)"
     echo "----------------------------------------------------------------------"
     echo "📊 工作区未提交状态 (Git Status):"
@@ -82,6 +114,8 @@ case "${MODE}" in
     ;;
 
   "staged")
+    RECORD_BASE="staged"
+    RECORD_HEAD="$(git rev-parse --short HEAD 2>/dev/null || echo none)"
     echo "📌 审查模式: 暂存区审查 (Staged / Cached vs HEAD)"
     echo "----------------------------------------------------------------------"
     echo "📊 暂存区变更统计 (Diff Stat --cached):"
@@ -101,6 +135,8 @@ case "${MODE}" in
       exit 0
     fi
     ROOT_COMMIT=$(git rev-list --max-parents=0 HEAD | head -n 1)
+    RECORD_BASE="$(git rev-parse --short "${ROOT_COMMIT}")"
+    RECORD_HEAD="${RECORD_BASE}"
     echo "Root Commit: ${ROOT_COMMIT}"
     echo ""
     echo "📊 初始提交统计:"
@@ -123,6 +159,8 @@ case "${MODE}" in
 
     BASE_SHA=$(git rev-parse "${BASE_REF}^{commit}")
     HEAD_SHA=$(git rev-parse "${HEAD_REF}^{commit}")
+    RECORD_BASE="$(git rev-parse --short "${BASE_SHA}")"
+    RECORD_HEAD="$(git rev-parse --short "${HEAD_SHA}")"
 
     echo "📌 审查模式: 提交区间审查 (${BASE_REF}...${HEAD_REF})"
     echo "Base SHA: ${BASE_SHA}"
@@ -154,6 +192,28 @@ case "${MODE}" in
     echo "   git diff ${BASE_SHA}...${HEAD_SHA}"
     ;;
 esac
+
+# 3. 写入审查记录锚点（供 Delta Re-Loop 读取 Previous Blockers 与迭代计数）
+if [[ "${NO_RECORD:-0}" -ne 1 ]]; then
+  mkdir -p .review-context
+  RECORD_FILE=".review-context/review-${RECORD_BASE:-unknown}.md"
+  if [[ ! -f "${RECORD_FILE}" ]]; then
+    cat > "${RECORD_FILE}" <<EOF
+# 审查记录 · ${RECORD_BASE:-unknown}
+- **模式**: [full | light | delta]
+- **基线**: ${RECORD_BASE:-unknown}..${RECORD_HEAD:-unknown}
+- **轮次**: [1 | 2 | ...]
+- **迭代计数**: [0/3]
+- **Previous Blockers**: 无
+- **Round 1 结论**: [待填写]
+- **终审裁决**: 未定
+- **阻断项统计**: [🔴 0 / 🟡 0 / ⚪ 0]
+EOF
+    echo "📝 已生成审查记录锚点: ${RECORD_FILE}"
+  else
+    echo "📝 复用既有审查记录锚点: ${RECORD_FILE}"
+  fi
+fi
 
 echo "----------------------------------------------------------------------"
 echo "⛔ 边界锁提醒 (Diff-Scope Boundary Lock):"

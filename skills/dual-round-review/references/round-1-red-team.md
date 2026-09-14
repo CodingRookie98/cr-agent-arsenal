@@ -26,7 +26,7 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
 ## Context & Inputs
 - **Feature / Plan Spec**: [INSERT_SPEC_PATH_OR_SUMMARY]
 - **Review Mode**: [FULL_REVIEW (初始全量双轮) | LIGHT_REVIEW (单轮轻量) | DELTA_RE_LOOP (修复后再循环定向复核)]
-- **Previous Blockers (仅在 DELTA_RE_LOOP 模式下传入)**:
+- **Previous Blockers (仅在 DELTA_RE_LOOP 模式下传入)**: 上一轮 R2 裁决中定为阻断项的稳定 ID 列表，格式如 `[R1-3, R1-7]`（从 `.review-context/review-<baseline>.md` 读取）；无则填 `无`
 [INSERT_PREVIOUS_BLOCKERS_IF_ANY]
 - **Git Range**: [BASE_SHA]..[HEAD_SHA]
 - **Diff Stat**:
@@ -100,11 +100,11 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
   - **涉及代码**: `path/to/file.ts:行号`
 
 ## 4. 潜在缺陷清单 (Identified Defect Candidates)
-| 编号 | 严重级别推断 (P0/P1/P2/P3) | 是否由当前 Diff 引入 | 涉及文件与行号 | 缺陷描述 | 攻击或破坏机理 |
+| 稳定 ID | 严重级别推断 (P0/P1/P2/P3) | 是否由当前 Diff 引入 | 涉及文件与行号 | 缺陷描述 | 攻击或破坏机理 |
 |:---|:---|:---:|:---|:---|:---|
-| 1 | P1 (Blocker) | 是 | `src/service.ts:42` | 未处理的竞态覆盖 | 快速二次请求将覆写正在进行的状态 |
-| 2 | P1 (Blocker) | 是 | `src/page.tsx:156` | 早退后调用 Hook | 违反 React 规则，条件渲染时白屏崩溃 |
-| 3 | P2 (Suggestion) | 历史既有 | `src/helper.ts:15` | 未提取的重复校验 | 历史遗留正则硬编码，本次未改动，建议待办 |
+| R1-1 | P1 (Blocker) | 是 | `src/service.ts:42` | 未处理的竞态覆盖 | 快速二次请求将覆写正在进行的状态 |
+| R1-2 | P1 (Blocker) | 是 | `src/page.tsx:156` | 早退后调用 Hook | 违反 React 规则，条件渲染时白屏崩溃 |
+| R1-3 | P2 (Suggestion) | 历史既有 | `src/helper.ts:15` | 未提取的重复校验 | 历史遗留正则硬编码，本次未改动，建议待办 |
 
 ## 5. 第一轮结论概要
 [总结关键攻击发现，明确移交第二轮架构师进行元对抗审判]
