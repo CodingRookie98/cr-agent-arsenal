@@ -18,7 +18,7 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: 阶段 D 完成（目标达成）
+- **当前活跃阶段**: P5 / DONE（目标达成）
 - **当前活跃子任务**: 无
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
@@ -67,6 +67,7 @@ A/B/C 依次对应"止血 → 拆分 → 适配"，顺序不可颠倒（C 建在
   # L0-a 文档断链（docs 与 goal-loop 技能目录分别扫描）
   python3 skills/doc-governance/scripts/check-doc-links.py --root docs
   python3 skills/doc-governance/scripts/check-doc-links.py --root skills/goal-loop
+  python3 skills/doc-governance/scripts/check-doc-links.py --root . --dir README.md
 
   # L0-b Bash 语法
   bash -n skills/goal-loop/scripts/goal-state-tracker.sh
@@ -101,7 +102,7 @@ A/B/C 依次对应"止血 → 拆分 → 适配"，顺序不可颠倒（C 建在
 ### 阶段 C：平台化（宿主无关 + 单一真相源 + 可验证）
 - [x] **C-1 新增 `references/host-adapters.md`**：三档后端（通用 subagent / agy / 内联）的能力矩阵与降级规则；P3 开工前**询问用户选择后端**
 - [x] **C-2 状态层改造**：计划文件为唯一可读 SoT；tracker 重写为派生视图（读写计划复选框与检查点，`state.json` 仅清理遗留）
-- [x] **C-3 为 tracker 补单测**（10 passed），断链扫描纳入技能自检
+- [x] **C-3 为 tracker 补单测**（24 passed），断链扫描纳入技能自检
 - [x] **C-4 提交 C**
 
 ### 阶段 D：文档同步与终审

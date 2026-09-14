@@ -8,10 +8,10 @@
 
 | 技能名称 | 目录路径 | 核心功能与应用场景 | 适用智能体环境 |
 |---|---|---|---|
-| **`goal-loop`** | [`skills/goal-loop`](./skills/goal-loop) | **工业级端到端长任务目标实现循环**。<br/>以计划文件为唯一可读真相源；具备上下文工程（2-Action Rule）、自适应测试分级裁定（L0~L3）、宿主无关执行后端适配（P3 开工前询问用户）、外部技能深度编排（需求澄清/方案拷问/计划制定/TDD/双轮终审）与 3-Tries 熔断自愈机制。 | Claude Code / Antigravity / DSH / 全局 Shell |
-| **`dual-round-review`** | [`skills/dual-round-review`](./skills/dual-round-review) | **对抗性非讨好型双轮代码终审硬门禁**。<br/>第一轮红队第一性原理极限穿透 + 第二轮资深元架构师审判校准，彻底终结浅层创可贴补丁与大模型讨好型盲目交付。 | 具备子智能体派发能力的智能体 / CLI |
-| **`agy-delegation-workflow`** | [`skills/agy-delegation-workflow`](./skills/agy-delegation-workflow) | **Antigravity CLI (agy) 后台工人自适应委派规程**。<br/>无头后台长程任务派发、环境隔离、代理清洗、黄金 7 维任务规约、WSL 守护与前后台边界管控。 | Antigravity / Linux / WSL |
-| **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance) | **工业级文档工程与知识库治理体系**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转模型与 Docs-as-Code 自动化门禁，彻底杜绝文档与代码漂移。 | Claude Code / Antigravity / 全局 Shell |
+| **`goal-loop`** | [`skills/goal-loop`](./skills/goal-loop/SKILL.md) | **工业级端到端长任务目标实现循环**。<br/>以计划文件为唯一可读真相源；具备上下文工程（2-Action Rule）、自适应测试分级裁定（L0~L3）、宿主无关执行后端适配（P3 开工前询问用户）、外部技能深度编排（需求澄清/方案拷问/计划制定/TDD/双轮终审）与 3-Tries 熔断自愈机制。 | Claude Code / Antigravity / DSH / 全局 Shell |
+| **`dual-round-review`** | [`skills/dual-round-review`](./skills/dual-round-review/SKILL.md) | **对抗性非讨好型双轮代码终审硬门禁**。<br/>第一轮红队第一性原理极限穿透 + 第二轮资深元架构师审判校准，彻底终结浅层创可贴补丁与大模型讨好型盲目交付。 | 具备子智能体派发能力的智能体 / CLI |
+| **`agy-delegation-workflow`** | [`skills/agy-delegation-workflow`](./skills/agy-delegation-workflow/SKILL.md) | **Antigravity CLI (agy) 后台工人自适应委派规程**。<br/>无头后台长程任务派发、环境隔离、代理清洗、黄金 7 维任务规约、WSL 守护与前后台边界管控。 | Antigravity / Linux / WSL |
+| **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance/SKILL.md) | **工业级文档工程与知识库治理体系**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转模型与 Docs-as-Code 自动化门禁，彻底杜绝文档与代码漂移。 | Claude Code / Antigravity / 全局 Shell |
 
 ---
 
