@@ -192,6 +192,27 @@ def test_unblock_clears_block_reason(tmp_path):
     assert '- **阻断原因**: 无' in text
 
 
+def test_block_refuses_completed_plan(tmp_path):
+    p = _plan(tmp_path)
+    p.write_text(p.read_text(encoding='utf-8').replace('- **状态**: 进行中', '- **状态**: 已完成'), encoding='utf-8')
+    _run(tmp_path, 'init', 'X', REL)
+    before = p.read_text(encoding='utf-8')
+    r = _run(tmp_path, 'block', 'x')
+    assert r.returncode != 0
+    assert '已完成' in (r.stdout + r.stderr)
+    assert p.read_text(encoding='utf-8') == before
+
+
+def test_unblock_requires_blocked_state(tmp_path):
+    p = _plan(tmp_path)
+    _run(tmp_path, 'init', 'X', REL)
+    before = p.read_text(encoding='utf-8')
+    r = _run(tmp_path, 'unblock')
+    assert r.returncode != 0
+    assert '未处于阻断状态' in (r.stdout + r.stderr)
+    assert p.read_text(encoding='utf-8') == before
+
+
 def test_complete_task_is_idempotent(tmp_path):
     _plan(tmp_path)
     _run(tmp_path, 'init', 'X', REL)

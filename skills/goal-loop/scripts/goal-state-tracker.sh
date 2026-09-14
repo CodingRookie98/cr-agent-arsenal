@@ -271,6 +271,8 @@ def cmd_block(rest):
     reason = rest[0] if rest else '未知阻断'
 
     def apply(lines):
+        if get_field(lines, '状态') == '已完成':
+            die('目标已标记为已完成，拒绝再标记阻断；如需重开请先更新计划状态。')
         if not set_field(lines, '状态', '熔断受阻'):
             die('计划元数据缺少"状态"字段')
         set_field(lines, '阻断原因', reason)  # 字段缺失时不阻断，仍保留 Scratchpad 记录
@@ -286,6 +288,8 @@ def cmd_block(rest):
 
 def cmd_unblock():
     def apply(lines):
+        if get_field(lines, '状态') != '熔断受阻':
+            die('当前未处于阻断状态，无法解除。')
         if not set_field(lines, '状态', '进行中'):
             die('计划元数据缺少"状态"字段')
         set_field(lines, '阻断原因', '无')

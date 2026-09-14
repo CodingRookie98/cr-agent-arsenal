@@ -66,7 +66,7 @@ ln -s ~/workspace/projects/cr-public-skills/skills/doc-governance .agents/skills
   - L0~L3 自适应分级测试决策矩阵
   - 双轮对抗审查与 3-Tries 熔断恢复协议
 * 🧩 **`goal-loop` 宿主执行后端适配规程**: [skills/goal-loop/references/host-adapters.md](./skills/goal-loop/references/host-adapters.md)
-* 🧪 **`goal-loop` 状态脚本单测**: [skills/goal-loop/tests/](./skills/goal-loop/tests/)
+* 🧪 **`goal-loop` 状态脚本单测**: [test_goal_state_tracker.py](./skills/goal-loop/tests/test_goal_state_tracker.py)
 
 ---
 
