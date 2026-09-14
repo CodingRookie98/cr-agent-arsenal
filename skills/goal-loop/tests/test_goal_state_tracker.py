@@ -26,6 +26,10 @@ PLAN = """# 测试目标 实施方案计划
 ### P3: 核心功能原子实现 (TDD 循环)
 - [ ] **Task P3.1**: 实现 A
 - [ ] **Task P3.2**: 实现 B
+
+### P4: 上线前检查
+- [x] **L0 静态门禁**: 非任务复选框，不应计入
+- [ ] **B-1**: 前缀式任务标识
 """
 
 REL = 'docs/project/plans/2026-01-01-x.md'
@@ -64,7 +68,7 @@ def test_status_derives_from_plan(tmp_path):
     r = _run(tmp_path, 'status')
     assert r.returncode == 0, r.stderr
     assert 'P1 计划制定' in r.stdout
-    assert '0/2' in r.stdout
+    assert '0/3' in r.stdout
 
 
 def test_set_phase_writes_plan(tmp_path):
@@ -91,6 +95,21 @@ def test_complete_task_normalizes_id(tmp_path):
     assert '- [ ] **Task P3.2**' in text
 
 
+def test_complete_task_prefix_style(tmp_path):
+    p = _plan(tmp_path)
+    _run(tmp_path, 'init', 'X', REL)
+    r = _run(tmp_path, 'complete-task', 'b1')
+    assert r.returncode == 0, r.stderr
+    assert '- [x] **B-1**' in p.read_text(encoding='utf-8')
+
+
+def test_requirement_checkbox_not_counted(tmp_path):
+    _plan(tmp_path)
+    _run(tmp_path, 'init', 'X', REL)
+    data = json.loads(_run(tmp_path, 'json').stdout)
+    assert data['task_total'] == 3  # L0 静态门禁 不计入
+
+
 def test_complete_task_unknown_fails(tmp_path):
     _plan(tmp_path)
     _run(tmp_path, 'init', 'X', REL)
@@ -103,7 +122,7 @@ def test_json_is_derived(tmp_path):
     r = _run(tmp_path, 'json')
     data = json.loads(r.stdout)
     assert data['phase'] == 'P1 计划制定'
-    assert data['task_total'] == 2
+    assert data['task_total'] == 3
     assert data['task_done'] == 0
 
 

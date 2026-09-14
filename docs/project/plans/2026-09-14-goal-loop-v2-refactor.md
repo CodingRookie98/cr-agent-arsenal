@@ -20,8 +20,10 @@
 - **当前执行通道**: Heavy Track
 - **当前活跃阶段**: 阶段 D 完成（目标达成）
 - **当前活跃子任务**: 无
-- **最后一次验证状态**: 全绿 —— 断链 docs 5 + goal-loop 11 文件 0 断链；`bash -n` OK；残留断言 0 命中；L1 `pytest` 10 passed
-- **最新有效提交**: `aadc626`（D 阶段文档同步随后提交）
+- **当前子任务重试计数**: 0/3
+- **外层循环迭代**: 0/5
+- **最后一次验证状态**: 全绿 —— 断链 0；`bash -n` OK；残留断言 0；`pytest` 12 passed；知识库健康度 100/100
+- **最新有效提交**: `273fc47`
 
 ---
 
@@ -90,16 +92,16 @@ A/B/C 依次对应"止血 → 拆分 → 适配"，顺序不可颠倒（C 建在
 - [x] **A-4 提交并建立 L0 基线**
 
 ### 阶段 B：结构重构（消除矛盾，SKILL.md 降为路由层）
-- [ ] **B-1 SKILL.md 压缩为路由层**：只保留触发条件 + invariants 清单 + 指针，删除与 references 重复的状态机图与 SOP 目录
-- [ ] **B-2 消除矛盾**：统一阶段编号（废弃计划模板里的第二套编号）、裁定 Fast-Track 审查门禁、3-Tries 计数落盘为字段、外层循环与 Delta Re-Loop 加迭代上限、区分 Heavy/Fast 判定阈值
-- [ ] **B-3 补齐 atomic-task 输出契约**：worker → orchestrator 的必填回传字段、受阻回传格式、`git status --porcelain` 证据要求、明确"checkbox 由编排者更新"
-- [ ] **B-4 提交 B**
+- [x] **B-1 SKILL.md 压缩为路由层**：只保留触发条件 + invariants 清单 + 指针，删除与 references 重复的状态机图与 SOP 目录
+- [x] **B-2 消除矛盾**：统一阶段编号（废弃计划模板里的第二套编号）、裁定 Fast-Track 审查门禁、3-Tries 计数落盘为字段、外层循环与 Delta Re-Loop 加迭代上限、区分 Heavy/Fast 判定阈值
+- [x] **B-3 补齐 atomic-task 输出契约**：worker → orchestrator 的必填回传字段、受阻回传格式、`git status --porcelain` 证据要求、明确"checkbox 由编排者更新"
+- [x] **B-4 提交 B**
 
 ### 阶段 C：平台化（宿主无关 + 单一真相源 + 可验证）
 - [x] **C-1 新增 `references/host-adapters.md`**：三档后端（通用 subagent / agy / 内联）的能力矩阵与降级规则；P3 开工前**询问用户选择后端**
 - [x] **C-2 状态层改造**：计划文件为唯一可读 SoT；tracker 重写为派生视图（读写计划复选框与检查点，`state.json` 仅清理遗留）
 - [x] **C-3 为 tracker 补单测**（10 passed），断链扫描纳入技能自检
-- [ ] **C-4 提交 C**
+- [x] **C-4 提交 C**
 
 ### 阶段 D：文档同步与终审
 - [x] **D-1** 同步 `README.md` 与设计书至 V2.0，记录 A→B→C 的实际落地
