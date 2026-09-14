@@ -57,7 +57,7 @@
   - **否** ➔ 明确记录豁免理由。
 
 ### 第 4 步：生成《测试策略裁定书》
-在生成的 `IMPLEMENTATION_PLAN.md` 头部，必须显式声明如下裁定小节：
+在生成的计划文件头部，必须显式声明如下裁定小节：
 
 ```markdown
 ## 测试策略与级别裁定 (Test Scope Determination)

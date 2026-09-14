@@ -103,7 +103,7 @@
   - **Fast-Track**：轻量敏捷计划，聚焦于 1~3 个原子子任务切片、锁定精确变更文件与核心 L0/L1 验收命令。
 * **外部技能联动**：**激活 `writing-plans` 技能**。
 * **核心执行步骤**：
-  1. 编写实施方案：在磁盘创建 `IMPLEMENTATION_PLAN.md`（或工作区指定路径）；
+  1. 编写实施方案：在磁盘创建计划文件 `docs/project/plans/YYYY-MM-DD-<feature>.md`（命名与归档遵循项目既有规范）；
   2. 微型任务切分：严格按照 2~5 分钟/步的标准拆解子任务，每个子任务必须产生自包含、可验证的代码切片；
   3. 制定《测试策略裁定书》：依据 `testing-decision-matrix.md` 对当前改动进行定级（L0~L3），显式记录测试命令与豁免依据；
   4. 固化持久化检查点锚点：在计划头部规范声明当前活跃阶段与检查点。
@@ -124,7 +124,7 @@
 
 ## 阶段 3: TDD 循环实现与原子提交 (Surgical TDD Cycle)
 
-* **外部技能联动**：**结合 `agy-delegation-workflow` 的宿主自适应委派体系**。
+* **外部技能联动**：**开工前按 [host-adapters.md](host-adapters.md) 向用户确认执行后端**（宿主原生子智能体 / `agy` 无头进程 / 当前会话内联），再结合 `agy-delegation-workflow` 派发。
 * **环境准备与分支策略**：
   - 基于开发分支（如 `dev`）创建功能分支（如 `feature/goal-<name>`）；
   - **严禁直接在 `main` 或 `master` 分支写代码**。

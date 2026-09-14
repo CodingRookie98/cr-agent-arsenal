@@ -27,7 +27,7 @@ description: Use when executing long-horizon engineering goals that span multipl
 
 ## 铁律 (Invariants)
 
-1. **计划文件是唯一人类可读真相源**。进度、复选框与检查点写入计划头部；机器状态写入宿主原生 goal 原语，**不建并行状态文件**（`.goal-loop/state.json` 仅作可选派生视图）。
+1. **计划文件是唯一人类可读真相源**。进度、复选框与检查点写入计划头部；机器状态写入宿主原生 goal 原语，**不建并行状态文件**（`scripts/goal-state-tracker.sh` 只做派生读写）。
 2. **先读检查点再动**。进入新阶段或恢复会话时，首选动作是读计划头部的 `Active Checkpoint` 锚点。
 3. **未获用户明确认可（User Nod），不写代码、不写落地计划**（P-1 门禁）。
 4. **选型裁决未完成，不进 P1 计划**（P0.5 门禁）；优先复用成熟方案，自研必须书面辩护。
@@ -53,7 +53,7 @@ description: Use when executing long-horizon engineering goals that span multipl
 | **P0.5** | 调研与开源选型 | `research` / `find-docs` | [research-spike-template.md](templates/research-spike-template.md) |
 | **P1** | 计划与测试定级 | `writing-plans` | [goal-plan-template.md](templates/goal-plan-template.md) + [testing-decision-matrix.md](references/testing-decision-matrix.md) |
 | **P2** | 原子任务拆解 | — | [atomic-task-template.md](templates/atomic-task-template.md) |
-| **P3** | TDD 循环实现 | 宿主执行后端 | [stage-progression-protocol.md](references/stage-progression-protocol.md) |
+| **P3** | TDD 循环实现 | 宿主执行后端（开工前询问用户） | [host-adapters.md](references/host-adapters.md) |
 | **P3.5** | 集成验证 | — | [stage-progression-protocol.md](references/stage-progression-protocol.md) |
 | **P4** | 对抗式终审 | `dual-round-review` | [stage-progression-protocol.md](references/stage-progression-protocol.md) |
 | **P5** | 文档归档 | `doc-governance`（可选） | [documentation-sync-matrix.md](references/documentation-sync-matrix.md) |
@@ -86,6 +86,7 @@ bash "$SKILL_DIR/scripts/goal-state-tracker.sh" complete-task "p3-1"
 
 ## 参考导航
 
+- [host-adapters.md](references/host-adapters.md) — P3 执行后端的能力契约、用户选择与降级规则
 - [stage-progression-protocol.md](references/stage-progression-protocol.md) — P-1 到 P5 执行细则、分流矩阵与门禁
 - [testing-decision-matrix.md](references/testing-decision-matrix.md) — 改动特征到 L0~L3 的判定规则
 - [context-engineering.md](references/context-engineering.md) — 2-Action Rule、读写决策矩阵与检查点规范
