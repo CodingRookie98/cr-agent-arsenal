@@ -16,7 +16,7 @@
         - 流程: P-1 ➔ P0 ➔ P0.5 ➔      - 流程: 豁免 P-1/P0/P0.5 ➔
                 P1 ➔ P2 ➔ P3 ➔                直入 P1(精简计划) ➔
                 P3.5 ➔ P4 ➔ P5                P3(Surgical TDD) ➔
-                                              P4(定向双轮) ➔ P5
+                                              P4(定向单轮) ➔ P5
 ```
 
 ---
@@ -124,7 +124,7 @@
 
 ## 阶段 3: TDD 循环实现与原子提交 (Surgical TDD Cycle)
 
-* **外部技能联动**：**开工前按 [host-adapters.md](host-adapters.md) 向用户确认执行后端**（宿主原生子智能体 / `agy` 无头进程 / 当前会话内联），再结合 `agy-delegation-workflow` 派发。
+* **外部技能联动**：**开工前按 [host-adapters.md](host-adapters.md) 向用户确认执行后端**（宿主原生子智能体 / `agy` 无头进程 / 当前会话内联），随后**按所选后端派发**；仅当选择 `agy` 后端时才引用 `agy-delegation-workflow`。
 * **环境准备与分支策略**：
   - 基于开发分支（如 `dev`）创建功能分支（如 `feature/goal-<name>`）；
   - **严禁直接在 `main` 或 `master` 分支写代码**。

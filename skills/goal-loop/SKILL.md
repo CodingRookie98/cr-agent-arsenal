@@ -35,7 +35,7 @@ description: Use when executing long-horizon engineering goals that span multipl
 6. **按裁定级别测试，先红后绿**：级别以计划中的《测试策略裁定书》为准，Exit Code 0 才允许原子提交。
 7. **分支隔离**：在功能分支工作，不在 `main`/`master` 直接写代码。
 8. **交付前必须有独立子智能体的 Zero Blockers 裁决**：Heavy Track 走全量双轮对抗审查；Fast-Track 走定向单轮红队审查，触及公共契约或核心链路时升级为全量双轮。
-9. **重试有上限**：单错误修复上限 3 次（第 2 次触发微观调研，第 3 次熔断上报）；Delta Re-Loop 迭代上限 5 次。
+9. **重试有上限**：单错误修复上限 3 次（第 2 次触发微观调研，第 3 次熔断上报）；场景级更小上限（如编译失败 2 次、重构破坏测试 2 次）优先触发其对应动作；Delta Re-Loop 迭代上限 5 次。
 10. **事实即刻落盘**：每 2 次只读探查后，把结论写入 `.goal-loop/scratchpad.md` 或检查点锚点。
 11. **写入后 Read-Modify-Verify**：用 `git diff`、关键行回读或测试/编译退出码确认变更生效。
 12. **不执行破坏性 Git 命令**（`reset`/`rebase`/`revert`/`restore`/`clean -fd`/强制推送）。

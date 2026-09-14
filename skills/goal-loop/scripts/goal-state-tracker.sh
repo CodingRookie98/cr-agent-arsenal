@@ -36,7 +36,7 @@ SCRATCH = STATE_DIR / 'scratchpad.md'
 
 PHASES = ['P-1', 'P0', 'P0.5', 'P1', 'P2', 'P3', 'P3.5', 'P4', 'P5', 'DONE']
 FIELDS = ['当前执行通道', '当前活跃阶段', '当前活跃子任务', '当前子任务重试计数',
-          '外层循环迭代', '最后一次验证状态', '最新有效提交']
+          '外层循环迭代', '最后一次验证状态', '最新有效提交', '阻断原因']
 
 TASK_RX = re.compile(
     r'^(\s*-\s*)\[([ xX])\](\s*\*\*(?:Task\s+)?)([A-Za-z][0-9A-Za-z]*(?:[.\-][0-9A-Za-z]+)+)(.*)$'
@@ -150,8 +150,9 @@ def cmd_init(rest):
         plan = Path(plan_arg)
     else:
         cands = glob.glob(str(REPO_ROOT / 'docs' / 'project' / 'plans' / '*.md'))
-        plan = (Path(sorted(cands, key=os.path.getmtime, reverse=True)[0]).relative_to(REPO_ROOT)
-                if cands else Path('IMPLEMENTATION_PLAN.md'))
+        if not cands:
+            die('未找到计划文件：请显式传入路径，或先在 docs/project/plans/ 下创建计划。')
+        plan = Path(sorted(cands, key=os.path.getmtime, reverse=True)[0]).relative_to(REPO_ROOT)
     p = Path(plan)
     if not p.is_absolute():
         p = REPO_ROOT / p
@@ -179,6 +180,7 @@ def cmd_status():
     print('=' * 70)
     print('📋 计划文件: %s' % (p.relative_to(REPO_ROOT) if str(p).startswith(str(REPO_ROOT)) else p))
     print('🎯 当前目标: %s' % title)
+    print('🚦 运行状态: %s' % (get_field(lines, '状态') or '—'))
     for k in FIELDS:
         print('   %s: %s' % (k, get_field(lines, k) or '—'))
     print('✅ 任务进度: %d/%d' % (done, total))
@@ -202,6 +204,7 @@ def cmd_json():
         'iterations': get_field(lines, '外层循环迭代'),
         'last_verification': get_field(lines, '最后一次验证状态'),
         'last_commit': get_field(lines, '最新有效提交'),
+        'block_reason': get_field(lines, '阻断原因'),
         'task_done': done,
         'task_total': total,
         'updated_at': now(),
@@ -231,6 +234,8 @@ def cmd_complete_task(rest):
     if not rest:
         die('必须指定任务标识，如: complete-task P3.1')
     target = norm(rest[0])
+    if not target:
+        die('任务标识需包含 ASCII 字母或数字，如 P3.1 或 A-1。')
     found = {'hit': False, 'already': False}
 
     def apply(lines):
@@ -264,8 +269,13 @@ def cmd_retry(rest):
 
 def cmd_block(rest):
     reason = rest[0] if rest else '未知阻断'
-    mutate(lambda lines: set_field(lines, '状态', '熔断受阻')
-           or die('计划元数据缺少"状态"字段'))
+
+    def apply(lines):
+        if not set_field(lines, '状态', '熔断受阻'):
+            die('计划元数据缺少"状态"字段')
+        set_field(lines, '阻断原因', reason)  # 字段缺失时不阻断，仍保留 Scratchpad 记录
+
+    mutate(apply)
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     with SCRATCH.open('a', encoding='utf-8') as f:
         f.write('\n## [%s] 熔断受阻\n%s\n' % (now(), reason))
@@ -275,8 +285,12 @@ def cmd_block(rest):
 
 
 def cmd_unblock():
-    mutate(lambda lines: set_field(lines, '状态', '进行中')
-           or die('计划元数据缺少"状态"字段'))
+    def apply(lines):
+        if not set_field(lines, '状态', '进行中'):
+            die('计划元数据缺少"状态"字段')
+        set_field(lines, '阻断原因', '无')
+
+    mutate(apply)
     print('✅ 阻断已解除，状态恢复为进行中。')
 
 

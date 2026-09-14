@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -20,6 +21,7 @@ PLAN = """# 测试目标 实施方案计划
 - **外层循环迭代**: 0/5
 - **最后一次验证状态**: 无
 - **最新有效提交**: 无
+- **阻断原因**: 无
 
 ---
 
@@ -141,3 +143,96 @@ def test_reset_removes_pointer_and_keeps_plan(tmp_path):
     assert r.returncode == 0, r.stderr
     assert not (tmp_path / '.goal-loop' / 'plan.path').exists()
     assert p.is_file()
+
+
+def test_status_and_json_are_safe_when_unbound(tmp_path):
+    r = _run(tmp_path, 'status')
+    assert r.returncode == 0
+    assert '未绑定计划文件' in r.stdout
+    assert json.loads(_run(tmp_path, 'json').stdout) == {}
+
+
+def test_set_current_task_and_retry(tmp_path):
+    p = _plan(tmp_path)
+    _run(tmp_path, 'init', 'X', REL)
+    assert _run(tmp_path, 'set-current-task', 'P3.2').returncode == 0
+    assert _run(tmp_path, 'retry', '2/3').returncode == 0
+    text = p.read_text(encoding='utf-8')
+    assert '- **当前活跃子任务**: P3.2' in text
+    assert '- **当前子任务重试计数**: 2/3' in text
+
+
+def test_block_records_reason_in_plan_and_scratchpad(tmp_path):
+    p = _plan(tmp_path)
+    _run(tmp_path, 'init', 'X', REL)
+    r = _run(tmp_path, 'block', '连续 3 次单测失败')
+    assert r.returncode == 0, r.stderr
+    text = p.read_text(encoding='utf-8')
+    assert '- **状态**: 熔断受阻' in text
+    assert '- **阻断原因**: 连续 3 次单测失败' in text
+    scratch = tmp_path / '.goal-loop' / 'scratchpad.md'
+    assert scratch.is_file() and '连续 3 次单测失败' in scratch.read_text(encoding='utf-8')
+
+
+def test_status_board_shows_blocked_state(tmp_path):
+    _plan(tmp_path)
+    _run(tmp_path, 'init', 'X', REL)
+    _run(tmp_path, 'block', 'boom')
+    r = _run(tmp_path, 'status')
+    assert '运行状态: 熔断受阻' in r.stdout
+
+
+def test_unblock_clears_block_reason(tmp_path):
+    p = _plan(tmp_path)
+    _run(tmp_path, 'init', 'X', REL)
+    _run(tmp_path, 'block', 'x')
+    assert _run(tmp_path, 'unblock').returncode == 0
+    text = p.read_text(encoding='utf-8')
+    assert '- **状态**: 进行中' in text
+    assert '- **阻断原因**: 无' in text
+
+
+def test_complete_task_is_idempotent(tmp_path):
+    _plan(tmp_path)
+    _run(tmp_path, 'init', 'X', REL)
+    assert _run(tmp_path, 'complete-task', 'P3.1').returncode == 0
+    r = _run(tmp_path, 'complete-task', 'P3.1')
+    assert r.returncode == 0
+    assert '早已完成' in r.stdout
+
+
+def test_uppercase_X_checkbox_is_recognized(tmp_path):
+    p = tmp_path / REL
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(PLAN.replace('- [ ] **Task P3.2**', '- [X] **Task P3.2**'), encoding='utf-8')
+    _run(tmp_path, 'init', 'X', REL)
+    data = json.loads(_run(tmp_path, 'json').stdout)
+    assert data['task_done'] == 1
+    assert data['task_total'] == 3
+
+
+def test_set_phase_dies_when_anchor_missing(tmp_path):
+    p = tmp_path / 'bare.md'
+    p.write_text('# bare\n\nno checkpoint here\n', encoding='utf-8')
+    _run(tmp_path, 'init', 'X', 'bare.md')
+    r = _run(tmp_path, 'set-phase', 'P3')
+    assert r.returncode != 0
+    assert '缺少' in (r.stdout + r.stderr)
+
+
+def test_complete_task_rejects_non_ascii_id(tmp_path):
+    _plan(tmp_path)
+    _run(tmp_path, 'init', 'X', REL)
+    r = _run(tmp_path, 'complete-task', '任务一')
+    assert r.returncode != 0
+    assert 'ASCII' in (r.stdout + r.stderr)
+
+
+def test_tracker_fields_match_plan_template():
+    base = Path(__file__).resolve().parents[1]
+    tracker = (base / 'scripts' / 'goal-state-tracker.sh').read_text(encoding='utf-8')
+    fields = set(re.findall(r"'([^']+)'", re.search(r'FIELDS = \[(.*?)\]', tracker, re.S).group(1)))
+    tpl = (base / 'templates' / 'goal-plan-template.md').read_text(encoding='utf-8')
+    section = tpl.split('## 🚀 活跃执行状态与持久化检查点')[1].split('---')[0]
+    keys = set(re.findall(r'^- \*\*(.+?)\*\*:', section, re.M))
+    assert fields == keys

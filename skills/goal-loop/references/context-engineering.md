@@ -78,7 +78,7 @@ graph TD
 ```markdown
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: [Heavy Track | Fast-Track]
-- **当前活跃阶段**: [如：阶段 3: TDD 循环实现]
+- **当前活跃阶段**: [如：P3 TDD 循环实现]
 - **当前活跃子任务**: [如：Task 2.2 - 导出纯函数级联取消实现]
 - **最后一次验证状态**: [如：Exit Code 0, 85/85 suites passed (594 tests)]
 - **当前子任务重试计数**: [如：0/3；第 2 次触发微观调研，第 3 次熔断]

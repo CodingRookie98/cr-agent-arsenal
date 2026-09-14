@@ -10,7 +10,7 @@
 >   - `/home/hui/workspace/projects/faceFusionCpp/docs/dev/zh/process/workflow.md` (工业级 TDD 与阶段流转规程)
 >   - Manus AI Context Engineering (上下文工程与 2-Action Rule)
 >   - Ralph Loop (Ralph Wiggum 磁盘持久化自主闭环理念)
->   - Claude Code `/goal` (自治目标收敛范式)
+>   - 宿主原生 goal 状态原语 (如 `create_goal` / `get_goal` / `update_goal`)
 >   - 内部技能生态：`brainstorming`、`grilling`、`research` (`find-docs` / `gh` CLI)、`writing-plans`、`agy-delegation-workflow`、`dual-round-review`
 
 ---
@@ -56,7 +56,7 @@
 * **智能体自主裁定 (Autonomous Scoping)**：智能体在规划阶段必须基于 AST 改动范围、依赖拓扑与调用深度，显式论证并裁定测试范围，生成不可逾越的验证基线。
 
 ### 2.4 全生命周期技能闭环 (End-to-End Skills Ecosystem)
-* 拒绝单打独斗，在需求端（`brainstorming`、`grilling`）、调研端（`research`、`find-docs`、`gh` CLI）、规划端（`writing-plans`）、执行端（`agy-delegation-workflow`）和交付端（`dual-round-review`）深度串接成熟专用技能，打造工业级研发装配线。
+* 拒绝单打独斗，在需求端（`brainstorming`、`grilling`）、调研端（`research`、`find-docs`、`gh` CLI）、规划端（`writing-plans`）、执行端（`host-adapters.md` 三档后端，`agy-delegation-workflow` 仅为其一）和交付端（`dual-round-review`）深度串接成熟专用技能，打造工业级研发装配线。
 
 ---
 
@@ -85,7 +85,7 @@ graph TD
     
     Branch --> LoopHeader["阶段 3: TDD 原子执行循环 (Task Iteration)"]
     
-    subgraph TDDCycle["阶段 3: TDD 原子自愈闭环 (结合 agy 宿主自适应委派)"]
+    subgraph TDDCycle["阶段 3: TDD 原子自愈闭环 (宿主执行后端适配)"]
         T1["红灯: 编写失败测试 (L1 单测)"] --> T2["绿灯: 编写最简实现使测试通过"]
         T2 --> T3["重构: 优化代码结构消除异味"]
         T3 --> T4["验证: 本地执行单测 (必须 Exit Code 0)"]
@@ -186,8 +186,8 @@ graph TD
          ┌───────────────────┬───────────────────┼───────────────────┬───────────────────┬───────────────────┬───────────────────┐
          ▼                   ▼                   ▼                   ▼                   ▼                   ▼                   ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│  brainstorming  │ │    grilling     │ │ research / docs │ │  writing-plans  │ │ agy-delegation  │ │     built-in    │ │dual-round-review│
-│ (阶段 -1 意图对齐)│ │ (阶段 0 压力拷问) │ │(阶段 0.5 选型调研)│ │(阶段 1 架构规划) │ │(阶段 3 委派执行) │ │(阶段 3.5 集成验证)│ │(阶段 4 终审门禁) │
+│  brainstorming  │ │    grilling     │ │ research / docs │ │  writing-plans  │ │  host-adapters  │ │     built-in    │ │dual-round-review│
+│ (阶段 -1 意图对齐)│ │ (阶段 0 压力拷问) │ │(阶段 0.5 选型调研)│ │(阶段 1 架构规划) │ │(阶段 3 后端适配) │ │(阶段 3.5 集成验证)│ │(阶段 4 终审门禁) │
 └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
 
@@ -221,7 +221,7 @@ graph TD
   - 严格将大目标分解为 2~5 分钟的微型子任务（Bite-Sized Tasks）；
   - 强制在计划开头嵌入《测试特征与级别裁定书》（明确 L0/L1/L2/L3 范围），并链接阶段 0.5 调研结论。
 
-### 5.5 阶段 3：宿主自适应委派与 TDD 执行 ➔ `agy-delegation-workflow`
+### 5.5 阶段 3：宿主自适应委派与 TDD 执行
 * **适用条件**：执行具体的子任务编码与单元测试。
 * **契约与协同**：
   - **开工前先询问用户选择后端**（宿主原生子智能体 / `agy` 无头进程 / 当前会话内联），详见 `skills/goal-loop/references/host-adapters.md`；
@@ -295,24 +295,30 @@ graph TD
 
 ```
 skills/goal-loop/
-├── SKILL.md                               # 技能主入口 (状态机流转、SOP、生态技能调用总纲)
+├── SKILL.md                               # 技能路由层 (触发条件、12 条铁律、阶段指针)
 ├── references/
 │   ├── testing-decision-matrix.md         # 改动特征与测试级别判定规则 (L0~L3 详细对照表)
 │   ├── context-engineering.md             # 2-Action Rule、读写决策矩阵与持久化工程标准
 │   ├── stage-progression-protocol.md      # P-1~P5 各阶段详细执行细则、前置门禁与交付物
 │   ├── failure-recovery-protocol.md       # TDD/集成失败矩阵与 3-Tries 熔断操作指引
-│   └── documentation-sync-matrix.md       # 全向文档联动复核清单 (架构/API/配置/ADR)
+│   ├── documentation-sync-matrix.md       # 全向文档联动复核清单 (架构/API/配置/ADR)
+│   └── host-adapters.md                   # P3 宿主执行后端适配 (能力矩阵/用户选择/降级)
 ├── templates/
 │   ├── goal-plan-template.md              # 通用实施计划模板 (内嵌测试策略裁定书插槽)
 │   ├── research-spike-template.md         # 技术调研与开源选型备忘录模板
-│   ├── atomic-task-template.md            # 独立子任务文档模板 (通用 7 维标准)
+│   ├── atomic-task-template.md            # 独立子任务文档模板 (7 维标准 + 输出契约)
 │   └── evaluation-report-template.md      # 阶段零代码现状评估报告模板
-└── scripts/
-    └── goal-state-tracker.sh              # 跨中断/断点恢复轻量级状态追踪辅助 CLI
+├── scripts/
+│   └── goal-state-tracker.sh              # 计划文件派生视图 (读写复选框与检查点)
+└── tests/
+    └── test_goal_state_tracker.py         # 状态脚本单测 (pytest)
 ```
 
 同时在 `.agents/skills/goal-loop` 创建相对符号链接：
-`ln -sfn ../../skills/goal-loop .agents/skills/goal-loop`
+```bash
+mkdir -p .agents/skills
+ln -sfn ../../skills/goal-loop .agents/skills/goal-loop
+```
 
 ---
 
@@ -322,7 +328,7 @@ skills/goal-loop/
 |:---:|---|---|---|:---:|
 | **阶段 1** | 核心参考规范与测试矩阵下沉 | `references/testing-decision-matrix.md`<br/>`references/context-engineering.md`<br/>`references/stage-progression-protocol.md`<br/>`references/failure-recovery-protocol.md`<br/>`references/documentation-sync-matrix.md` | 完整吸纳 `faceFusionCpp` 工作流，语言中立，交叉链接有效 | 已完成 |
 | **阶段 2** | 模板套件与辅助状态脚本开发 | `templates/goal-plan-template.md`<br/>`templates/atomic-task-template.md`<br/>`templates/evaluation-report-template.md`<br/>`scripts/goal-state-tracker.sh` | 模板内嵌测试裁定规范插槽；状态脚本通过参数测试 (Exit Code 0) | 已完成 |
-| **阶段 3** | 主技能编排与生态系统集成 | `skills/goal-loop/SKILL.md`<br/>`.agents/skills/goal-loop` (软链) | 串联 `brainstorming`、`grilling`、`writing-plans`、`agy`、`dual-round-review`；符合 `agentskills.io` 规范 | 已完成 |
+| **阶段 3** | 主技能编排与生态系统集成 | `skills/goal-loop/SKILL.md`<br/>`.agents/skills/goal-loop` (软链) | 串联 `brainstorming`、`grilling`、`writing-plans`、`dual-round-review`，P3 经 `host-adapters.md` 适配三档后端；符合 `agentskills.io` 规范 | 已完成 |
 | **阶段 4** | 完整闭环自检、审查与 Git 交付 | 全量自审 + Git Commit | 经过 Diff 严审，零调试残留，提交 Conventional Commits | 已完成 |
 
 ---

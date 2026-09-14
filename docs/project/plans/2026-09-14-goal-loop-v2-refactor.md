@@ -22,8 +22,9 @@
 - **当前活跃子任务**: 无
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
-- **最后一次验证状态**: 全绿 —— 断链 0；`bash -n` OK；残留断言 0；`pytest` 12 passed；知识库健康度 100/100
-- **最新有效提交**: `273fc47`
+- **最后一次验证状态**: 全绿 —— 断链 0；`bash -n` OK；残留断言 0；`pytest` 22 passed；知识库健康度 100/100（已并入独立红队复审 2B/5M/7m 的整改）
+- **最新有效提交**: `bc9fd06`
+- **阻断原因**: 无
 
 ---
 
@@ -72,7 +73,7 @@ A/B/C 依次对应"止血 → 拆分 → 适配"，顺序不可颠倒（C 建在
 
   # L0-c 旧路径/宿主专有工具名残留断言（应输出 0 行）
   # host-adapters.md 的"宿主能力映射"表按设计保留宿主工具名，故排除该文件
-  grep -rnE --include='*.md' --exclude=host-adapters.md 'docs/(planning|superpowers)/|docs/dev/(research|evaluation|process)|grep_search|find_by_name|read_url_content|invoke_subagent|regress-check|task-prompt-template|IMPLEMENTATION_PLAN' skills/goal-loop docs/explanation/architecture/goal-loop-design.md
+  grep -rnE --exclude=host-adapters.md 'docs/(planning|superpowers)/|docs/dev/(research|evaluation|process)|grep_search|find_by_name|read_url_content|invoke_subagent|regress-check|task-prompt-template|IMPLEMENTATION_PLAN' skills/goal-loop docs/explanation/architecture/goal-loop-design.md
 
   # L1 状态机脚本单测
   python3 -m pytest skills/goal-loop/tests -q
