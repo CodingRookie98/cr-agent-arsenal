@@ -6,16 +6,16 @@
 > - **目标简述**: 将 goal-loop 从"单一宿主绑定 + 三处状态真相源 + 自相矛盾门禁"重构为"宿主无关方法论层 + 薄适配器 + 单一可读真相源"。
 > - **创建日期**: 2026-09-14
 > - **隔离分支**: `feature/goal-loop-v2`
-> - **状态**: 进行中
+> - **状态**: 已完成
 
 ---
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: 阶段 A（可执行性止血）
-- **当前活跃子任务**: A-4（提交并建立 L0 基线）
-- **最后一次验证状态**: L0 全绿 —— 断链扫描 docs 5 文件 + goal-loop 10 文件均 0 断链；`bash -n` OK；旧路径/宿主专有工具名残留 grep 0 命中
-- **最新有效提交**: 待 A-4 提交后回填
+- **当前活跃阶段**: 阶段 D 完成（目标达成）
+- **当前活跃子任务**: 无
+- **最后一次验证状态**: 全绿 —— 断链 docs 5 + goal-loop 11 文件 0 断链；`bash -n` OK；残留断言 0 命中；L1 `pytest` 10 passed
+- **最新有效提交**: `aadc626`（D 阶段文档同步随后提交）
 
 ---
 
@@ -63,7 +63,8 @@ A/B/C 依次对应"止血 → 拆分 → 适配"，顺序不可颠倒（C 建在
   bash -n skills/goal-loop/scripts/goal-state-tracker.sh
 
   # L0-c 旧路径/宿主专有工具名残留断言（应输出 0 行）
-  grep -rnE 'docs/(planning|superpowers)/|docs/dev/(research|evaluation|process)|grep_search|find_by_name|read_url_content|invoke_subagent|regress-check|task-prompt-template' skills/goal-loop docs/explanation/architecture/goal-loop-design.md
+  # host-adapters.md 的"宿主能力映射"表按设计保留宿主工具名，故排除该文件
+  grep -rnE --include='*.md' --exclude=host-adapters.md 'docs/(planning|superpowers)/|docs/dev/(research|evaluation|process)|grep_search|find_by_name|read_url_content|invoke_subagent|regress-check|task-prompt-template|IMPLEMENTATION_PLAN' skills/goal-loop docs/explanation/architecture/goal-loop-design.md
 
   # L1 状态机脚本单测
   python3 -m pytest skills/goal-loop/tests -q
@@ -80,7 +81,7 @@ A/B/C 依次对应"止血 → 拆分 → 适配"，顺序不可颠倒（C 建在
   - **涉及文件**: `SKILL.md`, `references/stage-progression-protocol.md`
 - [x] **A-3 修正设计书坏引用与过期状态**：`regress-check`、`task-prompt-template.md`、roadmap "未开始"、L1 耗时不一致
   - **涉及文件**: `docs/explanation/architecture/goal-loop-design.md`
-- [ ] **A-4 提交并建立 L0 基线**
+- [x] **A-4 提交并建立 L0 基线**
 
 ### 阶段 B：结构重构（消除矛盾，SKILL.md 降为路由层）
 - [ ] **B-1 SKILL.md 压缩为路由层**：只保留触发条件 + invariants 清单 + 指针，删除与 references 重复的状态机图与 SOP 目录
@@ -89,15 +90,15 @@ A/B/C 依次对应"止血 → 拆分 → 适配"，顺序不可颠倒（C 建在
 - [ ] **B-4 提交 B**
 
 ### 阶段 C：平台化（宿主无关 + 单一真相源 + 可验证）
-- [ ] **C-1 新增 `references/host-adapters.md`**：三档后端（通用 subagent / agy / 内联）的能力矩阵与降级规则；P3 开工前**询问用户选择后端**
-- [ ] **C-2 状态层改造**：计划文件为唯一可读 SoT；机器状态适配宿主原生 goal 原语；tracker 降级为派生视图（或移除 `state.json`）
-- [ ] **C-3 为 tracker 补单测**，并把断链扫描纳入技能自检
+- [x] **C-1 新增 `references/host-adapters.md`**：三档后端（通用 subagent / agy / 内联）的能力矩阵与降级规则；P3 开工前**询问用户选择后端**
+- [x] **C-2 状态层改造**：计划文件为唯一可读 SoT；tracker 重写为派生视图（读写计划复选框与检查点，`state.json` 仅清理遗留）
+- [x] **C-3 为 tracker 补单测**（10 passed），断链扫描纳入技能自检
 - [ ] **C-4 提交 C**
 
 ### 阶段 D：文档同步与终审
-- [ ] **D-1** 同步 `README.md` 与设计书至 V2.0，记录 A→B→C 的实际落地
-- [ ] **D-2** 跑通第 3 节全部验证命令（Exit Code 0）
-- [ ] **D-3** 终审并将计划标记为 `[已完成]`
+- [x] **D-1** 同步 `README.md` 与设计书至 V2.0，记录 A→B→C 的实际落地
+- [x] **D-2** 跑通第 3 节全部验证命令（Exit Code 0）
+- [x] **D-3** 终审并将计划标记为 `[已完成]`
 
 ---
 

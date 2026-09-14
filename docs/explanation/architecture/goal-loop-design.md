@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-GOAL-LOOP-2026
-> - **当前版本**: V1.1.0 (深度集成技能生态与自适应测试体系)
+> - **当前版本**: V2.0.0 (宿主无关适配器 + 计划文件唯一真相源)
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-08
@@ -78,7 +78,7 @@ graph TD
 
     P05_Check -->|"是 - 需选型调研"| Spike["阶段 0.5: 技术调研与开源选型<br/>派发 research 子智能体 + gh/web 检索<br/>产出选型备忘录 (自研需硬性理由)"]
     P05_Check -->|"否 - 纯内部既有逻辑微调"| P1
-    Spike --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 IMPLEMENTATION_PLAN.md<br/>输出 测试级别判定矩阵"]
+    Spike --> P1["阶段 1: 计划制定与测试策略裁定<br/>激活 writing-plans 编写 docs/project/plans/YYYY-MM-DD-<feature>.md<br/>输出 测试级别判定矩阵"]
     
     P1 --> P2["阶段 2: 原子子任务拆解<br/>落地通用 7 维任务提示词或独立 task_*.md"]
     P2 --> Branch["阶段 3 准备: 隔离分支与环境检测"]
@@ -113,7 +113,7 @@ graph TD
     E2ERun --> DualRevGate["阶段 4: 双轮对抗终审硬门禁<br/>激活 dual-round-review (红队第一性原理 + 架构师元审判)"]
     
     DualRevGate --> RevPass{"双轮审查阻断项清零?"}
-    RevPass -->|"存在阻断项"| FixBlocker["根据终审意见定向修复"] --> LoopHeader
+    RevPass -->|"存在阻断项 (Blockers > 0)"| FixBlocker["根据终审意见定向修复并原子提交"] --> DeltaLoop["Delta Re-Loop: 以修复提交为基线再审查 (上限 5 次)"] --> DualRevGate
     RevPass -->|"Zero Blockers 通过"| Merged["合并功能分支并清理临时分支"]
     
     Merged --> P5["阶段 5: 文档全向归档与联动升级<br/>同步架构/API/配置/ADR"]
@@ -157,7 +157,7 @@ graph TD
 
 ### 4.3 智能体自主裁定测试范围的 4 步推理协议 (Autonomous Test Scoping SOP)
 
-若面对未完全覆盖的定制场景，智能体在**阶段 1（计划制定）**必须执行以下 4 步推理并在 `IMPLEMENTATION_PLAN.md` 中显式固化：
+若面对未完全覆盖的定制场景，智能体在**阶段 1（计划制定）**必须执行以下 4 步推理并在计划文件中显式固化：
 
 1. **第 1 步：改动影响面分析 (Blast Radius Analysis)**：
    - 提取待新增/修改文件的 AST 依赖树；
@@ -224,8 +224,9 @@ graph TD
 ### 5.5 阶段 3：宿主自适应委派与 TDD 执行 ➔ `agy-delegation-workflow`
 * **适用条件**：执行具体的子任务编码与单元测试。
 * **契约与协同**：
-  - **Antigravity 原生环境**：直接调用宿主原生子智能体派发能力派发子任务，执行隔离的 TDD 循环，**严禁在终端套娃调用 `agy` 命令行**；
-  - **非 agy 终端环境（Claude Code / 通用命令行）**：使用 `dispatch-agy.sh` 清除代理并派发无头后台进程，执行模型以本机 `agy` 配置为准；
+  - **开工前先询问用户选择后端**（宿主原生子智能体 / `agy` 无头进程 / 当前会话内联），详见 `skills/goal-loop/references/host-adapters.md`；
+  - **具备原生子智能体能力的宿主**：直接调用宿主原生子智能体派发子任务，执行隔离的 TDD 循环，**严禁在终端套娃调用 `agy` 命令行**；
+  - **`agy` CLI 环境**：使用 `dispatch-agy.sh` 清除代理并派发无头后台进程，执行模型以本机 `agy` 配置为准；
   - **7 维黄金标准通用模板**：结合通用 `atomic-task-template.md` 约束子任务，禁止后台越权编写计划文档。
 
 ### 5.6 阶段 4：双轮对抗终审硬门禁 ➔ `dual-round-review`
@@ -323,3 +324,22 @@ skills/goal-loop/
 | **阶段 2** | 模板套件与辅助状态脚本开发 | `templates/goal-plan-template.md`<br/>`templates/atomic-task-template.md`<br/>`templates/evaluation-report-template.md`<br/>`scripts/goal-state-tracker.sh` | 模板内嵌测试裁定规范插槽；状态脚本通过参数测试 (Exit Code 0) | 已完成 |
 | **阶段 3** | 主技能编排与生态系统集成 | `skills/goal-loop/SKILL.md`<br/>`.agents/skills/goal-loop` (软链) | 串联 `brainstorming`、`grilling`、`writing-plans`、`agy`、`dual-round-review`；符合 `agentskills.io` 规范 | 已完成 |
 | **阶段 4** | 完整闭环自检、审查与 Git 交付 | 全量自审 + Git Commit | 经过 Diff 严审，零调试残留，提交 Conventional Commits | 已完成 |
+
+---
+
+## 10. V2.0 变更摘要 (V2.0 Refactor Summary)
+
+V2.0 是一次破坏性结构重构，依据四项锁定决策（D1–D4）完成：
+
+| 关注点 | V1.x | V2.0 |
+|---|---|---|
+| 可读真相源 | 计划复选框 + 检查点锚点 + `.goal-loop/state.json` 三方并行 | **计划文件唯一**；tracker 改为派生读写，`state.json` 仅清理遗留 |
+| P3 执行后端 | 绑定 Antigravity / `agy`，写死执行模型 | **宿主无关三档适配**，P3 开工前询问用户（见 `references/host-adapters.md`） |
+| 入口文件 | SKILL.md 209 行，含完整状态机图与 SOP（与 references 重复） | **路由层 95 行**：触发条件 + 12 条铁律 + 指针 |
+| 阶段编号 | 状态机 P-1~P5 与计划模板第二套编号并存 | 统一为 P-1~P5 |
+| 审查门禁 | 所有通道一律强制双轮 | Heavy 全量双轮；Fast-Track 定向单轮，触及契约再升级 |
+| 循环上限 | 3-Tries 仅内层，Delta Re-Loop 无上限 | 内层 3 次、Delta Re-Loop 5 次，计数落盘为检查点字段 |
+| 委派契约 | 仅 7 维输入规约 | 追加第 8 节输出契约与 `git status --porcelain` 证据要求 |
+| 验证 | 无测试 | `tests/` 10 项 tracker 单测 + 断链门禁 |
+
+重构实施计划与验收记录：`docs/project/plans/2026-09-14-goal-loop-v2-refactor.md`。
