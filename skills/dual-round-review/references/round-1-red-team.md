@@ -48,7 +48,8 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
   - 是否存在更精简、无副作用的原生解法？
   - 是否引入了未经要求的过度封装、投机性抽象（Speculative Generality）或无用依赖？
 
-### 2. 运行时现实与 SSR/沙盒安全 (Runtime Reality & SSR Safety Check)
+### 2. 运行时现实与 SSR/沙盒安全（条件维度 · 按 diff 激活）
+> **激活条件**：仅当 diff 触及客户端/SSR 代码时激活本维度——文件特征如 `*.tsx`/`*.jsx`/`*.vue`/`*.svelte`/`next.config.*`，或代码含 `"use client"`/`"use server"`/`react`/`next/*` 导入。未激活时整块跳过，并在输出中标注 `本节未激活（非客户端/SSR 改动）`。
 - **React Rules of Hooks 顶层一致性**:
   - 检查组件中的所有 Hook（`useState`, `useEffect`, `useMemo`, `useCallback` 等）是否无条件在组件顶层调用。**严禁在任何条件分支（如 `if (!data) return ...`）或提前退出语句之后调用 Hook**！
 - **Next.js SSR 水合安全与沙盒防御**:
@@ -85,7 +86,8 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
 - **物理与业务一致性**: [详细剖析当前解法是否触及核心模型]
 - **过度设计审计**: [是否存在不必要的抽象、冗余中间层或过度泛化]
 
-## 2. 运行时与 SSR/沙盒安全推演
+## 2. 运行时与 SSR/沙盒安全推演（条件维度）
+> 未激活时本节只写：`未激活（非客户端/SSR 改动）`。
 - **Rules of Hooks 合规性**: [合规 / 违规 (说明违反文件与行号)]
 - **SSR 水合与 Storage 防御**: [合规 / 存在水合断裂或沙盒未防御隐患]
 - **渲染纯度与全局可变状态**: [纯净 / 存在原地 Mutation 污染]
