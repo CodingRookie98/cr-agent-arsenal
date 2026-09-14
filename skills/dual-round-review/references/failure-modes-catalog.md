@@ -57,6 +57,7 @@
 * **对策**：**Diff-Scope Boundary Lock（Diff 范围边界锁）**。所有候选缺陷必须标注是否由本次变更行直接引入；既有历史遗留问题一律降级为 Suggestion/待办，严禁作为 Blocker 阻断本次 PR。
 
 ### 模式 11: 运行时环境与 SSR 沙盒盲区 (Runtime Environment & SSR Sandbox Blindspot)
+> **适用条件**：仅当变更涉及客户端/SSR/组件代码时排查本模式。
 * **特征**：单测在 Node.js / jsdom 环境下全绿，却掩盖了真实客户端或 Next.js SSR 运行时的致命问题：
   1. 条件调用 Hook 违反 React Rules of Hooks（如在早退分支后调用 `useMemo`）；
   2. 客户端组件未隔离 `window` / `localStorage`，导致服务端与客户端水合失配（Hydration Mismatch）或 Safari 无痕模式下抛出未捕获的 `SecurityError`；

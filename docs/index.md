@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.2.0 (收录 goal-loop V2.0 工程治理索引)
+> - **当前版本**: V1.3.0 (收录 goal-loop 与 dual-round-review V2.0)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-09-10
 
@@ -13,6 +13,7 @@
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
 | **V1.2.0** | 2026-09-14 | Antigravity AI Agent | 王辉 | 收录 goal-loop V2.0 实施计划至工程治理索引，消除孤儿文档 |
+| **V1.3.0** | 2026-09-14 | Antigravity AI Agent | 王辉 | 合并 dual-round-review V2.0 架构设计书与实施计划索引 |
 | **V1.1.0** | 2026-09-10 | Antigravity AI Agent | 王辉 | 遵循 Diátaxis 标准重组目录，迁移设计书至 explanation/architecture |
 | **V1.0.0** | 2026-09-10 | 王辉 | 架构组 | 初始化知识库总索引与技能清单 |
 
@@ -35,6 +36,7 @@
 | :--- | :--- | :--- |
 | **`doc-governance`** | 基于 Diátaxis 四象限、RFC 提案结晶模型与 Docs-as-Code 自动化门禁的文档治理体系 | [doc-governance-design.md](./explanation/architecture/doc-governance-design.md) |
 | **`goal-loop`** | 融合 Manus 上下文工程、自适应测试分级裁定与双轮终审的工业级目标收敛循环 | [goal-loop-design.md](./explanation/architecture/goal-loop-design.md) |
+| **`dual-round-review`** | 红队第一性原理穿透 + 元架构师审判校准；支持 Full / Light / Delta 三模式与审查记录锚点 | [dual-round-review-design.md](./explanation/architecture/dual-round-review-design.md) |
 
 ---
 
@@ -46,7 +48,7 @@
 | :--- | :--- | :--- |
 | **`doc-governance`** | [doc-governance 规程](../skills/doc-governance/SKILL.md) | 文档工程与知识库治理（断链静态扫描、历史裁剪、健康体检、llms.txt 生成） |
 | **`goal-loop`** | [goal-loop 规程](../skills/goal-loop/SKILL.md) | 工业级端到端长任务目标实现循环（2-Action Rule、自适应测试、外部技能协同） |
-| **`dual-round-review`** | [dual-round-review 规程](../skills/dual-round-review/SKILL.md) | 对抗性非讨好型双轮代码终审硬门禁（红队第一性原理极限穿透 + 资深元架构师审判校准） |
+| **`dual-round-review`** | [dual-round-review 规程](../skills/dual-round-review/SKILL.md) | 对抗性双轮代码终审硬门禁（红队穿透 + 元架构师审判）；支持 Full / Light / Delta 三模式 |
 | **`agy-delegation-workflow`** | [agy-delegation-workflow 规程](../skills/agy-delegation-workflow/SKILL.md) | Antigravity CLI 后台工人自适应委派规程（无头任务派发、环境隔离、边界管控） |
 
 ---
@@ -56,3 +58,4 @@
 | 计划标识 | 目标 | 计划文档 |
 | :--- | :--- | :--- |
 | **`goal-loop` V2.0** | 宿主无关执行适配器、计划文件唯一真相源、tracker 派生化与单测 | [2026-09-14-goal-loop-v2-refactor.md](./project/plans/2026-09-14-goal-loop-v2-refactor.md) |
+| **`dual-round-review` V2.0** | 宿主无关派发、审查记录锚点、Light 模式与条件维度 | [2026-09-14-dual-round-review-v2.md](./project/plans/2026-09-14-dual-round-review-v2.md) |

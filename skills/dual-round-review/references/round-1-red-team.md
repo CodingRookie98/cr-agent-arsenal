@@ -25,15 +25,15 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
 
 ## Context & Inputs
 - **Feature / Plan Spec**: [INSERT_SPEC_PATH_OR_SUMMARY]
-- **Review Mode**: [INITIAL_REVIEW (初始全量双轮) | DELTA_RE_LOOP (修复后再循环定向复核)]
-- **Previous Blockers (仅在 DELTA_RE_LOOP 模式下传入)**:
+- **Review Mode**: [FULL_REVIEW (初始全量双轮) | LIGHT_REVIEW (单轮轻量) | DELTA_RE_LOOP (修复后再循环定向复核)]
+- **Previous Blockers (仅在 DELTA_RE_LOOP 模式下传入)**: 上一轮 R2 裁决中定为阻断项的稳定 ID 列表，格式如 `[R1-3, R1-7]`（从 `.review-context/review-<baseline>.md` 读取）；无则填 `无`
 [INSERT_PREVIOUS_BLOCKERS_IF_ANY]
 - **Git Range**: [BASE_SHA]..[HEAD_SHA]
 - **Diff Stat**:
 ```bash
 [INSERT_GIT_DIFF_STAT]
 ```
-- **Git Diff Content** (注: 若全量 Diff 超过 800 行，建议优先内联核心模块 Diff，并授权审查者使用 `view_file` 或 `git diff <file>` 按需调阅细节):
+- **Git Diff Content** (注: 若全量 Diff 超过 800 行，建议优先内联核心模块 Diff，并授权审查者使用宿主代码库读取能力或 `git diff <file>` 按需调阅细节):
 ```diff
 [INSERT_GIT_DIFF_CONTENT]
 ```
@@ -48,7 +48,8 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
   - 是否存在更精简、无副作用的原生解法？
   - 是否引入了未经要求的过度封装、投机性抽象（Speculative Generality）或无用依赖？
 
-### 2. 运行时现实与 SSR/沙盒安全 (Runtime Reality & SSR Safety Check)
+### 2. 运行时现实与 SSR/沙盒安全（条件维度 · 按 diff 激活）
+> **激活条件**：仅当 diff 触及客户端/SSR 代码时激活本维度——文件特征如 `*.tsx`/`*.jsx`/`*.vue`/`*.svelte`/`next.config.*`，或代码含 `"use client"`/`"use server"`/`react`/`next/*` 导入。未激活时整块跳过，并在输出中标注 `本节未激活（非客户端/SSR 改动）`。
 - **React Rules of Hooks 顶层一致性**:
   - 检查组件中的所有 Hook（`useState`, `useEffect`, `useMemo`, `useCallback` 等）是否无条件在组件顶层调用。**严禁在任何条件分支（如 `if (!data) return ...`）或提前退出语句之后调用 Hook**！
 - **Next.js SSR 水合安全与沙盒防御**:
@@ -85,7 +86,8 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
 - **物理与业务一致性**: [详细剖析当前解法是否触及核心模型]
 - **过度设计审计**: [是否存在不必要的抽象、冗余中间层或过度泛化]
 
-## 2. 运行时与 SSR/沙盒安全推演
+## 2. 运行时与 SSR/沙盒安全推演（条件维度）
+> 未激活时本节只写：`未激活（非客户端/SSR 改动）`。
 - **Rules of Hooks 合规性**: [合规 / 违规 (说明违反文件与行号)]
 - **SSR 水合与 Storage 防御**: [合规 / 存在水合断裂或沙盒未防御隐患]
 - **渲染纯度与全局可变状态**: [纯净 / 存在原地 Mutation 污染]
@@ -98,11 +100,11 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
   - **涉及代码**: `path/to/file.ts:行号`
 
 ## 4. 潜在缺陷清单 (Identified Defect Candidates)
-| 编号 | 严重级别推断 (P0/P1/P2/P3) | 是否由当前 Diff 引入 | 涉及文件与行号 | 缺陷描述 | 攻击或破坏机理 |
+| 稳定 ID | 严重级别推断 (P0/P1/P2/P3) | 是否由当前 Diff 引入 | 涉及文件与行号 | 缺陷描述 | 攻击或破坏机理 |
 |:---|:---|:---:|:---|:---|:---|
-| 1 | P1 (Blocker) | 是 | `src/service.ts:42` | 未处理的竞态覆盖 | 快速二次请求将覆写正在进行的状态 |
-| 2 | P1 (Blocker) | 是 | `src/page.tsx:156` | 早退后调用 Hook | 违反 React 规则，条件渲染时白屏崩溃 |
-| 3 | P2 (Suggestion) | 历史既有 | `src/helper.ts:15` | 未提取的重复校验 | 历史遗留正则硬编码，本次未改动，建议待办 |
+| R1-1 | P1 (Blocker) | 是 | `src/service.ts:42` | 未处理的竞态覆盖 | 快速二次请求将覆写正在进行的状态 |
+| R1-2 | P1 (Blocker) | 是 | `src/page.tsx:156` | 早退后调用 Hook | 违反 React 规则，条件渲染时白屏崩溃 |
+| R1-3 | P2 (Suggestion) | 历史既有 | `src/helper.ts:15` | 未提取的重复校验 | 历史遗留正则硬编码，本次未改动，建议待办 |
 
 ## 5. 第一轮结论概要
 [总结关键攻击发现，明确移交第二轮架构师进行元对抗审判]
