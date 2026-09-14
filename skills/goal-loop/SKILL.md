@@ -130,10 +130,11 @@ graph TD
 * **拆解原则**：切分为 2~5 分钟的微型子任务（Bite-Sized），每个子任务具备独立测试断言；
 * **通用标准**：遵循 [atomic-task-template.md](templates/atomic-task-template.md) 规定的 7 维黄金标准。
 
-### 6. 阶段 3：TDD 循环实现 ➔ `agy-delegation-workflow`
+### 6. 阶段 3：TDD 循环实现 ➔ 宿主执行后端适配
+* **后端选择**：开工前向用户确认执行后端（宿主原生子智能体 / `agy` 无头进程 / 当前会话内联），再按所选后端派发。
 * **宿主自适应**：
-  - **Antigravity 原生环境**：前台直接调用原生 `invoke_subagent` 派发子任务，**严禁在终端套娃调用 `agy` 命令行**；
-  - **非 agy 终端环境**：使用 `dispatch-agy.sh` 清除代理并注入 `Gemini 3.8 Flash (High)` 无头后台进程。
+  - **具备原生子智能体能力的宿主**：直接调用该宿主原生的子智能体派发能力，**严禁在终端套娃调用 `agy` 命令行**；
+  - **`agy` CLI 环境**：使用 `agy-delegation-workflow` 技能的 `scripts/dispatch-agy.sh` 清除代理并派发无头后台进程；执行模型以本机 `agy` 配置为准。
 * **TDD 铁律**：🔴 编写失败单测（L1）➔ 🟢 最简代码使测试通过 ➔ 🔵 保持测试全绿重构 ➔ ✅ 单元测试 Exit Code 0 ➔ 💾 原子提交 Git Commit ➔ 📌 更新检查点锚点。
 
 ### 7. 阶段 3.5：集成验证与回归测试
@@ -177,17 +178,20 @@ graph TD
 
 工作区可通过轻量脚本跟踪断点状态（维护 `.goal-loop/state.json`）：
 ```bash
+# 技能目录随安装方式而定：源码仓库通常为 skills/goal-loop，安装后通常为 .agents/skills/goal-loop
+SKILL_DIR="<goal-loop 技能实际所在目录>"
+
 # 初始化目标状态机
-bash skills/goal-loop/scripts/goal-state-tracker.sh init "目标名称" "计划文件路径"
+bash "$SKILL_DIR/scripts/goal-state-tracker.sh" init "目标名称" "计划文件路径"
 
 # 查看当前看板
-bash skills/goal-loop/scripts/goal-state-tracker.sh status
+bash "$SKILL_DIR/scripts/goal-state-tracker.sh" status
 
 # 切换阶段 (支持 P-1, P0, P0.5, P1, P2, P3, P3.5, P4, P5)
-bash skills/goal-loop/scripts/goal-state-tracker.sh set-phase P0.5
+bash "$SKILL_DIR/scripts/goal-state-tracker.sh" set-phase P0.5
 
 # 标记子任务完成
-bash skills/goal-loop/scripts/goal-state-tracker.sh complete-task "task-2.1"
+bash "$SKILL_DIR/scripts/goal-state-tracker.sh" complete-task "task-2.1"
 ```
 
 ---

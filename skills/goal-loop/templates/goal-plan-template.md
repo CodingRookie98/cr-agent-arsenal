@@ -8,7 +8,7 @@
 > - **计划负责人**: [主调度智能体角色名 / 用户名]
 > - **状态**: [未开始 | 进行中 | 已完成 | 熔断受阻]
 > - **隔离分支**: `feature/goal-[name]` (或根据项目既有规范)
-> - **技术调研备忘录**: `docs/dev/research/research_[topic].md` (或 [豁免: Fast-Track / 纯内部逻辑微调])
+> - **技术调研备忘录**: `docs/project/research/research_[topic].md` (或 [豁免: Fast-Track / 纯内部逻辑微调])
 
 ---
 
@@ -29,7 +29,7 @@
 - [ ] 关联技术与用户文档: `[文档相对路径]`
 
 ### 1.2 依赖选型与开源调研结论 (Research & Feasibility Spike)
-- **阶段 0.5 备忘录**: `docs/dev/research/research_[topic].md` (若触发阶段 0.5 请链接至此)
+- **阶段 0.5 备忘录**: `docs/project/research/research_[topic].md` (若触发阶段 0.5 请链接至此)
 - **开源复用/自研裁决**: [采用开源库: `pkg-name` / 复用既有封装 / 自研 (已通过调研充分辩护) / Fast-Track 豁免]
 - **API 权威契约与版本验证**: [基于 find-docs / context7-cli / 官方文档核准的版本与关键签名]
 

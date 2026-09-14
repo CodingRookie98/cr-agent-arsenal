@@ -48,7 +48,7 @@
 
 ### 2.2 Ralph Loop 的极简持久化机制 (Persistence over Perfection)
 * 循环的每次迭代（Iteration）均以磁盘状态为起点，以客观测试（Exit Code 0）为终点。
-* **物理本质与上下文隔离**：Ralph Loop 赖以克服上下文腐化的核心物理基石是“单次迭代纯净上下文 (Fresh Context)”。在 Agent 技能编排中，必须通过**派发独立子智能体（如 `invoke_subagent` 或后台 `agy`）切断长任务上下文膨胀**，主调度 Agent 仅负责持久化状态管理与阶段流转，严禁在单个长会话中塞入所有子任务的原始细节。
+* **物理本质与上下文隔离**：Ralph Loop 赖以克服上下文腐化的核心物理基石是“单次迭代纯净上下文 (Fresh Context)”。在 Agent 技能编排中，必须通过**派发独立子智能体（如宿主原生子智能体派发能力或后台 `agy`）切断长任务上下文膨胀**，主调度 Agent 仅负责持久化状态管理与阶段流转，严禁在单个长会话中塞入所有子任务的原始细节。
 * 支持跨会话、跨进程的平滑恢复：即使会话被清空或重启，新会话只需读取磁盘上的计划与状态文件，即可在秒级重构当前工作上下文并继续推进。
 
 ### 2.3 自适应分级测试哲学 (Surgical & Tiered Testing)
@@ -131,7 +131,7 @@ graph TD
 | 级别 | 测试类型 | 运行阶段 | 关注焦点与验证目标 | 执行成本 | 典型命令/工具 |
 |:---:|---|:---:|---|:---:|---|
 | **L0** | **静态门禁**<br/>(Static / Lint) | 阶段 3 每次代码变动 | 语法正确性、静态类型安全、代码异味、无未声明依赖与死代码 | 秒级 | `tsc --noEmit`, `eslint`, `cargo check`, `golangci-lint`, `mypy` |
-| **L1** | **单元测试**<br/>(Unit Test) | 阶段 3 TDD 循环内 | 纯函数、算法逻辑、边界分支、状态流转、无 I/O 外部依赖代码 | 极快 (<5s) | `vitest run <path>`, `pytest <path>`, `go test -run`, `cargo test --lib` |
+| **L1** | **单元测试**<br/>(Unit Test) | 阶段 3 TDD 循环内 | 纯函数、算法逻辑、边界分支、状态流转、无 I/O 外部依赖代码 | 极快 (<10s) | `vitest run <path>`, `pytest <path>`, `go test -run`, `cargo test --lib` |
 | **L2** | **集成测试**<br/>(Integration) | 阶段 3.5 集成验证 | 模块间接口契约、数据库/存储交互、中间件装配、状态管理联动 | 中等 (10s~1m) | `vitest run integration/`, `cargo test --test integration`, `python build.py --action test --test-label integration` |
 | **L3** | **端到端测试**<br/>(E2E / System) | 阶段 4 终审验收前 | 用户主干交互链路、CLI 命令全流程、生产环境构建包运行保真度 | 较高 (1m~5m) | `playwright test`, `run_e2e.py`, 全流程 CLI 验收脚本 |
 | **L-Doc** | **文档/元数据** | 阶段 5 归档阶段 | 链接有效性、拼写检查、Markdown 格式、图表渲染合法性 | 极快 | `markdownlint`, link-checker |
@@ -186,7 +186,7 @@ graph TD
          ┌───────────────────┬───────────────────┼───────────────────┬───────────────────┬───────────────────┬───────────────────┐
          ▼                   ▼                   ▼                   ▼                   ▼                   ▼                   ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│  brainstorming  │ │    grilling     │ │ research / docs │ │  writing-plans  │ │ agy-delegation  │ │   regress-check │ │dual-round-review│
+│  brainstorming  │ │    grilling     │ │ research / docs │ │  writing-plans  │ │ agy-delegation  │ │     built-in    │ │dual-round-review│
 │ (阶段 -1 意图对齐)│ │ (阶段 0 压力拷问) │ │(阶段 0.5 选型调研)│ │(阶段 1 架构规划) │ │(阶段 3 委派执行) │ │(阶段 3.5 集成验证)│ │(阶段 4 终审门禁) │
 └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
@@ -210,23 +210,23 @@ graph TD
 * **契约与工具链 SOP**：
   - **3 级调研工具链**：① 本地代码库检索可复用封装 ➔ ② GitHub 开源生态检索 (`gh search repos/code/issues`) ➔ ③ 官方权威文档验证 (`find-docs` / `context7-cli` / `web_search`)；
   - **上下文物理隔离**：调研任务由独立只读子智能体（`research`）在纯净上下文中执行，禁止原始网页与大批量文本污染主调度上下文；
-  - **成果落盘**：产出《技术调研与开源选型备忘录》（`docs/dev/research/research_<topic>.md`，参考 `templates/research-spike-template.md`）；
+  - **成果落盘**：产出《技术调研与开源选型备忘录》（`docs/project/research/research_<topic>.md`，参考 `templates/research-spike-template.md`）；
 * **硬门禁 (<HARD-GATE>)**：
   - **优先复用成熟方案**；若决定放弃高星活跃开源库而选择自研，必须在备忘录中进行充分的技术/性能/许可合规辩护。未获得明确裁决前严禁进入阶段 1！
 
 ### 5.4 阶段 1：实施方案制定与测试定级 ➔ `writing-plans`
 * **适用条件**：方案对齐且压力测试通过后，正式起草落盘计划。
 * **契约与产出**：
-  - 激活 `writing-plans` 技能，在磁盘创建 `docs/superpowers/plans/YYYY-MM-DD-<goal-name>.md`（或用户指定位置）；
+  - 激活 `writing-plans` 技能，在磁盘创建 `docs/project/plans/YYYY-MM-DD-<goal-name>.md`（或用户指定位置）；
   - 严格将大目标分解为 2~5 分钟的微型子任务（Bite-Sized Tasks）；
   - 强制在计划开头嵌入《测试特征与级别裁定书》（明确 L0/L1/L2/L3 范围），并链接阶段 0.5 调研结论。
 
 ### 5.5 阶段 3：宿主自适应委派与 TDD 执行 ➔ `agy-delegation-workflow`
 * **适用条件**：执行具体的子任务编码与单元测试。
 * **契约与协同**：
-  - **Antigravity 原生环境**：前台直接调用原生 `invoke_subagent` 派发子任务，执行隔离的 TDD 循环，**严禁在终端套娃调用 `agy` 命令行**；
-  - **非 agy 终端环境（Claude Code / 通用命令行）**：使用 `dispatch-agy.sh` 清除代理并注入 `Gemini 3.8 Flash (High)` 无头后台进程；
-  - **7 维黄金标准通用模板**：结合通用 `task-prompt-template.md` 约束子任务，禁止后台越权编写计划文档。
+  - **Antigravity 原生环境**：直接调用宿主原生子智能体派发能力派发子任务，执行隔离的 TDD 循环，**严禁在终端套娃调用 `agy` 命令行**；
+  - **非 agy 终端环境（Claude Code / 通用命令行）**：使用 `dispatch-agy.sh` 清除代理并派发无头后台进程，执行模型以本机 `agy` 配置为准；
+  - **7 维黄金标准通用模板**：结合通用 `atomic-task-template.md` 约束子任务，禁止后台越权编写计划文档。
 
 ### 5.6 阶段 4：双轮对抗终审硬门禁 ➔ `dual-round-review`
 * **适用条件**：所有子任务、L2 集成测试及 L3 E2E 测试全部通过后，合并分支前的最终门禁。
@@ -319,7 +319,7 @@ skills/goal-loop/
 
 | 阶段 | 任务目标 | 关键交付物 | 成功标准与验证方式 | 状态 |
 |:---:|---|---|---|:---:|
-| **阶段 1** | 核心参考规范与测试矩阵下沉 | `references/testing-decision-matrix.md`<br/>`references/context-engineering.md`<br/>`references/stage-progression-protocol.md`<br/>`references/failure-recovery-protocol.md`<br/>`references/documentation-sync-matrix.md` | 完整吸纳 `faceFusionCpp` 工作流，语言中立，交叉链接有效 | 未开始 |
-| **阶段 2** | 模板套件与辅助状态脚本开发 | `templates/goal-plan-template.md`<br/>`templates/atomic-task-template.md`<br/>`templates/evaluation-report-template.md`<br/>`scripts/goal-state-tracker.sh` | 模板内嵌测试裁定规范插槽；状态脚本通过参数测试 (Exit Code 0) | 未开始 |
-| **阶段 3** | 主技能编排与生态系统集成 | `skills/goal-loop/SKILL.md`<br/>`.agents/skills/goal-loop` (软链) | 串联 `brainstorming`、`grilling`、`writing-plans`、`agy`、`dual-round-review`；符合 `agentskills.io` 规范 | 未开始 |
-| **阶段 4** | 完整闭环自检、审查与 Git 交付 | 全量自审 + Git Commit | 经过 Diff 严审，零调试残留，提交 Conventional Commits | 未开始 |
+| **阶段 1** | 核心参考规范与测试矩阵下沉 | `references/testing-decision-matrix.md`<br/>`references/context-engineering.md`<br/>`references/stage-progression-protocol.md`<br/>`references/failure-recovery-protocol.md`<br/>`references/documentation-sync-matrix.md` | 完整吸纳 `faceFusionCpp` 工作流，语言中立，交叉链接有效 | 已完成 |
+| **阶段 2** | 模板套件与辅助状态脚本开发 | `templates/goal-plan-template.md`<br/>`templates/atomic-task-template.md`<br/>`templates/evaluation-report-template.md`<br/>`scripts/goal-state-tracker.sh` | 模板内嵌测试裁定规范插槽；状态脚本通过参数测试 (Exit Code 0) | 已完成 |
+| **阶段 3** | 主技能编排与生态系统集成 | `skills/goal-loop/SKILL.md`<br/>`.agents/skills/goal-loop` (软链) | 串联 `brainstorming`、`grilling`、`writing-plans`、`agy`、`dual-round-review`；符合 `agentskills.io` 规范 | 已完成 |
+| **阶段 4** | 完整闭环自检、审查与 Git 交付 | 全量自审 + Git Commit | 经过 Diff 严审，零调试残留，提交 Conventional Commits | 已完成 |

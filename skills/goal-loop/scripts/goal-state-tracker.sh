@@ -42,7 +42,7 @@ usage() {
   DONE  目标圆满达成
 
 示例:
-  $(basename "$0") init "订单结算系统重构" "docs/superpowers/plans/order.md"
+  $(basename "$0") init "订单结算系统重构" "docs/project/plans/2026-01-01-order.md"
   $(basename "$0") status
   $(basename "$0") set-phase P3
   $(basename "$0") complete-task "task-2.1"

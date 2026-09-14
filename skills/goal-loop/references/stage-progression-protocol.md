@@ -60,7 +60,7 @@
 * **核心执行步骤**：
   1. 方案压力拷问：以红队架构师视角，针对隐式假设、单点故障、性能瓶颈、网络分区与边界回滚方案进行无情拷问；
   2. 未决前沿清空：建立设计决策树（Design Tree），递归追问直至所有盲区决策闭合；
-  3. 遗留系统评估（MAY）：若为历史工程，产出现状评估报告（`docs/dev/evaluation/evaluation_{title}.md`）。
+  3. 遗留系统评估（MAY）：若为历史工程，产出现状评估报告（`docs/project/evaluation/evaluation_{title}.md`）。
 * **门禁准出底线**：
   > 方案假设 100% 显式化，不存在任何“大概如此”的未决疑点。
 
@@ -78,17 +78,17 @@
   - Fast-Track 任务、纯样式/文案调整、已知模式的 Defect 修复、直接复用工程既有模块。
 * **外部技能联动**：**派发独立 `research` / `deep-research` 子智能体，按需联动 `find-docs` 技能**。
 * **3 级调研工具链 SOP（自上而下逐级展开）**：
-  1. **本地代码库检索**：优先查验当前工程内是否已有可复用封装或历史实现（`grep_search` / `find-by-name`）；
+  1. **本地代码库检索**：优先查验当前工程内是否已有可复用封装或历史实现（使用宿主的代码库检索能力，如 `glob` / `grep`）；
   2. **GitHub 社区方案评估（优先 `gh` CLI）**：
      - 检索候选库：`gh search repos "<keyword>" --sort=stars`，评估 Star 数、最近更新活跃度与 License 兼容性；
      - 检索实战参考代码：`gh search code "<pattern>"`，学习社区高保真实现范式；
      - 排查已知陷阱：`gh search issues "<topic>"`，排查潜在坑点；
   3. **官方规范与网络检索**：
      - 优先使用 `find-docs` 或 `context7-cli` 获取官方最新 API 签名与破坏性变更信息；
-     - 结合 `web_search` 与 `read_url_content` 查阅 RFC 标准与成熟架构落地实践。
+     - 结合 `web_search` 与宿主的网页抓取能力（如 `web_fetch`）查阅 RFC 标准与成熟架构落地实践。
 * **上下文工程与隔离执行法则**：
   - **物理隔离**：调研产生大量搜索结果与网页内容，严禁在主调度会话中直接倾倒，必须委派只读子智能体在纯净上下文中运行；
-  - **成果落盘**：提炼出高信息密度的《技术调研与开源选型备忘录》，持久化落盘至 `docs/dev/research/research_<topic>.md`（参考 [research-spike-template.md](../templates/research-spike-template.md)）。
+  - **成果落盘**：提炼出高信息密度的《技术调研与开源选型备忘录》，持久化落盘至 `docs/project/research/research_<topic>.md`（参考 [research-spike-template.md](../templates/research-spike-template.md)）。
 * **门禁准出底线 (<HARD-GATE>)**：
   > **决策底线：优先复用成熟方案；若决定自研，必须在备忘录中显式阐明现有开源方案不满足的原因；未完成选型裁决前严禁进入阶段 1 编写落地计划！**
 
