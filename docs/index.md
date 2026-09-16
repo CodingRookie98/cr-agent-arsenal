@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.5.0 (新增术语先行与存量维护通道)
+> - **当前版本**: V1.6.0 (新增派发预算与人机契约字段)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-09-10
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.6.0** | 2026-09-16 | DSH AI Agent | 王辉 | 新增派发超时预算与多智能体并行编排契约、人机契约字段（需求方/批准人/验收口径） |
 | **V1.5.0** | 2026-09-16 | DSH AI Agent | 王辉 | 新增术语先行前置条件与 Maintenance-Patch 存量维护通道；补齐术语漂移校验与术语 SSOT |
 | **V1.4.0** | 2026-09-16 | DSH AI Agent | 王辉 | 新增提问收敛律：P0 方案拷问以「需求确认文档」为收敛出口；RFC 标准模板增补决策台账与默认假设段 |
-| **V1.2.0** | 2026-09-14 | Antigravity AI Agent | 王辉 | 收录 goal-loop V2.0 实施计划至工程治理索引，消除孤儿文档 |
 | **V1.3.0** | 2026-09-14 | Antigravity AI Agent | 王辉 | 合并 dual-round-review V2.0 架构设计书与实施计划索引 |
-| **V1.1.0** | 2026-09-10 | Antigravity AI Agent | 王辉 | 遵循 Diátaxis 标准重组目录，迁移设计书至 explanation/architecture |
+| **V1.2.0** | 2026-09-14 | Antigravity AI Agent | 王辉 | 收录 goal-loop V2.0 实施计划至工程治理索引，消除孤儿文档 |
 
 ---
 
@@ -60,4 +60,5 @@
 | :--- | :--- | :--- |
 | **`goal-loop` V2.0** | 宿主无关执行适配器、计划文件唯一真相源、tracker 派生化与单测 | [2026-09-14-goal-loop-v2-refactor.md](./project/plans/2026-09-14-goal-loop-v2-refactor.md) |
 | **`dual-round-review` V2.0** | 宿主无关派发、审查记录锚点、Light 模式与条件维度 | [2026-09-14-dual-round-review-v2.md](./project/plans/2026-09-14-dual-round-review-v2.md) |
+| **派发预算与人机契约** | 派发超时收口、并行预算制编排、需求方/批准人/验收口径字段 | [2026-09-16-dispatch-budget-and-human-contract.md](./project/plans/2026-09-16-dispatch-budget-and-human-contract.md) |
 | **术语先行与维护通道** | 术语对齐前置与影响分级豁免、Maintenance-Patch 通道、术语 SSOT 落位 | [2026-09-16-terminology-first-and-maintenance-track.md](./project/plans/2026-09-16-terminology-first-and-maintenance-track.md) |
