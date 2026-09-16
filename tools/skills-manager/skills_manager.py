@@ -9,6 +9,7 @@ import sys
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 COLLECTIONS_DIR = os.path.join(SCRIPT_DIR, "collections")
 SKILLS_JSON_PATH = os.path.join(COLLECTIONS_DIR, "common.json")
+NPX_SKILLS_CMD = "npx --yes skills@latest"
 
 def resolve_config_path(file_path):
     """解析配置文件路径，支持直接路径、collections 相对路径或无后缀简称。"""
@@ -18,6 +19,32 @@ def resolve_config_path(file_path):
         os.path.join(COLLECTIONS_DIR, file_path),
         os.path.join(COLLECTIONS_DIR, f"{file_path}.json"),
     ]
+
+    # 支持带/不带 -skill 或 -skills 后缀的智能模糊匹配
+    clean_name = file_path
+    if clean_name.endswith(".json"):
+        clean_name = clean_name[:-5]
+
+    if clean_name.endswith("-skill"):
+        alt = clean_name[:-6]
+        candidates.extend([
+            os.path.join(COLLECTIONS_DIR, alt),
+            os.path.join(COLLECTIONS_DIR, f"{alt}.json"),
+        ])
+    elif clean_name.endswith("-skills"):
+        alt = clean_name[:-7]
+        candidates.extend([
+            os.path.join(COLLECTIONS_DIR, alt),
+            os.path.join(COLLECTIONS_DIR, f"{alt}.json"),
+        ])
+    else:
+        for suffix in ["-skill", "-skills"]:
+            alt = f"{clean_name}{suffix}"
+            candidates.extend([
+                os.path.join(COLLECTIONS_DIR, alt),
+                os.path.join(COLLECTIONS_DIR, f"{alt}.json"),
+            ])
+
     for c in candidates:
         if os.path.exists(c) and os.path.isfile(c):
             return c
@@ -49,7 +76,16 @@ def run_command(cmd, dry_run=False):
         return True
 
     try:
-        result = subprocess.run(cmd, shell=True, check=True, text=True, capture_output=True, encoding='utf-8', errors='replace')
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            check=True,
+            text=True,
+            capture_output=True,
+            encoding='utf-8',
+            errors='replace',
+            stdin=subprocess.DEVNULL
+        )
         print("  Success")
         if result.stdout and result.stdout.strip():
             print(f"  Output:\n{result.stdout}")
@@ -120,7 +156,7 @@ def do_action(action, config, args):
                 sys.exit(0)
 
         skills_str = ' '.join(target_skills)
-        cmd = f"npx skills@latest remove -y --skill {skills_str} --agent {agents_str}"
+        cmd = f"{NPX_SKILLS_CMD} remove -y --skill {skills_str} --agent {agents_str}"
         if getattr(args, 'remaining_args', []):
             cmd += " " + " ".join(args.remaining_args)
         if run_command(cmd, dry_run=args.dry_run):
@@ -148,7 +184,7 @@ def do_action(action, config, args):
                     print("Operation cancelled.")
                     sys.exit(0)
 
-            cmd = f"npx skills@latest add -y {source} --skill {args.skill} --agent {agents_str} --full-depth"
+            cmd = f"{NPX_SKILLS_CMD} add -y {source} --skill {args.skill} --agent {agents_str} --full-depth"
             if getattr(args, 'remaining_args', []):
                 cmd += " " + " ".join(args.remaining_args)
             if run_command(cmd, dry_run=args.dry_run):
@@ -188,13 +224,13 @@ def do_action(action, config, args):
 
             for source, s_config in source_configs.items():
                 if s_config["mode"] == 'all':
-                    cmd = f"npx skills@latest add -y {source} --agent {agents_str} --full-depth"
+                    cmd = f"{NPX_SKILLS_CMD} add -y {source} --agent {agents_str} --full-depth"
                 else:
                     skill_names = sorted(list(s_config["names"]))
                     if not skill_names:
                         continue
                     skills_str = ' '.join(skill_names)
-                    cmd = f"npx skills@latest add -y {source} --skill {skills_str} --agent {agents_str} --full-depth"
+                    cmd = f"{NPX_SKILLS_CMD} add -y {source} --skill {skills_str} --agent {agents_str} --full-depth"
                 
                 if getattr(args, 'remaining_args', []):
                     cmd += " " + " ".join(args.remaining_args)
