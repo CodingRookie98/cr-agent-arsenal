@@ -56,9 +56,19 @@ cr-agent-arsenal/
 仓库提供全局统一的系统指令提示词 [`contexts/AGENTS.md`](./contexts/AGENTS.md)，并通过 [`contexts/install.py`](./contexts/install.py) 一键将配置链接到系统各智能体客户端：
 
 ```bash
-# 执行上下文分发 (创建/更新符号链接)
+# 执行上下文分发（AGENTS.md 全局链接 + 本仓库技能的本地软连接）
 python3 contexts/install.py
 ```
+
+> **两种分发形态，不要混用**：
+> - **本仓库内开发**：`install.py` 以**相对软连接**把 `skills/<name>` 暴露到 `.agents/skills/<name>`，保证单一真相源——修改源目录即时生效，绝不产生副本漂移；
+> - **外部仓库使用**：不复制、不软链，直接用 `npx` 从 GitHub `master` 分支安装：
+>   ```bash
+>   npx --yes skills@latest add -y \
+>     https://github.com/CodingRookie98/cr-agent-arsenal \
+>     --skill goal-loop --agent <agent> --full-depth
+>   ```
+>   批量安装可用 `tools/skills-manager/skills_manager.py install -a <agent>`（来源配置见 `tools/skills-manager/collections/cr-agent-arsenal.json`）。
 
 分发目标对应关系：
 - `~/.config/opencode/AGENTS.md` -> OpenCode 配置

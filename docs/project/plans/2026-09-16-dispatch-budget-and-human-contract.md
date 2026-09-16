@@ -126,4 +126,9 @@
 ---
 
 ## 6. 修订历史 (Revision History)
+- **[2026-09-16] U6 已解决**（用户指令：本仓库用软连接，外部仓库用 `npx` 从 GitHub master 安装）：
+  - 将 `.agents/skills/{goal-loop,dual-round-review,doc-governance,agy-delegation-workflow}` 的**陈旧实体副本**替换为**相对软连接** `../../skills/<name>`（首次因相对深度算错一级导致软链悬空，已修正并复验解析）；
+  - `contexts/install.py` 新增 `link_local_skills()`：每次执行自动建立/修复软链，发现实体副本即移除并替换为软链（幂等）；
+  - 外部仓库路径在 README 中明确为**不复制、不软链**，直接 `npx --yes skills@latest add -y <repo> --skill <name> --agent <agent> --full-depth`；
+  - 验证：四个技能 `.agents/` 与 `skills/` 内容 `diff -rq` 一致，新规则（重派上限等）已到达宿主读取路径。
 - **[2026-09-16]**: 计划创建（Heavy Track）。
