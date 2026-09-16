@@ -29,9 +29,9 @@
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
 - **最后一次验证状态**: L0 exit 0；4 条一致性断言通过；L-Doc 断链 0 / 体检 PASS
-- **最新有效提交**: `aa3f094`（Delta Re-Loop 修复）
-- **P4 裁决记录**: R1 `blocker=1 major=3 minor=2 nit=2` → R2 `BLOCKERS=5 | REJECT_WITH_BLOCKERS`（B5 为 R2 独立实测发现的真实断链）→ Delta Re-Loop 第 1 轮修复 `aa3f094`（迭代 1/5）
-- **派发账本摘要**: 当前在途 0 笔（R1/R2 均已返回）；最近基线 `aa3f094`；**恢复锚点** = `.goal-loop/dispatch-ledger.md`（明细明细，高频易变，已被 gitignore）
+- **最新有效提交**: `0fa29f7`（Delta Re-Loop 第 2 轮修复）
+- **P4 裁决记录**: R1 `blocker=1 major=3 minor=2 nit=2` → R2 `BLOCKERS=5 | REJECT_WITH_BLOCKERS`（B5 为 R2 独立实测发现的真实断链）→ Delta Re-Loop 第 1 轮 `aa3f094`（迭代 1/5）→ R1 复验 `BLOCKERS=2`（B6 引用处矛盾 / B7 出口空白）→ Delta Re-Loop 第 2 轮 `0fa29f7`（迭代 2/5）
+- **派发账本摘要**: 当前在途 1 笔（R1 复验 Delta 2）；最近基线 `0fa29f7`；**恢复锚点** = `.goal-loop/dispatch-ledger.md`（高频易变明细，已被 gitignore）
 - **阻断原因**: 无
 - **执行后端**: 当前会话内联（用户已在上一轮明确选择 A 档并要求执行）
 - **P4 纪律（防重演）**: **严禁并发派发 R1/R2**；R1 真实报告返回后方可派发 R2；派发预算 1 个检查点周期
