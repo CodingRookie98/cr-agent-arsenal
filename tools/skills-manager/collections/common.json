@@ -1,0 +1,130 @@
+{
+  "skills": [
+    {
+      "source": "https://github.com/vercel-labs/skills",
+      "mode": "names",
+      "names": [
+        "find-skills"
+      ]
+    },
+    {
+      "source": "https://github.com/github/awesome-copilot",
+      "mode": "names",
+      "names": [
+        "git-commit"
+      ]
+    },
+    {
+      "source": "https://github.com/firecrawl/cli",
+      "mode": "names",
+      "names": [
+        "firecrawl-search"
+      ]
+    },
+    {
+      "source": "https://github.com/199-biotechnologies/claude-deep-research-skill",
+      "mode": "names",
+      "names": [
+        "deep-research"
+      ]
+    },
+    {
+      "source": "https://github.com/anthropics/skills",
+      "mode": "all",
+      "names": [
+        "algorithmic-art",
+        "brand-guidelines",
+        "canvas-design",
+        "doc-coauthoring",
+        "docx",
+        "frontend-design",
+        "internal-comms",
+        "mcp-builder",
+        "pdf",
+        "pptx",
+        "skill-creator",
+        "slack-gif-creator",
+        "theme-factory",
+        "web-artifacts-builder",
+        "webapp-testing",
+        "xlsx"
+      ]
+    },
+    {
+      "source": "https://github.com/vercel-labs/agent-browser",
+      "mode": "names",
+      "names": [
+        "agent-browser"
+      ]
+    },
+    {
+      "source": "https://github.com/op7418/humanizer-zh",
+      "mode": "names",
+      "names": [
+        "humanizer-zh"
+      ]
+    },
+    {
+      "source": "https://github.com/mattpocock/skills",
+      "mode": "all",
+      "names": [
+        "ask-matt",
+        "code-review",
+        "codebase-design",
+        "diagnosing-bugs",
+        "domain-modeling",
+        "git-guardrails-claude-code",
+        "grill-me",
+        "grill-with-docs",
+        "grilling",
+        "handoff",
+        "implement",
+        "improve-codebase-architecture",
+        "migrate-to-shoehorn",
+        "prototype",
+        "research",
+        "resolving-merge-conflicts",
+        "scaffold-exercises",
+        "setup-matt-pocock-skills",
+        "setup-pre-commit",
+        "tdd",
+        "teach",
+        "to-questionnaire",
+        "to-spec",
+        "to-tickets",
+        "triage",
+        "wait-what",
+        "wayfinder",
+        "wizard",
+        "writing-for-agents"
+      ]
+    },
+    {
+      "source": "https://github.com/upstash/context7",
+      "mode": "names",
+      "names": [
+        "context7-cli",
+        "find-docs"
+      ]
+    },
+    {
+      "source": "https://github.com/siviter-xyz/dot-agent",
+      "mode": "names",
+      "names": [
+        "software-engineer"
+      ]
+    },
+    {
+      "source": "https://github.com/multica-ai/andrej-karpathy-skills",
+      "mode": "all",
+      "names": []
+    },
+    {
+      "source": "https://github.com/cursor/plugins",
+      "mode": "names",
+      "names": [
+        "thermo-nuclear-code-quality-review"
+      ]
+    }
+  ]
+}

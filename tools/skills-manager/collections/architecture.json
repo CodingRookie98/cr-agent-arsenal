@@ -1,0 +1,18 @@
+{
+  "skills": [
+    {
+      "source": "https://github.com/wshobson/agents",
+      "mode": "names",
+      "names": [
+        "architecture-patterns"
+      ]
+    },
+    {
+      "source": "https://github.com/softaworks/agent-toolkit",
+      "mode": "names",
+      "names": [
+        "c4-architecture"
+      ]
+    }
+  ]
+}

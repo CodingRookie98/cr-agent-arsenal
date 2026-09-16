@@ -1,0 +1,18 @@
+{
+  "skills": [
+    {
+      "source": "https://github.com/remotion-dev/skills",
+      "mode": "names",
+      "names": [
+        "remotion-best-practices"
+      ]
+    },
+    {
+      "source": "https://github.com/inference-sh-9/skills",
+      "mode": "names",
+      "names": [
+        "remotion-render"
+      ]
+    }
+  ]
+}

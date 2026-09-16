@@ -1,0 +1,64 @@
+{
+  "skills": [
+    {
+      "source": "https://github.com/vercel-labs/agent-skills",
+      "mode": "names",
+      "names": [
+        "vercel-react-best-practices",
+        "vercel-react-native-skills",
+        "vercel-composition-patterns",
+        "vercel-react-view-transitions",
+        "web-design-guidelines"
+      ]
+    },
+    {
+      "source": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+      "mode": "names",
+      "names": [
+        "ui-ux-pro-max"
+      ]
+    },
+    {
+      "source": "https://github.com/wshobson/agents",
+      "mode": "names",
+      "names": [
+        "tailwind-design-system"
+      ]
+    },
+    {
+      "source": "https://github.com/josiahsiegel/claude-plugin-marketplace",
+      "mode": "names",
+      "names": [
+        "tailwindcss-advanced-layouts"
+      ]
+    },
+    {
+      "source": "https://github.com/lombiq/tailwind-agent-skills",
+      "mode": "names",
+      "names": [
+        "tailwind-4-docs"
+      ]
+    },
+    {
+      "source": "https://github.com/shadcn/ui",
+      "mode": "all",
+      "names": [
+        "shadcn"
+      ]
+    },
+    {
+      "source": "https://github.com/pbakaus/impeccable",
+      "mode": "names",
+      "names": [
+        "impeccable"
+      ]
+    },
+    {
+      "source": "https://github.com/leonxlnx/taste-skill",
+      "mode": "names",
+      "names": [
+        "design-taste-frontend"
+      ]
+    }
+  ]
+}
