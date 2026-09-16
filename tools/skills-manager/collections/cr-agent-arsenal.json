@@ -1,0 +1,14 @@
+{
+  "skills": [
+    {
+      "source": "https://github.com/CodingRookie98/cr-agent-arsenal",
+      "mode": "all",
+      "names": [
+        "agy-delegation-workflow",
+        "doc-governance",
+        "dual-round-review",
+        "goal-loop"
+      ]
+    }
+  ]
+}
