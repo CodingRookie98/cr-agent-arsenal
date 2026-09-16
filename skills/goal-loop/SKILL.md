@@ -49,7 +49,7 @@ description: Use when executing long-horizon engineering goals that span multipl
 | 阶段 | 目标 | 外部技能 | 产物 / 指针 |
 |:---:|---|---|---|
 | **P-1** | 意图对齐 | `brainstorming` | 2~3 个备选方案；门禁见 [stage-progression-protocol.md](references/stage-progression-protocol.md) |
-| **P0** | 方案压力测试 | `grilling` | [evaluation-report-template.md](templates/evaluation-report-template.md) |
+| **P0** | 方案压力测试 | `grilling` | 需求确认文档（收敛出口）；存量工程评估可选 [evaluation-report-template.md](templates/evaluation-report-template.md) |
 | **P0.5** | 调研与开源选型 | `research` / `find-docs` | [research-spike-template.md](templates/research-spike-template.md) |
 | **P1** | 计划与测试定级 | `writing-plans` | [goal-plan-template.md](templates/goal-plan-template.md) + [testing-decision-matrix.md](references/testing-decision-matrix.md) |
 | **P2** | 原子任务拆解 | — | [atomic-task-template.md](templates/atomic-task-template.md) |
