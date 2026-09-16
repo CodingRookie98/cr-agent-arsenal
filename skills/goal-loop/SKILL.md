@@ -1,6 +1,6 @@
 ---
 name: goal-loop
-description: Use when executing long-horizon engineering goals that span multiple files or modules, are expected to exceed ~10 minutes, or need durable cross-session state and a strict delivery gate. Triggers on multi-module refactors, cross-cutting feature work, long bug hunts, and any task where tiered testing (L0–L3), checkpoint persistence, and an adversarial Zero-Blockers review are required.
+description: Use when executing long-horizon engineering goals that span multiple files or modules, are expected to exceed ~10 minutes, or need durable cross-session state and a strict delivery gate. Triggers on multi-module refactors, cross-cutting feature work, long bug hunts, any task where tiered testing (L0–L3), checkpoint persistence, and an adversarial Zero-Blockers review are required, and legacy-system maintenance fixes whose triage needs the lightweight Maintenance-Patch track.
 ---
 
 # `goal-loop` 目标实现循环
@@ -58,7 +58,11 @@ description: Use when executing long-horizon engineering goals that span multipl
 | **P4** | 对抗式终审 | `dual-round-review` | [stage-progression-protocol.md](references/stage-progression-protocol.md) |
 | **P5** | 文档归档 | `doc-governance`（可选） | [documentation-sync-matrix.md](references/documentation-sync-matrix.md) |
 
-**通道裁剪**：Fast-Track 豁免 P-1 / P0 / P0.5，直接进入 P1 轻量计划与 P3。判定阈值与误判降级规则见 [stage-progression-protocol.md](references/stage-progression-protocol.md) 的执行通道分级判定矩阵。
+**通道裁剪**：
+- **Fast-Track（敏捷轻量）**：豁免 P-1 / P0 / P0.5，直接进入 P1 轻量计划与 P3；
+- **Maintenance-Patch（存量维护）**：豁免 P-1 / P0 / P0.5 / P2；保留 P1 极简计划（现象/复现/根因假设/修复范围/回归测试）、P3 定位与回归测试、P3.5 L2 局部回归、P4 定向单轮红队审查。**强制保留 3-Tries 熔断、修复前先复现、修复必带回归测试、Diff 范围锁定**；一旦需改公共契约即升级为 Heavy Track。
+
+判定阈值、通道 C 完整规程与误判降级规则见 [stage-progression-protocol.md](references/stage-progression-protocol.md) 的执行通道分级判定矩阵。
 
 ---
 
