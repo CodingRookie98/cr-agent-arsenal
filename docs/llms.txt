@@ -12,6 +12,7 @@
 - [doc-governance 文档工程与知识库治理技能架构设计书 (Architecture & Design Specification)](explanation/architecture/doc-governance-design.md): 在以大语言模型（LLM）为核心的 AI 智能体软件研发时代，传统的文档管理模式正在遭遇前所未有的范式危机。文档不再仅仅是给人类工程师偶尔查阅的静态参考书，更是**直接作为 AI 智能体生成代码、规划架构与执行 TDD 的核心上下文（Cont...
 - [dual-round-review 双轮对抗审查技能架构设计书 (Architecture & Design Specification)](explanation/architecture/dual-round-review-design.md): 大模型编程面临三大核心陷阱：**讨好型盲从（Sycophancy）**、**浅层打补丁（Palliative Patching）** 与 **审查幻觉与过度工程（Over-engineering）**。双轮对抗审查以"红队穿透 + 元架构师...
 - [goal-loop 目标实现循环技能架构设计书 (Architecture & Design Specification)](explanation/architecture/goal-loop-design.md): 在大语言模型（LLM）驱动的软件研发自动化进程中，单轮对话或无状态的多轮交互在应对跨模块、多阶段的长任务（Long-Horizon Tasks）时暴露出以下系统性缺陷：
+- [taste-driven-designer 品味驱动设计技能架构设计书 (Architecture & Design Specification)](explanation/architecture/taste-driven-designer-design.md): 将 AI 从统计平庸升级为世界级设计执行的三阶段流程：外部随机种子（SSoT）+ 独立 Critic 闭环（9/10 收敛门禁）+ 多模态增强（能力门控）+ 残酷减法（AI Tells 审计）
 
 ## Project Governance (工程演进 / 发布日志与待办)
 
@@ -19,3 +20,4 @@
 - [goal-loop 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-goal-loop-v2-refactor.md): 以下四项经用户确认，作为不可回退的实现约束：
 - [派发超时预算与人机契约字段 实施方案计划 (Implementation Plan)](project/plans/2026-09-16-dispatch-budget-and-human-contract.md)
 - [术语先行与维护通道机制升级 实施方案计划 (Implementation Plan)](project/plans/2026-09-16-terminology-first-and-maintenance-track.md)
+- [taste-driven-designer 技能沉淀 实施方案计划 (Implementation Plan)](project/plans/2026-09-20-taste-driven-designer.md)
