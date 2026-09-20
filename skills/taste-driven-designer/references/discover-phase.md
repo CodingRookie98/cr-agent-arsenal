@@ -8,7 +8,7 @@
 
 ## 1. 种子字符串注入随机性 (String Seed of Thought)
 
-理论出处：Sakana AI 公开论文 *String Seed of Thought*（<https://pub.sakana.ai/ssot/>）。核心：用一段**模型无法预测**的随机字符串充当创意方向的唯一灵感源，使每次运行都产生不同的、一次性 的设计决策。
+理论出处：Sakana AI 公开论文 *String Seed of Thought*（<https://pub.sakana.ai/ssot/>）。核心：用一段**模型无法预测**的随机字符串充当创意方向的唯一灵感源，使每次运行都产生不同的、一次性的设计决策。
 
 ### 1.1 施工步骤（完整规程）
 

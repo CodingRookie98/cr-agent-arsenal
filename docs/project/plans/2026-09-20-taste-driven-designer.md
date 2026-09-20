@@ -15,7 +15,7 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-09-20（需求对齐轮，Q1 命名 taste-driven-designer，Q2/Q3/Q4 按推荐）
 > - **批准基线**: 计划的 4 项关键决策（命名/范围/执行依赖/交付规格）经用户逐项确认；基线变更需重新确认
-> - **状态**: 进行中
+> - **状态**: 已完成（P4 取得 Zero Blockers）
 > - **隔离分支**: `feature/taste-driven-designer`
 > - **技术调研备忘录**: [豁免: 方法论直接来源于已归档文献 docs/reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md，无第三方技术选型]
 > - **临时 Scratchpad**: `.goal-loop/scratchpad.md`
@@ -26,12 +26,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P4 终审（P3 与 P3.5 已闭合）
-- **当前活跃子任务**: 无
+- **当前活跃阶段**: 已完成（P4 取得 Zero Blockers，全部阶段闭合）
+- **当前活跃子任务**: 无（P3~P5 全部闭合）
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
-- **最后一次验证状态**: L0 exit 0（bash -n / diff --check）；L1 pytest 10 passed；L-Doc 断链 0、健康度 PASS、修订历史已自愈裁剪
-- **最新有效提交**: `c258811`（P3 原子单元）
+- **最后一次验证状态**: L0 exit 0；L1 pytest 13 passed；L-Doc 断链 0、健康度 PASS。P4 Light 红队终审 Zero Blockers（🔴 0 / 🟡 2 / ⚪ 3，全部闭环）
+- **最新有效提交**: `f00e44a`（P4 复验基线；终审后边界用例与结项登记待最终提交）
 - **阻断原因**: 无
 
 ---
@@ -119,13 +119,13 @@
 - [x] **Task P3.5.2**: `python3 contexts/install.py` 创建 `.agents/skills/taste-driven-designer` 相对软链；全量验证命令执行（L0 + L1 + L-Doc 三条命令全部 Exit Code 0）
 
 ### P4: 对抗终审与再循环闭环硬门禁
-- [ ] **Task P4.1**: 按用户裁定执行**定向单轮红队审查（Light 模式）**—— 独立子智能体以最新提交为基线，审查技能方法论文档与既定文献/仓库约定的一致性、技能描述触发质量、脚本边界完整性；取得终审裁决明细表（🔴/🟡/⚪）
-- [ ] **Task P4.2**: 若存在阻断项，实施针对性修复并原子提交 → 以修复提交为新基线重审（Delta Re-Loop，上限 5 次）
-- [ ] **Task P4.3**: 阻断项清零终审放行 → 本计划登记 Zero Blockers 结项
+- [x] **Task P4.1**: 按用户裁定执行**定向单轮红队审查（Light 模式）**—— 独立子智能体以 `9353ac0..f00e44a` 为基线审查，取得终审裁决：**Zero Blockers ✅**（🔴 0 / 🟡 2 / ⚪ 3），8 技法方法论保真、触发质量、仓库约定、脚本断言、五处注册、内部一致性、安全红线 7 维度全部通过
+- [x] **Task P4.2**: 阻断项为零；审稿建议项全部闭环 —— ① 边界用例追加（-l 8 最小 / -l 1024 -c 64 最大组合 / -s "" 回退随机，pytest 10→13）；② discover-phase 排版笔误修复；③ ⚪#6 LCG 低位提取为理论弱随机点，经评估**登记为接受项**（设计灵感用途无实际影响，且改动将破坏已被单测固化的确定性契约）
+- [x] **Task P4.3**: 阻断项清零终审放行 → 本计划登记 Zero Blockers 结项（见第 6 节）
 
 ### P5: 文档全向归档与联动升级
-- [ ] **Task P5.1**: 对照 `documentation-sync-matrix.md` 复核（index/llms/README/设计书/计划五处状态一致）
-- [ ] **Task P5.2**: 本计划标记为「已完成」，登记执行总结与提交 SHA
+- [x] **Task P5.1**: 对照 `documentation-sync-matrix.md` 复核（index/llms/README/设计书/计划五处状态一致；红队维度 5 已实测核对）
+- [x] **Task P5.2**: 本计划标记为「已完成」，登记执行总结与提交 SHA（见第 6 节）
 
 ---
 
@@ -134,8 +134,20 @@
 - **[2026-09-20 10:40] 探查记录 1**: 仓库技能惯例确认 —— SKILL.md 采用 YAML frontmatter（name/description）+ 中文路由层正文；references/templates/scripts/tests 四件套；`skills-lock.json` 与 `.agents/` 为 gitignored 本地生成物（npx skills 维护），无需手工注册；`.agents/skills/` 软链由 `contexts/install.py` 自动创建（相对软连锁死单一真相源）。
 - **[2026-09-20 10:40] 探查记录 2**: 治理门禁确认 —— `check-doc-links.py --root docs`（断链+锚点）、`audit-doc-health.py --root docs`（健康度）、`generate-llms-txt.py`（llms.txt 生成器，本次手工增量更新保持既有条目格式）；llms.txt 无技能 SKILL.md 直链惯例，只收设计书与计划条目。
 - **[2026-09-20 10:45] 探查记录 3**: seed 脚本确定性模式采用 Park-Miller LCG（a=48271, m=2^31−1），乘积约 1.0e14 < 2^53，awk 双精度精确无溢出；种子字符串经 charset 索引哈希后入 LCG，ASCII 种子与 Python 复刻实现完全一致（单测联动断言）。
+- **[2026-09-20 11:00] 探查记录 4**: 集成验证暴露 2 个问题并已闭合 —— ① 设计书引用文章的相对路径一级不足（`../reference` 404，需 `../../reference`）；② SKILL.md description 647 字符超出 writing-skills 建议 500 上限，分两轮精简至 490（frontmatter 总计 531 < 1024 合规）。index.md 修订历史因新增 V1.8.0 超 5 条上限，经 trim-revision.py --fix 自愈裁剪至 5 条。全部门禁复验 PASS（断链 0 / 健康度 PASS / pytest 10 passed / bash -n / diff --check）。脚本跨目录调用、-s 与 -c 组合、随机多样性、非法参数退出码 2 均抽检通过。
+
+---
+
+## 6. 结项登记 (Closure Record)
+
+- **终审凭据**: P4 Light 红队终审（子智能体 928177e4）—— **Zero Blockers ✅**（🔴 0 / 🟡 2 / ⚪ 3），基线 `9353ac0..f00e44a`
+- **审稿闭环**: 🟡 #2 checkpoint 更新（本节）、🟡 #3 工作区漂移随最终提交闭合、⚪ #4 边界用例已固化（pytest 10→13）、⚪ #5 笔误已修、⚪ #6 LCG 低位提取**登记为接受项**（设计灵感用途无实际影响；改动将破坏已被单测固化的确定性契约）
+- **验收复核**: 五种验收场景全部满足（技能结构完整 / 触发描述合规 / 脚本可运行 pytest 全绿 / 8 技法可寻址 / 全套注册完成）
+- **交付清单**: 技能包 `skills/taste-driven-designer/`（SKILL.md + references×4 + templates×3 + scripts + tests）、设计书 `docs/explanation/architecture/taste-driven-designer-design.md`、注册（index V1.8.0 / llms.txt / README）、软链 `.agents/skills/taste-driven-designer`
+- **提交链**: `c258811`（P3）→ `ca47366`（P3.5）→ `f00e44a`（desc 合规）→ 最终提交（边界用例 + 结项登记）
 
 ---
 
 ## 5. 修订历史 (Revision History)
 - **[2026-09-20]**: 计划创建（V1.0.0）。
+- **[2026-09-20]**: 结项（P4 取得 Zero Blockers，追加第 6 节结项登记）。

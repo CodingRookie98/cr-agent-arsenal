@@ -115,3 +115,28 @@ def test_help_flag_succeeds():
     r = run("-h")
     assert r.returncode == 0
     assert "用法" in r.stdout or "usage" in r.stdout
+
+
+def test_min_length_boundary():
+    r = run("-l", "8")
+    assert r.returncode == 0, r.stderr
+    assert len(r.stdout.strip()) == 8
+
+
+def test_max_length_and_count_combination():
+    r = run("-l", "1024", "-c", "64")
+    assert r.returncode == 0, r.stderr
+    lines = r.stdout.strip().splitlines()
+    assert len(lines) == 64
+    assert all(len(line) == 1024 for line in lines)
+
+
+def test_empty_seed_falls_back_to_random():
+    # -s "" 与不传等价: 回退真随机模式, 输出合规且跨运行存在多样性
+    r = run("-s", "", "-l", "24")
+    assert r.returncode == 0, r.stderr
+    out = r.stdout.strip()
+    assert len(out) == 24
+    assert set(out) <= BASE62
+    outro = run("-s", "", "-l", "24").stdout
+    assert out != outro
