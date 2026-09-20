@@ -1,6 +1,6 @@
 ---
 name: taste-driven-designer
-description: Use when the user wants to design or redesign any UI/UX artifact — landing pages, web apps, mobile interfaces, game UIs, dashboards, or interface-adjacent visual assets — and expects distinctive, tasteful results instead of generic AI slop. Also use when asked to give a design "personality" or "art direction", make something look premium/unique/"not AI-generated", run a design critic or vibe-check on an existing interface, or when a frontend build needs creative direction beyond a plain functional layout. Triggers on words like landing page, hero section, design language, moodboard, art direction, UI polish, taste, and "make it look good".
+description: Use when the user wants to design or redesign any UI/UX artifact — landing pages, web apps, mobile interfaces, game UIs, or dashboards — and expects distinctive, tasteful results instead of generic AI slop. Also use when asked to give a design a personality or art direction, make it look premium/unique/not AI-generated, critique an existing interface, or give a frontend build direction. Triggers on landing page, hero section, design language, moodboard, art direction, UI polish, taste.
 ---
 
 # taste-driven-designer 品味驱动设计
