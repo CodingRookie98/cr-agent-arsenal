@@ -5,7 +5,7 @@
 > - **当前版本**: V1.0.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-09-20
-> - **理论基准**: [《How to Turn Your AI into a World-Class Designer》](../reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md)（Anshu Chimala，REF-ART-AI-DESIGNER-2026）
+> - **理论基准**: [《How to Turn Your AI into a World-Class Designer》](../../reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md)（Anshu Chimala，REF-ART-AI-DESIGNER-2026）
 
 ---
 

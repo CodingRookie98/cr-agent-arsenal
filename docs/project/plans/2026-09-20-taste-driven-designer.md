@@ -26,12 +26,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P1 计划制定
+- **当前活跃阶段**: P4 终审（P3 与 P3.5 已闭合）
 - **当前活跃子任务**: 无
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
-- **最后一次验证状态**: 无
-- **最新有效提交**: 无（分支 `feature/taste-driven-designer` 自 `9353ac0` 创建）
+- **最后一次验证状态**: L0 exit 0（bash -n / diff --check）；L1 pytest 10 passed；L-Doc 断链 0、健康度 PASS、修订历史已自愈裁剪
+- **最新有效提交**: `c258811`（P3 原子单元）
 - **阻断原因**: 无
 
 ---
@@ -105,18 +105,18 @@
 - [x] **Task P1.1**: 目标范围、验收口径与 4 项关键决策经用户确认（命名 taste-driven-designer / UI 界面主战场 / 能力门控分层 / 全规格交付）
 
 ### P3: 核心功能原子实现 (TDD 循环)
-- [ ] **Task P3.1**: 种子脚本 TDD —— 先写 `tests/test_generate_seed.py`（红）→ 实现 `scripts/generate-seed.sh`（绿）
+- [x] **Task P3.1**: 种子脚本 TDD —— 先写 `tests/test_generate_seed.py`（红）→ 实现 `scripts/generate-seed.sh`（绿）
   - **涉及文件**: `skills/taste-driven-designer/tests/test_generate_seed.py`, `skills/taste-driven-designer/scripts/generate-seed.sh`
   - **TDD 步骤**: 🔴 失败单测 ➔ 🟢 最简实现 ➔ ✅ 单测通过 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/taste-driven-designer/tests/ -v`（Exit Code 0）
-- [ ] **Task P3.2**: 技能主文档 `SKILL.md`（frontmatter 触发描述 + 铁律 + D1/D2/D3 阶段路由 + 快速清单 + 降级规则 + 参考导航）
-- [ ] **Task P3.3**: 参考资料 ×4 —— `discover-phase.md`（种子字符串规程 + 雄心 Prompt 三步入炉法）、`critic-loop-protocol.md`（闭环结构/降级路径/评分量规/收敛预算/基线对比法）、`ai-tells-audit.md`（7 大反模式表 + 减法规则 + 文案重写规则）、`multimodal-enrichment.md`（能力门控矩阵 + 图像/视频增强协议）
-- [ ] **Task P3.4**: 提示词模板 ×3 —— `design-brief-template.md`、`critic-prompt-template.md`（固定 Critic 提示词，每轮原样复用）、`seed-string-procedure.md`（种子施工步骤）
-- [ ] **Task P3.5**: 架构设计书 `docs/explanation/architecture/taste-driven-designer-design.md`（文档控制信息 + 理论支柱 + 三阶段拓扑 + 能力门控矩阵 + 角色模型 + 质量指标 + 与既有技能协同）
+- [x] **Task P3.2**: 技能主文档 `SKILL.md`（frontmatter 触发描述 + 铁律 + D1/D2/D3 阶段路由 + 快速清单 + 降级规则 + 参考导航）
+- [x] **Task P3.3**: 参考资料 ×4 —— `discover-phase.md`（种子字符串规程 + 雄心 Prompt 三步入炉法）、`critic-loop-protocol.md`（闭环结构/降级路径/评分量规/收敛预算/基线对比法）、`ai-tells-audit.md`（7 大反模式表 + 减法规则 + 文案重写规则）、`multimodal-enrichment.md`（能力门控矩阵 + 图像/视频增强协议）
+- [x] **Task P3.4**: 提示词模板 ×3 —— `design-brief-template.md`、`critic-prompt-template.md`（固定 Critic 提示词，每轮原样复用）、`seed-string-procedure.md`（种子施工步骤）
+- [x] **Task P3.5**: 架构设计书 `docs/explanation/architecture/taste-driven-designer-design.md`（文档控制信息 + 理论支柱 + 三阶段拓扑 + 能力门控矩阵 + 角色模型 + 质量指标 + 与既有技能协同）
 
 ### P3.5: 集成验证与端到端贯通
-- [ ] **Task P3.5.1**: 文档注册 —— `docs/index.md` V1.8.0（技能表/架构表/计划表三处联动 + 修订历史）、`docs/llms.txt`（Explanation/Project Governance 两节）、`README.md` 技能目录表
-- [ ] **Task P3.5.2**: `python3 contexts/install.py` 创建 `.agents/skills/taste-driven-designer` 相对软链；全量验证命令执行（L0 + L1 + L-Doc 三条命令全部 Exit Code 0）
+- [x] **Task P3.5.1**: 文档注册 —— `docs/index.md` V1.8.0（技能表/架构表/计划表三处联动 + 修订历史）、`docs/llms.txt`（Explanation/Project Governance 两节）、`README.md` 技能目录表
+- [x] **Task P3.5.2**: `python3 contexts/install.py` 创建 `.agents/skills/taste-driven-designer` 相对软链；全量验证命令执行（L0 + L1 + L-Doc 三条命令全部 Exit Code 0）
 
 ### P4: 对抗终审与再循环闭环硬门禁
 - [ ] **Task P4.1**: 按用户裁定执行**定向单轮红队审查（Light 模式）**—— 独立子智能体以最新提交为基线，审查技能方法论文档与既定文献/仓库约定的一致性、技能描述触发质量、脚本边界完整性；取得终审裁决明细表（🔴/🟡/⚪）
