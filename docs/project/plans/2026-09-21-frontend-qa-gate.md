@@ -30,8 +30,8 @@
 - **当前活跃子任务**: Task P4.2（Delta Re-Loop 第 1 轮）
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
-- **最后一次验证状态**: `python3 -m pytest skills/ -q` **95 passed**（Delta 修复后：qa-gate 22 + taste 13 + 契约 13 + 其他既有）；`bash -n` / `git diff --check` OK；断链 0；健康度 PASS；修订历史滑动窗口 PASS
-- **最新有效提交**: `c1252a4`（P3 交付提交，19 files, +1452/-12）
+- **最后一次验证状态**: `python3 -m pytest skills/ -q` **97 passed**（qa-gate 24 + taste 13 + 契约 13 + 其他既有）；`bash -n` / `git diff --check` OK；断链 0；健康度 PASS；修订历史滑动窗口 PASS
+- **最新有效提交**: `9d294a3`（自查修复：断言总数 28→31 与矩阵结构契约用例）；交付链 `c1252a4` → `fab43f8` → `9d294a3`
 - **阻断原因**: R1 裁定 3 项 Blocker（R1-1/R1-2/R1-3）已全部修复，待 Delta R1 复核
 
 ---
@@ -213,7 +213,7 @@
 | R1-12 | ⚪ | 接受 | D2 内嵌自检改为与 Gate A 一致的九态枚举勾选项 |
 | R1-13 | ⚪（历史） | 登记不修 | 既有 `../../docs/...` 链接属基线既有技术债，按 Diff 边界锁不纳入本次交付 |
 
-**主会话自预检补充（R1 未覆盖、同源）**：`test_no_cross_skill_relative_links` 原正则因转义错误实际**恒真空**（对 `../goal-loop/SKILL.md` 等形态全部漏检），已随 R1-11 一并修复并加自检用例；报告校验器已加 `--` 选项终止符。
+**主会话自预检补充（R1 未覆盖、同源）**：① `test_no_cross_skill_relative_links` 原正则因转义错误实际**恒真空**（对 `../goal-loop/SKILL.md` 等形态全部漏检），已随 R1-11 一并修复并加自检用例；② 报告校验器已加 `--` 选项终止符；③ **验收矩阵声明总数「28 条」为算术错误**（实际 9+8+8+3+3 = **31 条**），已修正并新增两条契约用例（`test_matrix_declared_total_matches_rows` 声明=实际、`test_matrix_rows_are_structured_assertions` 四列结构），提交 `9d294a3`。
 
 **Delta 修复后验证**：`pytest skills/ -q` **95 passed**；`bash -n`、`git diff --check`、断链 0、健康度 PASS、修订窗口 PASS。
 
