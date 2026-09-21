@@ -33,7 +33,7 @@ PROHIBITION_WORDS = re.compile(r"不得|禁止|不输出|不许|不含|不涉及
 
 # 跨技能相对路径硬链接：覆盖 (../x/)、(./x/)、(x/)、(../../skills/x/) 与绝对路径形态。
 # 正则自身由 test_cross_skill_link_scanner_self_check 自检，防止再次出现恒真空断言。
-CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow)[\\\\/]", re.IGNORECASE)
+CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(?<![\\.])(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow)[\\\\/]", re.IGNORECASE)
 FIVE_DIMENSIONS = ["响应式", "状态", "无障碍", "浏览器", "性能"]
 
 
@@ -282,7 +282,7 @@ def test_cross_skill_link_scanner_self_check():
     ]
     for sample in command_examples:
         assert is_command_example(sample), f'命令行示例未被识别（会误报）: {sample}'
-    legal = ['(references/acceptance-matrix.md)', '(scripts/check-qa-report.sh)', '(templates/qa-report-template.md)']
+    legal = ['(references/acceptance-matrix.md)', '(scripts/check-qa-report.sh)', '(templates/qa-report-template.md)', '.goal-loop/dispatch-ledger.md']
     for sample in legal:
         assert not CROSS_SKILL_LINK.search(sample), f'跨技能链接正则误伤技能内路径: {sample}'
 
@@ -345,7 +345,7 @@ def test_checker_fails_when_blocked_without_unverified_items(tmp_path):
     report.write_text(FULL_REPORT.replace("- 未验证：A5", "- 未验证：无"), encoding="utf-8")
     r = run_checker(report)
     assert r.returncode != 0, "结论 BLOCKED 却声明无未验证项时必须非零退出"
-    assert "BLOCKED" in r.stdout + r.stderr
+    assert "未验证" in r.stdout + r.stderr
 
 
 PASS_REPORT = (
@@ -398,3 +398,38 @@ def test_checker_min_assertions_option(tmp_path):
     strict = run_checker(report, "--min-assertions=15")
     assert strict.returncode != 0, "低于 --min-assertions 的报告必须失败"
     assert "下限 15" in strict.stdout + strict.stderr
+
+
+def test_checker_verdict_rejects_pass_with_unverified_section(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 无", "- A5 未验证：宿主无性能测量能力", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "PASS 报告第 4 章列出未验证项时必须拒绝"
+
+
+def test_checker_verdict_rejects_lowercase_fail(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 结论：PASS", "- 结论：fail"), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "小写 fail 结论必须被拒绝（大小写归一）"
+
+
+def test_checker_verdict_requires_signoff_section_not_advice_line(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 结论：PASS", "- 智能体建议结论：PASS"), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "建议结论行不得充当签收区结论声明"
+
+
+def test_checker_verdict_rejects_pass_with_concrete_unverified_items(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 未验证：无", "- 未验证：A5"), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "第 5 章列出具体未验证项时必须拒绝 PASS"
+
+
+def test_checker_rejects_min_assertions_zero(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT, encoding="utf-8")
+    r = run_checker(report, "--min-assertions=0")
+    assert r.returncode == 2, "--min-assertions=0 必须作为用法错误拒绝"

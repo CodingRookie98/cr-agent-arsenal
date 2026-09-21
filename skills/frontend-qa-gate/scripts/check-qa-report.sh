@@ -7,9 +7,12 @@
 # 契约：
 #   1) 八个必需区块齐备，且不得仅出现在围栏代码块内（防围栏伪造）；
 #   2) 五域标题各出现恰好一次（五域覆盖）；
-#   3) 证据三态齐备（仅统计第 5 章）；结论为 BLOCKED 时第 5 章必须列出具体未验证项；
-#   4) 明细断言数与结论表「五维合计」声明值一致，且不低于下限（默认 5，可用 --min-assertions 提高）；
-#   5) 可选 --require-verdict=PASS：声明结论必须为 PASS，且不得出现 FAIL/BLOCKED。
+#   3) 证据三态齐备（仅统计第 5 章）；
+#   4) 明细断言数与结论表「五维合计」声明值一致，且不低于下限（默认 5，可用 --min-assertions 提高，最小 1）；
+#   5) 未验证项一致性：结论表「未验证」列合计与「五维合计」声明必须相等；声明 > 0 时第 5 章必须列出具体项；
+#      结论为 BLOCKED 时未验证数不得为 0；
+#   6) 可选 --require-verdict=PASS：第 8 章必须声明「结论：PASS」（大小写归一，排除「建议结论」行），
+#      结论表所有结论列必须为 PASS，第 4 章不得列出未验证项，第 5 章不得列出具体未验证项。
 #
 # 用法: bash check-qa-report.sh <报告文件> [--require-verdict=PASS] [--min-assertions=N]
 # 退出码: 0 = 通过；1 = 结构/结论缺陷；2 = 用法错误
@@ -50,8 +53,8 @@ if [[ ${#ARGS[@]} -ne 1 ]]; then
   echo "usage: bash check-qa-report.sh <报告文件> [--require-verdict=PASS] [--min-assertions=N]" >&2
   exit 2
 fi
-if ! [[ "$MIN_ASSERTIONS" =~ ^[0-9]+$ ]]; then
-  echo "错误: --min-assertions 必须是非负整数: $MIN_ASSERTIONS" >&2
+if ! [[ "$MIN_ASSERTIONS" =~ ^[0-9]+$ ]] || [[ "$MIN_ASSERTIONS" -lt 1 ]]; then
+  echo "错误: --min-assertions 必须是 >=1 的整数: $MIN_ASSERTIONS" >&2
   exit 2
 fi
 if [[ -n "$REQUIRE_VERDICT" && "$REQUIRE_VERDICT" != "PASS" ]]; then
@@ -96,8 +99,10 @@ for domain in "${DOMAIN_TITLES[@]}"; do
   fi
 done
 
-# 仅取第 5 章（证据三态标注）区块，避免其它章节同名字样干扰判定
+# 章节区块提取（避免其它章节同名字样干扰）
 TRI_SECTION="$(awk '/^## 5\. 证据三态标注/{f=1;next} /^## 6\./{f=0} f' <<<"$BODY")"
+SEC4="$(awk '/^## 4\. 未验证项与阻断原因/{f=1;next} /^## 5\./{f=0} f' <<<"$BODY")"
+SEC8="$(awk '/^## 8\. 签收/{f=1;next} f' <<<"$BODY")"
 
 for state in "${TRI_STATES[@]}"; do
   if ! grep -qF -- "$state" <<<"$TRI_SECTION"; then
@@ -106,10 +111,23 @@ for state in "${TRI_STATES[@]}"; do
   fi
 done
 
-# 结论为 BLOCKED 时，第 5 章必须列出具体未验证项（排除「未验证：无」这类空声明）
 UNVERIFIED_LINES="$(grep -F -- "未验证：" <<<"$TRI_SECTION" | grep -vE -- '未验证：[[:space:]]*无[[:space:]]*$' || true)"
-if [[ -z "$UNVERIFIED_LINES" ]] && grep -qF -- "BLOCKED" <<<"$BODY"; then
-  echo "错误: 结论为 BLOCKED 但第 5 章未列出任何具体未验证项"
+
+# 结论表「未验证」列合计（第 2 章区块，第 6 字段）与「五维合计」声明一致性
+UNV_TOTAL="$(awk -F'|' '/^## 2\./{f=1;next} /^## 3\./{f=0} f && /^\|/ {v=$6; gsub(/[^0-9]/,"",v); if (v!="") s+=v} END{print s+0}' <<<"$BODY")"
+DECLARED_UNV="$(grep -oE -- '未验证[[:space:]]*[0-9]+' <<<"$BODY" | grep -oE -- '[0-9]+' | head -1 || true)"
+if [[ -n "$DECLARED_UNV" && "$DECLARED_UNV" -ne "$UNV_TOTAL" ]]; then
+  echo "错误: 结论表未验证列合计 $UNV_TOTAL 与「五维合计」声明 $DECLARED_UNV 不一致"
+  FAIL=1
+fi
+TOTAL_UNV="$UNV_TOTAL"
+if [[ -n "$DECLARED_UNV" && "$DECLARED_UNV" -gt "$TOTAL_UNV" ]]; then TOTAL_UNV="$DECLARED_UNV"; fi
+if [[ "${TOTAL_UNV:-0}" -gt 0 && -z "$UNVERIFIED_LINES" ]]; then
+  echo "错误: 声明存在未验证项（$TOTAL_UNV）但第 5 章未列出具体未验证项"
+  FAIL=1
+fi
+if grep -qiE -- '^[[:space:]]*-[[:space:]]*结论[：:][[:space:]]*BLOCKED' <<<"$SEC8" && [[ "${TOTAL_UNV:-0}" -eq 0 ]]; then
+  echo "错误: 第 8 章结论为 BLOCKED 但结论表声明未验证 0 项（自相矛盾）"
   FAIL=1
 fi
 
@@ -129,18 +147,28 @@ elif [[ "$declared" -ne "$assert_count" ]]; then
   FAIL=1
 fi
 
-# 可选结论校验：机械证明「结论为 PASS」而非仅结构完整
+# 可选结论校验：机械证明「结论为 PASS」（锚定第 8 章、大小写归一、排除建议结论行）
 if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
-  if ! grep -qE -- '结论[：:][[:space:]]*PASS' <<<"$BODY"; then
-    echo "错误: 报告未声明结论为 PASS（--require-verdict=PASS 校验）"
+  if ! grep -qiE -- '^[[:space:]]*-[[:space:]]*结论[：:][[:space:]]*PASS' <<<"$SEC8"; then
+    echo "错误: 第 8 章未声明「结论：PASS」（--require-verdict=PASS 校验；建议结论行不计数）"
     FAIL=1
   fi
-  if grep -qE -- '结论[：:][[:space:]]*(FAIL|BLOCKED)' <<<"$BODY"; then
-    echo "错误: 报告声明结论为 FAIL/BLOCKED，与 --require-verdict=PASS 冲突"
+  if grep -qiE -- '^[[:space:]]*-[[:space:]]*结论[：:][[:space:]]*(FAIL|BLOCKED)' <<<"$SEC8"; then
+    echo "错误: 第 8 章声明结论为 FAIL/BLOCKED，与 --require-verdict=PASS 冲突"
     FAIL=1
   fi
-  if grep -qE -- '\|[[:space:]]*(FAIL|BLOCKED)[[:space:]]*\|' <<<"$BODY"; then
-    echo "错误: 结论表存在 FAIL/BLOCKED 行，与 --require-verdict=PASS 冲突"
+  BAD_ROWS="$(awk -F'|' '/^## 2\./{f=1;next} /^## 3\./{f=0} f && /^\|/ {c=$7; gsub(/[[:space:]]/,"",c); if (c!="" && c!="结论" && c!="---") print c}' <<<"$BODY" | grep -viE -- '^PASS$' || true)"
+  if [[ -n "$BAD_ROWS" ]]; then
+    echo "错误: 结论表存在非 PASS 结论: $(echo "$BAD_ROWS" | tr "\n" " ")"
+    FAIL=1
+  fi
+  OTHER4="$(grep -E -- '^[[:space:]]*-[[:space:]]*[^[:space:]]' <<<"$SEC4" | grep -vE -- '^[[:space:]]*-[[:space:]]*无[[:space:]]*$' || true)"
+  if [[ -n "$OTHER4" ]]; then
+    echo "错误: 结论为 PASS 但第 4 章列出了未验证项或阻断"
+    FAIL=1
+  fi
+  if [[ -n "$UNVERIFIED_LINES" ]]; then
+    echo "错误: 结论为 PASS 但第 5 章列出了具体未验证项"
     FAIL=1
   fi
 fi
