@@ -76,6 +76,7 @@ taste-driven-designer D1-D3  →  frontend-qa-gate  →  dual-round-review P4
 ## 8. 签收
 
 - 智能体建议结论：`<PASS | FAIL | BLOCKED>`
+- 结论：`<PASS | FAIL | BLOCKED>`（人类签收后的最终结论；`--require-verdict=PASS` 锚定本行）
 - 未决分歧：`<无 | 描述>`
 - 超范围事项：`<无 | 安全/供应链等已升级事项>`
 - 人类签收：`<姓名>` · `<日期>`
