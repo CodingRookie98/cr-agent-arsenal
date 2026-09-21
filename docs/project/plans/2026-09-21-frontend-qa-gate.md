@@ -26,13 +26,13 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P4 双轮终审（R1 已返回 3 Blocker → Delta 修复完成，待重派 Delta R1）
-- **当前活跃子任务**: Task P4.2（Delta Re-Loop 第 1 轮）
+- **当前活跃阶段**: P5 文档归档（P4 终审已取得 Zero Blockers）
+- **当前活跃子任务**: Task P5.1（结项登记与状态流转）
 - **当前子任务重试计数**: 0/3
-- **外层循环迭代**: 0/5
-- **最后一次验证状态**: `python3 -m pytest skills/ -q` **97 passed**（qa-gate 24 + taste 13 + 契约 13 + 其他既有）；`bash -n` / `git diff --check` OK；断链 0；健康度 PASS；修订历史滑动窗口 PASS
-- **最新有效提交**: `9d294a3`（自查修复：断言总数 28→31 与矩阵结构契约用例）；交付链 `c1252a4` → `fab43f8` → `9d294a3`
-- **阻断原因**: R1 裁定 3 项 Blocker（R1-1/R1-2/R1-3）已全部修复，待 Delta R1 复核
+- **外层循环迭代**: 4/5
+- **最后一次验证状态**: `python3 -m pytest skills/ -q` **106 passed**（qa-gate 33 + taste 13 + 契约 13 + 其他既有）；单技能安装模拟 frontend-qa-gate / taste **均 0 断链**；`bash -n` / `git diff --check` 干净；断链 0；健康度 PASS；修订窗口 PASS
+- **最新有效提交**: `5967192`（模板对齐）；交付链 `c1252a4` → `fab43f8` → `9d294a3` → `7ff4c52` → `0227d39` → `2fc0ff8` → `5967192`
+- **阻断原因**: 无（R2 终审阻断项已闭环，Delta R2 聚焦复核取得 ✅ Zero Blockers）
 
 ---
 
@@ -186,12 +186,12 @@
 - [x] **Task P4.1**: 以 `39a3a0d..c1252a4` 为基线派发 `dual-round-review` **Full** 模式（R1 红队 → R2 元架构师）；R1 提示词中显式标注本次为文档型技能交付，并按条件维度激活要求核验前端运行时契约
   - **审查输入**: 本功能提交范围 + Diff 边界锁 + `taste-driven-designer` 门禁不可回退声明
   - **验收标准**: 取得独立子智能体终审裁决明细表
-- [x] **Task P4.2（进行中）**: 阻断项修复完成（见 §4.1），Delta R1 重派待执行（迭代上限 5 次）
-- [ ] **Task P4.3**: 阻断项清零终审放行与合并回 `master`
+- [x] **Task P4.2**: 三轮 Delta 修复全部完成（见 §4.1 / §4.2 / §4.3），阻断项清零（迭代 4/5）
+- [x] **Task P4.3**: 阻断项清零终审放行（Delta R2 聚焦复核 Zero Blockers）并合并回 `master`
 
 ### P5: 文档归档与生命周期流转
-- [ ] **Task P5.1**: 按 `doc-governance` 执行状态流转（计划状态 → 已完成）、修订历史更新、`docs/index.md` 版本号与计划表更新
-- [ ] **Task P5.2**: 设计书与技能文档一致性复核（术语、边界、回流路由三处不得出现第二口径）
+- [x] **Task P5.1**: 按 `doc-governance` 执行状态流转（计划状态 → 已完成）、修订历史更新、`docs/index.md` 版本号与计划表更新
+- [x] **Task P5.2**: 设计书与技能文档一致性复核（术语、边界、回流路由三处不得出现第二口径）
 
 ---
 
@@ -245,7 +245,7 @@
 | 来源 ID | 级别 | 裁定 | 修复与证据 |
 |:---:|:---:|---|---|
 | R2 Blocker | 🔴 | 接受 | ① 结论判定**锚定第 8 章签收区**并排除「建议结论」行；② 结论与表格结论列改 `grep -iE` 大小写归一；③ PASS 时第 5 章不得有具体未验证项、第 4 章不得列出未验证/阻断；④ 新增 5 个契约用例；⑤ 7 场景绕过探针全数符合预期（对照组通过，6 类绕过被拒） |
-| R2-S1 | 🟡 | 接受 | 跨技能正则加 `(?<!\.)` 排除 `.goal-loop/` 目录名误判，补 legal 样本 |
+| R2-S1 | 🟡 | 接受（**原判定经复核撤回**） | 复核纠正：`.goal-loop/dispatch-ledger.md` 本不匹配该正则（`.` 不在分隔符类），原命中系同行真实链接 `../goal-loop/SKILL.md`；`(?<!\.)` 加固与 legal 样本作为无害冗余保留 |
 | R2-S2 | 🟡 | 接受 | policy `exemptions` 拆分并新增 `scope_note`，明确「跨技能相对链接禁令」与「单装链接完整性」两个判据的边界 |
 | R2-S3 | 🟡 | 接受 | `--min-assertions` 硬性 ≥1（0 视为用法错误 exit 2），新增用例 |
 
@@ -253,15 +253,40 @@
 
 ---
 
+## 4.4 Delta R2 聚焦复核（基线 `0227d39..5967192`，含 `2fc0ff8` 修复与模板对齐）
+
+**复核结论**：✅ **Zero Blockers —— 准予交付**（报告：`.review-context/delta-r2-report-5967192.md`）。
+
+| 核验项 | 结果 |
+|---|---|
+| Blocker 闭环（10 场景探针） | 10/10 符合预期：对照组 exit 0；第 4 章未验证项 / 结论表 PARTIAL / 围栏伪结论 / 签收 PASS+表格 BLOCKED / 计数矛盾 / 小写 fail / 建议结论行 / 第 5 章具体未验证项 → 全部 exit 1；小写 pass 正确接受 |
+| 用法边界 | `--min-assertions=0` → exit 2；`--require-verdict=pass` → exit 2 |
+| 模板配套（`5967192`） | 无 verdict 参数 → exit 0；带 `--require-verdict=PASS` → exit 1（占位符不构成真实签收） |
+| 建议闭环 | R2-S1（原判定撤回，冗余加固保留）、R2-S2（policy 拆分 + `scope_note`）、R2-S3（`min-assertions` ≥1） |
+| 回归 | `pytest skills/ -q` **106 passed**；单装模拟 frontend-qa-gate / taste **均 0 断链**；`bash -n` / `git diff --check` 干净；断链 0；健康度 PASS |
+
+**遗留建议（登记为后续 Maintenance-Patch 待办，不阻断交付）**：
+- DR2-1：第 4 章写「无未验证项」被严格化拒绝 → 建议 `OTHER4` 放宽为「以『无』开头即视为空声明」；
+- DR2-2：第 5 章写「未验证：（无）」被拒绝 → 建议排除正则放宽为 `未验证：[[:space:]]*[（(]?无[）)]?[[:space:]]*$`；
+- DR2-3（观察项）：表格结论列仅接受 `PASS`，`N/A` 会被拒（未独立验证；模板规定三值，风险低）。
+
+---
+
 ## 4. 结项登记 (Closure Record)
 
-- **终审凭据**: [待 P4 填写]
-- **阻断项闭环**: [待填写]
-- **验证证据**: [待填写]
-- **交付清单**: [待填写]
-- **提交链**: [待填写]
+- **终审凭据**（四次独立审查，均针对各自最新提交）：
+  - R1 红队（子智能体 `f3a5d30b`；基线 `39a3a0d..c1252a4`）：🔴×3 + 🟡×9 + ⚪×1（历史）
+  - Delta R1 复核（子智能体 `085c2d29`；基线 `c1252a4..fab43f8`）：🔴×3 + 🟡×3 + ⚪×2
+  - R2 元审判（子智能体 `742b48fa`；基线 `39a3a0d..0227d39`）：🔴×1（阻断）+ 🟡×3
+  - Delta R2 聚焦复核（基线 `0227d39..5967192`）：**✅ Zero Blockers**（报告 `.review-context/delta-r2-report-5967192.md`）
+- **阻断项闭环**: R1-1 残余（taste 单装 0 断链）· R1-2（五域覆盖门禁）· R1-3（`--require-verdict` 语义漏洞 → 第 8 章锚定 + 大小写归一 + 第 4/5 章与计数一致性四重校验）· N1（词表「包括」漏检）全部闭环
+- **验证证据**: `pytest skills/ -q` **106 passed**（qa-gate 33 用例）；单技能安装模拟 frontend-qa-gate 13 链接 / taste 18 链接**均 0 断链**；`bash -n`、`git diff --check` 干净；docs 断链 0；健康度 PASS（修订窗口 20/20）；verdict 绕过探针 10/10 符合预期
+- **交付清单**: `frontend-qa-gate` 技能全套（SKILL.md · 3 references · 报告模板 · 机械门禁脚本 · 33 契约用例）· `taste-driven-designer` Gate A 补强（A3/A4/A6/A7 + D2 内嵌自检）· `goal-loop` P3.5 挂载与门禁卡点 · 架构设计书与实施计划 · 注册同步（skills-manager 集合 / README / `docs/index.md` V1.10.0 / llms.txt）· 归档文献（`ai-coding-frontend-common-problems.md`）
+- **提交链**: `c1252a4`（P3 交付）→ `fab43f8`（Delta 1）→ `9d294a3`（自查修复）→ `7ff4c52`（计划登记）→ `0227d39`（Delta 2）→ `2fc0ff8`（R2 阻断闭环）→ `5967192`（模板对齐）
+- **未覆盖项**: DR2-1 / DR2-2 严格化误报（后续 Maintenance-Patch 待办）；`cross-skill-link-policy.json` 中声明的 4 个未覆盖技能（dual-round-review / goal-loop / doc-governance / agy-delegation-workflow）的既有跨技能链接（基线技术债，按 Diff 边界锁留待后续维护补丁）
 
 ---
 
 ## 5. 修订历史 (Revision History)
 - **[2026-09-21]**: 计划创建（V1.0.0，Heavy Track，A 方案；含需求确认、术语表、回归路由与显式默认假设登记）。
+- **[2026-09-21]**: 四轮独立审查闭环（R1 → Delta R1 → R2 → Delta R2），取得 Zero Blockers，结项登记完成；遗留 DR2-1/DR2-2 登记为后续 Maintenance-Patch 待办。
