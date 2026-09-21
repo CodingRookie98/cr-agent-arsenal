@@ -145,6 +145,7 @@
 - **验收复核**: 五种验收场景全部满足（技能结构完整 / 触发描述合规 / 脚本可运行 pytest 全绿 / 8 技法可寻址 / 全套注册完成）
 - **交付清单**: 技能包 `skills/taste-driven-designer/`（SKILL.md + references×4 + templates×3 + scripts + tests）、设计书 `docs/explanation/architecture/taste-driven-designer-design.md`、注册（index V1.8.0 / llms.txt / README）、软链 `.agents/skills/taste-driven-designer`
 - **提交链**: `c258811`（P3）→ `ca47366`（P3.5）→ `f00e44a`（desc 合规）→ 最终提交（边界用例 + 结项登记）
+- **后续变更（取代指针）**: 本计划铁律 3 的「Critic 达标线（9/10）」条款已被 [2026-09-20-critic-gate-hardening.md](./2026-09-20-critic-gate-hardening.md) 取代（三信号门禁）；本文件保留历史原文，不作改写。
 
 ---
 

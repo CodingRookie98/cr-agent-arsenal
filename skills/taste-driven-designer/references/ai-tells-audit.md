@@ -17,7 +17,7 @@
 | 6 | **蹩脚自造控件** (Clunky Custom Widgets) | 手写丑陋的自定义开关/滑块/下拉，缺状态与物理反馈 | 引入平台级成熟设计系统（Apple HIG / Radix / Tailwind / shadcn）原生状态 |
 | 7 | **假大空废话文案** (Slop Marketing Copy) | "Empower your workflow"、"Supercharge your productivity" | 全部视作排版占位符，人工重写为具体、克制、口语化的人类语言（§3） |
 
-**执行时机**：这些反模式**不在首轮 Prompt 里禁止**（一次性禁令清单会让模型瘫痪、产出更僵），而是在打磨阶段通过**显式 AI Tells 审计**逐项清除——审计时点由 D2 Critic 评分与人类判断共同决定。
+**执行时机**：这些反模式**不在首轮 Prompt 里禁止**（一次性禁令清单会让模型瘫痪、产出更僵），而是在打磨阶段通过**显式 AI Tells 审计**逐项清除——审计时点由 D2 盲比结论与人类判断共同决定。
 
 ---
 
