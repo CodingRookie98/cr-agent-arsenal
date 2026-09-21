@@ -1,6 +1,6 @@
 # 五域验收矩阵 (Acceptance Matrix)
 
-> **验收基线来源（A 方案）**：本清单是 `taste-driven-designer` Gate A 扩展项的**内联最小可执行副本**，来源版本为 taste 的 SKILL.md 铁律 3 与 `references/critic-loop-protocol.md` Gate A（V1.2 补强，2026-09-21）。
+> **验收基线来源（A 方案）**：本清单是 `taste-driven-designer` Gate A 扩展项的**内联最小可执行副本**（共 31 条断言），来源版本为 taste 的 SKILL.md 铁律 3 与 `references/critic-loop-protocol.md` Gate A（V1.2 补强，2026-09-21）。
 > **漂移触发条件**：本清单与 taste Gate A 出现 2 次及以上不一致时，按 A 方案迁移到共享基线文档（B 方案）并登记。
 
 > 定位：本文件是 `frontend-qa-gate` 的可执行断言清单。每条断言都必须二值可判定（PASS / FAIL），
@@ -87,7 +87,7 @@
 
 ## 6. 断言总数与填写要求
 
-- 五域共 **28 条断言**（状态 9 · 视口 8 · 无障碍 8 · 浏览器 3 · 性能 3）；
+- 五域共 **31 条断言**（状态 9 · 视口 8 · 无障碍 8 · 浏览器 3 · 性能 3）；
 - 未触及的域仍必须填写结论，缺失能力按「未验证」记录；
 - 每条断言的记录字段（操作 / 证据 / 三态 / 环境）见 [browser-verification-protocol.md](browser-verification-protocol.md) §2。
 

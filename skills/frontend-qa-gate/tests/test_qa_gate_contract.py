@@ -114,6 +114,25 @@ def test_five_assertion_dimensions_present():
         assert dim in text, f"acceptance-matrix.md 缺少断言维度: {dim}"
 
 
+def test_matrix_declared_total_matches_rows():
+    """声明总数必须等于实际断言行数（防 28 vs 31 类算术漂移）。"""
+    text = read(MATRIX)
+    rows = [l for l in text.splitlines() if re.match(r"^\|\s*(?:S|V|A|B|P)\d+\s*\|", l)]
+    m = re.search(r"五域共 \*\*(\d+) 条断言\*\*", text)
+    assert m, "矩阵必须声明五域断言总数"
+    assert int(m.group(1)) == len(rows), f"声明 {m.group(1)} 条，实际 {len(rows)} 条"
+
+
+def test_matrix_rows_are_structured_assertions():
+    """每条断言行必须是四列表格行（编号 | 断言 | 操作步骤 | 证据），防止用散文冒充断言。"""
+    rows = [l for l in read(MATRIX).splitlines() if re.match(r"^\|\s*(?:S|V|A|B|P)\d+\s*\|", l)]
+    assert len(rows) >= 30, f"断言行不足（实际 {len(rows)}）"
+    for row in rows:
+        cells = [c.strip() for c in row.strip().strip("|").split("|")]
+        assert len(cells) == 4, f"断言行不是四列结构: {row[:80]}"
+        assert cells[2] and cells[3], f"断言行缺少操作步骤或证据列: {row[:80]}"
+
+
 def test_matrix_has_observable_assertions_not_adjectives():
     text = read(MATRIX)
     assert text.count("断言") >= 10, "验收矩阵必须以可判定断言为主体"
