@@ -28,7 +28,7 @@ LLM 是 Next-Token Predictor + RLHF 的产物：每次设计决策（配色、�
 |---|---|---|
 | **AI 双钻模型**（Discover / Define / Deliver） | Anshu Chimala 重构版 | SKILL.md 三阶段路由，见 §3 |
 | **String Seed of Thought** | Sakana AI 公开论文 | `scripts/generate-seed.sh` 外部随机种子；口头"随机指令"明确判无效 |
-| **分离式批判 (Separated Critic)** | 文章 Technique 3 | 全新上下文 + 固定提示词 + 只看产物的 Critic 闭环；达标线保密 |
+| **分离式批判 (Separated Critic)** | 文章 Technique 3 | 全新上下文 + 固定模板 + 只看产物的 Critic 闭环；签收权在人（三信号门禁） |
 | **多模态资产** | 文章 Technique 4/5 | 能力门控增强层：图像生成 + 视频动效（循环抠像 / 关键帧插值） |
 | **残酷减法与 AI Tells** | 文章 Technique 6/7/8 | 7 大反模式清单 + 减法规则 + 文案黑名单 |
 
@@ -49,7 +49,7 @@ flowchart LR
 
     subgraph D2["D2 Define (个性塑形)"]
         direction TB
-        C["Critic 闭环<br/>截图/降级摘要 → 固定提示词 → 评分"]
+        C["Critic 闭环<br/>截图/降级摘要 → 固定模板 → 盲比/排序"]
         M["多模态增强(可选)<br/>图像/视频 能力门控"]
     end
 
@@ -92,7 +92,7 @@ flowchart LR
 - **预算**：冷启动 1~2 轮验证盲比信号有效；累计派发硬上限 5 轮（作废轮次不计），达限熔断上报用户。
 
 ### 4.3 鉴别力自检与冲突仲裁
-- **版本回执**：每轮产物带 nonce，Critic 必须回执；缺失/不匹配/空白产物的评审作废、不入账本；
+- **回执与匿名性**：每轮用与候选身份无关的**轮次 nonce** 回执；版本标识只进账本、不进送审画面；回执缺失/不匹配/空白产物 → 该轮作废不入账，**连续 2 轮作废即停止并升级**（产物管线故障）；
 - **鉴别力自检**：输入实质不同而输出逐字一致 → 判定 Critic 失效，立即升级人工，不再消耗轮次；
 - **原则优先**：建议与「已决原则台账」冲突时，原则优先并记入台账，交人类裁决；
 - **防乒乓**：同一维度前后两轮建议反转 → 冻结该维度，交人类裁决后执行。
@@ -134,7 +134,7 @@ flowchart LR
 |---|---|
 | **L0 静态** | `bash -n` 脚本语法、`git diff --check` 零空白残留 |
 | **L1 单元** | `pytest`：seed 脚本默认参数/边界校验/确定性模式（与 Python 复刻 Park-Miller 结果逐字节一致）/真随机多样性 —— 13 用例全绿 |
-| **L1 契约** | `pytest`：门禁契约静态回归（旧分数门禁字样必须缺席/三信号锚点必须存在/模板必须要求回执并禁分/协议必须含鉴别力自检与账本）—— 7 用例全绿，防止旧设计被重新引入 |
+| **L1 契约** | `pytest`：门禁契约静态回归 **9 用例**——句子级扫描拦截"分数=完成/放行"的措辞变体（含规避实验验证），并钉死三信号锚点、盲比上一版例外、轮次 nonce 与匿名性、作废二级上限、回归维度字段、台账与账本 |
 | **L-Doc 治理** | `check-doc-links.py` 全域断链 0；`audit-doc-health.py` 健康度 PASS |
 | **方法论保真** | 8 大技法（种子/雄心 Prompt/独立批评/图像/视频/减法/AI Tells/文案重写）逐项在 references 中可寻址；与文章原意的偏离在 §8.1 显式登记——由红队终审核验 |
 
@@ -154,3 +154,4 @@ flowchart LR
 |:---:|---|---|---|
 | D1 | "Your work is only complete when the critic independently deems it 9/10 or higher." | 不把任何绝对分数作为完成判据；分数降为遥测（需锚点 + 双 Critic 中位数） | 实跑反证：评分区间压缩、与改动无相关、输入实质变化而输出逐字相同（E1/E2/E3） |
 | D2 | 判据设计一节推荐「4 专业参考 + 1 自品」相对排序 | 升为与盲比并列的**主路径**，并硬性禁止数值评分输出（只允许 1..5 名次与差距） | 原实现将其降级为"可选变体"且实际退化为打分（E4） |
+| D3 | "Invoke the critic in a fresh context, with just the screenshot, not the code, implementation details, or earlier iterations/critiques."（文章 L219） | Critic 额外接收**设计意图与已决原则台账**（仍不接收代码与实现细节） | E5/E6：无意图输入的评审凭空发明需求（"伪终端装饰"）并与已决规范「线胜于面」冲突；隔离的对象是**实现**，不是**意图** |

@@ -56,7 +56,7 @@ Verify that your work looks right frame-by-frame in the browser.
 | 宿主能力 | 处置 |
 |---|---|
 | 有截图能力 | D2 走真截图 Critic 评审（最优）；D3 交付前补终审截图 |
-| 无截图能力 | 降级为结构化摘要评审（见 [critic-loop-protocol.md](critic-loop-protocol.md) §4） |
+| 无截图能力 | 降级为结构化摘要评审（见 [critic-loop-protocol.md](critic-loop-protocol.md) §8） |
 | 有图像生成 | 启用增强项 1；API Key 仅本地、不入库 |
 | 无图像生成 | 用 CSS 渐变/噪点纹理/着色器（如 WebGL shader）做"代码级质感"替代，避免干瘪纯色 |
 | 有视频生成 | 启用增强项 2（循环资产 + 关键帧插值）；注意体积与降级帧 |

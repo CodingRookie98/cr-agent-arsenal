@@ -24,13 +24,13 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Maintenance-Patch
-- **当前活跃阶段**: P3 TDD 循环（红灯已确认，进入文档改写）
-- **当前活跃子任务**: Task P3.2
+- **当前活跃阶段**: P4.2 Delta Re-Loop（R1 裁定 1 阻断 + 7🟡 + 2⚪ 已全部修复，待以修复提交为新基线复核）
+- **当前活跃子任务**: Task P4.2
 - **当前子任务重试计数**: 0/3
-- **外层循环迭代**: 0/5
-- **最后一次验证状态**: 契约测试红灯 6 failed / 1 passed（新锚点缺失，符合预期）
-- **最新有效提交**: `7eff43c`（master 合入点）
-- **阻断原因**: 无
+- **外层循环迭代**: 1/5（Delta 第 1 轮）
+- **最后一次验证状态**: L1 全量 pytest 22 passed（seed 13 + 契约 9，规避实验拦截验证通过）；L0 bash -n / diff --check OK；L-Doc 断链 0 / 健康度 PASS / 修订历史窗口合规
+- **最新有效提交**: `cbfa86b`（P3 门禁加固原子单元；Delta 修复提交见下）
+- **阻断原因**: 无（R1 唯一阻断项已修复）
 
 ---
 
@@ -55,15 +55,15 @@
 
 - [x] **Task P3.1**: 证据 fixture 固化 + 契约测试先红 —— `tests/test_gate_contract.py` 7 用例（旧门禁字样必须消失、三信号锚点必须存在、模板必须要求回执并硬禁分数、协议必须含鉴别力自检/仲裁/账本、简报必须含台账）
   - **验收命令**: `python3 -m pytest skills/taste-driven-designer/tests/test_gate_contract.py -q`（改前 6 failed / 1 passed = 红灯基线）
-- [ ] **Task P3.2**: 文档改写转绿（4 个技能文件）
+- [x] **Task P3.2**: 文档改写转绿（4 个技能文件）
   - **验收命令**: 同上（7 passed）
-- [ ] **Task P3.3**: 全量回归 —— `python3 -m pytest skills/taste-driven-designer/tests/ -q`（seed 13 用例 + 契约 7 用例全绿）
-- [ ] **Task P3.4**: L0 + L-Doc 门禁（`bash -n` / `git diff --check` / 断链 / 健康度）
+- [x] **Task P3.3**: 全量回归 —— `python3 -m pytest skills/taste-driven-designer/tests/ -q`（seed 13 用例 + 契约 7 用例全绿）
+- [x] **Task P3.4**: L0 + L-Doc 门禁（`bash -n` / `git diff --check` / 断链 / 健康度）
 
 ## 4. 终审与归档 (Review & Closure)
 
-- [ ] **Task P4.1**: 定向单轮红队审查（Light）—— 独立子智能体核对：门禁语义替换完备性、模板可执行性、与文章原意的偏离是否有据（偏离必须显式登记）、证据保真
-- [ ] **Task P4.2**: 阻断项修复与Delta 再循环（上限 5 次）
+- [x] **Task P4.1**: 定向单轮红队审查（Light，子智能体 426bbf2f）—— 裁定 **存在阻断项 🔴×1**（SKILL.md 铁律 2「只收当前产物」与盲比门禁自相矛盾）+ 🟡×7 + ⚪×2；证据保真、Diff 范围与安全两项全过
+- [x] **Task P4.2**: R1 裁定修复（Delta 第 1 轮）—— ①🔴 铁律 2 增补「盲比模式另附去标识、随机左右的上一版」；②作废二级上限（连续 2 轮作废即停并升级）；③"无法区分"计入无改进的终止语义；④轮次 nonce 与版本标识分离（盲比匿名性）；⑤§8.1 补登第三项偏离 D3（Critic 输入含意图与已决原则）；⑥契约测试升级为句子级扫描（22 passed，规避实验拦截成功）+ 修复恒真空断言；⑦三处残留旧口径清剿（设计书 §2/§3、ai-tells 执行时机）；⑧两处因重编号失效的 §4→§8 交叉引用
 - [ ] **Task P4.3**: Zero Blockers 结项登记；合并回 master
 
 ---
