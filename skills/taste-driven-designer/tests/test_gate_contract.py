@@ -34,8 +34,12 @@ BRIEF_TMPL = SKILL_DIR / "templates" / "design-brief-template.md"
 FIXTURE = SKILL_DIR / "tests" / "fixtures" / "critic-gate-counter-evidence.md"
 
 SCORE_WORDS = re.compile(r"评分|分数|得分|分值")
-GATE_WORDS = re.compile(r"完成|放行|通过|达标|准入")
-PROHIBITION_WORDS = re.compile(r"不得|禁止|不输出|不许|仅作|不作|遥测|非门禁|❌")
+GATE_WORDS = re.compile(r"完成|放行|通过|达标|准入|交付|上线|发版|发布|合并")
+PROHIBITION_WORDS = re.compile(r"不得|禁止|不输出|不许|不含|不涉及|不参与|不作为|不构成|仅作|不作|遥测|非门禁|❌")
+
+# 边界声明：本扫描是**启发式护栏**（句子级词表共现），不是语义证明。
+# 它拦截"把分数写成完成/放行条件"的常见表述与措辞变体；无法穷尽自然语言。
+# 因此配套：① 三信号锚点断言（正向契约）；② 扫描器自检用例（误报/漏报边界）。
 
 
 def read(path):
@@ -73,9 +77,7 @@ def test_skill_invariant_two_allows_blind_previous_version():
     # 红队复核 🔴#1：铁律 2 必须允许盲比模式附上一版，否则与 Gate B 自相矛盾
     text = read(SKILL_MD)
     assert re.search(r"盲比模式另附去标识", text), "铁律 2 必须允许盲比模式附去标识的上一版"
-    # 允许「默认只收当前产物 + 盲比例外」的表述；禁止的是绝对化的排他表述
-    assert "任何模式下都不得携带" in text or "不得携带" in text, "铁律 2 必须保留隔离纪律"
-    assert not re.search(r"只收当前产物[^。\n]*不(?:得|允许)附(?:上)?一版", text)
+    assert "任何模式下都不得携带实现代码" in text, "铁律 2 必须保留隔离纪律（精确锚点）"
 
 
 def test_critic_template_requires_receipt_and_bans_scores():
@@ -88,6 +90,34 @@ def test_critic_template_requires_receipt_and_bans_scores():
     )
     assert "已决原则" in text, "Critic 模板必须注入已决原则（防止凭空发明需求/跨轮反转）"
     assert "Regressed dimensions" in text, "盲比输出必须含回归维度字段（Gate B 证据来源）"
+
+
+def test_scanner_boundary_self_check():
+    import pytest as _pytest
+    # 合法否定表述不得误报（Delta R2 🟡N1）
+    for legal in (
+        "通过条件不含分数，也不涉及评分。",
+        "分数不参与通过判定。",
+        "分数不构成交付判据。",
+    ):
+        assert_no_score_gate(legal, "selftest-legal")
+    # 违规表述（含措辞变体）必须拦截（Delta R2 ⚪N3）
+    for illegal in (
+        "仅当 Critic 评分达到 9 分时才放行。",
+        "评分到 9 就放上线。",
+        "分数达到门槛方可交付。",
+    ):
+        with _pytest.raises(AssertionError):
+            assert_no_score_gate(illegal, "selftest-illegal")
+
+
+def test_blind_anonymity_pinned():
+    # Delta R2 🟡N2：匿名性必须被钉死，不能只断言 round-nonce 存在
+    assert "盲比匿名性" in read(PROTOCOL), "协议必须声明盲比匿名性"
+    tmpl = read(CRITIC_TMPL)
+    assert "identities stripped" in tmpl or "去除一切版本标识" in tmpl, (
+        "模板必须声明候选版本标识已剥离"
+    )
 
 
 def test_protocol_documents_discrimination_and_arbitration():
