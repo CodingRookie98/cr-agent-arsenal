@@ -54,7 +54,7 @@ description: Use when executing long-horizon engineering goals that span multipl
 | **P1** | 计划与测试定级 | `writing-plans` | [goal-plan-template.md](templates/goal-plan-template.md) + [testing-decision-matrix.md](references/testing-decision-matrix.md) |
 | **P2** | 原子任务拆解 | — | [atomic-task-template.md](templates/atomic-task-template.md) |
 | **P3** | TDD 循环实现 | 宿主执行后端（开工前询问用户） | [host-adapters.md](references/host-adapters.md) |
-| **P3.5** | 集成验证 | — | [stage-progression-protocol.md](references/stage-progression-protocol.md) |
+| **P3.5** | 集成验证 | 前端产物验收：`frontend-qa-gate`（设计任务另挂 `taste-driven-designer`） | [stage-progression-protocol.md](references/stage-progression-protocol.md) |
 | **P4** | 对抗式终审 | `dual-round-review` | [stage-progression-protocol.md](references/stage-progression-protocol.md) |
 | **P5** | 文档归档 | `doc-governance`（可选） | [documentation-sync-matrix.md](references/documentation-sync-matrix.md) |
 

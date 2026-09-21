@@ -7,7 +7,9 @@
         "agy-delegation-workflow",
         "doc-governance",
         "dual-round-review",
-        "goal-loop"
+        "frontend-qa-gate",
+        "goal-loop",
+        "taste-driven-designer"
       ]
     }
   ]
