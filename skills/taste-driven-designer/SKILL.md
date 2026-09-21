@@ -7,7 +7,7 @@ description: Use when the user wants to design or redesign any UI/UX artifact �
 
 ## 概述
 
-将 AI 从"统计平庸的默认设计器"升级为"世界级设计师"的三阶段流程技能。理论基准：[《How to Turn Your AI into a World-Class Designer》](../../docs/reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md)（Anshu Chimala 的 AI 双钻模型，前 Apple AI 原型团队 12 年负责人）。
+将 AI 从"统计平庸的默认设计器"升级为"世界级设计师"的三阶段流程技能。理论基准：《How to Turn Your AI into a World-Class Designer》（Anshu Chimala 的 AI 双钻模型，前 Apple AI 原型团队 12 年负责人；仓库归档路径 docs/reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md）。
 
 **黄金公式**：
 

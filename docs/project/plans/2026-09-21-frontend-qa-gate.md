@@ -219,6 +219,25 @@
 
 ---
 
+## 4.2 Delta 修复记录 · Delta R1（基线 `c1252a4..fab43f8`，报告：子智能体 `085c2d29`）
+
+裁决：🔴 3 / 🟡 3 / ⚪ 2（含 1 项本轮修复引入的弱断言）。逐条处置：
+
+| Delta R1 ID | 级别 | 裁定 | 修复与证据 |
+|:---:|:---:|---|---|
+| R1-1 残余 | 🔴 | 接受 | `taste-driven-designer/SKILL.md` 的 `../../docs/...` markdown 链接改为纯文本归档路径引用；**单技能安装模拟复验：taste 0 断链**（此前 1） |
+| R1-3 卡点 | 🔴 | 接受 | `check-qa-report.sh` 新增 `--require-verdict=PASS` 与 `--min-assertions=N`；P4.0 / HARD-GATE / dual-round-review 步骤 1 均改为机械校验命令；新增 4 个用例（PASS 接受 / FAIL 拒 / BLOCKED 拒 / min-assertions 生效） |
+| N1 弱断言 | 🔴 | 接受 | 从 `PROHIBITION_WORDS` 移除非否定词「包括」（该词曾使 4/4 绕过样本漏检）；补 4 条「包括」类绕过样本进自检 |
+| N2 误报 | 🟡 | 接受 | `[0-9]+\s*分` 改为 `[0-9]+\s*分(?!钟)`；补 2 条「分钟内完成」合法样本进自检 |
+| N3 policy 零引用 | 🟡 | 接受 | `cross-skill-link-policy.json` 增 `status` / `consumers` / `coverage` / `exemptions`：明确已覆盖（taste、frontend-qa-gate）与未覆盖（dual-round-review、goal-loop、doc-governance、agy-delegation-workflow）及原因 |
+| R1-2 弱化路径 | 🟡 | 接受 | 提供 `--min-assertions=15` 并在 P4.0 启用；脚本默认下限 5 作为结构底线，验收建议 15 |
+| N4 commit 计数 | ⚪ | 登记不修 | 提交信息中 95/97 计数偏差不改写历史，本节更正为实测值 |
+| N5 正则形态 | ⚪ | 接受 | 跨技能正则支持反斜杠分隔与大小写不敏感（`re.IGNORECASE`），补 Windows 与大小写样本各 1 条 |
+
+**Delta 修复后验证**：`pytest skills/ -q` **101 passed**；单技能安装模拟 frontend-qa-gate / taste **均 0 断链**；`bash -n`、`git diff --check`、断链 0、健康度 PASS、修订窗口 PASS。
+
+---
+
 ## 4. 结项登记 (Closure Record)
 
 - **终审凭据**: [待 P4 填写]

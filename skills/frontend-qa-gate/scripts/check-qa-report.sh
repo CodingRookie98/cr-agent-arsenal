@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # check-qa-report.sh — 《前端验收报告》结构校验器。
 #
-# 定位：qa-gate 的机械门禁。只校验「报告是否具备可审查的结构与完整性」，
-# 不判断验收结论是否正确（结论正确性由人工签收与 dual-round-review 终审负责）。
+# 定位：qa-gate 的机械门禁。校验「报告结构完整性」与（可选）「结论为 PASS」，
+# 不判断验收证据本身是否真实（证据真实性由独立复核与人类签收负责）。
 #
 # 契约：
 #   1) 八个必需区块齐备，且不得仅出现在围栏代码块内（防围栏伪造）；
-#   2) 五域标题各出现恰好一次（五域覆盖，防止只验单一域即通过）；
-#   3) 证据三态齐备；结论表声明存在未验证项时第 5 章必须逐条列出；
-#   4) 明细断言数与结论表「五维合计」声明值一致（≥5）。
+#   2) 五域标题各出现恰好一次（五域覆盖）；
+#   3) 证据三态齐备（仅统计第 5 章）；结论为 BLOCKED 时第 5 章必须列出具体未验证项；
+#   4) 明细断言数与结论表「五维合计」声明值一致，且不低于下限（默认 5，可用 --min-assertions 提高）；
+#   5) 可选 --require-verdict=PASS：声明结论必须为 PASS，且不得出现 FAIL/BLOCKED。
 #
-# 用法: bash check-qa-report.sh <报告文件路径>
-# 退出码: 0 = 结构完整；1 = 结构缺陷；2 = 用法错误
+# 用法: bash check-qa-report.sh <报告文件> [--require-verdict=PASS] [--min-assertions=N]
+# 退出码: 0 = 通过；1 = 结构/结论缺陷；2 = 用法错误
 
 set -euo pipefail
 
@@ -34,12 +35,31 @@ DOMAIN_TITLES=(
 )
 TRI_STATES=("已实现：" "已运行验证：" "未验证：")
 
-if [[ $# -ne 1 ]]; then
-  echo "usage: bash check-qa-report.sh <报告文件路径>" >&2
+REQUIRE_VERDICT=""
+MIN_ASSERTIONS=5
+ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    --require-verdict=*) REQUIRE_VERDICT="${arg#--require-verdict=}" ;;
+    --min-assertions=*) MIN_ASSERTIONS="${arg#--min-assertions=}" ;;
+    *) ARGS+=("$arg") ;;
+  esac
+done
+
+if [[ ${#ARGS[@]} -ne 1 ]]; then
+  echo "usage: bash check-qa-report.sh <报告文件> [--require-verdict=PASS] [--min-assertions=N]" >&2
+  exit 2
+fi
+if ! [[ "$MIN_ASSERTIONS" =~ ^[0-9]+$ ]]; then
+  echo "错误: --min-assertions 必须是非负整数: $MIN_ASSERTIONS" >&2
+  exit 2
+fi
+if [[ -n "$REQUIRE_VERDICT" && "$REQUIRE_VERDICT" != "PASS" ]]; then
+  echo "错误: --require-verdict 目前仅支持 PASS" >&2
   exit 2
 fi
 
-REPORT="$1"
+REPORT="${ARGS[0]}"
 if [[ ! -f "$REPORT" ]]; then
   echo "错误: 报告文件不存在: $REPORT" >&2
   exit 2
@@ -96,8 +116,8 @@ fi
 assert_count="$(grep -cE -- '^[[:space:]]*-[[:space:]]*\[[ xX]\]' <<<"$BODY" || true)"
 declared="$(grep -oE -- '断言[[:space:]]*[0-9]+' <<<"$BODY" | grep -oE -- '[0-9]+' | head -1 || true)"
 
-if [[ -z "$assert_count" || "$assert_count" -lt 5 ]]; then
-  echo "错误: 五维断言明细不足（至少需要 5 条可判定断言，实际 $assert_count）"
+if [[ -z "$assert_count" || "$assert_count" -lt "$MIN_ASSERTIONS" ]]; then
+  echo "错误: 五维断言明细不足（下限 $MIN_ASSERTIONS，实际 $assert_count）"
   FAIL=1
 fi
 
@@ -109,10 +129,28 @@ elif [[ "$declared" -ne "$assert_count" ]]; then
   FAIL=1
 fi
 
+# 可选结论校验：机械证明「结论为 PASS」而非仅结构完整
+if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
+  if ! grep -qE -- '结论[：:][[:space:]]*PASS' <<<"$BODY"; then
+    echo "错误: 报告未声明结论为 PASS（--require-verdict=PASS 校验）"
+    FAIL=1
+  fi
+  if grep -qE -- '结论[：:][[:space:]]*(FAIL|BLOCKED)' <<<"$BODY"; then
+    echo "错误: 报告声明结论为 FAIL/BLOCKED，与 --require-verdict=PASS 冲突"
+    FAIL=1
+  fi
+  if grep -qE -- '\|[[:space:]]*(FAIL|BLOCKED)[[:space:]]*\|' <<<"$BODY"; then
+    echo "错误: 结论表存在 FAIL/BLOCKED 行，与 --require-verdict=PASS 冲突"
+    FAIL=1
+  fi
+fi
+
 if [[ "$FAIL" -ne 0 ]]; then
   echo "结构校验未通过: $REPORT"
   exit 1
 fi
 
-echo "结构校验通过: 断言 $assert_count 条 · 五域覆盖 · 三态齐备 · 必需区块齐备"
+VERDICT_NOTE=""
+if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then VERDICT_NOTE=" · 结论 PASS"; fi
+echo "结构校验通过: 断言 $assert_count 条（下限 $MIN_ASSERTIONS） · 五域覆盖 · 三态齐备 · 必需区块齐备${VERDICT_NOTE}"
 exit 0

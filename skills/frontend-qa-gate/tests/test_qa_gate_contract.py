@@ -27,13 +27,13 @@ CHECKER = SKILL_DIR / "scripts" / "check-qa-report.sh"
 
 FENCE = "```"
 
-SCORE_WORDS = re.compile(r"评分|打分|分数|得分|分值|满分|分级|等级|百分比|通过率|[0-9]+\s*分")
+SCORE_WORDS = re.compile(r"评分|打分|分数|得分|分值|满分|分级|等级|百分比|通过率|[0-9]+\s*分(?!钟)")
 GATE_WORDS = re.compile(r"完成|放行|通过|达标|准入|交付|上线|发版|发布|合并|验收判据")
-PROHIBITION_WORDS = re.compile(r"不得|禁止|不输出|不许|不含|不涉及|不参与|不作为|不构成|不以|不设|不采用|不提供|不构成|不用于|不计算|包括|仅作|不作|非门禁|非判据|非验收|❌")
+PROHIBITION_WORDS = re.compile(r"不得|禁止|不输出|不许|不含|不涉及|不参与|不作为|不构成|不以|不设|不采用|不提供|不用于|不计算|仅作|不作|非门禁|非判据|非验收|❌")
 
 # 跨技能相对路径硬链接：覆盖 (../x/)、(./x/)、(x/)、(../../skills/x/) 与绝对路径形态。
 # 正则自身由 test_cross_skill_link_scanner_self_check 自检，防止再次出现恒真空断言。
-CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?/)*(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow)/")
+CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow)[\\\\/]", re.IGNORECASE)
 FIVE_DIMENSIONS = ["响应式", "状态", "无障碍", "浏览器", "性能"]
 
 
@@ -61,8 +61,8 @@ def assert_no_score_gate(text, label):
             )
 
 
-def run_checker(report):
-    return subprocess.run(["bash", str(CHECKER), str(report)], capture_output=True, text=True)
+def run_checker(report, *extra):
+    return subprocess.run(["bash", str(CHECKER), str(report), *extra], capture_output=True, text=True)
 
 
 def test_no_score_gate_in_any_skill_doc():
@@ -271,6 +271,8 @@ def test_cross_skill_link_scanner_self_check():
         '(goal-loop/SKILL.md)',
         '(../../skills/dual-round-review/SKILL.md)',
         '(/abs/skills/goal-loop/SKILL.md)',
+        '(..\\goal-loop\\SKILL.md)',
+        '../Goal-Loop/SKILL.md',
     ]
     for sample in illegal:
         assert CROSS_SKILL_LINK.search(sample), f'跨技能链接正则漏检: {sample}'
@@ -296,6 +298,10 @@ def test_score_gate_scanner_covers_variants():
         '得分达到 9 分即可交付。',
         '分级为 A 方能上线。',
         '通过率 90% 以上才可交付。',
+        '验收评分包括通过率，达到 9 分即可交付。',
+        '该门禁包括评分，分数即放行依据。',
+        '交付判据包括评分等级，A 级方可上线。',
+        '评分包括门禁判定，满分才准合并。',
     ]
     for sample in illegal:
         try:
@@ -309,6 +315,8 @@ def test_score_gate_scanner_covers_variants():
         '分数不构成交付判据。',
         '不采用绝对分数作为交付判据。',
         '验收通过率不以分数计算。',
+        '五域断言需在 30 分钟内完成。',
+        '验收报告应在 10 分钟内完成结构校验。',
     ]
     for sample in legal:
         assert_no_score_gate(sample, 'legal-probe')
@@ -338,3 +346,55 @@ def test_checker_fails_when_blocked_without_unverified_items(tmp_path):
     r = run_checker(report)
     assert r.returncode != 0, "结论 BLOCKED 却声明无未验证项时必须非零退出"
     assert "BLOCKED" in r.stdout + r.stderr
+
+
+PASS_REPORT = (
+    FULL_REPORT
+    .replace(
+        "- [ ] A2 断网提交显示错误并保留输入 | 操作: DevTools offline 后提交 | 证据: shots/error.png | 状态: 已实现未验证",
+        "- [x] A2 断网提交显示错误并保留输入 | 操作: DevTools offline 后提交 | 证据: shots/error.png | 状态: 已运行验证",
+    )
+    .replace(
+        "- [ ] A5 关键交互 P95 未回归 | 操作: 前后各测 20 次 | 证据: 待测量 | 状态: 未验证（宿主无性能测量能力）",
+        "- [x] A5 关键交互 P95 未回归 | 操作: 前后各测 20 次 | 证据: perf/p95.txt | 状态: 已运行验证",
+    )
+    .replace("| 交互状态 | 1 | 0 | 1 | 0 | FAIL |", "| 交互状态 | 1 | 1 | 0 | 0 | PASS |")
+    .replace("| 性能 | 1 | 0 | 0 | 1 | BLOCKED |", "| 性能 | 1 | 1 | 0 | 0 | PASS |")
+    .replace("五维合计：断言 5 · 通过 3 · 失败 1 · 未验证 1", "五维合计：断言 5 · 通过 5 · 失败 0 · 未验证 0")
+    .replace("- A5 未验证：宿主缺少性能测量能力（能力门控，不视为通过）", "- 无")
+    .replace("- 未验证：A5", "- 未验证：无")
+    .replace("- 结论：BLOCKED（存在未验证项）", "- 结论：PASS")
+)
+
+
+def test_checker_require_verdict_accepts_pass_report(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT, encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "结论 PASS" in r.stdout
+
+
+def test_checker_require_verdict_rejects_blocked_report(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(FULL_REPORT, encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "BLOCKED 报告必须被 --require-verdict=PASS 拒绝"
+
+
+def test_checker_require_verdict_rejects_fail_report(tmp_path):
+    report = tmp_path / "qa-report.md"
+    fail_report = FULL_REPORT.replace("- 结论：BLOCKED（存在未验证项）", "- 结论：FAIL")
+    report.write_text(fail_report, encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "FAIL 报告必须被 --require-verdict=PASS 拒绝"
+
+
+def test_checker_min_assertions_option(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT, encoding="utf-8")
+    ok = run_checker(report, "--min-assertions=5")
+    assert ok.returncode == 0, ok.stdout + ok.stderr
+    strict = run_checker(report, "--min-assertions=15")
+    assert strict.returncode != 0, "低于 --min-assertions 的报告必须失败"
+    assert "下限 15" in strict.stdout + strict.stderr

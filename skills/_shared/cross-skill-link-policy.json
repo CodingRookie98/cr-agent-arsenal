@@ -1,6 +1,24 @@
 {
   "purpose": "跨技能相对路径硬链接禁令的唯一真相源（独立技能分发时相对链接会断链）。",
+  "status": "参考性登记（当前无脚本直接消费本文件；各技能以内联副本 + 契约测试自检保护自身文档）",
   "rationale": "每个技能可独立安装（npx skills add --skill <name>），跨技能相对路径在单装后必然断链。引用他技能只允许命名引用（反引号内的技能名）。",
+  "consumers": [
+    "skills/taste-driven-designer/tests/test_gate_contract.py（内联副本 + 自检）",
+    "skills/frontend-qa-gate/tests/test_qa_gate_contract.py（内联副本 + 自检）"
+  ],
+  "coverage": {
+    "covered": [
+      "taste-driven-designer",
+      "frontend-qa-gate"
+    ],
+    "not_covered": [
+      "dual-round-review",
+      "goal-loop",
+      "doc-governance",
+      "agy-delegation-workflow"
+    ],
+    "not_covered_reason": "这些技能存在基线既有的技能间相对链接（如 dual-round-review→goal-loop、goal-loop→dual-round-review），按 Diff 边界锁未纳入本次交付；待后续维护补丁统一整改并补齐自检"
+  },
   "forbidden_skill_names": [
     "taste-driven-designer",
     "dual-round-review",
@@ -14,7 +32,13 @@
     "(./goal-loop/SKILL.md)",
     "(goal-loop/SKILL.md)",
     "(../../skills/dual-round-review/SKILL.md)",
-    "(/abs/path/goal-loop/SKILL.md)"
+    "(/abs/path/goal-loop/SKILL.md)",
+    "..\\\\goal-loop\\\\SKILL.md",
+    "../Goal-Loop/SKILL.md"
   ],
-  "note": "本文件不随任何单个技能分发；各技能以「内联副本 + 契约测试自检」方式保护自身文档。"
+  "exemptions": [
+    "命令行示例（以 bash / sh / python3 / npx / pnpm / npm / node 开头的行）",
+    "技能自身目录内的相对路径",
+    "指向仓库 docs/ 的文档链接（docs 不参与技能独立分发）"
+  ]
 }

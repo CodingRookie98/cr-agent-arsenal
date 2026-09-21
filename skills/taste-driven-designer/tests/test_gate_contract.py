@@ -165,7 +165,7 @@ def test_counter_evidence_fixture_preserved():
         assert fragment in text, f"反证 fixture 丢失原始证据片段: {fragment}"
 
 
-CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?/)*(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow)/")
+CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow)[\\\\/]", re.IGNORECASE)
 
 
 def test_no_cross_skill_relative_links_in_taste_docs():
@@ -191,6 +191,8 @@ def test_cross_skill_scanner_self_check():
         "[ref]: ../goal-loop/SKILL.md",
         "<a href=\"./doc-governance/SKILL.md\">x</a>",
         "裸路径 ../dual-round-review/SKILL.md 文本",
+        '(..\\goal-loop\\SKILL.md)',
+        '../Goal-Loop/SKILL.md',
     ]
     for sample in illegal:
         assert CROSS_SKILL_LINK.search(sample), f"漏检: {sample}"

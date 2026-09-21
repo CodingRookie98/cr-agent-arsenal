@@ -218,6 +218,7 @@
 * **门禁准出底线 (<HARD-GATE>)**：
   > **必须持有由独立子智能体针对最新提交做出的 Zero Blockers（阻断项清零）终审裁决报告方可合并入库与结项！**
   > **前端产物交付时另需持有 `frontend-qa-gate`《前端验收报告》且结论为 PASS（无失败、无未验证项）；FAIL / BLOCKED 不得合并入库。**
+  > **机械校验命令**：`bash <frontend-qa-gate 技能目录>/scripts/check-qa-report.sh <报告文件> --require-verdict=PASS --min-assertions=15`（脚本退出码 0 才视为结论 PASS 可证）。
 
 ---
 
