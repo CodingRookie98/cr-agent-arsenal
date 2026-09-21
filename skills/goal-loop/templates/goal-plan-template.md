@@ -120,6 +120,9 @@
   - **验收命令**: `[L3 验证命令]`
 
 ### P4: 双轮对抗终审与再循环闭环硬门禁 (Dual-Round Review & Re-Loop Gate)
+- [ ] **Task P4.0 (条件 · 仅前端产物交付)**: 取得 `frontend-qa-gate`《前端验收报告》且结论为 `PASS`
+  - **验收方式**: `bash <frontend-qa-gate 技能目录>/scripts/check-qa-report.sh <报告文件> --require-verdict=PASS --min-assertions=15` 通过（机械证明结论为 PASS 且覆盖深度达标）+ 报告第 8 章人类签收记录
+  - **准入门禁**: 结论为 `FAIL` 或 `BLOCKED`（含任何未验证项）时**不得进入 P4.1**；按该技能 `references/regression-routing.md` 分流修复后重验
 - [ ] **Task P4.1**: 按通道裁定执行审查 —— Heavy Track 调用 `dual-round-review` 派发 R1 红队与 R2 元架构师；Fast-Track 执行定向单轮红队审查（除非触及公共契约/核心链路，见 `stage-progression-protocol.md` P4）
   - **审查输入**: 本功能提交范围 `BASE..HEAD` + Diff 边界锁 + 宿主安全红线检查
   - **验收标准**: 取得独立子智能体给出的终审裁决明细表
@@ -127,7 +130,7 @@
   - **触发条件**: 若 Task P4.1 裁定存在阻断项 (`Blockers > 0`)
   - **执行动作**: 实施针对性精准根因修复并原子提交 ➔ **以修复提交为基线重新派发 Delta Re-Loop** ➔ 重复直至阻断项清零或触发上限熔断
 - [ ] **Task P4.3**: 阻断项清零终审放行与代码合并
-  - **准入标准**: 持有 Zero Blockers 终审凭据，合并功能分支
+  - **准入标准**: 持有 Zero Blockers 终审凭据；前端产物交付时另需 `frontend-qa-gate` 报告结论为 PASS（无失败、无未验证项），合并功能分支
 
 ### P5: 文档全向归档与联动升级
 - [ ] **Task P5.1**: 对照 `documentation-sync-matrix.md` 同步架构/API/配置与待办清单

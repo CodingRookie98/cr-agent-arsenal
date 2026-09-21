@@ -7,7 +7,7 @@ description: Use when the user wants to design or redesign any UI/UX artifact �
 
 ## 概述
 
-将 AI 从"统计平庸的默认设计器"升级为"世界级设计师"的三阶段流程技能。理论基准：[《How to Turn Your AI into a World-Class Designer》](../../docs/reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md)（Anshu Chimala 的 AI 双钻模型，前 Apple AI 原型团队 12 年负责人）。
+将 AI 从"统计平庸的默认设计器"升级为"世界级设计师"的三阶段流程技能。理论基准：《How to Turn Your AI into a World-Class Designer》（Anshu Chimala 的 AI 双钻模型，前 Apple AI 原型团队 12 年负责人；仓库归档路径 docs/reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md）。
 
 **黄金公式**：
 
@@ -33,7 +33,7 @@ $$\text{World-Class AI Design} = \text{外部随机种子} + \text{独立 Critic
 
 1. **随机性必须来自模型外部**：任何设计开工前先跑种子字符串规程（`scripts/generate-seed.sh`）；"随机一点 / 独特一点"等口头指令不算数——模型只会预测"听起来随机"的 Token。
 2. **Critic 分离纪律**：Critic 每次以**全新上下文** + **固定模板** + **只看产物**介入——默认只收当前产物（截图，无则降级）；**盲比模式另附去标识、随机左右的上一版**。任何模式下都不得携带实现代码、迭代记录与前次批评全文。
-3. **三信号收敛门禁**：D2 完成必须同时满足 —— **A 结构清单**（7 AI Tells + 层级/间距/状态/文案审计，逐项可核验）+ **B 盲比改进**（上一版 vs 当前版强制选择：哪个更好 + 胜出维度，**不输出分数**）+ **C 人类签收**。绝对分数（如 x/10）**仅作遥测**，任何时候不得作为通过判据；**门禁未达 ≠ 交付完成**，如实报 blocked 待裁。
+3. **三信号收敛门禁**：D2 完成必须同时满足 —— **A 结构清单**（7 AI Tells + 层级/间距/状态/文案审计，逐项可核验）+ **B 盲比改进**（上一版 vs 当前版强制选择：哪个更好 + 胜出维度，**不输出分数**）+ **C 人类签收**。结构清单扩展项见 [critic-loop-protocol.md](references/critic-loop-protocol.md) Gate A；**产物级验收**（响应式与移动端、交互状态矩阵、无障碍键盘路径、浏览器覆盖、性能预算）以 `frontend-qa-gate` 技能为主路径，其验收基线为内联最小副本，来源版本见该技能的 acceptance-matrix（A 方案：Gate A 为验收基线单一来源）。绝对分数（如 x/10）**仅作遥测**，任何时候不得作为通过判据；**门禁未达 ≠ 交付完成**，如实报 blocked 待裁。
 4. **预算有上限**：先跑 1~2 轮验证可收敛性；全流程迭代上限 5 轮，超限熔断向用户汇报。
 5. **减法优先**：Deliver 阶段先删除后增补——删不掉价值说明的元素（装饰渐变/多余卡片/装饰标签）一律移除；AI Tells 审计必须逐项过清单（`references/ai-tells-audit.md`）。
 6. **文案是占位符**：AI 生成的文案一律视为排版 Lorem ipsum，交付前必须重写为具体、克制、口语化的人类语言（黑名单词表见 `references/ai-tells-audit.md`）。
@@ -49,7 +49,7 @@ $$\text{World-Class AI Design} = \text{外部随机种子} + \text{独立 Critic
 | 阶段 | 目标 | 核心技法 | 产物 / 指针 |
 |:---:|---|---|---|
 | **D1 Discover** | 打散统计平庸，发散探索 | 种子字符串注入随机性 + 雄心跨界 Prompt | 设计简报（`templates/design-brief-template.md`）；细则见 [discover-phase.md](references/discover-phase.md) |
-| **D2 Define** | 注入品味与个性，逼近世界级执行水准 | 独立 Critic 闭环（盲比 A/B + 参考排序）+ （可选）图像/视频增强 | 评审账本 + 结构清单；细则见 [critic-loop-protocol.md](references/critic-loop-protocol.md)、[multimodal-enrichment.md](references/multimodal-enrichment.md) |
+| **D2 Define** | 注入品味与个性，逼近世界级执行水准 | 独立 Critic 闭环（盲比 A/B + 参考排序）+ （可选）图像/视频增强 + **每轮内嵌产物自检**（状态矩阵与响应式抽查，分钟级，不派发 Critic） | 评审账本 + 结构清单 + 自检记录；细则见 [critic-loop-protocol.md](references/critic-loop-protocol.md)、[multimodal-enrichment.md](references/multimodal-enrichment.md) |
 | **D3 Deliver** | 收敛与减法，剔除 AI 痕迹 | 残酷减法 + AI Tells 审计 + 文案重写 | AI Tells 审计清单 + 删除记录；细则见 [ai-tells-audit.md](references/ai-tells-audit.md) |
 
 **阶段纪律**：D1 未产出多方向简报不得进入 D2；D2 未同时满足「结构清单全过 + 盲比有改进（或判定已收敛）+ 人类签收」不得进入 D3；D3 审计未逐项过清单不得宣称交付。
@@ -65,11 +65,12 @@ D1  ┌ generate-seed.sh 生成种子 → 提取子模式 → 定义创意方向
 D2  ┌ 实现初版 → 捕获产物（截图 / 降级文本）→ 附版本 nonce
     ├ 派发 Critic（全新上下文 + 固定模板 + 设计意图与已决原则；必须回执 nonce）
     ├ 盲比：上一版 vs 当前版强制选择（不输出分数）→ 有改进则记账续跑
-    ├ 结构清单逐项核验（7 AI Tells + 层级/间距/状态/文案）→ 全过才谈放行
+    ├ 结构清单逐项核验（7 AI Tells + 层级/间距/状态/文案 + 状态矩阵 / 视口抽查 / 无障碍基线 / 证据三态）→ 全过才谈放行
     └ 人类签收 → 进入 D3；分数仅记遥测（可选增强见 multimodal-enrichment.md）
 D3  ┌ 逐项过 AI Tells 审计清单（7 反模式 + 减法 + 文案黑名单）
     ├ 删除无价值元素 → 重写全部文案 → 人工复核方向一致
-    └ 交付并说明：方向来源、盲比结论与签收、删除了什么
+    ├ 交付说明：方向来源、盲比结论与签收、删除了什么，并标注证据三态（已实现 / 已运行验证 / 未验证）
+    └ 产物级完整验收（响应式 / 状态 / 无障碍 / 浏览器 / 性能）由 `frontend-qa-gate` 独立执行，本技能不替代该验收
 ```
 
 ---
@@ -86,6 +87,7 @@ D3  ┌ 逐项过 AI Tells 审计清单（7 反模式 + 减法 + 文案黑名单
 | Critic 建议与已决原则冲突 | 原则优先 + 记入台账，交人类裁决；禁止静默反转（防乒乓） |
 | 评审账本达 5 轮上限 | 熔断：汇报当前最佳状态与差距清单，请用户决定是否继续 |
 | 门禁未达（清单未全过 / 无改进 / 未签收） | 如实报 blocked 待裁，**不得宣称交付完成** |
+| 产物级验收未通过（`frontend-qa-gate` 存在失败或未验证断言） | 视为交付未完成：按该技能的回流路由分流后再谈交付 |
 
 ---
 

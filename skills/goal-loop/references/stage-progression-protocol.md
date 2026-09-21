@@ -210,8 +210,15 @@
      - 循环往复，直至取得独立子智能体给出的 Zero Blockers 裁决；
      - **迭代上限**：同一目标的 Delta Re-Loop 迭代上限为 **5 次**；达到上限仍未清零时按熔断协议升级人类裁决，严禁无上限空转；
   4. 阻断项清零后，将功能分支安全合并回主干/开发分支，并清理临时分支。
+  5. **前端产物验收（条件步骤 · 仅前端产物交付时执行）**：交付物包含前端产物时，在 R1 之前先激活 `frontend-qa-gate` 完成产物级断言，再进入本阶段第 2~4 步的代码级终审；
+     - **设计任务链路**：`taste-driven-designer` D1-D3（D3 出口含证据三态）→ `frontend-qa-gate`（真实浏览器断言，结论必须为 PASS）→ `dual-round-review` R1/R2；
+     - **非设计任务链路**：`frontend-qa-gate` → `dual-round-review`，无需经过 taste；
+     - **无效证据纪律**：结论为 FAIL 或 BLOCKED 时，不得声称前端验收通过；未验证项按该技能的回流路由处理后再重验；
+     - **边界**：产物级行为断言归 `frontend-qa-gate`，代码级判据归 `dual-round-review`，品味与方向裁决归 `taste-driven-designer` 的 Critic 与人类创意总监——三者不得互相替代。
 * **门禁准出底线 (<HARD-GATE>)**：
   > **必须持有由独立子智能体针对最新提交做出的 Zero Blockers（阻断项清零）终审裁决报告方可合并入库与结项！**
+  > **前端产物交付时另需持有 `frontend-qa-gate`《前端验收报告》且结论为 PASS（无失败、无未验证项）；FAIL / BLOCKED 不得合并入库。**
+  > **机械校验命令**：`bash <frontend-qa-gate 技能目录>/scripts/check-qa-report.sh <报告文件> --require-verdict=PASS --min-assertions=15`（脚本退出码 0 才视为结论 PASS 可证）。
 
 ---
 

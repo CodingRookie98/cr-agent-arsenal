@@ -46,6 +46,14 @@ def read(path):
     return path.read_text(encoding="utf-8")
 
 
+COMMAND_EXAMPLE = re.compile(r"^\s*(?:bash|sh|python3?|npx|pnpm|npm|node)\s")
+
+
+def is_command_example(line):
+    """命令行示例（bash/python3/npx ... skills/<name>/...）不是文档链接，豁免跨技能硬链接扫描。"""
+    return bool(COMMAND_EXAMPLE.match(line))
+
+
 def assert_no_score_gate(text, label):
     """句子级扫描：分数与完成/放行同句时必须带禁止性表述。"""
     for sentence in re.split(r"[。！？\n]", text):
@@ -155,3 +163,50 @@ def test_counter_evidence_fixture_preserved():
     text = read(FIXTURE)
     for fragment in ("6.2 → 5.8", "70a91fc", "线胜于面", "空白截图"):
         assert fragment in text, f"反证 fixture 丢失原始证据片段: {fragment}"
+
+
+CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(?<![\\.])(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow)[\\\\/]", re.IGNORECASE)
+
+
+def test_no_cross_skill_relative_links_in_taste_docs():
+    """独立分发纪律: taste 文档不得出现指向其它技能的相对路径硬链接 (R1-1)."""
+    offenders = []
+    root = Path(__file__).resolve().parents[1]
+    for path in sorted(root.rglob("*.md")):
+        if "__pycache__" in str(path):
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if is_command_example(line):
+                continue
+            if CROSS_SKILL_LINK.search(line):
+                offenders.append(f"{path.name}: {line.strip()[:80]}")
+    assert not offenders, "跨技能相对路径硬链接(单技能安装会断链): " + "; ".join(offenders)
+
+
+def test_cross_skill_scanner_self_check():
+    illegal = [
+        "[frontend-qa-gate](../frontend-qa-gate/SKILL.md)",
+        "(../../skills/dual-round-review/SKILL.md)",
+        "<a href=\"./goal-loop/SKILL.md\">x</a>",
+        "[ref]: ../goal-loop/SKILL.md",
+        "<a href=\"./doc-governance/SKILL.md\">x</a>",
+        "裸路径 ../dual-round-review/SKILL.md 文本",
+        '(..\\goal-loop\\SKILL.md)',
+        '../Goal-Loop/SKILL.md',
+    ]
+    for sample in illegal:
+        assert CROSS_SKILL_LINK.search(sample), f"漏检: {sample}"
+    command_examples = [
+        "bash skills/taste-driven-designer/scripts/generate-seed.sh -l 64",
+        "python3 skills/doc-governance/scripts/check-doc-links.py --root docs",
+    ]
+    for sample in command_examples:
+        assert is_command_example(sample), f"命令行示例未被识别（会误报）: {sample}"
+    legal = [
+        "[critic-loop-protocol.md](references/critic-loop-protocol.md)",
+        "`frontend-qa-gate` 技能",
+        "[discover-phase.md](references/discover-phase.md)",
+        '.goal-loop/dispatch-ledger.md',
+    ]
+    for sample in legal:
+        assert not CROSS_SKILL_LINK.search(sample), f"误伤: {sample}"
