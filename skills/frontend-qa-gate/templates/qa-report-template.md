@@ -1,6 +1,7 @@
 # 前端验收报告 · <产物名称>
 
 > 使用说明：复制本模板后逐项填写。所有 `<...>` 占位符必须替换；
+> 每条断言行必须含「操作 / 证据 / 状态」三项（完整字段定义见 references/browser-verification-protocol.md §2）；
 > 明细断言与结论表必须在提交前调整到一致（断言行数 = 明细中 `- [ ]` 行数），
 > 然后运行 `bash scripts/check-qa-report.sh <本文件>` 通过结构校验。
 
@@ -36,19 +37,19 @@
 ## 3. 五维断言明细
 
 ### 3.1 响应式视口断言
-- [x] V1 320px 宽无横向滚动 | 操作: 设为 320px 宽滚动到底 | 证据: `shots/v1-320.png`
+- [x] V1 320px 宽无横向滚动 | 操作: 设为 320px 宽滚动到底 | 证据: `shots/v1-320.png` | 状态: 已运行验证
 
 ### 3.2 交互状态断言
-- [ ] S4 断网提交显示错误并保留输入 | 操作: DevTools offline 后提交 | 证据: `shots/s4-offline.png`
+- [ ] S4 断网提交显示错误并保留输入 | 操作: DevTools offline 后提交 | 证据: `shots/s4-offline.png` | 状态: 已实现未验证
 
 ### 3.3 无障碍断言
-- [x] A3 键盘可完成主流程 | 操作: 仅 Tab/Enter 走完流程 | 证据: `logs/a3-keyboard.txt`
+- [x] A3 键盘可完成主流程 | 操作: 仅 Tab/Enter 走完流程 | 证据: `logs/a3-keyboard.txt` | 状态: 已运行验证
 
 ### 3.4 浏览器覆盖断言
-- [x] B2 Safari 关键流程通过 | 操作: Safari 最低版本真机 | 证据: `shots/b2-safari.png`
+- [x] B2 Safari 关键流程通过 | 操作: Safari 最低版本真机 | 证据: `shots/b2-safari.png` | 状态: 已运行验证
 
 ### 3.5 性能断言
-- [ ] P1 构建体积无未解释增长 | 操作: 对比改动前后构建输出 | 证据: `logs/p1-bundle.txt`
+- [ ] P1 构建体积无未解释增长 | 操作: 对比改动前后构建输出 | 证据: `logs/p1-bundle.txt` | 状态: 未验证（宿主无性能测量能力）
 
 ## 4. 未验证项与阻断原因
 

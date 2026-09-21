@@ -10,7 +10,7 @@ dual-round-review 的重复品或第二个不可靠的评分门禁（taste V1.1 
 3. 不得进行代码级审查：代码级判据必须显式路由到 dual-round-review；
 4. 五大断言维度（响应式视口/交互状态/无障碍/浏览器覆盖/性能）必须在位；
 5. 回流路由四类齐备，命令顺序固定为 taste -> qa-gate -> dual-round-review；
-6. 独立分发纪律：不得写跨技能相对路径硬链接；
+6. 独立分发纪律：不得写跨技能相对路径硬链接（正则自检覆盖相对与绝对形态）；
 7. 报告结构校验脚本行为正确。
 """
 
@@ -27,14 +27,13 @@ CHECKER = SKILL_DIR / "scripts" / "check-qa-report.sh"
 
 FENCE = "```"
 
-SCORE_WORDS = re.compile(r"评分|分数|得分|分值|等级|百分比|通过率")
+SCORE_WORDS = re.compile(r"评分|打分|分数|得分|分值|满分|分级|等级|百分比|通过率|[0-9]+\s*分")
 GATE_WORDS = re.compile(r"完成|放行|通过|达标|准入|交付|上线|发版|发布|合并|验收判据")
-PROHIBITION_WORDS = re.compile(r"不得|禁止|不输出|不许|不含|不涉及|不参与|不作为|不构成|仅作|不作|非门禁|❌")
+PROHIBITION_WORDS = re.compile(r"不得|禁止|不输出|不许|不含|不涉及|不参与|不作为|不构成|不以|不设|不采用|不提供|不构成|不用于|不计算|包括|仅作|不作|非门禁|非判据|非验收|❌")
 
-# 边界声明：本扫描是启发式护栏（句子级词表共现），不是语义证明；配套正向锚点与自检用例。
-CROSS_SKILL_LINK = re.compile(
-    r"\]\((?:\\.\\./)*\\.{0,2}/?(?:taste-driven-designer|dual-round-review|goal-loop)/"
-)
+# 跨技能相对路径硬链接：覆盖 (../x/)、(./x/)、(x/)、(../../skills/x/) 与绝对路径形态。
+# 正则自身由 test_cross_skill_link_scanner_self_check 自检，防止再次出现恒真空断言。
+CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?/)*(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow)/")
 FIVE_DIMENSIONS = ["响应式", "状态", "无障碍", "浏览器", "性能"]
 
 
@@ -44,6 +43,14 @@ def read(path):
 
 def skill_docs():
     return sorted(p for p in SKILL_DIR.rglob("*.md") if "__pycache__" not in str(p))
+
+
+COMMAND_EXAMPLE = re.compile(r"^\s*(?:bash|sh|python3?|npx|pnpm|npm|node)\s")
+
+
+def is_command_example(line):
+    """命令行示例（bash/python3/npx ... skills/<name>/...）不是文档链接，豁免跨技能硬链接扫描。"""
+    return bool(COMMAND_EXAMPLE.match(line))
 
 
 def assert_no_score_gate(text, label):
@@ -132,6 +139,8 @@ def test_no_cross_skill_relative_links():
     offenders = []
     for path in skill_docs():
         for line in read(path).splitlines():
+            if is_command_example(line):
+                continue
             if CROSS_SKILL_LINK.search(line):
                 offenders.append(path.name + ": " + line.strip()[:80])
     assert not offenders, "禁止跨技能相对路径硬链接（独立分发会断链）: " + "; ".join(offenders)
@@ -158,15 +167,15 @@ FULL_REPORT = """# 前端验收报告 · Example
 
 ## 3. 五维断言明细
 ### 3.1 响应式视口断言
-- [x] A1 375x812 无横向溢出 | 操作: 打开首页滚动到底 | 证据: shots/375.png
+- [x] A1 375x812 无横向溢出 | 操作: 打开首页滚动到底 | 证据: shots/375.png | 状态: 已运行验证
 ### 3.2 交互状态断言
-- [ ] A2 断网提交显示错误并保留输入 | 操作: DevTools offline 后提交 | 证据: shots/error.png
+- [ ] A2 断网提交显示错误并保留输入 | 操作: DevTools offline 后提交 | 证据: shots/error.png | 状态: 已实现未验证
 ### 3.3 无障碍断言
-- [x] A3 键盘可完成登录 | 操作: 仅 Tab/Enter 走完登录 | 证据: logs/keyboard-run.txt
+- [x] A3 键盘可完成登录 | 操作: 仅 Tab/Enter 走完登录 | 证据: logs/keyboard-run.txt | 状态: 已运行验证
 ### 3.4 浏览器覆盖断言
-- [x] A4 Safari 最低版本填充样式正常 | 操作: 真机核对 | 证据: shots/safari.png
+- [x] A4 Safari 最低版本填充样式正常 | 操作: 真机核对 | 证据: shots/safari.png | 状态: 已运行验证
 ### 3.5 性能断言
-- [ ] A5 关键交互 P95 未回归 | 操作: 前后各测 20 次 | 证据: 待测量
+- [ ] A5 关键交互 P95 未回归 | 操作: 前后各测 20 次 | 证据: 待测量 | 状态: 未验证（宿主无性能测量能力）
 
 ## 4. 未验证项与阻断原因
 - A5 未验证：宿主缺少性能测量能力（能力门控，不视为通过）
@@ -234,3 +243,79 @@ def test_checker_ignores_tri_states_inside_code_fence(tmp_path):
     report.write_text(FULL_REPORT.replace("## 8. 签收", appendix + "\n\n## 8. 签收"), encoding="utf-8")
     r = run_checker(report)
     assert r.returncode == 0, "围栏代码块内的示例文本不得被当作真实三态记录"
+
+def test_cross_skill_link_scanner_self_check():
+    # 防恒真空断言：正则必须对相对/绝对形态命中，且不得误伤技能内路径。
+    illegal = [
+        '(../taste-driven-designer/SKILL.md)',
+        '(./goal-loop/SKILL.md)',
+        '(goal-loop/SKILL.md)',
+        '(../../skills/dual-round-review/SKILL.md)',
+        '(/abs/skills/goal-loop/SKILL.md)',
+    ]
+    for sample in illegal:
+        assert CROSS_SKILL_LINK.search(sample), f'跨技能链接正则漏检: {sample}'
+    command_examples = [
+        'bash skills/frontend-qa-gate/scripts/check-qa-report.sh report.md',
+        'python3 skills/doc-governance/scripts/check-doc-links.py --root docs',
+    ]
+    for sample in command_examples:
+        assert is_command_example(sample), f'命令行示例未被识别（会误报）: {sample}'
+    legal = ['(references/acceptance-matrix.md)', '(scripts/check-qa-report.sh)', '(templates/qa-report-template.md)']
+    for sample in legal:
+        assert not CROSS_SKILL_LINK.search(sample), f'跨技能链接正则误伤技能内路径: {sample}'
+
+
+def test_score_gate_scanner_covers_variants():
+    # 依据实测：旧词表漏检 3/8 变体，扩词后必须全部命中。
+    illegal = [
+        '仅当 Critic 评分达到 9 分时才放行。',
+        '评分到 9 就放上线。',
+        '分数达到门槛方可交付。',
+        '综合分为 9 分即可发布。',
+        '验收满分才准合并。',
+        '得分达到 9 分即可交付。',
+        '分级为 A 方能上线。',
+        '通过率 90% 以上才可交付。',
+    ]
+    for sample in illegal:
+        try:
+            assert_no_score_gate(sample, 'variant-probe')
+        except AssertionError:
+            continue
+        raise AssertionError(f'分数门禁变体漏检: {sample}')
+    legal = [
+        '评分仅作遥测记录，不作为验收判据，禁止用于放行判定。',
+        '分数不参与通过判定。',
+        '分数不构成交付判据。',
+        '不采用绝对分数作为交付判据。',
+        '验收通过率不以分数计算。',
+    ]
+    for sample in legal:
+        assert_no_score_gate(sample, 'legal-probe')
+
+
+def test_checker_fails_when_domain_missing(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(FULL_REPORT.replace("### 3.3 无障碍断言", "### 3.3 其它断言"), encoding="utf-8")
+    r = run_checker(report)
+    assert r.returncode != 0, "缺少任一域标题时必须非零退出"
+    assert "五域覆盖" in r.stdout + r.stderr
+
+
+def test_checker_fails_when_section_only_inside_fence(tmp_path):
+    report = tmp_path / "qa-report.md"
+    poisoned = FULL_REPORT.replace("## 8. 签收", "## 8.5 附录")
+    poisoned = poisoned + FENCE + "text\n## 8. 签收\n" + FENCE + "\n"
+    report.write_text(poisoned, encoding="utf-8")
+    r = run_checker(report)
+    assert r.returncode != 0, "必需区块仅存在于围栏内时必须非零退出"
+    assert "围栏" in r.stdout + r.stderr
+
+
+def test_checker_fails_when_blocked_without_unverified_items(tmp_path):
+    report = tmp_path / "qa-report.md"
+    report.write_text(FULL_REPORT.replace("- 未验证：A5", "- 未验证：无"), encoding="utf-8")
+    r = run_checker(report)
+    assert r.returncode != 0, "结论 BLOCKED 却声明无未验证项时必须非零退出"
+    assert "BLOCKED" in r.stdout + r.stderr

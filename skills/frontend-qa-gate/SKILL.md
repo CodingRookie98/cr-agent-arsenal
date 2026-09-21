@@ -1,6 +1,6 @@
 ---
 name: frontend-qa-gate
-description: Use when a frontend artifact needs acceptance verification against real runtime evidence - responsive viewports, interaction states (loading/empty/error/disabled/focus), accessibility (keyboard, focus, screen-reader paths), target-browser coverage, and performance regressions - including AI-generated or AI-assisted frontend deliverables before release. Triggers on frontend acceptance, QA gate, a11y check, responsive breakage, keyboard trap, error-state missing, performance regression, pre-release verification.
+description: Use when a frontend artifact needs acceptance verification against real runtime evidence: responsive viewports, interaction states (loading/empty/error/disabled/focus), accessibility (keyboard, focus, screen-reader paths), browser coverage, performance regressions - including AI-assisted frontend deliverables before release. Triggers on frontend acceptance, QA gate, a11y check, responsive breakage, keyboard trap, error-state missing, performance regression, pre-release verification.
 ---
 
 # frontend-qa-gate 前端产物验收

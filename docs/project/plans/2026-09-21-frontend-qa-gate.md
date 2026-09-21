@@ -26,13 +26,13 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P1 需求确认（本文档）→ 待进入 P3 TDD 循环
-- **当前活跃子任务**: Task P3.1（契约测试先红）
+- **当前活跃阶段**: P4 双轮终审（R1 已返回 3 Blocker → Delta 修复完成，待重派 Delta R1）
+- **当前活跃子任务**: Task P4.2（Delta Re-Loop 第 1 轮）
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
-- **最后一次验证状态**: 基线 `python3 -m pytest skills/ -q` 71 passed（改动前）
-- **最新有效提交**: `39a3a0d`
-- **阻断原因**: 无
+- **最后一次验证状态**: `python3 -m pytest skills/ -q` **95 passed**（Delta 修复后：qa-gate 22 + taste 13 + 契约 13 + 其他既有）；`bash -n` / `git diff --check` OK；断链 0；健康度 PASS；修订历史滑动窗口 PASS
+- **最新有效提交**: `c1252a4`（P3 交付提交，19 files, +1452/-12）
+- **阻断原因**: R1 裁定 3 项 Blocker（R1-1/R1-2/R1-3）已全部修复，待 Delta R1 复核
 
 ---
 
@@ -157,41 +157,65 @@
 ## 3. 分阶段实施与子任务清单 (Phased Implementation & Tasks)
 
 ### P3 准备: 隔离分支与环境前置检查
-- [ ] **Task P3.0**: 创建 `feature/frontend-qa-gate` 分支，固化基线（`pytest skills/ -q` = 71 passed）与 Diff 范围
+- [x] **Task P3.0**: 创建 `feature/frontend-qa-gate` 分支，固化基线（`pytest skills/ -q` = 71 passed）与 Diff 范围
   - **涉及文件**: 无（仅分支与基线记录）
   - **验收方式**: 基线测试 Exit Code 0；`git status` 干净
 
 ### P3: 核心功能原子实现 (TDD 循环)
-- [ ] **Task P3.1**: 契约测试先红 —— `test_qa_gate_contract.py` 钉死五条边界（无分数判据 / 不替代签收 / 不审代码 / 五大断言维度锚点在位 / 回流路由表完备）+ 报告校验脚本行为测试
+- [x] **Task P3.1**: 契约测试先红 —— `test_qa_gate_contract.py` 钉死五条边界（无分数判据 / 不替代签收 / 不审代码 / 五大断言维度锚点在位 / 回流路由表完备）+ 报告校验脚本行为测试
   - **涉及文件**: `skills/frontend-qa-gate/tests/test_qa_gate_contract.py`
   - **验收命令**: `python3 -m pytest skills/frontend-qa-gate/tests/ -q`（预期 red）
-- [ ] **Task P3.2**: qa-gate 主体转绿 —— `SKILL.md` + `references/acceptance-matrix.md`（状态矩阵 / 视口矩阵 / 可访问性基线 / 错误恢复 / 浏览器矩阵 / 性能预算）+ `references/browser-verification-protocol.md`（能力门控 / 证据与回执 / 阻断语义）+ `references/regression-routing.md` + `templates/qa-report-template.md` + `scripts/check-qa-report.sh`
+- [x] **Task P3.2**: qa-gate 主体转绿 —— `SKILL.md` + `references/acceptance-matrix.md`（状态矩阵 / 视口矩阵 / 可访问性基线 / 错误恢复 / 浏览器矩阵 / 性能预算）+ `references/browser-verification-protocol.md`（能力门控 / 证据与回执 / 阻断语义）+ `references/regression-routing.md` + `templates/qa-report-template.md` + `scripts/check-qa-report.sh`
   - **验收命令**: 同 P3.1（预期 green）
-- [ ] **Task P3.3**: taste Gate A/D3 补强（A3/A4/A6/A7）+ D2 内嵌便宜自检 + 内联基线版本标注
+- [x] **Task P3.3**: taste Gate A/D3 补强（A3/A4/A6/A7）+ D2 内嵌便宜自检 + 内联基线版本标注
   - **涉及文件**: `skills/taste-driven-designer/SKILL.md`、`references/critic-loop-protocol.md`、`references/ai-tells-audit.md`
   - **验收命令**: `python3 -m pytest skills/taste-driven-designer/tests/ -q`（既有 24 用例零回归 + 新增清单锚点断言）
-- [ ] **Task P3.4**: goal-loop P3.5 挂载点 —— 阶段路由表新增"前端验收"行 + `stage-progression-protocol.md` 联动说明（taste → qa-gate → dual-round-review 顺序与交接物）
+- [x] **Task P3.4**: goal-loop P3.5 挂载点 —— 阶段路由表新增"前端验收"行 + `stage-progression-protocol.md` 联动说明（taste → qa-gate → dual-round-review 顺序与交接物）
   - **涉及文件**: `skills/goal-loop/SKILL.md`、`references/stage-progression-protocol.md`
   - **验收命令**: 断链扫描 + 健康度 PASS
-- [ ] **Task P3.5**: 注册同步 —— skills-manager 集合补 `taste-driven-designer` 与 `frontend-qa-gate`；`docs/index.md` 技能表与计划表；`docs/llms.txt`；`README.md` 技能目录表；新增架构设计书
+- [x] **Task P3.5**: 注册同步 —— skills-manager 集合补 `taste-driven-designer` 与 `frontend-qa-gate`；`docs/index.md` 技能表与计划表；`docs/llms.txt`；`README.md` 技能目录表；新增架构设计书
   - **涉及文件**: 上列四项 + `docs/explanation/architecture/frontend-qa-gate-design.md`
   - **验收命令**: 断链 0；健康度 PASS；`npx skills` 集合可见（静态校验）
 
 ### P3.5: 集成验证与端到端贯通
-- [ ] **Task P3.5.1**: 全仓零回归 + L0 门禁全过
+- [x] **Task P3.5.1**: 全仓零回归 + L0 门禁全过
   - **验收命令**: `python3 -m pytest skills/ -q`（预期 ≥71 + 新增）、`bash -n`、`git diff --check`、断链 0、健康度 PASS
-- [ ] **Task P3.5.2**: 技能内相对链接逐条可达（含新增设计书与集合 JSON 引用）
+- [x] **Task P3.5.2**: 技能内相对链接逐条可达（含新增设计书与集合 JSON 引用）
 
 ### P4: 双轮对抗终审与再循环闭环硬门禁 (Dual-Round Review & Re-Loop Gate)
-- [ ] **Task P4.1**: 以 `37..HEAD` 为基线派发 `dual-round-review` **Full** 模式（R1 红队 → R2 元架构师）；R1 提示词中显式标注本次为文档型技能交付，并按条件维度激活要求核验前端运行时契约
+- [x] **Task P4.1**: 以 `39a3a0d..c1252a4` 为基线派发 `dual-round-review` **Full** 模式（R1 红队 → R2 元架构师）；R1 提示词中显式标注本次为文档型技能交付，并按条件维度激活要求核验前端运行时契约
   - **审查输入**: 本功能提交范围 + Diff 边界锁 + `taste-driven-designer` 门禁不可回退声明
   - **验收标准**: 取得独立子智能体终审裁决明细表
-- [ ] **Task P4.2**: 阻断项修复与 Delta Re-Loop 再循环闭环（迭代上限 5 次）
+- [x] **Task P4.2（进行中）**: 阻断项修复完成（见 §4.1），Delta R1 重派待执行（迭代上限 5 次）
 - [ ] **Task P4.3**: 阻断项清零终审放行与合并回 `master`
 
 ### P5: 文档归档与生命周期流转
 - [ ] **Task P5.1**: 按 `doc-governance` 执行状态流转（计划状态 → 已完成）、修订历史更新、`docs/index.md` 版本号与计划表更新
 - [ ] **Task P5.2**: 设计书与技能文档一致性复核（术语、边界、回流路由三处不得出现第二口径）
+
+---
+
+## 4.1 Delta 修复记录 · R1（基线 `39a3a0d..c1252a4`，报告：子智能体 `f3a5d30b`）
+
+| R1 ID | 级别 | 裁定 | 修复与证据 |
+|:---:|:---:|:---:|---|
+| R1-1 | 🔴 | 接受 | `taste-driven-designer/SKILL.md` 的跨技能硬链接改为命名引用；taste 契约测试新增跨技能链接扫描（含 markdown / 裸括号 / HTML / 引用式 / 裸文本形态自检） |
+| R1-2 | 🔴 | 接受 | `check-qa-report.sh` 增加五域标题「恰好一次」覆盖校验；新增用例 `test_checker_fails_when_domain_missing`（复现 R1 的 EXP-2 场景） |
+| R1-3 | 🔴 | 接受 | 三处卡点：`goal-plan-template.md` 新增条件任务 P4.0 并收紧 P4.3 准入；`stage-progression-protocol.md` HARD-GATE 增前端验收条件项；`dual-round-review/SKILL.md` 步骤 1 增条件输入项 |
+| R1-4 | 🟡 | **驳回（误报）** | 修订历史为 5 条滑动窗口：新增 V1.10.0 后必须裁掉最旧一条。反证据：`trim-revision.py --root docs` 输出「所有文档的修订历史记录行数均 <= 5 条，符合滑动窗口规范」；`audit-doc-health.py` PASS 且无修订历史告警 |
+| R1-5 | 🟡 | 接受 | 必需区块改为在**围栏剥离后的正文**中再校验一次；新增用例 `test_checker_fails_when_section_only_inside_fence`（复现 R1 的 T2 场景） |
+| R1-6 | 🟡 | 接受 | 证据契约字段分「行级 / 报告级」两层，模板断言行补 `状态` 字段，合规样本同步 |
+| R1-7 | 🟡 | 接受 | 三态检查限定在第 5 章区块内；结论为 BLOCKED 时第 5 章必须列出具体未验证项；新增用例 `test_checker_fails_when_blocked_without_unverified_items`（复现 R1 的 T8 场景） |
+| R1-8 | 🟡 | 接受 | description 515 → 487 字符（≤500，与仓库既有规范一致） |
+| R1-9 | 🟡 | 接受 | `acceptance-matrix.md` 增验收基线来源版本（A 方案内联副本）与漂移触发条件（2 次不一致 → 迁 B 方案） |
+| R1-10 | 🟡 | 接受 | S2 / S9 / P1 / P3 补判定口径并标注「人工判定项」 |
+| R1-11 | ⚪ | 接受 | 跨技能正则自检覆盖 markdown / 裸括号 / HTML / 引用式 / 裸文本；两侧正则统一，消除漂移温床 |
+| R1-12 | ⚪ | 接受 | D2 内嵌自检改为与 Gate A 一致的九态枚举勾选项 |
+| R1-13 | ⚪（历史） | 登记不修 | 既有 `../../docs/...` 链接属基线既有技术债，按 Diff 边界锁不纳入本次交付 |
+
+**主会话自预检补充（R1 未覆盖、同源）**：`test_no_cross_skill_relative_links` 原正则因转义错误实际**恒真空**（对 `../goal-loop/SKILL.md` 等形态全部漏检），已随 R1-11 一并修复并加自检用例；报告校验器已加 `--` 选项终止符。
+
+**Delta 修复后验证**：`pytest skills/ -q` **95 passed**；`bash -n`、`git diff --check`、断链 0、健康度 PASS、修订窗口 PASS。
 
 ---
 

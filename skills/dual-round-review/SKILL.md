@@ -85,7 +85,7 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh"
 # 或指定提交区间
 bash "$SKILL_DIR/scripts/prepare-review-context.sh" [BASE_SHA] [HEAD_SHA]
 ```
-* 确保准备好：① Git Diff 内容与变更统计；② 需求设计或任务描述（Spec）；③ 仓库编码标准。
+* 确保准备好：① Git Diff 内容与变更统计；② 需求设计或任务描述（Spec）；③ 仓库编码标准；④ **（条件）前端产物交付时：`frontend-qa-gate`《前端验收报告》的结论必须为 PASS；FAIL / BLOCKED（含未验证项）时先按该技能回流路由处理，不得进入审查放行。**
 
 ### 1.5 审查记录锚点 (Review Record Anchor)
 审查循环的短周期状态必须落盘，避免上下文截断后丢失 `Previous Blockers` 与迭代计数。每个基线创建一个记录文件 `.review-context/review-<baseline-sha>.md`（该目录已在 `.gitignore` 中忽略），schema 固定如下：

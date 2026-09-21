@@ -1,0 +1,20 @@
+{
+  "purpose": "跨技能相对路径硬链接禁令的唯一真相源（独立技能分发时相对链接会断链）。",
+  "rationale": "每个技能可独立安装（npx skills add --skill <name>），跨技能相对路径在单装后必然断链。引用他技能只允许命名引用（反引号内的技能名）。",
+  "forbidden_skill_names": [
+    "taste-driven-designer",
+    "dual-round-review",
+    "goal-loop",
+    "frontend-qa-gate",
+    "doc-governance",
+    "agy-delegation-workflow"
+  ],
+  "match_forms": [
+    "(../goal-loop/SKILL.md)",
+    "(./goal-loop/SKILL.md)",
+    "(goal-loop/SKILL.md)",
+    "(../../skills/dual-round-review/SKILL.md)",
+    "(/abs/path/goal-loop/SKILL.md)"
+  ],
+  "note": "本文件不随任何单个技能分发；各技能以「内联副本 + 契约测试自检」方式保护自身文档。"
+}
