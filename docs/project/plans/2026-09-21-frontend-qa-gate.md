@@ -15,7 +15,7 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-09-21（"那就按A进行实施"）
 > - **批准基线**: A 方案（taste Gate A 为验收基线 SSOT + qa-gate 内联最小可执行副本；qa-gate 置于 taste D3 之后作为独立阶段）与四点落地路径（P1 需求文档 → P3 TDD → 注册同步 → P4 终审）
-> - **状态**: 进行中
+> - **状态**: 已完成（四轮独立审查闭环：R1 → Delta R1 → R2 → Delta R2，取得 Zero Blockers）
 > - **隔离分支**: `feature/frontend-qa-gate`
 > - **技术调研备忘录**: [豁免: 风险清单直接来源于已归档外部文献；技能只定义协议与门禁，不绑定浏览器工具链实现]
 > - **临时 Scratchpad**: `.goal-loop/scratchpad.md`
