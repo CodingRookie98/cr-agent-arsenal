@@ -79,7 +79,7 @@ done
 
 # 围栏代码块内的示例文本不参与结构判定（awk 状态机剥离后送入 stdin）
 strip_fences() {
-  awk 'BEGIN{f=0} /^```/{f=!f; next} f==0{print}'
+  awk 'BEGIN{f=0} /^[[:space:]]*```/{f=!f; next} f==0{print}'
 }
 
 BODY="$(strip_fences < "$REPORT")"
@@ -111,7 +111,7 @@ for state in "${TRI_STATES[@]}"; do
   fi
 done
 
-UNVERIFIED_LINES="$(grep -F -- "未验证：" <<<"$TRI_SECTION" | grep -vE -- '未验证：[[:space:]]*无[[:space:]]*$' || true)"
+UNVERIFIED_LINES="$(grep -F -- "未验证：" <<<"$TRI_SECTION" | grep -vE -- '未验证：[[:space:]]*[（(]?无[）)]?[[:space:]]*$' || true)"
 
 # 结论表「未验证」列合计（第 2 章区块，第 6 字段）与「五维合计」声明一致性
 UNV_TOTAL="$(awk -F'|' '/^## 2\./{f=1;next} /^## 3\./{f=0} f && /^\|/ {v=$6; gsub(/[^0-9]/,"",v); if (v!="") s+=v} END{print s+0}' <<<"$BODY")"
@@ -147,6 +147,14 @@ elif [[ "$declared" -ne "$assert_count" ]]; then
   FAIL=1
 fi
 
+# N/A 可追溯性：结论表出现 N/A 时，报告必须说明「未适用/不适用」理由（防滥用）
+if grep -qiE -- '\|[[:space:]]*N/A[[:space:]]*\|' <<<"$BODY"; then
+  if ! grep -qE -- '未适用|不适用' <<<"$BODY"; then
+    echo "错误: 结论表存在 N/A 行但报告未说明「未适用/不适用」理由"
+    FAIL=1
+  fi
+fi
+
 # 可选结论校验：机械证明「结论为 PASS」（锚定第 8 章、大小写归一、排除建议结论行）
 if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
   if ! grep -qiE -- '^[[:space:]]*-[[:space:]]*结论[：:][[:space:]]*PASS' <<<"$SEC8"; then
@@ -157,12 +165,12 @@ if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
     echo "错误: 第 8 章声明结论为 FAIL/BLOCKED，与 --require-verdict=PASS 冲突"
     FAIL=1
   fi
-  BAD_ROWS="$(awk -F'|' '/^## 2\./{f=1;next} /^## 3\./{f=0} f && /^\|/ {c=$7; gsub(/[[:space:]]/,"",c); if (c!="" && c!="结论" && c!="---") print c}' <<<"$BODY" | grep -viE -- '^PASS$' || true)"
+  BAD_ROWS="$(awk -F'|' '/^## 2\./{f=1;next} /^## 3\./{f=0} f && /^\|/ {c=$7; gsub(/[[:space:]]/,"",c); if (c!="" && c!="结论" && c!="---") print c}' <<<"$BODY" | grep -viE -- '^(PASS|N/A)$' || true)"
   if [[ -n "$BAD_ROWS" ]]; then
     echo "错误: 结论表存在非 PASS 结论: $(echo "$BAD_ROWS" | tr "\n" " ")"
     FAIL=1
   fi
-  OTHER4="$(grep -E -- '^[[:space:]]*-[[:space:]]*[^[:space:]]' <<<"$SEC4" | grep -vE -- '^[[:space:]]*-[[:space:]]*无[[:space:]]*$' || true)"
+  OTHER4="$(grep -E -- '^[[:space:]]*-[[:space:]]*[^[:space:]]' <<<"$SEC4" | grep -vE -- '^[[:space:]]*-[[:space:]]*(无|.*(未适用|不适用))' || true)"
   if [[ -n "$OTHER4" ]]; then
     echo "错误: 结论为 PASS 但第 4 章列出了未验证项或阻断"
     FAIL=1

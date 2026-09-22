@@ -433,3 +433,38 @@ def test_checker_rejects_min_assertions_zero(tmp_path):
     report.write_text(PASS_REPORT, encoding="utf-8")
     r = run_checker(report, "--min-assertions=0")
     assert r.returncode == 2, "--min-assertions=0 必须作为用法错误拒绝"
+
+
+def test_checker_accepts_sec4_none_variants(tmp_path):
+    """FU-1a: 第 4 章以「无」开头的声明变体不得被误判为存在未验证项。"""
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 无", "- 无未验证项", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_checker_accepts_sec5_parenthesized_none(tmp_path):
+    """FU-1b: 第 5 章「（无）」不得被误判为具体未验证项。"""
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 未验证：无", "- 未验证：（无）"), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_checker_accepts_na_row_with_justification(tmp_path):
+    """FU-3: 某域本轮无适用断言时允许 N/A，但报告必须给出「未适用」说明。"""
+    report = tmp_path / "qa-report.md"
+    text = PASS_REPORT.replace("| 性能 | 1 | 1 | 0 | 0 | PASS |", "| 性能 | 0 | 0 | 0 | 0 | N/A |")
+    text = text.replace("- 无", "- 性能域本轮未适用（无性能敏感改动）", 1)
+    report.write_text(text, encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_checker_rejects_na_row_without_justification(tmp_path):
+    """FU-3 滥用防护: N/A 行缺少说明时必须拒绝（防止用 N/A 逃避验收）。"""
+    report = tmp_path / "qa-report.md"
+    text = PASS_REPORT.replace("| 性能 | 1 | 1 | 0 | 0 | PASS |", "| 性能 | 1 | 1 | 0 | 0 | N/A |")
+    report.write_text(text, encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "N/A 行缺少「未适用」说明时必须拒绝"
