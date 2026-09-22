@@ -77,6 +77,13 @@ for section in "${REQUIRED_SECTIONS[@]}"; do
   fi
 done
 
+# 围栏必须成对闭合（未闭合 → 其后内容会被静默跳过，fail-closed 报错）
+FENCE_COUNT="$(grep -cE -- '^[[:space:]]*```' "$REPORT" || true)"
+if [[ $((FENCE_COUNT % 2)) -ne 0 ]]; then
+  echo "错误: 围栏代码块未闭合（围栏标记 $FENCE_COUNT 个，应为偶数）"
+  FAIL=1
+fi
+
 # 围栏代码块内的示例文本不参与结构判定（awk 状态机剥离后送入 stdin）
 strip_fences() {
   awk 'BEGIN{f=0} /^[[:space:]]*```/{f=!f; next} f==0{print}'
@@ -149,14 +156,14 @@ fi
 
 # N/A 可追溯性：结论表出现 N/A 时，报告必须说明「未适用/不适用」理由（防滥用）
 # N/A 域不得同时声明断言（防用 N/A 规避已存在的断言）
-NA_BAD="$(awk -F'|' '/^## 2\./{f=1;next} /^## 3\./{f=0} f && /^\|/ {c=$7; gsub(/[[:space:]]/,"",c); if (toupper(c)=="N/A") {n=$3; gsub(/[^0-9]/,"",n); if (n!="" && n+0>0) print c"("n")"}}' <<<"$BODY" || true)"
+NA_BAD="$(awk -F'|' '/^## 2\./{f=1;next} /^## 3\./{f=0} f && /^\|/ {c=$7; gsub(/[[:space:]]/,"",c); if (toupper(c)=="N/A") {n=$3;p=$4;fl=$5; gsub(/[^0-9]/,"",n);gsub(/[^0-9]/,"",p);gsub(/[^0-9]/,"",fl); if ((n!=""&&n+0>0)||(p!=""&&p+0>0)||(fl!=""&&fl+0>0)) print c"("n"/"p"/"fl")"}}' <<<"$BODY" || true)"
 if [[ -n "$NA_BAD" ]]; then
-  echo "错误: 结论为 N/A 的域其断言数必须为 0（实际: $(echo "$NA_BAD" | tr '\n' ' ')）"
+  echo "错误: 结论为 N/A 的域其断言数/通过数/失败数必须均为 0（实际: $(echo "$NA_BAD" | tr '\n' ' ')）"
   FAIL=1
 fi
 
 if grep -qiE -- '\|[[:space:]]*N/A[[:space:]]*\|' <<<"$BODY"; then
-  if ! grep -qE -- '未适用|不适用' <<<"$BODY"; then
+  if ! grep -qE -- '未适用|不适用' <<<"$SEC4$TRI_SECTION"; then
     echo "错误: 结论表存在 N/A 行但报告未说明「未适用/不适用」理由"
     FAIL=1
   fi
@@ -177,15 +184,13 @@ if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
     echo "错误: 结论表存在非 PASS 结论: $(echo "$BAD_ROWS" | tr "\n" " ")"
     FAIL=1
   fi
-  RAW4="$(grep -E -- '^[[:space:]]*-[[:space:]]*[^[:space:]]' <<<"$SEC4" || true)"
-  # 纯「无」声明：整行不得再追加其它内容（防「无阻断，但性能未验证」式夹带）
-  NO_CLAIM="$(grep -vE -- '^[[:space:]]*-[[:space:]]*无[^，。；、]*$' <<<"$RAW4" || true)"
-  # 借「未适用」夹带未验证项/阻断的行视为有内容
-  NA_SMUGGLE="$(grep -E -- '未适用|不适用' <<<"$NO_CLAIM" | grep -E -- '未验证|阻断' || true)"
-  OTHER4="$(grep -vE -- '未适用|不适用' <<<"$NO_CLAIM" || true)"
-  if [[ -n "$NA_SMUGGLE" ]]; then
-    OTHER4="$(printf '%s\n%s' "$OTHER4" "$NA_SMUGGLE" | sed '/^$/d' || true)"
-  fi
+  # 第 4 章内容判定：列表行宽松（含「未验证/阻断」实词且非「无…」否定式）；
+  # 表格/引用行需带冒号实词（避免表头误判）；转折词与括号夹带一律视为有内容。
+  RAW4="$(grep -E -- '^[[:space:]]*(-|\||>)' <<<"$SEC4" || true)"
+  LIST_SUSPECT="$(grep -E -- '^[[:space:]]*-[[:space:]]*' <<<"$RAW4" | grep -E -- '(未验证|阻断)' | grep -vE -- '^[[:space:]]*-[[:space:]]*无' || true)"
+  OTHER_SUSPECT="$(grep -vE -- '^[[:space:]]*-[[:space:]]*' <<<"$RAW4" | grep -E -- '(未验证|阻断)[：:]' || true)"
+  TURN4="$(grep -E -- '^[[:space:]]*-[[:space:]]*无' <<<"$RAW4" | grep -E -- '但|然而|不过|仍有|存在|（[^）]*(未验证|阻断|未测|未完成)|\([^)]*(未验证|阻断|未测|未完成)' || true)"
+  OTHER4="$(printf '%s\n%s\n%s' "$LIST_SUSPECT" "$OTHER_SUSPECT" "$TURN4" | sed '/^$/d' || true)"
   if [[ -n "$OTHER4" ]]; then
     echo "错误: 结论为 PASS 但第 4 章列出了未验证项或阻断"
     FAIL=1

@@ -65,7 +65,8 @@ def test_no_cross_skill_relative_links():
     for md in skill_docs():
         body = strip_fences(md.read_text(encoding="utf-8"))
         for i, line in enumerate(body.splitlines(), 1):
-            if COMMAND_EXAMPLE.match(line):
+            # 命令行示例豁免收紧：行内若含 markdown 链接语法则不豁免（防借命令示例藏链接）
+            if COMMAND_EXAMPLE.match(line) and "](" not in line:
                 continue
             if CROSS.search(strip_inline_code(line)):
                 offenders.append(f"{md.relative_to(SKILLS_DIR)}:{i}")
@@ -98,3 +99,14 @@ def test_scanner_self_check():
     assert CROSS.search(strip_inline_code(real)), "真实跨技能链接未被命中"
     inline = "见 `[x](../goal-loop/SKILL.md)` 示例"
     assert not CROSS.search(strip_inline_code(inline)), "行内代码中的示例被误判为跨技能链接"
+
+
+def test_fences_balanced():
+    """围栏必须成对闭合：未闭合会导致其后内容（含真实链接）被静默跳过。"""
+    unbalanced = []
+    for md in skill_docs():
+        text = md.read_text(encoding="utf-8")
+        n = sum(1 for line in text.splitlines() if line.strip().startswith("```"))
+        if n % 2 != 0:
+            unbalanced.append(f"{md.relative_to(SKILLS_DIR)} ({n})")
+    assert not unbalanced, "围栏未闭合: " + "; ".join(unbalanced)

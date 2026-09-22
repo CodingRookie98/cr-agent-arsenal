@@ -494,3 +494,58 @@ def test_checker_rejects_na_row_with_assertions(tmp_path):
     report.write_text(text, encoding="utf-8")
     r = run_checker(report, "--require-verdict=PASS")
     assert r.returncode != 0, "N/A 域仍声明断言时必须拒绝"
+
+
+def test_checker_accepts_parallel_negation(tmp_path):
+    """D1: 第 4 章合法并列否定（顿号/逗号）不得被误拒。"""
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 无", "- 无未验证项、无阻断项", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_checker_rejects_table_smuggle_in_sec4(tmp_path):
+    """D2: 第 4 章用表格承载未验证项时必须拒绝。"""
+    report = tmp_path / "qa-report.md"
+    table = "| 项 | 原因 |\n|---|---|\n| A5 | 未验证：宿主无性能测量能力 |"
+    report.write_text(PASS_REPORT.replace("- 无", table, 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "表格承载未验证项必须拒绝"
+
+
+def test_checker_rejects_parenthesized_smuggle(tmp_path):
+    """D3: 括号内夹带未验证语义时必须拒绝。"""
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 无", "- 无未验证项（性能域未测）", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "括号夹带必须拒绝"
+
+
+def test_checker_rejects_na_row_with_pass_fail_counts(tmp_path):
+    """D4: N/A 行的通过/失败列必须为 0。"""
+    report = tmp_path / "qa-report.md"
+    text = PASS_REPORT.replace("| 性能 | 1 | 1 | 0 | 0 | PASS |", "| 性能 | 0 | 5 | 5 | 0 | N/A |")
+    text = text.replace("- 无", "- 性能域本轮未适用", 1)
+    report.write_text(text, encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "N/A 行通过/失败列非 0 时必须拒绝"
+
+
+def test_checker_rejects_na_justification_outside_sec45(tmp_path):
+    """D5: N/A 说明必须出现在第 4/5 章，不得在其它章节充数。"""
+    report = tmp_path / "qa-report.md"
+    text = PASS_REPORT.replace("| 性能 | 1 | 1 | 0 | 0 | PASS |", "| 性能 | 0 | 0 | 0 | 0 | N/A |")
+    text = text.replace("### 3.5 性能断言", "### 3.5 性能断言（本轮未适用）", 1)
+    report.write_text(text, encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "N/A 说明仅出现在第 3 章时必须拒绝"
+
+
+def test_checker_rejects_unclosed_fence(tmp_path):
+    """D6-1: 围栏未闭合必须 fail-closed 报错，而非静默跳过其后内容。"""
+    report = tmp_path / "qa-report.md"
+    text = PASS_REPORT.replace("- 结论：PASS", "- 结论：PASS\n```text\n未闭合围栏", 1)
+    report.write_text(text, encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "围栏未闭合必须拒绝"
+    assert "未闭合" in r.stdout + r.stderr
