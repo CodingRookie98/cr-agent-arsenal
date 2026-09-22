@@ -148,6 +148,13 @@ elif [[ "$declared" -ne "$assert_count" ]]; then
 fi
 
 # N/A 可追溯性：结论表出现 N/A 时，报告必须说明「未适用/不适用」理由（防滥用）
+# N/A 域不得同时声明断言（防用 N/A 规避已存在的断言）
+NA_BAD="$(awk -F'|' '/^## 2\./{f=1;next} /^## 3\./{f=0} f && /^\|/ {c=$7; gsub(/[[:space:]]/,"",c); if (toupper(c)=="N/A") {n=$3; gsub(/[^0-9]/,"",n); if (n!="" && n+0>0) print c"("n")"}}' <<<"$BODY" || true)"
+if [[ -n "$NA_BAD" ]]; then
+  echo "错误: 结论为 N/A 的域其断言数必须为 0（实际: $(echo "$NA_BAD" | tr '\n' ' ')）"
+  FAIL=1
+fi
+
 if grep -qiE -- '\|[[:space:]]*N/A[[:space:]]*\|' <<<"$BODY"; then
   if ! grep -qE -- '未适用|不适用' <<<"$BODY"; then
     echo "错误: 结论表存在 N/A 行但报告未说明「未适用/不适用」理由"
@@ -170,7 +177,15 @@ if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
     echo "错误: 结论表存在非 PASS 结论: $(echo "$BAD_ROWS" | tr "\n" " ")"
     FAIL=1
   fi
-  OTHER4="$(grep -E -- '^[[:space:]]*-[[:space:]]*[^[:space:]]' <<<"$SEC4" | grep -vE -- '^[[:space:]]*-[[:space:]]*(无|.*(未适用|不适用))' || true)"
+  RAW4="$(grep -E -- '^[[:space:]]*-[[:space:]]*[^[:space:]]' <<<"$SEC4" || true)"
+  # 纯「无」声明：整行不得再追加其它内容（防「无阻断，但性能未验证」式夹带）
+  NO_CLAIM="$(grep -vE -- '^[[:space:]]*-[[:space:]]*无[^，。；、]*$' <<<"$RAW4" || true)"
+  # 借「未适用」夹带未验证项/阻断的行视为有内容
+  NA_SMUGGLE="$(grep -E -- '未适用|不适用' <<<"$NO_CLAIM" | grep -E -- '未验证|阻断' || true)"
+  OTHER4="$(grep -vE -- '未适用|不适用' <<<"$NO_CLAIM" || true)"
+  if [[ -n "$NA_SMUGGLE" ]]; then
+    OTHER4="$(printf '%s\n%s' "$OTHER4" "$NA_SMUGGLE" | sed '/^$/d' || true)"
+  fi
   if [[ -n "$OTHER4" ]]; then
     echo "错误: 结论为 PASS 但第 4 章列出了未验证项或阻断"
     FAIL=1

@@ -468,3 +468,29 @@ def test_checker_rejects_na_row_without_justification(tmp_path):
     report.write_text(text, encoding="utf-8")
     r = run_checker(report, "--require-verdict=PASS")
     assert r.returncode != 0, "N/A 行缺少「未适用」说明时必须拒绝"
+
+
+def test_checker_rejects_sec4_none_with_trailing_unverified(tmp_path):
+    """FU-1 滥用防护: 以「无」开头但追加真实未验证项时必须拒绝。"""
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 无", "- 无阻断，但性能未验证", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "「无阻断，但…未验证」式夹带必须拒绝"
+
+
+def test_checker_rejects_na_smuggling_unverified(tmp_path):
+    """FU-1/FU-3 滥用防护: 借「未适用」夹带未验证项时必须拒绝。"""
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 无", "- 性能未适用，但错误态未验证", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "借「未适用」夹带未验证项必须拒绝"
+
+
+def test_checker_rejects_na_row_with_assertions(tmp_path):
+    """FU-3 滥用防护: N/A 域的断言数必须为 0。"""
+    report = tmp_path / "qa-report.md"
+    text = PASS_REPORT.replace("| 性能 | 1 | 1 | 0 | 0 | PASS |", "| 性能 | 1 | 1 | 0 | 0 | N/A |")
+    text = text.replace("- 无", "- 性能域本轮未适用", 1)
+    report.write_text(text, encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "N/A 域仍声明断言时必须拒绝"
