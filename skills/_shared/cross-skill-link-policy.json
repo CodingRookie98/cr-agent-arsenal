@@ -44,5 +44,7 @@
     "与技能同名的目录引用（如 .goal-loop/）：正则以 (?<![.]) 排除",
     "行内代码与围栏代码块内的示例路径（文档示例，不构成真实引用）"
   ],
-  "scope_note": "本禁令约束的是「技能文档中指向其它技能目录的相对路径」；「单技能安装后文档内链接全部可达」是更宽的完整性判据，两者现均由 skills/_shared/tests/test_cross_skill_links.py 守护。"
+  "scope_note": "本禁令约束的是「技能文档中指向其它技能目录的相对路径」；「单技能安装后文档内链接全部可达」是更宽的完整性判据，两者现均由 skills/_shared/tests/test_cross_skill_links.py 守护。",
+  "exemption_boundary": "豁免边界（2026-09-21 边界实验结论）：扫描器对 markdown 链接 / 裸括号路径 / HTML href / 引用式链接均命中；仅行内代码与围栏内容豁免。因此**引用他技能时必须使用命名引用（反引号内的技能名），不得把真实链接写进行内代码或围栏**——否则扫描器会按示例豁免。该边界已由 skills/_shared/tests/test_cross_skill_links.py 的 test_scanner_self_check 固化。",
+  "verification": "skills/_shared/tests/test_cross_skill_links.py（跨技能链接=0 / 断链=0，含扫描器自检）；2026-09-21 验收矩阵：8/8 样本符合预期、6/6 技能干净。"
 }

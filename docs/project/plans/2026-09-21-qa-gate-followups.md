@@ -73,6 +73,28 @@
 
 ---
 
+
+---
+
+## 3.1 验收矩阵证据 (Acceptance Matrix · 2026-09-21)
+
+```text
+FU-1（5/5 符合预期）
+  [PASS] 合法：- 无未验证项 / - 性能域本轮未适用（…） / - 未验证：（无）
+  [PASS] 非法：- 无阻断，但性能未验证 / - 性能未适用，但错误态未验证   → 均被拒
+FU-3（3/3 符合预期）
+  [PASS] 合法：N/A + 「未适用」说明
+  [PASS] 非法：N/A 无说明 / N/A 域仍有断言                          → 均被拒
+FU-2（6/6 技能干净）
+  taste-driven-designer · dual-round-review · goal-loop · frontend-qa-gate · doc-governance · agy-delegation-workflow
+  → 全部 broken=0 / cross-skill=0
+```
+
+**全量回归**：`pytest skills/ -q` = **116 passed**（qa-gate 40 + 仓库级链接自检 3 + 既有）。
+**边界登记**：行内代码与围栏内容豁免（示例语义）；引用他技能必须用命名引用，不得把真实链接写进行内代码——已写入 `cross-skill-link-policy.json` 的 `exemption_boundary` 并由扫描器自检固化。
+
+---
+
 ## 4. 终审与归档 (Review & Closure)
 
 - [ ] **Task P4.1**: 定向单轮红队审查（Maintenance-Patch 通道；子智能体独立复现 FU-1/FU-2/FU-3 与滥用防护）
