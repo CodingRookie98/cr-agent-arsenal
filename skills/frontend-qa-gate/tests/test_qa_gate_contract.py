@@ -600,3 +600,19 @@ def test_checker_rejects_nonstandard_smuggle_variants(tmp_path):
         report.write_text(PASS_REPORT.replace("- 无", sample, 1), encoding="utf-8")
         r = run_checker(report, "--require-verdict=PASS")
         assert r.returncode != 0, f"{sample} 必须拒绝"
+
+
+def test_checker_rejects_colon_none_with_description(tmp_path):
+    """A1: 「- <实词>：无<具体描述>」语义为存在未验证项，不得被白名单放过。"""
+    report = tmp_path / "a1.md"
+    report.write_text(PASS_REPORT.replace("- 无", "- 未验证项：无性能测量能力", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "「：无<描述>」必须拒绝"
+
+
+def test_checker_rejects_header_whitelist_abuse(tmp_path):
+    """A2: 含数字的数据行不得借「原因」字样冒充表头。"""
+    report = tmp_path / "a2.md"
+    report.write_text(PASS_REPORT.replace("- 无", "| A5 | 未验证 原因 |", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "含数字行不得冒充表头"

@@ -193,8 +193,8 @@ if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
   OTHER4="$(awk '
     /^[[:space:]]*(-|\||>)/ {
       line=$0
-      if (line ~ /^[[:space:]]*-[[:space:]]*(未验证项|未验证|阻断项|阻断|未测|未完成)[[:space:]]*[：:][[:space:]]*无/) next
-      if (line ~ /(原因|说明|描述)[[:space:]]*[|｜]/ && line !~ /[：:]/) next
+      if (line ~ /^[[:space:]]*-[[:space:]]*(未验证项|未验证|阻断项|阻断|未测|未完成)[[:space:]]*[：:][[:space:]]*无([[:space:]]|（|\(|[，。；、]|$)/) next
+      if (line ~ /(原因|说明|描述)[[:space:]]*[|｜]/ && line !~ /[：:]/ && line !~ /[0-9]/) next
       work=line
       for (k=0;k<10;k++) {
         before=work
