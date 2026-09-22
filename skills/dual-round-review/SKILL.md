@@ -1,6 +1,7 @@
 ---
 name: dual-round-review
 description: Use when completing core architectural changes, major feature implementations, complex bug fixes, or before committing code and merging PRs. Triggers when high-confidence verification is needed to catch shallow patching, subtle concurrency/race conditions, resource leaks, or architectural regressions before delivery. Supports a full two-round adversarial review plus a single-round light mode for fast-track changes.
+license: MIT
 ---
 
 # 双轮对抗审查技能 (Dual-Round Adversarial Review)

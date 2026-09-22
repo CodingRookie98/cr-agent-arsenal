@@ -40,6 +40,7 @@ cr-agent-arsenal/
 │   ├── project/plans/          # 实施计划与结项记录
 │   └── reference/articles/     # 外部前沿文献与理论基准
 │
+├── LICENSE                     # MIT 许可证
 ├── .agents/skills/             # 本地开发软链接视图 (已 gitignore，由 contexts/install.py 生成)
 └── skills-lock.json            # npx skills 本地安装台账 (已 gitignore，克隆后不存在)
 ```
@@ -135,4 +136,4 @@ python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a an
 ## 📄 规范与许可 (Standards & License)
 
 * **技能规范**：本仓库 6 个技能均遵循 [`agentskills.io` 规范](https://agentskills.io/specification)——`name` 与所在目录同名、`description` 为合法 YAML 且不超过规范上限（1024 字符，本仓库现行技能均 ≤ 500）、`SKILL.md` 正文均 < 500 行，可直接被 `npx skills` 拉取。
-* **许可**：仓库当前**未附带 `LICENSE` 文件**，技能 frontmatter 亦未声明 `license` 字段，因此默认保留所有权利（All rights reserved）；如需以开源方式对外分发，请先补充许可证文件。
+* **许可**：本项目采用 [MIT 许可证](./LICENSE)（Copyright © 2026 CodingRookie98），6 个技能 frontmatter 均已声明 `license: MIT`；可自由使用、修改与再分发，但须保留版权与许可声明。

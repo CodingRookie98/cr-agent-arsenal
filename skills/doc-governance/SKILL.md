@@ -1,6 +1,7 @@
 ---
 name: doc-governance
 description: Standardized documentation engineering and knowledge base governance skill based on the Diátaxis framework, RFC-to-Crystallization lifecycle, MADR architecture decisions, and Docs-as-Code automation. Use when creating or structuring docs, managing API/model contracts, executing doc-code synchronization, auditing doc links and health, scaffolding new docs, or migrating legacy docs.
+license: MIT
 ---
 
 # 文档工程与知识库治理技能 (Documentation Governance Skill)

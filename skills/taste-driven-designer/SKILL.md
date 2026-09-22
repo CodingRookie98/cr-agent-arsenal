@@ -1,6 +1,7 @@
 ---
 name: taste-driven-designer
 description: Use when the user wants to design or redesign any UI/UX artifact — landing pages, web apps, mobile interfaces, game UIs, or dashboards — and expects distinctive, tasteful results instead of generic AI slop. Also use when asked to give a design a personality or art direction, make it look premium/unique/not AI-generated, critique an existing interface, or give a frontend build direction. Triggers on landing page, hero section, design language, moodboard, art direction, UI polish, taste.
+license: MIT
 ---
 
 # taste-driven-designer 品味驱动设计
