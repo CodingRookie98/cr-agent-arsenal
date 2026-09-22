@@ -95,6 +95,24 @@ FU-2（6/6 技能干净）
 
 ---
 
+
+---
+
+## 3.2 附加发现：本地技能软链接补齐 (FU-4)
+
+- **现象**：`.agents/skills/frontend-qa-gate` 缺失（其余 5 个技能链接正常）。
+- **根因**：`contexts/install.py` 的 `link_local_skills()` 上次运行于 2026-09-20（`taste-driven-designer` 创建时），而 `frontend-qa-gate` 于 2026-09-21 新建后未重新运行。
+- **修复**：仅执行技能链接函数（不触碰全局 AGENTS.md 分发，避免影响用户既有环境配置）：
+  ```bash
+  python3 -c "import sys; sys.path.insert(0, 'contexts'); import install; install.link_local_skills()"
+  ```
+  → 输出「成功: 已创建软连接 …/frontend-qa-gate -> ../../skills/frontend-qa-gate」，复核 6/6 技能链接齐备。
+- **结论**：`install.py` 的实现与 README §「本仓库内开发」声明**一致**（技能软链接自动化已存在），无需代码改动；此前判断「install.py 未实现」系仅读前 30 行导致的误判，已在计划中更正。
+- **后续纪律**：**新增技能后必须重跑 `contexts/install.py`**（或 `link_local_skills()`），并纳入交付清单。
+- **范围**：`.agents/` 已被 `.gitignore` 忽略，无需提交。
+
+---
+
 ## 4. 终审与归档 (Review & Closure)
 
 - [ ] **Task P4.1**: 定向单轮红队审查（Maintenance-Patch 通道；子智能体独立复现 FU-1/FU-2/FU-3 与滥用防护）
