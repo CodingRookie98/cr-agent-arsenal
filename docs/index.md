@@ -2,9 +2,9 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.10.0 (新增 frontend-qa-gate 前端产物验收技能)
+> - **当前版本**: V1.11.0 (收录 frontend-qa-gate 后续待办闭环维护计划)
 > - **维护负责人**: 核心架构组
-> - **生效日期**: 2026-09-20
+> - **生效日期**: 2026-09-22
 
 ---
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.11.0** | 2026-09-22 | DSH AI Agent | 王辉 | 收录 `frontend-qa-gate` 后续待办闭环维护计划（FU-1「：无」误拒 / FU-2 跨技能断链自检 / FU-3 结论列 N/A 白名单）；补 REF 外部文献控制元数据（id/version）；知识库健康度体检 100 分 |
 | **V1.10.0** | 2026-09-21 | DSH AI Agent | 王辉 | 新增 frontend-qa-gate 前端产物验收技能（五域断言 + 证据三态 + 回流路由）及架构设计书、实施计划索引；归档 kejun 前端 AI Coding 风险清单文献；taste Gate A 补强 A3/A4/A6/A7 与 D2 内嵌自检；goal-loop P3.5 增前端验收挂载点 |
 | **V1.9.0** | 2026-09-20 | DSH AI Agent | 王辉 | Critic 门禁加固：实跑反证驱动，绝对评分门禁换代三信号门禁（结构清单 + 盲比 + 人类签收）、版本回执/鉴别力自检/冲突仲裁/评审账本；设计书 V1.1.0 与维护计划索引 |
 | **V1.8.0** | 2026-09-20 | DSH AI Agent | 王辉 | 新增 taste-driven-designer 品味驱动设计技能（双钻流程 + Critic 闭环 + AI Tells 审计）及架构设计书、实施计划索引 |
 | **V1.7.0** | 2026-09-20 | Antigravity AI Agent | 王辉 | 新增外部前沿设计文献《How to Turn Your AI into a World-Class Designer》索引引用 |
-| **V1.6.0** | 2026-09-16 | DSH AI Agent | 王辉 | 新增派发超时预算与多智能体并行编排契约、人机契约字段（需求方/批准人/验收口径） |
 
 ---
 
@@ -68,6 +68,7 @@
 | **术语先行与维护通道** | 术语对齐前置与影响分级豁免、Maintenance-Patch 通道、术语 SSOT 落地 | [2026-09-16-terminology-first-and-maintenance-track.md](./project/plans/2026-09-16-terminology-first-and-maintenance-track.md) |
 | **`taste-driven-designer` V1.0** | 新建品味驱动设计技能：SKILL.md + references + templates + seed 脚本 + pytest + 设计书与全套注册 | [2026-09-20-taste-driven-designer.md](./project/plans/2026-09-20-taste-driven-designer.md) |
 | **`frontend-qa-gate` V1.0** | 新建前端产物验收技能：SKILL.md + references + templates + 报告校验脚本 + 契约测试 + 设计书与全套注册；同步补强 taste Gate A 与 goal-loop P3.5 挂载点 | [2026-09-21-frontend-qa-gate.md](./project/plans/2026-09-21-frontend-qa-gate.md) |
+| **`frontend-qa-gate` 后续待办闭环** | 闭环交付遗留三项待办：「：无」声明变体误拒、跨技能相对链接断链自检、结论列 `N/A` 白名单（Maintenance-Patch 通道，已闭环） | [2026-09-21-qa-gate-followups.md](./project/plans/2026-09-21-qa-gate-followups.md) |
 | **Critic 门禁加固 V1.1** | 实跑反证驱动：绝对评分门禁换代三信号门禁，补版本回执/鉴别力自检/冲突仲裁/评审账本 | [2026-09-20-critic-gate-hardening.md](./project/plans/2026-09-20-critic-gate-hardening.md) |
 
 ---

@@ -5,6 +5,8 @@ author: kejun
 published: 2026-09-19
 revision: 2026-09-20
 archived: 2026-09-21
+id: REF-ART-AI-CODING-FRONTEND-2026
+version: V1.0.0
 ---
 
 > 归档说明：本文为外部文献原文归档（未修改内容），归档日期 2026-09-21。
