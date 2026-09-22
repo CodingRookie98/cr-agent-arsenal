@@ -616,3 +616,50 @@ def test_checker_rejects_header_whitelist_abuse(tmp_path):
     report.write_text(PASS_REPORT.replace("- 无", "| A5 | 未验证 原因 |", 1), encoding="utf-8")
     r = run_checker(report, "--require-verdict=PASS")
     assert r.returncode != 0, "含数字行不得冒充表头"
+
+
+def test_checker_rejects_colon_none_with_smuggle(tmp_path):
+    """B1: 「：无」短语不得整行跳过——括号/分号/转折夹带必须拒绝。"""
+    samples = [
+        "- 未验证项：无（A5 阻断未解决）",
+        "- 未验证项：无；性能未验证",
+        "- 未验证项：无 但性能未验证",
+    ]
+    for idx, sample in enumerate(samples):
+        report = tmp_path / f"b1-{idx}.md"
+        report.write_text(PASS_REPORT.replace("- 无", sample, 1), encoding="utf-8")
+        r = run_checker(report, "--require-verdict=PASS")
+        assert r.returncode != 0, f"{sample} 必须拒绝"
+
+
+def test_checker_rejects_header_whitelist_without_digit(tmp_path):
+    """B2: 无数字的数据行不得冒充表头（要求所有单元格均为表头词）。"""
+    report = tmp_path / "b2.md"
+    report.write_text(PASS_REPORT.replace("- 无", "| 性能 | 未验证 原因 |", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "无数字数据行不得冒充表头"
+
+
+def test_checker_rejects_extended_keyword_variants(tmp_path):
+    """B3: 待验证/未确认/未经测试/未覆盖 必须纳入词表。"""
+    samples = [
+        "- 无阻断，性能待验证",
+        "- 无阻断，性能未确认",
+        "- 无阻断，性能未经测试",
+        "- 无阻断，性能未覆盖",
+    ]
+    for idx, sample in enumerate(samples):
+        report = tmp_path / f"b3-{idx}.md"
+        report.write_text(PASS_REPORT.replace("- 无", sample, 1), encoding="utf-8")
+        r = run_checker(report, "--require-verdict=PASS")
+        assert r.returncode != 0, f"{sample} 必须拒绝"
+
+
+def test_checker_accepts_modifier_before_keyword(tmp_path):
+    """B4: 「无任何/没有任何」等修饰词不得导致误拒。"""
+    samples = ["- 无任何未验证项", "- 没有任何未验证项"]
+    for idx, sample in enumerate(samples):
+        report = tmp_path / f"b4-{idx}.md"
+        report.write_text(PASS_REPORT.replace("- 无", sample, 1), encoding="utf-8")
+        r = run_checker(report, "--require-verdict=PASS")
+        assert r.returncode == 0, f"{sample} 应通过: " + r.stdout + r.stderr
