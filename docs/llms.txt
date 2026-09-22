@@ -25,3 +25,4 @@
 - [Critic 门禁加固（taste-driven-designer） 维护修复计划 (Maintenance-Patch Plan)](project/plans/2026-09-20-critic-gate-hardening.md)
 - [taste-driven-designer 技能沉淀 实施方案计划 (Implementation Plan)](project/plans/2026-09-20-taste-driven-designer.md): 1. 新技能 `skills/taste-driven-designer/` 存在且结构完整（SKILL.md + references + templates + scripts + tests）；
 - [frontend-qa-gate 前端产物验收技能 实施方案计划 (Implementation Plan)](project/plans/2026-09-21-frontend-qa-gate.md): 1. 新技能 `skills/frontend-qa-gate/` 结构完整（SKILL.md + references + templates + tests），description 能在"前端验收 / 响应式是否完整 / 键盘能不能用...
+- [frontend-qa-gate 后续待办闭环 维护修复计划 (Maintenance-Patch Plan)](project/plans/2026-09-21-qa-gate-followups.md): 复现脚本：`/tmp/fu_repro.py`、`/tmp/fu_scan2.py`（扫描剥离围栏，避免示例代码块误报）。
