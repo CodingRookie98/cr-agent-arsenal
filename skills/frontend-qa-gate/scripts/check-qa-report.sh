@@ -186,30 +186,23 @@ if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
   fi
   # 第 4 章内容判定：列表行宽松（含「未验证/阻断」实词且非「无…」否定式）；
   # 表格/引用行需带冒号实词（避免表头误判）；转折词与括号夹带一律视为有内容。
-  RAW4="$(grep -E -- '^[[:space:]]*(-|\||>)' <<<"$SEC4" || true)"
-  # 分句级扫描 + 位置比较：实词（未验证/阻断/未测/未完成）未被其前的否定词修饰即视为有内容
-  LIST_SUSPECT="$(awk '
-    /^[[:space:]]*-[[:space:]]*/ {
+  # 第 4 章内容判定（统一 awk 判定，覆盖列表/表格/引用行）：
+  #   1) 「- <实词>…：无」标准否定式白名单；
+  #   2) 表头白名单（含 原因/说明/描述 且无冒号）；
+  #   3) 循环抹除「否定词 + 实词（可连接重复）」配对后，残留实词即视为有内容。
+  OTHER4="$(awk '
+    /^[[:space:]]*(-|\||>)/ {
       line=$0
-      gsub(/（[^）]*）/, "", line)
-      gsub(/\([^)]*\)/, "", line)
-      n=split(line, cl, /[，。；、]/)
-      for (i=1;i<=n;i++) {
-        if (cl[i] ~ /未验证|阻断|未测|未完成/) {
-          negated=0
-          if (match(cl[i], /无|没有|不存在|未出现/)) {
-            negpos=RSTART
-            if (match(cl[i], /未验证|阻断|未测|未完成/)) {
-              if (negpos < RSTART) negated=1
-            }
-          }
-          if (!negated) { print $0; break }
-        }
+      if (line ~ /^[[:space:]]*-[[:space:]]*(未验证项|未验证|阻断项|阻断|未测|未完成)[[:space:]]*[：:][[:space:]]*无/) next
+      if (line ~ /(原因|说明|描述)[[:space:]]*[|｜]/ && line !~ /[：:]/) next
+      work=line
+      for (k=0;k<10;k++) {
+        before=work
+        gsub(/(无|没有|不存在|未出现)[[:space:]]*((未验证项|未验证|阻断项|阻断|未测|未完成|未跑|待测|尚未|未执行|pending|TODO)[[:space:]]*([与和及、,，]?[[:space:]]*)?)+/, "", work)
+        if (work==before) break
       }
-    }' <<<"$RAW4" || true)"
-  OTHER_SUSPECT="$(grep -vE -- '^[[:space:]]*-[[:space:]]*' <<<"$RAW4" | grep -E -- '(未验证|阻断)[：:]' || true)"
-  TURN4="$(grep -E -- '(无|没有|不存在|未出现)' <<<"$RAW4" | grep -E -- '但|然而|不过|仍有|存在|（[^）]*(未验证|阻断|未测|未完成)|\([^)]*(未验证|阻断|未测|未完成)' || true)"
-  OTHER4="$(printf '%s\n%s\n%s' "$LIST_SUSPECT" "$OTHER_SUSPECT" "$TURN4" | sed '/^$/d' || true)"
+      if (work ~ /未验证项|未验证|阻断项|阻断|未测|未完成|未跑|待测|尚未|未执行|pending|TODO/) print $0
+    }' <<<"$SEC4" || true)"
   if [[ -n "$OTHER4" ]]; then
     echo "错误: 结论为 PASS 但第 4 章列出了未验证项或阻断"
     FAIL=1

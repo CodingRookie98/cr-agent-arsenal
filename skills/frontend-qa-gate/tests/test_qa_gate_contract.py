@@ -574,3 +574,29 @@ def test_checker_negation_scope_is_position_based(tmp_path):
     report.write_text(PASS_REPORT.replace("- 无", "- A5 未验证：宿主无性能测量能力", 1), encoding="utf-8")
     r = run_checker(report, "--require-verdict=PASS")
     assert r.returncode != 0, "实词后的「无」不得视为否定"
+
+
+def test_checker_accepts_shi_ci_colon_none(tmp_path):
+    """M1/M2: 「- <实词>…：无」标准否定式不得误拒。"""
+    samples = ["- 未验证项：无（全部 31 条已跑）", "- 阻断项：无"]
+    for idx, sample in enumerate(samples):
+        report = tmp_path / f"m-none-{idx}.md"
+        report.write_text(PASS_REPORT.replace("- 无", sample, 1), encoding="utf-8")
+        r = run_checker(report, "--require-verdict=PASS")
+        assert r.returncode == 0, f"{sample} 应通过: " + r.stdout + r.stderr
+
+
+def test_checker_rejects_nonstandard_smuggle_variants(tmp_path):
+    """M3–M7: 英文标点 / 无分隔连写 / 空格分隔 / 括号英文同义 / 无冒号表格 必须拒绝。"""
+    samples = [
+        "- 无未验证项, 性能未验证",
+        "- 无阻断性能未验证",
+        "- 无阻断 性能未验证",
+        "- 无未验证项（A5 pending）",
+        "| A5 | 未验证 无性能测量 |",
+    ]
+    for idx, sample in enumerate(samples):
+        report = tmp_path / f"m-smuggle-{idx}.md"
+        report.write_text(PASS_REPORT.replace("- 无", sample, 1), encoding="utf-8")
+        r = run_checker(report, "--require-verdict=PASS")
+        assert r.returncode != 0, f"{sample} 必须拒绝"
