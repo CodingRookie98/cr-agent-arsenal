@@ -187,9 +187,9 @@ if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
   # 第 4 章内容判定：列表行宽松（含「未验证/阻断」实词且非「无…」否定式）；
   # 表格/引用行需带冒号实词（避免表头误判）；转折词与括号夹带一律视为有内容。
   RAW4="$(grep -E -- '^[[:space:]]*(-|\||>)' <<<"$SEC4" || true)"
-  LIST_SUSPECT="$(grep -E -- '^[[:space:]]*-[[:space:]]*' <<<"$RAW4" | grep -E -- '(未验证|阻断)' | grep -vE -- '^[[:space:]]*-[[:space:]]*无' || true)"
+  LIST_SUSPECT="$(grep -E -- '^[[:space:]]*-[[:space:]]*' <<<"$RAW4" | grep -E -- '(未验证|阻断)' | grep -vE -- '(无|没有|不存在|未出现)[^，。；]*?(未验证|阻断)' || true)"
   OTHER_SUSPECT="$(grep -vE -- '^[[:space:]]*-[[:space:]]*' <<<"$RAW4" | grep -E -- '(未验证|阻断)[：:]' || true)"
-  TURN4="$(grep -E -- '^[[:space:]]*-[[:space:]]*无' <<<"$RAW4" | grep -E -- '但|然而|不过|仍有|存在|（[^）]*(未验证|阻断|未测|未完成)|\([^)]*(未验证|阻断|未测|未完成)' || true)"
+  TURN4="$(grep -E -- '(无|没有|不存在|未出现)' <<<"$RAW4" | grep -E -- '但|然而|不过|仍有|存在|（[^）]*(未验证|阻断|未测|未完成)|\([^)]*(未验证|阻断|未测|未完成)' || true)"
   OTHER4="$(printf '%s\n%s\n%s' "$LIST_SUSPECT" "$OTHER_SUSPECT" "$TURN4" | sed '/^$/d' || true)"
   if [[ -n "$OTHER4" ]]; then
     echo "错误: 结论为 PASS 但第 4 章列出了未验证项或阻断"

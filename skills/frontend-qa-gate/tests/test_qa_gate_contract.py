@@ -549,3 +549,11 @@ def test_checker_rejects_unclosed_fence(tmp_path):
     r = run_checker(report, "--require-verdict=PASS")
     assert r.returncode != 0, "围栏未闭合必须拒绝"
     assert "未闭合" in r.stdout + r.stderr
+
+
+def test_checker_accepts_negation_without_line_leading_wu(tmp_path):
+    """D1c: 否定式判定不得只看行首「无」——`- 本报告无未验证项与阻断` 应通过。"""
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 无", "- 本报告无未验证项与阻断", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode == 0, r.stdout + r.stderr
