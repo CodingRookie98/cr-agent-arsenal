@@ -557,3 +557,20 @@ def test_checker_accepts_negation_without_line_leading_wu(tmp_path):
     report.write_text(PASS_REPORT.replace("- 无", "- 本报告无未验证项与阻断", 1), encoding="utf-8")
     r = run_checker(report, "--require-verdict=PASS")
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_checker_rejects_negation_then_positive_clause(tmp_path):
+    """分句攻击: 否定在前、肯定在后（逗号/分号/句号/顿号）必须拒绝。"""
+    for sep in ["，", "；", "。", "、"]:
+        report = tmp_path / f"qa-report-{ord(sep)}.md"
+        report.write_text(PASS_REPORT.replace("- 无", f"- 无阻断{sep}性能未验证", 1), encoding="utf-8")
+        r = run_checker(report, "--require-verdict=PASS")
+        assert r.returncode != 0, f"分句夹带必须拒绝（分隔符 {sep}）"
+
+
+def test_checker_negation_scope_is_position_based(tmp_path):
+    """精度: 实词之后的「无」（如「宿主无性能测量能力」）不得否定该实词。"""
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT.replace("- 无", "- A5 未验证：宿主无性能测量能力", 1), encoding="utf-8")
+    r = run_checker(report, "--require-verdict=PASS")
+    assert r.returncode != 0, "实词后的「无」不得视为否定"
