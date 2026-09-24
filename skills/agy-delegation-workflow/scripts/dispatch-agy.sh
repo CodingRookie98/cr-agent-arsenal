@@ -96,6 +96,35 @@ else
   usage
 fi
 
+# ------------------------------------------------------------------------------
+# 修正工作目录与 Hindsight 记忆库归属 (bank attribution)
+#
+# 实测结论（勿删）：agy 无头模式 (`agy -p`) 下没有 active workspace，
+#   1) hook 事件里的 workspacePaths 是空数组 []；
+#   2) agy 给 hook / MCP server 子进程的 cwd 固定为 ~/.gemini/config，而非 agy 自身 cwd。
+# 两者叠加使 bank 模板 `coding-agent::{gitProject}` 回退成目录 basename，
+# 整批会话都会被写进 `coding-agent::config`（实测误收 75 个文档 / 3,237 条记忆单元，横跨 6 个仓库）。
+# 修复：用 --add-dir 把仓库根注册为会话 workspace（agy 会填进 workspacePaths，
+# hook 据此解析 bank），并用 HINDSIGHT_MCP_PROJECT_CWD 让 MCP server 解析到同一目录。
+# ------------------------------------------------------------------------------
+REPO_ROOT=""
+if [[ -n "$TASK_FILE" ]]; then
+  REPO_ROOT=$(git -C "$(dirname "$TASK_FILE")" rev-parse --show-toplevel 2>/dev/null || true)
+elif git rev-parse --show-toplevel >/dev/null 2>&1; then
+  REPO_ROOT=$(git rev-parse --show-toplevel)
+fi
+
+if [[ -n "$REPO_ROOT" ]]; then
+  cd "$REPO_ROOT"
+  export HINDSIGHT_MCP_PROJECT_CWD="$REPO_ROOT"
+  AGY_WORKSPACE_ARGS=(--add-dir "$REPO_ROOT")
+  echo "📂 记忆库归属根目录: ${REPO_ROOT}"
+else
+  AGY_WORKSPACE_ARGS=()
+  echo "⚠️  警告: 未能定位 git 仓库根 —— Hindsight 的 bank 会退化为目录名" >&2
+  echo "           (coding-agent::$(basename "$PWD"))。请先 cd 到项目仓库根，或用 -f 指定仓库内的任务文件。" >&2
+fi
+
 # 1. 彻底清除代理环境变量，杜绝 WSL/Linux 下的 Go 客户端 proxyconnect connection refused
 unset HTTPS_PROXY HTTP_PROXY http_proxy https_proxy ALL_PROXY all_proxy || true
 
@@ -113,7 +142,7 @@ if [[ "$BACKGROUND" == true ]]; then
   LOG_FILE="${LOG_DIR}/agy-$(date +%Y%m%d-%H%M%S)-$$.log"
   echo "📡 后台执行模式已激活，日志输出至: ${LOG_FILE}"
   
-  nohup agy -p "$CONTENT" \
+  nohup agy ${AGY_WORKSPACE_ARGS[@]+"${AGY_WORKSPACE_ARGS[@]}"} -p "$CONTENT" \
     --model "$MODEL" \
     --dangerously-skip-permissions \
     --print-timeout "$TIMEOUT" > "$LOG_FILE" 2>&1 &
@@ -123,7 +152,7 @@ if [[ "$BACKGROUND" == true ]]; then
   echo "💡 提示: 您可以使用 'tail -f ${LOG_FILE}' 实时跟踪执行进展。"
 else
   # 前台同步执行
-  exec agy -p "$CONTENT" \
+  exec agy ${AGY_WORKSPACE_ARGS[@]+"${AGY_WORKSPACE_ARGS[@]}"} -p "$CONTENT" \
     --model "$MODEL" \
     --dangerously-skip-permissions \
     --print-timeout "$TIMEOUT"
