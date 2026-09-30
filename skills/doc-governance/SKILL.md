@@ -91,7 +91,7 @@ docs/
 └── project/                 # 🚀 5. 工程演进与项目管理 (Project Management & Evolution)
     ├── roadmap.md           # 产品规划路线图与版本里程碑矩阵
     ├── changelog.md         # 版本发布日志与交付物归档
-    └── backlog.md           # 统一待办事项、后续优化方向汇总与已关闭清单
+    └── backlog.md           # 统一待办清单（BK 编号条目）、后续优化方向与已关闭记录
 ```
 
 ---
@@ -106,7 +106,7 @@ docs/
    - 修改状态机枚举/守卫 ➔ 联动同步 `reference/rules/`；
    - 修改前端组件/样式 Token ➔ 联动同步 `reference/ui/`；
    - 核心架构演化 ➔ 编写一条 MADR 决策追加至 `explanation/decisions/`；
-3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并在 `project/backlog.md` 标记对应待办已关闭；
+3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并将 `project/backlog.md` 中对应 **BK 编号**的待办移入已关闭区（规范见 [backlog-specification.md](./references/backlog-specification.md)）；
 4. **版本号与修订历史**：按语义化规范提升受影响文档版本，遵循 **5 条滑动窗口** 追加修订行；
 5. **门禁校验**：运行 `check-doc-links.py` 确保零断链。
 
@@ -144,5 +144,6 @@ docs/
 | [rfc-crystallization-lifecycle.md](./references/rfc-crystallization-lifecycle.md) | 初期提案孵化、多轮对齐与定案结晶下沉完整 SOP |
 | [language-naming-conventions.md](./references/language-naming-conventions.md) | 项目语言习惯继承铁律、文件命名规则与中英文正交分离标准 |
 | [change-impact-matrix.md](./references/change-impact-matrix.md) | 代码修改与契约演进全向联动矩阵与门禁要求 |
+| [backlog-specification.md](./references/backlog-specification.md) | Backlog 条目 BK 编号赋号规则、三区生命周期与关闭闭环格式 |
 | [adr-specification.md](./references/adr-specification.md) | MADR 3.0 架构决策记录格式规范与 Append-Only 演进流 |
 | [legacy-migration-guide.md](./references/legacy-migration-guide.md) | 瀑布老目录（requirements, design, planning 等）平滑映射指引 |

@@ -8,8 +8,9 @@ audit-doc-health.py - 知识库全面健康度体检引擎
   3. 审计修订历史滑动窗口合规率（<= 5 条）；
   4. 审计全域物理断链与 404 错误；
   5. 探测孤儿文档（未被 index.md 或其他文档引用的孤立文件）；
-  6. 支持 --compat 模式：探测既有瀑布老目录（requirements, design 等）并出具平滑迁移映射建议；
-  7. 综合计算健康评分 (0-100 分)，出具结构化诊断报告。
+  6. 审计 backlog.md 顶层条目 BK 编号合规（缺号/格式不合规/重号，违规直接阻断 PASS）；
+  7. 支持 --compat 模式：探测既有瀑布老目录（requirements, design 等）并出具平滑迁移映射建议；
+  8. 综合计算健康评分 (0-100 分)，出具结构化诊断报告。
 """
 
 import argparse
@@ -168,6 +169,31 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         if f not in referenced_files:
             orphan_docs.append(f)
 
+    # 4.5 Backlog 条目编号合规检查（仅当存在 backlog.md 时生效）
+    backlog_issues: List[str] = []
+    top_checkbox = re.compile(r"^- \[[ xX]\]\s+")
+    numbered_checkbox = re.compile(r"^- \[[ xX]\]\s+BK-(\d{4})\b")
+    for f in all_md_files:
+        if f.name != "backlog.md":
+            continue
+        seen_ids: Dict[str, int] = {}
+        for lineno, line in enumerate(
+            f.read_text(encoding="utf-8", errors="replace").splitlines(), 1
+        ):
+            if not top_checkbox.match(line):
+                continue  # 嵌套子项与普通文字不编号
+            m = numbered_checkbox.match(line)
+            if not m:
+                backlog_issues.append(
+                    f"{f.relative_to(root_dir)}:{lineno} 顶层条目缺 BK-XXXX 编号前缀: {line.strip()[:40]}"
+                )
+            elif m.group(1) in seen_ids:
+                backlog_issues.append(
+                    f"{f.relative_to(root_dir)}:{lineno} BK-{m.group(1)} 与第 {seen_ids[m.group(1)]} 行编号重复"
+                )
+            else:
+                seen_ids[m.group(1)] = lineno
+
     # 5. 断链扫描
     _, total_link_errors, file_link_errors = scan_directory(
         root_dir=root_dir,
@@ -204,6 +230,7 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         "total_link_errors": total_link_errors,
         "file_link_errors": file_link_errors,
         "orphan_docs": orphan_docs,
+        "backlog_issues": backlog_issues,
         "scores": {
             "link_score": round(link_score, 1),
             "meta_score": round(meta_score, 1),
@@ -283,15 +310,22 @@ def main():
         sample = [f.name for f in res["orphan_docs"][:3]]
         print(f"   ⚠️  存在 {len(res['orphan_docs'])} 篇孤儿文档未被索引引用 (示例: {', '.join(sample)})，建议在 index.md 中收录。")
 
+    if res["backlog_issues"]:
+        has_issues = True
+        print(f"   ⛔ 存在 {len(res['backlog_issues'])} 处 backlog 条目编号违规（缺号/格式不合规/重号）:")
+        for issue in res["backlog_issues"][:5]:
+            print(f"      - {issue}")
+        print("      赋号与格式规范见 references/backlog-specification.md。")
+
     if not has_issues:
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")
 
     print("\n" + "=" * 60)
-    if res["total_score"] >= args.threshold and res["total_link_errors"] == 0:
+    if res["total_score"] >= args.threshold and res["total_link_errors"] == 0 and not res["backlog_issues"]:
         print("🏁 诊断结论: PASS (健康度达标，准予交付) ✅")
         sys.exit(0)
     else:
-        print(f"🚫 诊断结论: REJECTED (得分 {res['total_score']} < 门槛 {args.threshold} 或存在断链，请修复后重测)")
+        print(f"🚫 诊断结论: REJECTED (得分 {res['total_score']} < 门槛 {args.threshold}，或存在断链/backlog 编号违规，请修复后重测)")
         sys.exit(1)
 
 

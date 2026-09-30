@@ -182,7 +182,7 @@ stateDiagram-v2
 
 ### 步骤 4：生成操作指引与拆解 Backlog
 * 若该特性引入了新的环境配置或调试命令，沉淀至 `docs/how-to/`；
-* 将具体的实施切片拆解录入 `docs/project/backlog.md`，准备进入 TDD 编码循环。
+* 将具体的实施切片拆解录入 `docs/project/backlog.md`（每片按 [backlog-specification.md](./backlog-specification.md) 赋予 BK 编号，供 changelog 与 commit 引用），准备进入 TDD 编码循环。
 
 ### 步骤 5：原提案封存与防腐声明 (Archive & Quarantine)
 * 将原 RFC 状态更新为 **`Implemented`**；
