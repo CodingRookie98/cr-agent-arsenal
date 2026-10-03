@@ -33,7 +33,7 @@ graph TD
 2. **真实产出优先**：主智能体在子智能体真实返回前不输出任何审查结论；终审裁决只根据 R2 的真实结果生成。
 3. **范围锁定**：候选缺陷必须标注是否由当前变更引入；历史技术债记入 Suggestion/Backlog。
 4. **证据支撑**：驳回或降级 R1 的评级必须附 `文件:行` 级反证据；无证据的降级不生效。
-5. **状态落盘**：每轮结论写入 `.review-context/review-<baseline-sha>.md`；再循环读取 `Previous Blockers` 与迭代计数。
+5. **双层落盘（状态 + 凭据）**：每轮结论写入 `.review-context/review-<baseline-sha>.md`（运行时状态，已 gitignore）供再循环读取 `Previous Blockers` 与迭代计数；**同时必须将子智能体返回的《审查报告全文》逐字归档**至 `<归档根>/<YYYY-MM-DD>-<slug>/`（交付凭据，进版本库，见步骤 1.6）。**严禁以摘要替代报告全文归档**。
 6. **有界收敛**：同一模块连续 3 次双轮循环未清零阻断项时，产出争议焦点报告并升级人类裁决；修复收敛在最小改动范围。
 7. **派发即登记**：派发 R1/R2 前在 `.goal-loop/dispatch-ledger.md` 维护派发账本明细（角色、后端句柄、基线 SHA、**派发次数**、状态），并在计划检查点保留一行派生摘要。预算内未返回即按 `goal-loop` 技能的 `references/host-adapters.md` §5 收口；**同一角色对同一基线的重派上限 2 次**，超期中断计入铁律 6 的循环计数。跨会话恢复时先读账本明细，明细已丢失则以计划摘要为锚点，禁止凭记忆重建派发状态。
 
@@ -80,11 +80,11 @@ graph TD
 # 技能目录随安装方式而定（源码仓库通常为 skills/dual-round-review，安装后通常为 .agents/skills/dual-round-review）
 SKILL_DIR="<dual-round-review 技能实际所在目录>"
 
-# 智能模式（优先未提交改动，无改动则检查最近一次 Commit）
-bash "$SKILL_DIR/scripts/prepare-review-context.sh"
+# 智能模式（优先未提交改动，无改动则检查最近一次 Commit）+ 启用交付凭据归档 scaffold（RFC-0001）
+bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug>
 
-# 或指定提交区间
-bash "$SKILL_DIR/scripts/prepare-review-context.sh" [BASE_SHA] [HEAD_SHA]
+# 或指定提交区间（归档根可用 --archive-root=<路径> 覆盖，默认 docs/project/reviews）
+bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [BASE_SHA] [HEAD_SHA]
 ```
 * 确保准备好：① Git Diff 内容与变更统计；② 需求设计或任务描述（Spec）；③ 仓库编码标准；④ **（条件）前端产物交付时：`frontend-qa-gate`《前端验收报告》的结论必须为 PASS（以 `check-qa-report.sh --require-verdict=PASS --min-assertions=15` 机械校验为准）；FAIL / BLOCKED（含未验证项）时先按该技能回流路由处理，不得进入审查放行。**
 
@@ -103,7 +103,26 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" [BASE_SHA] [HEAD_SHA]
 - **阻断项统计**: [🔴 X / 🟡 Y / ⚪ Z]
 ```
 
-**恢复规则**：进入审查前若已存在同基线记录，先读取该文件恢复轮次、`Previous Blockers` 与迭代计数，再决定继续、再循环或升级。记录文件由 `prepare-review-context.sh` 生成，或按上述 schema 手工创建。
+**恢复规则**：进入审查前若已存在同基线记录，先读取该文件恢复轮次、`Previous Blockers` 与迭代计数，再决定继续、再循环或升级。记录文件由 `prepare-review-context.sh` 生成，或按上述 schema 手工创建。若锚点含「归档索引」段，**同时**从该归档根读取 `README.md` 轮次台账，恢复上一轮报告文件路径与其 SHA256 指纹（Delta 再循环据此核验报告未被改写）。
+
+### 1.6 交付凭据归档 (Review Evidence Archive)
+审查报告全文是**不可重建**的交付凭据：会话一旦结束，子智能体的推理链、攻击路径推演与 `文件:行` 反证据即永久消失（本仓库曾出现归档摘要自述「全文见会话记录」）。因此必须与运行时锚点**分层落盘**：
+
+| 层 | 位置 | 生命周期 | 进版本库 |
+|:---|:---|:---|:---:|
+| ① 运行时状态 | `.review-context/review-<baseline-sha>.md` | 一次审查循环 | ❌（已 gitignore，正确设计） |
+| ② 交付凭据 | `<归档根>/<YYYY-MM-DD>-<slug>/` | 交付审计期 | ✅ |
+| ③ 机械门禁 | `scripts/check-review-report.sh` | — | ✅ |
+
+* **归档根**：推荐默认 `docs/project/reviews/`；宿主项目若已有既定的审查记录规范（既有 `reviews/` 目录或 doc-governance 变体）**以宿主规范为准**，并把实际归档根登记至锚点「归档索引」段。
+* **命名规范**：一个交付单元一个目录（Delta 再循环各轮共享，目录名日期取**首次审查日**）；轮次文件为 `<轮次标记>-<base7>..<head7>.md`，轮次标记取 `r1` / `r2` / `delta-r1` / `delta-r2`。
+* **归档索引** `README.md` 的轮次台账 schema：`| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 |`。
+* **写入责任边界**：R1/R2 子智能体的 **Read-Only 约束不变**；由**主智能体**在收到真实返回后**逐字写盘**并登记 SHA256（`sha256sum <报告文件> | cut -c1-12`）。指纹的作用正是让「转录失真」可被机械检出。
+* **门禁**：归档完成后运行 `bash "$SKILL_DIR/scripts/check-review-report.sh" <归档目录>`；交付放行场景追加 `--require-verdict=PASS`。校验项：索引字段齐备 / 报告在位非空 / 指纹一致 / R1 五区块 / R2 三区块 / 稳定 ID 两轮对齐 / 围栏剥离后仍齐备。
+* **异常降级**：
+  1. 落盘失败（权限、磁盘）→ 按 `goal-loop` 的 `references/host-adapters.md` §5 收口并记录中断原因；**严禁在无归档的情况下宣布审查通过**；
+  2. 宿主无 `docs/` 结构 → 按「宿主优先」原则选定归档根并登记至锚点；
+  3. Delta 再循环同名文件冲突 → 视为基线漂移缺陷，**不得覆盖**既有报告。
 
 ### 2. 委派第一轮审查：红队与第一性原理 (Dispatch Round 1)
 **上下文隔离红线**：分发独立的子智能体，**严禁传入主会话的聊天历史**。使用 [round-1-red-team.md](references/round-1-red-team.md) 提示词模板：
@@ -121,7 +140,7 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" [BASE_SHA] [HEAD_SHA]
   5. **定向再循环核验 (Delta Re-Loop)**：若属于 Blocker 修复后的再循环，重点审计上一轮 Blocker 是否被根治，以及修复补丁本身是否引入次生缺陷。
 * **真实产出纪律**：在 R1 真实报告返回前，不输出任何审查预判或假想报告，也不提前派发 R2；异步派发时结束回合并等待唤醒。
 * **派发预算 (Dispatch Budget)**：R1 的等待预算为 **1 个检查点周期**。超期未返回即判定为超期事件，按 `goal-loop` 技能的 `references/host-adapters.md` §5 收口（中断 → 落盘记录 `.review-context/review-<baseline-sha>.md` → 替代路径 → 更新派发账本），**严禁无限期等待**。中断并如实记录不违反真实产出纪律；用空报告冒充审查结论才是违规。
-* **落盘审查记录**：拿到 R1 报告后，立即写入 `.review-context/review-<baseline-sha>.md` 的 Round 1 字段（见步骤 1.5），再进入步骤 3。
+* **落盘审查记录与报告归档**：拿到 R1 报告后依次完成 ① 写入 `.review-context/review-<baseline-sha>.md` 的 Round 1 字段（见步骤 1.5）；② 将**报告全文逐字**归档为 `<归档根>/<date>-<slug>/r1-<base7>..<head7>.md`，并在归档索引轮次台账登记基线、派发句柄、文件名、SHA256 前 12 位与结论；③ 运行 `check-review-report.sh` 确认结构可校验。**归档完成后方可进入步骤 3**。
 * 获取子智能体返回的《第一轮对抗审查报告》。
 
 ### 3. 委派第二轮审查：元架构师审判 (Dispatch Round 2)
@@ -137,7 +156,7 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" [BASE_SHA] [HEAD_SHA]
   5. **批量降级红旗**：R2 将 R1 的多个 P0/P1 一次性降级或驳回时，必须逐条给出 `文件:行` 级反证据；主智能体抽检，证据不足者退回 R2 重审。
 * **真实产出纪律**：在 R2 真实裁决返回前，不输出“终审裁决书”；终审裁决必须基于 R2 的真实结果生成（异步派发时结束回合等待唤醒）。
 * **派发预算**：同 R1（等待预算 1 个检查点周期）；超期按 `goal-loop` 技能的 `references/host-adapters.md` §5 收口并落盘。
-* **落盘审查记录**：拿到 R2 裁决后写入 `.review-context/review-<baseline-sha>.md` 的终审字段（见步骤 1.5），再进入步骤 4。
+* **落盘审查记录与报告归档**：拿到 R2 裁决后依次完成 ① 写入 `.review-context/review-<baseline-sha>.md` 的终审字段（见步骤 1.5）；② 将**终审裁决书全文逐字**归档为 `<归档根>/<date>-<slug>/r2-<base7>..<head7>.md` 并登记轮次台账；③ 运行 `check-review-report.sh --require-verdict=PASS` 确认放行结论可机械校验。**归档完成后方可进入步骤 4**。
 * 获取终审输出的《最终裁决明细表》。
 
 ### 4. 裁决分流与定性处理 (Verdict Triage)
@@ -178,6 +197,7 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" [BASE_SHA] [HEAD_SHA]
 | “按架构师意见改完且单测全绿了，不需要再走双轮了” | **⛔ 严重违规（自验偏差与次生缺陷盲区）**！修复代码本身极易引入更致命的次生灾难（如数据清空、状态死锁）。单测全绿绝不能替代外部双轮对抗，必须将修复提交作为输入重新委派 R1 启动再循环。 |
 | “发起子智能体后，我顺便把裁决写出来给用户看” | **⛔ 严重违规（虚假抢答）**！子智能体尚未真实推演完毕，主智能体擅自脑补输出会导致审查流于形式甚至掩盖真正缺陷。异步派发时结束回合等待；同步派发时也在本次调用返回报告后再输出结论。 |
 | “把两轮审查子智能体同时并行启动” | **⛔ 违背级联第一性原理**！R2 的本质使命是审判 R1（Review the Reviewer），没有 R1 的完整输出，R2 根本无从审判，严禁并行发起。 |
+| “报告摘要已经写进锚点了，就等于归档了” | **⛔ 严重违规（凭据灭失）**！摘要只有结论统计，R1 的攻击路径推演、`文件:行` 证据与 R2 的反证据链全部留在会话里，会话一结束即永久消失。**严禁以摘要替代报告全文归档**：必须把子智能体返回的原文逐字写入 `<归档根>/<date>-<slug>/` 并登记 SHA256 指纹（见步骤 1.6）。 |
 | “R1 迟迟不返回，我先把 R2 派出去并行推进”“既然 R2 拿不到 R1 报告，我就把它的独立意见当作终审” | **⛔ 违规（并发规避 + 空报告冒充）**！前者违反级联顺序，后者把“无输入的独立核查”偷换为“双轮对抗结论”。正确处置：按派发预算收口该子智能体——中断 → 落盘记录中断原因 → 选择替代路径（原后端重派收窄范围 / 切换至隔离后端；**审查类无法保证隔离时必须升级人类裁决——内联自审不构成任何一轮审查**）→ 更新派发账本（**执行类派发另有内联例外，见 `goal-loop` 技能的 `references/host-adapters.md` §5.4(d)**，但其结果不得用于任何审查轮次）；R2 必须接收 R1 的**真实报告全文**后方可派发。 |
 
 ---
@@ -189,6 +209,7 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" [BASE_SHA] [HEAD_SHA]
 * [failure-modes-catalog.md](references/failure-modes-catalog.md) - 大模型代码生成与审查高频失败模式库
 * [round-1-red-team.md](references/round-1-red-team.md) - 第一轮红队与第一性原理子智能体任务模板
 * [round-2-meta-architect.md](references/round-2-meta-architect.md) - 第二轮元审判资深架构师子智能体任务模板
+* [check-review-report.sh](scripts/check-review-report.sh) - 《交付凭据归档》结构机械门禁（索引字段 / 指纹一致 / 两轮区块 / 稳定 ID 对齐；`--require-verdict=PASS` 供交付放行）
 
 ### 实战演练案例
 * [case-1-palliative-patch.md](examples/case-1-palliative-patch.md) - 案例 1: 浅层修补（打布丁）识别与阻断
