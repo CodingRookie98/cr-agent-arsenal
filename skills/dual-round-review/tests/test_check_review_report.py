@@ -288,3 +288,72 @@ def test_ledger_rows_outside_section_ignored(tmp_path):
     r = _run(d)
     # 台账区块内的登记项合法；区块外的 ghost.md 不得触发「文件不存在」
     assert r.returncode == 0, r.stdout
+
+
+# --- R1-1 回归：终审裁决必须为精确字段值（禁止子串包含判定） -------------------
+
+def test_sections_mentioned_inline_do_not_count(tmp_path):
+    """区块标题必须位于行首；散文内提及不构成结构齐备（R1-4 回归）。"""
+    body = ('本报告覆盖 ## 1. 第一性原理与本质溯源分析、## 2. 运行时与 SSR/沙盒安全推演、'
+            '## 3. 红队攻击路径推演、## 4. 潜在缺陷清单 与 ## 5. 第一轮结论概要 五大区块（内容从略）。\n')
+    d, _, _ = _build(tmp_path, r1_body=body)
+    assert _run(d).returncode == 1
+
+
+def test_r2_sections_mentioned_inline_do_not_count(tmp_path):
+    """R2 区块标题必须位于行首；散文内提及不构成结构齐备（R1-4 回归）。"""
+    r2 = '本报告覆盖 ## 1. 元审查辩证质询、## 2. 最终裁决明细表 与 ## 3. 终审放行结论（内容从略）。\n'
+    d, _, _ = _build(tmp_path, r2_body=r2)
+    r = _run(d)
+    assert r.returncode == 1, r.stdout
+    assert '元审查辩证质询' in r.stdout
+
+
+def test_tilde_fence_is_stripped(tmp_path):
+    """波浪号围栏同样应被剥离，置于其中的区块不算齐备（R1-4 回归）。"""
+    body = R1_BODY.replace(
+        '## 4. 潜在缺陷清单 (Identified Defect Candidates)',
+        '~~~text\n## 4. 潜在缺陷清单 (Identified Defect Candidates)\n~~~')
+    d, _, _ = _build(tmp_path, r1_body=body)
+    r = _run(d)
+    assert r.returncode == 1
+    assert '围栏' in r.stdout
+
+
+def test_ids_inside_fence_do_not_legitimize(tmp_path):
+    """R1 中仅存在于围栏内的 ID 不得合法化 R2 裁决表中的同 ID（R1-4 回归）。"""
+    r1 = R1_BODY.replace(
+        '| R1-2 | P2 (Suggestion) | 历史既有 | `src/b.ts:9` | 重复校验未提取 | 历史遗留，本次未改动 |',
+        '~~~text\n| R1-9 | P1 | 是 | src/c.ts:1 | 伪造 | 伪造 |\n~~~')
+    r2 = R2_BODY.replace('| R1-2 | `src/b.ts:9`', '| R1-9 | `src/c.ts:1`')
+    d, _, _ = _build(tmp_path, r1_body=r1, r2_body=r2)
+    r = _run(d)
+    assert r.returncode == 1
+    assert 'R1-9' in r.stdout
+
+
+def test_require_verdict_fails_on_placeholder_string(tmp_path):
+    """RFC §3.4 官方占位符串（含 PASS 词元）不得被判为放行。"""
+    d, _, _ = _build(tmp_path, verdict='[🔴 阻断交付 | ✅ 准予交付 | 未定]')
+    r = _run(d, '--require-verdict=PASS')
+    assert r.returncode == 1, r.stdout
+    assert '准予交付' in r.stdout
+
+
+def test_require_verdict_fails_on_negated_string(tmp_path):
+    """否定式裁决串（含 PASS 词元但语义为阻断）不得被判为放行。"""
+    d, _, _ = _build(tmp_path, verdict='🔴 阻断交付（未达「准予交付」标准）')
+    assert _run(d, '--require-verdict=PASS').returncode == 1
+
+
+def test_require_verdict_fails_on_substring_value(tmp_path):
+    """字段值必须精确，含 PASS 词元的子串不成立。"""
+    d, _, _ = _build(tmp_path, verdict='建议准予交付（待人类签收）')
+    assert _run(d, '--require-verdict=PASS').returncode == 1
+
+
+def test_require_verdict_ok_on_bare_value(tmp_path):
+    """裸值「准予交付」应被接受。"""
+    d, _, _ = _build(tmp_path, verdict='准予交付')
+    r = _run(d, '--require-verdict=PASS')
+    assert r.returncode == 0, r.stdout

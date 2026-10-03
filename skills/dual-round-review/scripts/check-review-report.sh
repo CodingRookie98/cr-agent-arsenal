@@ -98,8 +98,18 @@ sha256_of() {
   fi
 }
 
+# 围栏剥离状态机：反引号与波浪号围栏**均**需识别（R1-4 回归——仅识别反引号时，
+# 单个 ~~~ 即可把全部区块藏进代码块并绕过结构校验）。
 strip_fences() {
-  awk 'BEGIN{f=0} /^[[:space:]]*```/{f=!f; next} f==0{print}' "$1"
+  awk 'BEGIN{f=0} /^[[:space:]]*(```|~~~)/{f=!f; next} f==0{print}' "$1"
+}
+
+# 区块判定：必须为**行首标题**，行内散文提及不算（R1-4 回归）。
+heading_present() {
+  awk -v s="$2" 'index($0, s)==1 {found=1; exit} END{exit !found}' "$1"
+}
+heading_present_stdin() {
+  awk -v s="$1" 'index($0, s)==1 {found=1; exit} END{exit !found}'
 }
 
 FAIL=0
@@ -177,7 +187,7 @@ check_sections() {
   shift 2
   local sections=("$@")
   local fence_count body s
-  fence_count="$(grep -cE -- '^[[:space:]]*```' "$file" || true)"
+  fence_count="$(grep -cE -- '^[[:space:]]*(```|~~~)' "$file" || true)"
   fence_count="${fence_count:-0}"
   if [[ $((fence_count % 2)) -ne 0 ]]; then
     echo "错误: 围栏代码块未闭合（$label 围栏标记 $fence_count 个，应为偶数）"
@@ -185,10 +195,10 @@ check_sections() {
   fi
   body="$(strip_fences "$file")"
   for s in "${sections[@]}"; do
-    if ! grep -qF -- "$s" "$file"; then
-      echo "错误: $label 缺少必需区块: $s"
+    if ! heading_present "$file" "$s"; then
+      echo "错误: $label 缺少必需区块（须为行首标题）: $s"
       FAIL=1
-    elif ! grep -qF -- "$s" <<<"$body"; then
+    elif ! heading_present_stdin "$s" <<<"$body"; then
       echo "错误: $label 必需区块仅出现在围栏代码块内（无效）: $s"
       FAIL=1
     fi
@@ -212,7 +222,8 @@ fi
 # --- 6) 稳定 ID 对齐：R2 裁决表的 R1-<n> 必须存在于 R1 缺陷清单 ---------------
 section_ids() {
   local file="$1" header="$2"
-  awk -v hdr="$header" 'index($0, hdr)==1 {f=1; next} /^## /{f=0} f' "$file" \
+  strip_fences "$file" \
+    | awk -v hdr="$header" 'index($0, hdr)==1 {f=1; next} /^## /{f=0} f' \
     | grep -oE 'R1-[0-9]+' | sort -u || true
 }
 
@@ -223,23 +234,45 @@ for f in "${R1_FILES[@]:-}"; do
 done
 R1_IDS="$(sort -u <<<"$R1_IDS" || true)"
 
+R2_IDS=""
 for f in "${R2_FILES[@]:-}"; do
   [[ -z "$f" ]] && continue
+  R2_IDS+="$(section_ids "$f" "## 2. 最终裁决明细表")"$'\n'
+done
+R2_IDS="$(sort -u <<<"$R2_IDS" || true)"
+
+# 方向一：R2 裁决表出现的 ID 必须在 R1 缺陷清单中定义（防凭空引入）
+while read -r id; do
+  [[ -z "$id" ]] && continue
+  if ! grep -qxF -- "$id" <<<"$R1_IDS"; then
+    echo "错误: 稳定 ID 未在 R1 缺陷清单中定义: $id（出现在 R2 裁决明细表）"
+    FAIL=1
+  fi
+done <<<"$R2_IDS"
+
+# 方向二：R1 的每一条缺陷都必须被 R2 定性（防元审判静默吞并阻断项）
+# 仅当台账登记了 R2 报告时适用——Light 模式为单轮红队，无 R2，不做此校验。
+if [[ "${#R2_FILES[@]}" -gt 0 && -n "$R1_IDS" ]]; then
   while read -r id; do
     [[ -z "$id" ]] && continue
-    if ! grep -qxF -- "$id" <<<"$R1_IDS"; then
-      echo "错误: 稳定 ID 未在 R1 缺陷清单中定义: $id（出现在 $(basename "$f") 的裁决明细表）"
+    if ! grep -qxF -- "$id" <<<"$R2_IDS"; then
+      echo "错误: R1 缺陷 $id 未出现在 R2 裁决明细表中（禁止静默吞并；误报须显式登记为驳回项）"
       FAIL=1
     fi
-  done < <(section_ids "$f" "## 2. 最终裁决明细表")
-done
+  done <<<"$R1_IDS"
+fi
 
 # --- 7) 可选：终审裁决必须为「准予交付」 --------------------------------------
 VERDICT_NOTE=""
 if [[ "$REQUIRE_VERDICT" == "PASS" ]]; then
+  # 精确字段值判定：剥离 "- **终审裁决**:" 前缀、首尾空白与可选 ✅ 后，值必须**恰好等于**「准予交付」。
+  # 严禁子串包含判定——RFC §3.4 的占位符串与否定式串自身即含 PASS 词元（R1-1 回归）。
   VERDICT_LINE="$(grep -F -- '**终审裁决**' "$INDEX" | head -n 1 || true)"
-  if [[ "$VERDICT_LINE" != *"准予交付"* ]]; then
-    echo "错误: 终审裁决非「准予交付」，不满足 --require-verdict=PASS（登记: ${VERDICT_LINE:-未登记}）"
+  VERDICT_VAL="$(printf '%s' "$VERDICT_LINE" | sed -e 's/^.*\*\*终审裁决\*\*:[[:space:]]*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  VERDICT_VAL="${VERDICT_VAL#✅}"
+  VERDICT_VAL="$(printf '%s' "$VERDICT_VAL" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  if [[ "$VERDICT_VAL" != "准予交付" ]]; then
+    echo "错误: 终审裁决字段值必须精确等于「准予交付」（实际: '${VERDICT_VAL:-未登记}'；含该词元的占位符/否定式串不成立）"
     FAIL=1
   else
     VERDICT_NOTE=" · 终审裁决 准予交付"
