@@ -27,12 +27,13 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3 TDD 循环
-- **当前活跃子任务**: Task P3.1
+- **当前活跃阶段**: P4 双轮对抗终审
+- **当前活跃子任务**: Task P4.1
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
-- **最后一次验证状态**: P0 出口已验证 —— 断链 0、健康度 99.4/100（RFC 落盘）
-- **最新有效提交**: 无（本次提交）
+- **执行后端**: 当前会话内联（用户 2026-10-04 裁定；该结果**未经隔离验证**，故 P4 必须由独立子智能体隔离审查）
+- **最后一次验证状态**: L0 bash -n 全部 OK；L1+L2 pytest skills/ 得到 **167 passed**；L3 端到端冒烟 4/4 PASS；L-Doc 断链 0、健康度 **100/100**
+- **最新有效提交**: 6c41c0b
 - **阻断原因**: 无
 
 ---
@@ -52,14 +53,14 @@
 
 ### 1.1 核心交付物清单
 
-- [ ] **技能规程**: `skills/dual-round-review/SKILL.md`（铁律 5 扩展、新增步骤 1.6 交付凭据归档、步骤 2/3 归档动作、恢复规则、参考导航）
-- [ ] **机械门禁**: `skills/dual-round-review/scripts/check-review-report.sh`（新增）
-- [ ] **上下文脚本**: `skills/dual-round-review/scripts/prepare-review-context.sh`（新增 `--slug` / `--archive-root` 归档 scaffold，默认关闭以保持向后兼容）
-- [ ] **提示词模板**: `skills/dual-round-review/references/round-1-red-team.md`、`references/round-2-meta-architect.md`（归档说明 + R2 文件引用输入契约）
-- [ ] **契约测试**: `skills/dual-round-review/tests/test_check_review_report.py`（新增）、`tests/test_prepare_review_context.py`（扩展）
-- [ ] **架构设计书**: `docs/explanation/architecture/dual-round-review-design.md`（新增交付凭据归档章节 + V2.1.0 变更摘要）
-- [ ] **治理规程**: `docs/GOVERNANCE.md`（目录拓扑补 `docs/project/reviews/`）
-- [ ] **索引与机器地图**: `docs/index.md`（收录 RFC 与本计划）、`docs/llms.txt`（脚本重新生成）
+- [x] **技能规程**: `skills/dual-round-review/SKILL.md`（铁律 5 扩展、新增步骤 1.6 交付凭据归档、步骤 2/3 归档动作、恢复规则、参考导航）
+- [x] **机械门禁**: `skills/dual-round-review/scripts/check-review-report.sh`（新增）
+- [x] **上下文脚本**: `skills/dual-round-review/scripts/prepare-review-context.sh`（新增 `--slug` / `--archive-root` 归档 scaffold，默认关闭以保持向后兼容）
+- [x] **提示词模板**: `skills/dual-round-review/references/round-1-red-team.md`、`references/round-2-meta-architect.md`（归档说明 + R2 文件引用输入契约）
+- [x] **契约测试**: `skills/dual-round-review/tests/test_check_review_report.py`（新增）、`tests/test_prepare_review_context.py`（扩展）
+- [x] **架构设计书**: `docs/explanation/architecture/dual-round-review-design.md`（新增交付凭据归档章节 + V2.1.0 变更摘要）
+- [x] **治理规程**: `docs/GOVERNANCE.md`（目录拓扑补 `docs/project/reviews/`）
+- [x] **索引与机器地图**: `docs/index.md`（收录 RFC 与本计划）、`docs/llms.txt`（脚本重新生成）
 
 ### 1.2 依赖选型与开源调研结论 (Research & Feasibility Spike)
 
@@ -148,7 +149,7 @@
 
 ### P3: 核心功能原子实现 (TDD 循环)
 
-- [ ] **Task P3.1**: 新增《审查归档》机械门禁 `check-review-report.sh`
+- [x] **Task P3.1**: 新增《审查归档》机械门禁 `check-review-report.sh`
   - **涉及文件**: `skills/dual-round-review/scripts/check-review-report.sh`（新增）、`skills/dual-round-review/tests/test_check_review_report.py`（新增）
   - **接口契约**:
     - 用法: `bash check-review-report.sh <归档目录> [--require-verdict=PASS]`
@@ -168,7 +169,7 @@
   - **TDD 步骤**: 🔴 先写失败用例（缺索引字段 / 报告缺失 / 指纹不符 / R1 缺区块 / R2 缺区块 / ID 不对齐 / 围栏内伪造 / verdict 不匹配 / 合法归档通过 / 用法错误退出 2）➔ 🟢 最简实现 ➔ 🔵 对齐 `check-qa-report.sh` 的围栏奇偶 fail-closed 与双层校验结构 ➔ ✅ 测试通过 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/dual-round-review/tests/test_check_review_report.py -q`
 
-- [ ] **Task P3.2**: 扩展 `prepare-review-context.sh` 支持归档 scaffold
+- [x] **Task P3.2**: 扩展 `prepare-review-context.sh` 支持归档 scaffold
   - **涉及文件**: `skills/dual-round-review/scripts/prepare-review-context.sh`、`skills/dual-round-review/tests/test_prepare_review_context.py`
   - **新增接口**:
     - `--slug=<交付单元slug>`: 启用归档 scaffold（**不传则行为完全不变**，保持向后兼容）
@@ -182,7 +183,7 @@
   - **TDD 步骤**: 🔴 先写失败用例（传 slug 生成目录与索引 / 复用既有目录而不重复创建 / 缺 slug 时不生成归档目录（向后兼容）/ 锚点归档索引段不重复追加 / --help 含新选项）➔ 🟢 实现 ➔ 🔵 复用既有 `RECORD_BASE` 与 heredoc 手法 ➔ ✅ 全绿（含既有 7 项）➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/dual-round-review/tests/test_prepare_review_context.py -q`
 
-- [ ] **Task P3.3**: `SKILL.md` 落地归档契约
+- [x] **Task P3.3**: `SKILL.md` 落地归档契约
   - **涉及文件**: `skills/dual-round-review/SKILL.md`
   - **改动点**:
     1. **铁律 5** 由「状态落盘」扩展为「状态落盘 + 凭据归档」，明确**报告全文必须逐字落盘**，禁止以摘要替代；
@@ -193,7 +194,7 @@
     6. **Rationalizations 表** 增补反模式：「报告摘要已落盘，无需归档全文」。
   - **验收方式**: `grep -n '步骤 1.6\|交付凭据归档\|check-review-report' skills/dual-round-review/SKILL.md` 三项均命中；文档门禁通过
 
-- [ ] **Task P3.4**: 提示词模板适配归档契约
+- [x] **Task P3.4**: 提示词模板适配归档契约
   - **涉及文件**: `skills/dual-round-review/references/round-1-red-team.md`、`skills/dual-round-review/references/round-2-meta-architect.md`
   - **改动点**:
     1. R1 模板：在 `Context & Inputs` 增补「报告将被逐字归档至 `<归档路径>`，请严格按 Output Format 输出，区块标题逐字保留」；
@@ -202,7 +203,7 @@
     4. 两个模板的 Output Format **区块标题一律不改**（门禁校验项依赖其逐字一致性）。
   - **验收方式**: `grep -n '归档' skills/dual-round-review/references/round-2-meta-architect.md` 命中；R1/R2 的 Output Format 区块标题与门禁脚本常量逐字比对一致
 
-- [ ] **Task P3.5**: 文档与治理联动同步
+- [x] **Task P3.5**: 文档与治理联动同步
   - **涉及文件**: `docs/explanation/architecture/dual-round-review-design.md`、`docs/GOVERNANCE.md`、`docs/index.md`、`docs/llms.txt`
   - **改动点**:
     1. 设计书：版本升至 V2.1.0，新增「交付凭据归档」章节（三层拓扑 + 命名规范 + 门禁校验项 + V2.1.0 变更摘要行 + 修订历史行）；
@@ -212,9 +213,9 @@
   - **验收命令**: `check-doc-links.py` 退出 0；`audit-doc-health.py` 孤儿文档数归零且得分 ≥ 99
 
 ### P3.5: 集成验证与端到端贯通
-- [ ] **Task P3.5.1**: 运行跨技能集成测试与静态门禁
+- [x] **Task P3.5.1**: 运行跨技能集成测试与静态门禁
   - **验收命令**: `python3 -m pytest skills/ -q`（全绿） + `bash -n` 全部改动脚本（退出 0）
-- [ ] **Task P3.5.2**: L3 端到端冒烟 —— 真实归档目录闭环
+- [x] **Task P3.5.2**: L3 端到端冒烟 —— 真实归档目录闭环
   - **执行**: 在临时目录构造合规归档（README 索引 + R1 报告 + R2 报告）➔ 跑门禁期望退出 0 ➔ 篡改 R1 报告一行 ➔ 重跑门禁期望退出非 0 ➔ 恢复后跑 `--require-verdict=PASS` 期望退出 0
   - **验收方式**: 四个退出码符合预期，且门禁失败信息明确指出缺陷位置
 
@@ -240,9 +241,11 @@
 - **[2026-10-04 00:40] 探查 1（缺口实证）**: `SKILL.md:36` 铁律 5 只要求落盘「每轮结论」；`SKILL.md:91-92` 的锚点 schema 为 8 字段且目录被 `.gitignore:8` 忽略；`.review-context/r1-report-c1252a4.md:3` 自述「全文见会话记录」——坐实报告全文零落盘。
 - **[2026-10-04 00:42] 探查 2（社区惯例核实）**: 未检索到「审查报告应放隐藏目录」的社区标准。dotagents 提案 FAQ 原文为 `Agent-specific skills, personas, and reviewed configuration may be committed`（指**配置**且用 `may`）；本仓库 `README.md:44` 定义 `.agents/skills/` 为 `install.py` 生成的安装态视图且被 `.gitignore:14` 忽略——放审计凭据存在语义冲突且不解决持久化。真正有共识的是 ADR 类决策记录进版本库。
 - **[2026-10-04 00:50] 探查 3（范式对齐）**: `check-qa-report.sh` 确立的已验证范式——退出码 0/1/2、`FAIL` 累积、围栏奇偶 fail-closed、`strip_fences` awk 状态机双层校验、`--require-verdict=PASS` 锚定章节。本计划的门禁脚本逐项对齐，零新增依赖。
+- **[2026-10-04 01:05] 实施记录（内联后端）**: Task P3.1 至 P3.5 全部完成并原子提交（5010de2 至 6c41c0b）。新增 23 项契约测试（22 项门禁校验 + 1 项模板与门禁的标题漂移防护，后者经实跑反证确认非恒真空：改标题即失败）；既有测试零回归（167 passed）。期间断链门禁实测拦截一处真实缺陷——实施计划引用 RFC 的相对路径层级少一层（1f69e64 修复），验证了 L-Doc 门禁的有效性。
 - **[2026-10-04 00:52] 探查 4（门禁基线）**: RFC 落盘后 `check-doc-links.py` 断链 0（18 文件 100% 有效）；`audit-doc-health.py` 得分 99.4/100，唯一扣分项为 RFC-0001 孤儿文档（扣 0.6），由 Task P3.5 的索引收录闭环。
 
 ---
 
 ## 5. 修订历史 (Revision History)
+- **[2026-10-04]**: P3 全部任务完成（内联后端），集成验证全绿，进入 P4 双轮终审。
 - **[2026-10-04]**: 计划创建（P0 出口 RFC-0001 已落盘，P0.5 判为豁免）。
