@@ -94,3 +94,16 @@ docs/
 3. **⛔ 严禁修订历史无限膨胀**：每个文档修订历史表格最多保留 5 条最新记录，超过部分必须裁剪；
 4. **⛔ 严禁瀑布生命周期旧目录**：严禁创建 `docs/requirements/`、`docs/design/`、`docs/planning/` 等旧时代目录，必须归入对应 Diátaxis 象限；
 5. **⛔ 严禁文件命名随意混乱**：一律采用纯小写 `kebab-case` 命名风格（如 `goal-loop-design.md`），禁止驼峰与无规则空格。
+
+---
+
+## 4.1 交付凭据归档豁免 (Evidence Archive Exemption)
+
+`docs/project/reviews/**` 为**交付凭据归档**（`dual-round-review` 审查报告全文，需求源 RFC-0001）：报告必须以**逐字原文**落盘（G1 红线——添加文档控制头会改变内容并污染其 SHA256 指纹），且报告之间不存在 markdown 入链。因此该目录**豁免**以下扫描：
+
+| 工具 | 豁免项 | 理由 |
+| :--- | :--- | :--- |
+| `check-doc-links.py` | 全量跳过（不计入扫描文件数） | 报告正文可能引用归档目录外的相对路径，逐字归档不得改写 |
+| `audit-doc-health.py` | 元数据控制头合规率、孤儿文档计分 | 报告不得添加控制头；报告无 markdown 入链 |
+
+**边界**：豁免仅覆盖 `<docs 根>/project/reviews/**`。归档**索引** `README.md` 仍应携带标准控制头（`prepare-review-context.sh` 的 scaffold 模板已内置），以保持人类可读性。
