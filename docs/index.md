@@ -2,9 +2,9 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.11.0 (收录 frontend-qa-gate 后续待办闭环维护计划)
+> - **当前版本**: V1.14.0 (收录 ADR-0001 交付凭据归档层，RFC-0001 完成结晶流转)
 > - **维护负责人**: 核心架构组
-> - **生效日期**: 2026-09-22
+> - **生效日期**: 2026-10-04
 
 ---
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.14.0** | 2026-10-04 | DSH AI Agent | 王辉 | 新增 ADR-0001 交付凭据归档层（MADR 3.0，固化三方案裁决与四轮审查证据）；RFC-0001 状态流转至 Implemented 并置防腐声明，结晶下沉完成 |
+| **V1.13.0** | 2026-10-04 | DSH AI Agent | 王辉 | 收录 `docs/project/backlog.md` 待办清单（BK-0001~BK-0010，源自 `dual-round-review` V2.1.0 Delta R2 终审）；该交付经四轮对抗审查取得 **Zero Blockers ✅ 准予交付** |
+| **V1.12.0** | 2026-10-04 | DSH AI Agent | 王辉 | 收录 RFC-0001 审查报告持久化归档契约与 `dual-round-review` V2.1.0 实施计划；新增 `docs/project/reviews/` 交付凭据归档象限（报告全文进版本库）+ 结构机械门禁 |
 | **V1.11.0** | 2026-09-22 | DSH AI Agent | 王辉 | 收录 `frontend-qa-gate` 后续待办闭环维护计划（FU-1「：无」误拒 / FU-2 跨技能断链自检 / FU-3 结论列 N/A 白名单）；补 REF 外部文献控制元数据（id/version）；知识库健康度体检 100 分 |
 | **V1.10.0** | 2026-09-21 | DSH AI Agent | 王辉 | 新增 frontend-qa-gate 前端产物验收技能（五域断言 + 证据三态 + 回流路由）及架构设计书、实施计划索引；归档 kejun 前端 AI Coding 风险清单文献；taste Gate A 补强 A3/A4/A6/A7 与 D2 内嵌自检；goal-loop P3.5 增前端验收挂载点 |
-| **V1.9.0** | 2026-09-20 | DSH AI Agent | 王辉 | Critic 门禁加固：实跑反证驱动，绝对评分门禁换代三信号门禁（结构清单 + 盲比 + 人类签收）、版本回执/鉴别力自检/冲突仲裁/评审账本；设计书 V1.1.0 与维护计划索引 |
-| **V1.8.0** | 2026-09-20 | DSH AI Agent | 王辉 | 新增 taste-driven-designer 品味驱动设计技能（双钻流程 + Critic 闭环 + AI Tells 审计）及架构设计书、实施计划索引 |
-| **V1.7.0** | 2026-09-20 | Antigravity AI Agent | 王辉 | 新增外部前沿设计文献《How to Turn Your AI into a World-Class Designer》索引引用 |
 
 ---
 
@@ -37,7 +37,7 @@
 | :--- | :--- | :--- |
 | **`doc-governance`** | 基于 Diátaxis 四象限、RFC 提案结晶模型与 Docs-as-Code 自动化门禁的文档治理体系 | [doc-governance-design.md](./explanation/architecture/doc-governance-design.md) |
 | **`goal-loop`** | 融合 Manus 上下文工程、自适应测试分级裁定与双轮终审的工业级目标收敛循环 | [goal-loop-design.md](./explanation/architecture/goal-loop-design.md) |
-| **`dual-round-review`** | 红队第一性原理穿透 + 元架构师审判校准；支持 Full / Light / Delta 三模式与审查记录锚点 | [dual-round-review-design.md](./explanation/architecture/dual-round-review-design.md) |
+| **`dual-round-review`** | 红队第一性原理穿透 + 元架构师审判校准；支持 Full / Light / Delta 三模式、审查记录锚点与交付凭据归档（报告全文进版本库 + 结构机械门禁） | [dual-round-review-design.md](./explanation/architecture/dual-round-review-design.md) |
 | **`taste-driven-designer`** | 源于 Anshu Chimala AI 双钻模型：外部随机种子 + 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 多模态增强 + 残酷减法 | [taste-driven-designer-design.md](./explanation/architecture/taste-driven-designer-design.md) |
 | **`frontend-qa-gate`** | 源于 kejun《前端开发转向 AI Coding 的常见问题全景》：五域产物断言（响应式 / 状态矩阵 / 无障碍 / 浏览器 / 性能）+ 证据三态 + 回流路由；不做分数判据、不替代人工签收、不侵入代码级审查 | [frontend-qa-gate-design.md](./explanation/architecture/frontend-qa-gate-design.md) |
 
@@ -70,6 +70,10 @@
 | **`frontend-qa-gate` V1.0** | 新建前端产物验收技能：SKILL.md + references + templates + 报告校验脚本 + 契约测试 + 设计书与全套注册；同步补强 taste Gate A 与 goal-loop P3.5 挂载点 | [2026-09-21-frontend-qa-gate.md](./project/plans/2026-09-21-frontend-qa-gate.md) |
 | **`frontend-qa-gate` 后续待办闭环** | 闭环交付遗留三项待办：「：无」声明变体误拒、跨技能相对链接断链自检、结论列 `N/A` 白名单（Maintenance-Patch 通道，已闭环） | [2026-09-21-qa-gate-followups.md](./project/plans/2026-09-21-qa-gate-followups.md) |
 | **Critic 门禁加固 V1.1** | 实跑反证驱动：绝对评分门禁换代三信号门禁，补版本回执/鉴别力自检/冲突仲裁/评审账本 | [2026-09-20-critic-gate-hardening.md](./project/plans/2026-09-20-critic-gate-hardening.md) |
+| **RFC-0001 审查报告归档契约** | 为 `dual-round-review` 引入交付凭据归档：报告全文逐字落盘至版本库归档根 + SHA256 指纹 + 机械门禁（需求确认，状态 In Review） | [RFC-0001-review-report-archive.md](./proposals/RFC-0001-review-report-archive.md) |
+| **`dual-round-review` V2.1.0** | 审查报告持久化归档：三层职责分离（运行时状态/交付凭据/机械门禁）、`check-review-report.sh`、R2 双通道输入、模板↔门禁标题漂移防护（**已终审放行 ✅**，审查归档见 `docs/project/reviews/2026-10-04-review-report-archive/`） | [2026-10-04-review-report-archive.md](./project/plans/2026-10-04-review-report-archive.md) |
+| **项目待办清单 (Backlog)** | 交付遗留待办与技术债，按 BK 编号管理（当前 10 项，源自 `dual-round-review` V2.1.0 Delta R2 终审裁决的「最小修法」批次） | [backlog.md](./project/backlog.md) |
+| **ADR-0001 交付凭据归档层** | 审查凭据按「可否重建」分层：运行时状态留隐藏目录、交付凭据进版本库独立目录并对齐治理豁免语义（MADR 3.0；含四轮对抗审查证据） | [0001-review-evidence-archive-layer.md](./explanation/decisions/0001-review-evidence-archive-layer.md) |
 
 ---
 

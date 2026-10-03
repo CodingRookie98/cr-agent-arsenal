@@ -22,6 +22,21 @@ from typing import Dict, List, Set, Tuple
 
 import importlib.util
 
+# 交付凭据归档（RFC-0001 / R1-2）：审查报告以**逐字原文**归档（G1 红线——添加控制头会
+# 改变内容并污染 SHA256 指纹），报告之间亦无 markdown 入链。故该目录豁免文档治理扫描，
+# 否则每次真实审查交付都会单调侵蚀知识库健康度（外推约 11 次交付即跌破 80 分门槛）。
+# 豁免语义登记见 docs/GOVERNANCE.md。
+EVIDENCE_ARCHIVE_PARTS = ("project", "reviews")
+
+
+def in_evidence_archive(path: Path, root_dir: Path) -> bool:
+    """判定路径是否落在交付凭据归档根内（<root>/project/reviews/**）。"""
+    try:
+        rel = path.relative_to(root_dir)
+    except ValueError:
+        return False
+    return rel.parts[:2] == EVIDENCE_ARCHIVE_PARTS
+
 # 动态加载同目录下带有短横线名称的兄弟脚本
 _scripts_dir = Path(__file__).resolve().parent
 
@@ -97,6 +112,7 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
     all_md_files = [
         f for f in root_dir.rglob("*.md")
         if not any(p in f.parts for p in ("node_modules", ".git", ".next", "dist", "build"))
+        and not in_evidence_archive(f, root_dir)
     ]
 
     total_files = len(all_md_files)
@@ -137,7 +153,8 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         meta = parse_frontmatter(content)
         # 判定控制元数据是否合规：至少包含 version 或 当前版本
         has_version = any(k in meta for k in ("version", "当前版本", "规范版本", "文档版本", "版本"))
-        has_id = any(k in meta for k in ("id", "文档标识", "标识", "name", "doc_id"))
+        # "决策编号" 为 MADR 3.0 的 ADR 标识字段（见 references/adr-specification.md），与 Diátaxis 文档的"文档标识"等价
+        has_id = any(k in meta for k in ("id", "文档标识", "标识", "name", "doc_id", "决策编号"))
         is_archived = "archived" in f.parts
         if (has_version and has_id) or (compat_mode and is_archived):
             valid_meta_files += 1

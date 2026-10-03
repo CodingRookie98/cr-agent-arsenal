@@ -307,5 +307,51 @@ class TestScaffoldDocSh(unittest.TestCase):
         self.assertTrue((self.test_dir / "proposals" / "RFC-0001-test-rfc.md").exists())
 
 
+class TestEvidenceArchiveExemption(unittest.TestCase):
+    """交付凭据归档 docs/project/reviews/** 豁免文档治理扫描（RFC-0001 R1-2 回归）。
+
+    归档文件是**逐字原文**（G1 红线：添加控制头会改变内容并污染 SHA256 指纹），
+    报告之间亦无 markdown 入链；因此必须排除在元数据/孤儿/断链计分之外，
+    否则每次真实审查交付都会单调侵蚀知识库健康度。
+    """
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_reviews_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def _make_archive(self, files=("r1-x.md", "r2-x.md")):
+        arch = self.test_dir / "project" / "reviews" / "2026-01-01-demo"
+        arch.mkdir(parents=True, exist_ok=True)
+        for name in files:
+            (arch / name).write_text("# 审查报告\n\n无控制头的逐字原文\n", encoding="utf-8")
+        return arch
+
+    def test_health_exempts_evidence_archive(self):
+        self._make_archive()
+        (self.test_dir / "index.md").write_text(
+            "> **文档控制信息**\n"
+            "> - **文档标识**: T-2026\n"
+            "> - **当前版本**: V1.0.0\n"
+            "> - **维护负责人**: t\n"
+            "> - **生效日期**: 2026-01-01\n",
+            encoding="utf-8",
+        )
+        res = audit_doc_health.audit_health(self.test_dir)
+        self.assertNotIn("error", res)
+        self.assertEqual(res["total_files"], 1, "归档目录下的报告不得计入文档总数")
+        self.assertEqual(len(res["missing_meta_files"]), 0, "归档报告不得计入缺失控制头")
+        self.assertEqual(len(res["orphan_docs"]), 0, "归档报告不得计入孤儿文档")
+
+    def test_link_check_exempts_evidence_archive(self):
+        self._make_archive(files=("r1-x.md",))
+        (self.test_dir / "project" / "reviews" / "2026-01-01-demo" / "r1-x.md").write_text(
+            "[broken](./nope.md)\n", encoding="utf-8")
+        total, errors, _ = check_doc_links.scan_directory(self.test_dir, [], strict_md=True)
+        self.assertEqual(total, 0, "归档报告不得计入断链扫描文件数")
+        self.assertEqual(errors, 0, "归档报告内的相对链接不得被判为断链")
+
+
 if __name__ == "__main__":
     unittest.main()

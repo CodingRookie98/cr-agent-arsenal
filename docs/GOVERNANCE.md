@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.3.0
+> - **当前版本**: V1.4.0
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-09-10
 
@@ -15,6 +15,7 @@
 | **V1.0.0** | 2026-09-10 | Antigravity AI Agent | 王辉 | 初始化项目级文档治理规程与 CI 门禁标准 |
 | **V1.3.0** | 2026-09-16 | DSH AI Agent | 王辉 | 需求确认文档补「验收口径」（验收人/验收场景/不验收项/口径裁决人）；人机契约字段（需求方/批准人/批准基线）进入计划与 RFC 模板 |
 | **V1.1.0** | 2026-09-16 | DSH AI Agent | 王辉 | RFC 标准模板新增「决策台账与默认假设」段（提案收敛证据链）；明确需求确认文档落位 `docs/proposals/`，继续禁止 `docs/requirements/` 瀑布旧目录 |
+| **V1.4.0** | 2026-10-04 | DSH AI Agent | 王辉 | 目录拓扑补 `docs/project/reviews/`（交付凭据归档：审查报告全文进版本库）与 `docs/project/plans/`；归档根遵循「推荐默认 + 宿主优先」 |
 | **V1.2.0** | 2026-09-16 | DSH AI Agent | 王辉 | RFC 标准模板新增「术语表与易歧义对齐」段（术语先行前置条件）与 `docs/reference/rules/glossary.md` SSOT 落位；决策台账顺延为 §7 |
 
 ---
@@ -65,7 +66,9 @@ docs/
 └── project/                 # 🚀 5. 工程演进与项目管理 (Project Management & Evolution)
     ├── roadmap.md           # 路线图与规划
     ├── changelog.md         # 版本发布日志
-    └── backlog.md           # 待办与技术债清单
+    ├── backlog.md           # 待办与技术债清单
+    ├── plans/               # 实施计划与结项记录
+    └── reviews/             # 交付凭据归档（审查报告全文；推荐默认归档根，schema 见 RFC-0001）
 ```
 
 ---
@@ -91,3 +94,16 @@ docs/
 3. **⛔ 严禁修订历史无限膨胀**：每个文档修订历史表格最多保留 5 条最新记录，超过部分必须裁剪；
 4. **⛔ 严禁瀑布生命周期旧目录**：严禁创建 `docs/requirements/`、`docs/design/`、`docs/planning/` 等旧时代目录，必须归入对应 Diátaxis 象限；
 5. **⛔ 严禁文件命名随意混乱**：一律采用纯小写 `kebab-case` 命名风格（如 `goal-loop-design.md`），禁止驼峰与无规则空格。
+
+---
+
+## 4.1 交付凭据归档豁免 (Evidence Archive Exemption)
+
+`docs/project/reviews/**` 为**交付凭据归档**（`dual-round-review` 审查报告全文，需求源 RFC-0001）：报告必须以**逐字原文**落盘（G1 红线——添加文档控制头会改变内容并污染其 SHA256 指纹），且报告之间不存在 markdown 入链。因此该目录**豁免**以下扫描：
+
+| 工具 | 豁免项 | 理由 |
+| :--- | :--- | :--- |
+| `check-doc-links.py` | 全量跳过（不计入扫描文件数） | 报告正文可能引用归档目录外的相对路径，逐字归档不得改写 |
+| `audit-doc-health.py` | 元数据控制头合规率、孤儿文档计分 | 报告不得添加控制头；报告无 markdown 入链 |
+
+**边界**：豁免仅覆盖 `<docs 根>/project/reviews/**`。归档**索引** `README.md` 仍应携带标准控制头（`prepare-review-context.sh` 的 scaffold 模板已内置），以保持人类可读性。

@@ -7,6 +7,34 @@
 
 set -euo pipefail
 
+# 交付凭据归档辅助函数（RFC-0001 §3.2 / §3.3）
+
+# 解析归档目录：复用既有同 slug 目录（Delta 再循环跨天不分裂），否则按当天日期新建
+resolve_archive_dir() {
+  local root="$1" slug="$2" existing
+  existing="$(ls -d "${root}"/*-"${slug}" 2>/dev/null | sort | tail -n 1 || true)"
+  if [[ -n "${existing}" ]]; then
+    echo "${existing}"
+  else
+    echo "${root}/$(date +%Y-%m-%d)-${slug}"
+  fi
+}
+
+# 锚点内「归档索引」段：存在则先移除旧段再追加，保证幂等
+upsert_archive_index() {
+  local file="$1" archive_dir="$2"
+  if grep -qF '## 归档索引' "${file}"; then
+    awk '/^## 归档索引/{skip=1;next} /^## /{skip=0} !skip' "${file}" > "${file}.tmp"
+    mv "${file}.tmp" "${file}"
+  fi
+  {
+    echo ""
+    echo "## 归档索引 (Archive Index)"
+    echo "- **归档根**: ${archive_dir}"
+    echo "- **轮次台账**: ${archive_dir}README.md"
+  } >> "${file}"
+}
+
 usage() {
   cat <<'EOF'
 用法: prepare-review-context.sh [选项] [BASE_SHA [HEAD_SHA]]
@@ -16,13 +44,18 @@ usage() {
 选项:
   -w, --working      审查工作区未提交改动（默认有改动时自动选择）
   -s, --staged       审查暂存区改动
-      --no-record    只打印上下文，不写审查记录锚点
+      --no-record    只打印上下文，不写审查记录锚点与归档目录
+      --slug=<slug>  启用交付凭据归档 scaffold（RFC-0001）；不传则仅生成运行时锚点
+      --archive-root=<路径>
+                     归档根（默认 docs/project/reviews，仅与 --slug 联动）
   -h, --help         显示本帮助
 
 参数:
   BASE_SHA [HEAD_SHA]  审查指定提交区间（默认 BASE...HEAD）
 
 记录锚点: .review-context/review-<baseline>.md（已 gitignore），供 Delta Re-Loop 读取 Previous Blockers 与迭代计数。
+交付凭据归档: 传 --slug 时另在 <archive-root>/<YYYY-MM-DD>-<slug>/ 生成归档索引 README.md（进版本库，
+              供人类与子智能体阅读报告全文）；复用既有同 slug 目录，Delta 再循环不新建。
 EOF
 }
 
@@ -44,6 +77,8 @@ HEAD_REF=""
 
 # 2. 参数解析（选项顺序无关）
 NO_RECORD=0
+SLUG=""
+ARCHIVE_ROOT="docs/project/reviews"
 POSITIONAL=()
 for arg in "$@"; do
   case "${arg}" in
@@ -51,10 +86,18 @@ for arg in "$@"; do
     -w|--working) MODE="working" ;;
     -s|--staged) MODE="staged" ;;
     --no-record) NO_RECORD=1 ;;
+    --slug=*) SLUG="${arg#--slug=}" ;;
+    --archive-root=*) ARCHIVE_ROOT="${arg#--archive-root=}" ;;
     -*) echo "❌ 错误: 未知选项 '${arg}'" >&2; usage >&2; exit 1 ;;
     *) POSITIONAL+=("${arg}") ;;
   esac
 done
+
+# 2.1 归档参数校验（RFC-0001 §3.3：slug 采用小写 kebab-case）
+if [[ -n "${SLUG}" && ! "${SLUG}" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+  echo "❌ 错误: --slug 必须为小写 kebab-case（^[a-z0-9][a-z0-9-]*$）: ${SLUG}" >&2
+  exit 1
+fi
 
 if [[ "${#POSITIONAL[@]}" -ge 2 ]]; then
   BASE_REF="${POSITIONAL[0]}"
@@ -217,6 +260,49 @@ EOF
     echo "📝 已生成审查记录锚点: ${RECORD_FILE}"
   else
     echo "📝 复用既有审查记录锚点: ${RECORD_FILE}"
+  fi
+
+  # 3.1 交付凭据归档 scaffold（RFC-0001 §3.2/§3.3；未传 --slug 时完全不介入）
+  if [[ -n "${SLUG}" ]]; then
+    ARCHIVE_DIR="$(resolve_archive_dir "${ARCHIVE_ROOT}" "${SLUG}")"
+    if ! mkdir -p "${ARCHIVE_DIR}"; then
+      echo "❌ 错误: 无法创建归档目录: ${ARCHIVE_DIR}" >&2
+      exit 1
+    fi
+    ARCHIVE_INDEX="${ARCHIVE_DIR}/README.md"
+    if [[ ! -f "${ARCHIVE_INDEX}" ]]; then
+      cat > "${ARCHIVE_INDEX}" <<EOF
+# 审查归档 · ${SLUG}
+
+> **文档控制信息**
+> - **文档标识**: REVIEW-ARCHIVE-${SLUG}
+> - **当前版本**: V1.0.0
+> - **维护负责人**: 主调度智能体
+> - **生效日期**: $(date +%Y-%m-%d)
+
+- **交付单元**: ${SLUG}
+- **归档根**: ${ARCHIVE_DIR}/
+- **审查模式**: [full | light | delta]
+- **当前迭代计数**: [0/3]
+- **终审裁决**: 未定（取值必须**精确**为 准予交付 / 阻断交付 / 未定 三者之一；禁止保留占位符方括号或附加解释）
+
+## 轮次台账
+| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+
+## 报告清单
+> 每轮归档后在此追加一行 markdown 链接，供人类与子智能体按路径直达：
+> - [<报告文件>](./<报告文件>)
+
+## 待办与后续轮次
+- [ ] 待第一次审查派发后登记
+EOF
+      echo "📦 已生成归档索引: ${ARCHIVE_INDEX}"
+    else
+      echo "📦 复用既有归档索引: ${ARCHIVE_INDEX}"
+    fi
+    upsert_archive_index "${RECORD_FILE}" "${ARCHIVE_DIR}/"
+    echo "📦 归档根已登记至锚点: ${ARCHIVE_DIR}/"
   fi
 fi
 

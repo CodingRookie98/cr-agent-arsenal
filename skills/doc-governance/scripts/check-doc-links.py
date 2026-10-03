@@ -18,6 +18,22 @@ import urllib.parse
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
 
+# 交付凭据归档（RFC-0001 / R1-2）：审查报告以**逐字原文**归档（G1 红线——添加控制头会
+# 改变内容并污染 SHA256 指纹），报告之间亦无 markdown 入链。故该目录豁免文档治理扫描，
+# 否则每次真实审查交付都会单调侵蚀知识库健康度（外推约 11 次交付即跌破 80 分门槛）。
+# 豁免语义登记见 docs/GOVERNANCE.md。
+EVIDENCE_ARCHIVE_PARTS = ("project", "reviews")
+
+
+def in_evidence_archive(path: Path, root_dir: Path) -> bool:
+    """判定路径是否落在交付凭据归档根内（<root>/project/reviews/**）。"""
+    try:
+        rel = path.relative_to(root_dir)
+    except ValueError:
+        return False
+    return rel.parts[:2] == EVIDENCE_ARCHIVE_PARTS
+
+
 
 def slugify_heading(heading: str) -> str:
     """将 Markdown 标题转换为 GitHub 规范的锚点 Slug"""
@@ -204,6 +220,9 @@ def scan_directory(
         # 跳过 node_modules, .git, .agents 等内部目录
         parts = md_file.parts
         if any(p in parts for p in ("node_modules", ".git", ".next", "dist", "build")):
+            continue
+        # 交付凭据归档（RFC-0001）：逐字原文，豁免断链扫描
+        if in_evidence_archive(md_file, root_dir):
             continue
 
         total_files += 1

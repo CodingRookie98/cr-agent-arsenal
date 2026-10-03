@@ -26,7 +26,9 @@ Your specific mission is to REVIEW THE REVIEWER (审判第一轮审查者). You 
 ```diff
 [INSERT_GIT_DIFF_CONTENT]
 ```
-- **Round 1 Red-Team Review Report**:
+- **Round 1 Red-Team Review Report**（双通道，按宿主能力选择其一）:
+  * **通道 A（优先 · 归档文件）**: 归档路径 `<归档根>/<date>-<slug>/r1-<base7>..<head7>.md`，索引登记 SHA256 前 12 位为 `<hash12>`。**你必须读取该文件原文**，并先核验指纹一致，再展开元审查；若文件不可读或指纹不符，**立即如实报告该事实**，不得据残缺内容臆断。
+  * **通道 B（降级 · 内联全文）**: 仅当宿主无文件读取能力时使用——必须在《终审裁决书》中显式标注「**内联降级**」，并声明未完成指纹核验。
 ```markdown
 [INSERT_ROUND_1_REPORT]
 ```
@@ -60,7 +62,12 @@ Your specific mission is to REVIEW THE REVIEWER (审判第一轮审查者). You 
   2. 本次精准修复补丁（Surgical Fix）是否引入了新的状态死锁、Hook 条件调用或测试隔离破裂？
   3. 是否全盘采纳 R1 意见导致了非必要的破坏性级联重构？
 
-### 6. 终审定性裁决 (Final Verdict Synthesis)
+### 6. 归档与转录保真核验 (Archive Fidelity Check)
+- R1 报告是否以**归档文件通道**传入？若是，指纹是否与索引登记一致？
+- 若走「内联降级」通道，是否已在裁决书中显式标注？**不得**把未经核验的内联内容当作已核验原文。
+- R1 报告结构是否完整（第五节缺陷清单是否含稳定 ID 列）？结构残缺时须在裁决中标注，并降低对其结论的采信度。
+
+### 7. 终审定性裁决 (Final Verdict Synthesis)
 对照 `verdict-rubric.md` 将第一轮报告中的每一个候选缺陷定性为以下三类之一：
 - 🔴 **阻断项 (Blockers, P0/P1)**：经两轮推演坐实的重大逻辑缺陷、竞态死锁、真实安全/内存漏洞、React 生命周期破坏、契约破损或浅层创可贴修复（**必须直接溯源至当前变更**）。
 - 🟡 **优化建议 (Suggestions, P2/P3)**：真实存在但不影响当前正确性与稳定性的非阻断改进，以及扫描中发现的**历史既有技术债**（记入待办，准予放行）。
