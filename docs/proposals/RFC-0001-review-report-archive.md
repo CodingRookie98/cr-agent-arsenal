@@ -2,12 +2,22 @@
 
 > **提案元数据**
 > - **标识**: RFC-202610-REVIEW-ARCHIVE
-> - **当前状态**: In Review
+> - **当前状态**: Implemented
 > - **发起人**: DSH AI Agent
 > - **设计所有者**: 核心架构组
 > - **当前版本**: V0.1.0
 > - **初次发起日期**: 2026-10-04
-> - **定案日期**: 待定
+> - **定案日期**: 2026-10-04
+
+> [!IMPORTANT]
+> **历史溯源备忘 (Archival Notice)**:
+> 本提案已于 2026-10-04 经四轮对抗审查（R1 → R2 → Delta R1 → Delta R2）取得 **Zero Blockers ✅ 准予交付**，并结晶下沉至系统生产基线。
+> - 权威技能规程请查阅: [../../skills/dual-round-review/SKILL.md](../../skills/dual-round-review/SKILL.md)（步骤 1.6 交付凭据归档）
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§4.1 交付凭据归档豁免）
+> - 核心架构决策请查阅: [../explanation/decisions/0001-review-evidence-archive-layer.md](../explanation/decisions/0001-review-evidence-archive-layer.md)
+> - 审查凭据全文请查阅: [../project/reviews/2026-10-04-review-report-archive/README.md](../project/reviews/2026-10-04-review-report-archive/README.md)
+> - 遗留待办请查阅: [../project/backlog.md](../project/backlog.md)（BK-0001~BK-0010）
+> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
 > - **目标版本/里程碑**: `dual-round-review` V2.1.0（审查报告归档契约）
 
 > **文档控制信息**
