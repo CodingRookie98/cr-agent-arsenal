@@ -22,6 +22,21 @@ from typing import Dict, List, Set, Tuple
 
 import importlib.util
 
+# 交付凭据归档（RFC-0001 / R1-2）：审查报告以**逐字原文**归档（G1 红线——添加控制头会
+# 改变内容并污染 SHA256 指纹），报告之间亦无 markdown 入链。故该目录豁免文档治理扫描，
+# 否则每次真实审查交付都会单调侵蚀知识库健康度（外推约 11 次交付即跌破 80 分门槛）。
+# 豁免语义登记见 docs/GOVERNANCE.md。
+EVIDENCE_ARCHIVE_PARTS = ("project", "reviews")
+
+
+def in_evidence_archive(path: Path, root_dir: Path) -> bool:
+    """判定路径是否落在交付凭据归档根内（<root>/project/reviews/**）。"""
+    try:
+        rel = path.relative_to(root_dir)
+    except ValueError:
+        return False
+    return rel.parts[:2] == EVIDENCE_ARCHIVE_PARTS
+
 # 动态加载同目录下带有短横线名称的兄弟脚本
 _scripts_dir = Path(__file__).resolve().parent
 
@@ -97,6 +112,7 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
     all_md_files = [
         f for f in root_dir.rglob("*.md")
         if not any(p in f.parts for p in ("node_modules", ".git", ".next", "dist", "build"))
+        and not in_evidence_archive(f, root_dir)
     ]
 
     total_files = len(all_md_files)
