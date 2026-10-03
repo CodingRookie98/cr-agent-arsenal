@@ -17,7 +17,7 @@
 > - **批准基线**: 分支 `feature/goal-review-report-archive`，基点 `940e0f3`
 > - **状态**: 进行中
 > - **隔离分支**: `feature/goal-review-report-archive`
-> - **需求确认文档**: [RFC-0001 审查报告持久化归档契约](../proposals/RFC-0001-review-report-archive.md)
+> - **需求确认文档**: [RFC-0001 审查报告持久化归档契约](../../proposals/RFC-0001-review-report-archive.md)
 > - **技术调研备忘录**: 豁免（P0.5 未触发——复用 `frontend-qa-gate` 既有的报告校验器范式与 `prepare-review-context.sh` 既有脚本，无新第三方依赖；社区惯例调研已在 P0 阶段随方案拷问完成，见 RFC §4）
 > - **临时 Scratchpad**: `.goal-loop/scratchpad.md`（已被 `.gitignore` 忽略）
 
