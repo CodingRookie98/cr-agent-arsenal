@@ -3,6 +3,7 @@
 覆盖 RFC-0001 §3.5 的 7 项校验规则，每项各配失败与通过用例。
 """
 import hashlib
+import re
 import subprocess
 from pathlib import Path
 
@@ -243,6 +244,39 @@ def test_require_verdict_pass_fails_when_undecided(tmp_path):
     d, _, _ = _build(tmp_path, verdict='未定')
     r = _run(d, '--require-verdict=PASS')
     assert r.returncode == 1
+
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+_TEMPLATES = {
+    'r1': SKILL_DIR / 'references' / 'round-1-red-team.md',
+    'r2': SKILL_DIR / 'references' / 'round-2-meta-architect.md',
+}
+
+
+def _checker_sections():
+    text = SCRIPT.read_text(encoding='utf-8')
+    r1 = text.split('R1_SECTIONS=(')[1].split(')')[0]
+    r2 = text.split('R2_SECTIONS=(')[1].split(')')[0]
+    return (re.findall(r'"(## \d+\.[^"]*)"', r1),
+            re.findall(r'"(## \d+\.[^"]*)"', r2))
+
+
+def _template_headings(path):
+    body = path.read_text(encoding='utf-8').split('## Output Format')[-1]
+    return re.findall(r'^## \d+\. .+$', body, re.M)
+
+
+def test_template_headings_match_checker_constants():
+    """提示词模板的输出区块标题必须以门禁必需常量为前缀——防止两处独立漂移。
+
+    门禁用 grep -F（前缀子串）匹配，故模板标题允许携带英文副标题，但不得改名。
+    """
+    r1_secs, r2_secs = _checker_sections()
+    assert r1_secs and r2_secs, '未能从门禁脚本解析出必需区块常量'
+    for h in _template_headings(_TEMPLATES['r1']):
+        assert any(h.startswith(s) for s in r1_secs), 'R1 模板标题与门禁常量不匹配: ' + h
+    for h in _template_headings(_TEMPLATES['r2']):
+        assert any(h.startswith(s) for s in r2_secs), 'R2 模板标题与门禁常量不匹配: ' + h
 
 
 def test_ledger_rows_outside_section_ignored(tmp_path):

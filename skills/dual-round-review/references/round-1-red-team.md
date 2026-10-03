@@ -28,6 +28,7 @@ Your sole mission is to PROVE THIS IMPLEMENTATION CAN BREAK, find hidden structu
 - **Review Mode**: [FULL_REVIEW (初始全量双轮) | LIGHT_REVIEW (单轮轻量) | DELTA_RE_LOOP (修复后再循环定向复核)]
 - **Previous Blockers (仅在 DELTA_RE_LOOP 模式下传入)**: 上一轮 R2 裁决中定为阻断项的稳定 ID 列表，格式如 `[R1-3, R1-7]`（从 `.review-context/review-<baseline>.md` 读取）；无则填 `无`
 [INSERT_PREVIOUS_BLOCKERS_IF_ANY]
+- **报告归档契约**: 你返回的《第一轮审查报告》将被**逐字归档**至 `<归档根>/<date>-<slug>/r1-<base7>..<head7>.md` 并登记 SHA256 指纹（供 R2 与人类在会话之外阅读）。因此：**严格按下方 Output Format 输出**，五个区块标题**逐字保留**（机械门禁 `check-review-report.sh` 校验其齐备性）；**严禁**以「见上文」「同上」等指代省略内容；**严禁**把区块标题仅写在围栏代码块内（视为无效）。
 - **Git Range**: [BASE_SHA]..[HEAD_SHA]
 - **Diff Stat**:
 ```bash
