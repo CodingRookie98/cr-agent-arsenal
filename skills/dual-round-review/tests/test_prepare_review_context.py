@@ -79,6 +79,111 @@ def test_invalid_base_ref_fails(tmp_path):
     assert r.returncode != 0
 
 
+# --- RFC-0001 交付凭据归档 scaffold -----------------------------------------
+
+ARCHIVE_FIELDS = ['**交付单元**', '**归档根**', '**终审裁决**', '## 轮次台账']
+
+
+def _archive_dirs(repo, root='docs/project/reviews'):
+    base = repo / root
+    if not base.is_dir():
+        return []
+    return sorted(p for p in base.iterdir() if p.is_dir())
+
+
+def test_help_lists_archive_options(tmp_path):
+    r = _run(tmp_path, '--help')
+    assert r.returncode == 0
+    assert '--slug' in r.stdout
+    assert '--archive-root' in r.stdout
+
+
+def test_slug_scaffolds_archive_index(tmp_path):
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=demo-delivery', '--working')
+    assert r.returncode == 0, r.stderr
+    dirs = _archive_dirs(repo)
+    assert len(dirs) == 1
+    assert dirs[0].name.endswith('-demo-delivery')
+    index = dirs[0] / 'README.md'
+    assert index.is_file()
+    text = index.read_text(encoding='utf-8')
+    for field in ARCHIVE_FIELDS:
+        assert field in text
+
+
+def test_archive_root_recorded_in_anchor(tmp_path):
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    _run(repo, '--slug=demo-delivery', '--working')
+    anchor = (repo / '.review-context' / 'review-working.md').read_text(encoding='utf-8')
+    assert '## 归档索引' in anchor
+    assert 'docs/project/reviews/' in anchor
+
+
+def test_archive_dir_reused_on_rerun(tmp_path):
+    """同一 slug 的二次运行（模拟 Delta 再循环）必须复用既有目录，不得按新日期重建。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    _run(repo, '--slug=demo-delivery', '--working')
+    _run(repo, '--slug=demo-delivery', '--working')
+    assert len(_archive_dirs(repo)) == 1
+
+
+def test_archive_index_section_not_duplicated(tmp_path):
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    _run(repo, '--slug=demo-delivery', '--working')
+    _run(repo, '--slug=demo-delivery', '--working')
+    anchor = (repo / '.review-context' / 'review-working.md').read_text(encoding='utf-8')
+    assert anchor.count('## 归档索引') == 1
+
+
+def test_no_slug_creates_no_archive(tmp_path):
+    """不传 --slug 时保持既有行为完全不变（向后兼容）。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--working')
+    assert r.returncode == 0, r.stderr
+    assert not (repo / 'docs').exists()
+
+
+def test_no_record_with_slug_creates_no_archive(tmp_path):
+    """--no-record 语义为「不落盘」，归档 scaffold 必须一并禁用。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=demo-delivery', '--no-record', '--working')
+    assert r.returncode == 0, r.stderr
+    assert not (repo / 'docs').exists()
+
+
+def test_archive_root_override(tmp_path):
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=demo-delivery', '--archive-root=custom/reviews', '--working')
+    assert r.returncode == 0, r.stderr
+    assert len(_archive_dirs(repo, root='custom/reviews')) == 1
+    assert not (repo / 'docs').exists()
+
+
+def test_existing_archive_index_not_overwritten(tmp_path):
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    _run(repo, '--slug=demo-delivery', '--working')
+    index = _archive_dirs(repo)[0] / 'README.md'
+    index.write_text('CUSTOM-INDEX\n', encoding='utf-8')
+    _run(repo, '--slug=demo-delivery', '--working')
+    assert index.read_text(encoding='utf-8') == 'CUSTOM-INDEX\n'
+
+
+def test_invalid_slug_rejected(tmp_path):
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=Bad_Slug', '--working')
+    assert r.returncode != 0
+
+
 def test_help_does_not_scaffold(tmp_path):
     repo = _repo(tmp_path)
     _run(repo, '--help')
