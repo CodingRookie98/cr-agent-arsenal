@@ -33,7 +33,7 @@
 - **外层循环迭代**: 2/5（未触及 3/3 熔断；阻断项已清零、循环收敛）
 - **执行后端**: 当前会话内联（用户 2026-10-04 裁定；该结果**未经隔离验证**，故 P4 必须由独立子智能体隔离审查）
 - **最后一次验证状态**: L0 `bash -n` 全部 OK；L1+L2 `pytest skills/` **177 passed**；**归档放行门禁 `--require-verdict=PASS` rc=0（终审裁决 准予交付）**；L-Doc 断链 0、健康度 **100.0/100**
-- **最新有效提交**: 见结项总结
+- **最新有效提交**: 合并提交 `983cf5b`（已推送 `origin/master`）
 - **阻断原因**: 无
 
 ---
@@ -252,6 +252,8 @@
 **审查机制的自证价值**：本轮交付自身即是 `dual-round-review` 的首次完整 dogfooding —— 审查报告按新契约逐字归档（五份、指纹全部经 R2 独立核验）、R2 经**通道 A（归档文件 + 指纹）**传入而非内联转录。**审查确实击穿了交付自己的两个核心控制面**，证明该机制在真实使用中有效。
 
 **遗留**：10 项待办已按 BK 编号录入 [backlog.md](../../project/backlog.md)（BK-0001~BK-0010），其中 BK-0001/BK-0002 为豁免面补齐（R2 裁定的首批）。
+
+**交付留痕**：功能分支 `feature/goal-review-report-archive`（基点 `940e0f3`）经 `--no-ff` 合并为 `983cf5b` 并推送 `origin/master`，共 19 个提交 / 23 文件 `+2173 −22`；合并后工作区干净、分支已清理。
 
 **结晶去向**：RFC-0001 已置 `Implemented` 并附防腐声明；核心裁决提炼为 [ADR-0001](../../explanation/decisions/0001-review-evidence-archive-layer.md)；治理语义沉淀至 [GOVERNANCE.md §4.1](../../GOVERNANCE.md)；技能契约沉淀至 [SKILL.md 步骤 1.6](../../../skills/dual-round-review/SKILL.md)。
 
