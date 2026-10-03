@@ -153,7 +153,8 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         meta = parse_frontmatter(content)
         # 判定控制元数据是否合规：至少包含 version 或 当前版本
         has_version = any(k in meta for k in ("version", "当前版本", "规范版本", "文档版本", "版本"))
-        has_id = any(k in meta for k in ("id", "文档标识", "标识", "name", "doc_id"))
+        # "决策编号" 为 MADR 3.0 的 ADR 标识字段（见 references/adr-specification.md），与 Diátaxis 文档的"文档标识"等价
+        has_id = any(k in meta for k in ("id", "文档标识", "标识", "name", "doc_id", "决策编号"))
         is_archived = "archived" in f.parts
         if (has_version and has_id) or (compat_mode and is_archived):
             valid_meta_files += 1
