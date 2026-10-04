@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.14.0 (收录 ADR-0001 交付凭据归档层，RFC-0001 完成结晶流转)
+> - **当前版本**: V1.15.0 (收录 Backlog 容量治理与最佳实践调研分析，升级形态 B 工具链)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.15.0** | 2026-10-04 | DSH AI Agent | 王辉 | 收录 Backlog 容量治理真实实践调研与最佳实践深度剖析（精益看板/上下文工程/14项落地法则），升级 doc-governance 至形态 B (Issue-as-File) |
 | **V1.14.0** | 2026-10-04 | DSH AI Agent | 王辉 | 新增 ADR-0001 交付凭据归档层（MADR 3.0，固化三方案裁决与四轮审查证据）；RFC-0001 状态流转至 Implemented 并置防腐声明，结晶下沉完成 |
 | **V1.13.0** | 2026-10-04 | DSH AI Agent | 王辉 | 收录 `docs/project/backlog.md` 待办清单（BK-0001~BK-0010，源自 `dual-round-review` V2.1.0 Delta R2 终审）；该交付经四轮对抗审查取得 **Zero Blockers ✅ 准予交付** |
 | **V1.12.0** | 2026-10-04 | DSH AI Agent | 王辉 | 收录 RFC-0001 审查报告持久化归档契约与 `dual-round-review` V2.1.0 实施计划；新增 `docs/project/reviews/` 交付凭据归档象限（报告全文进版本库）+ 结构机械门禁 |
 | **V1.11.0** | 2026-09-22 | DSH AI Agent | 王辉 | 收录 `frontend-qa-gate` 后续待办闭环维护计划（FU-1「：无」误拒 / FU-2 跨技能断链自检 / FU-3 结论列 N/A 白名单）；补 REF 外部文献控制元数据（id/version）；知识库健康度体检 100 分 |
-| **V1.10.0** | 2026-09-21 | DSH AI Agent | 王辉 | 新增 frontend-qa-gate 前端产物验收技能（五域断言 + 证据三态 + 回流路由）及架构设计书、实施计划索引；归档 kejun 前端 AI Coding 风险清单文献；taste Gate A 补强 A3/A4/A6/A7 与 D2 内嵌自检；goal-loop P3.5 增前端验收挂载点 |
 
 ---
 
@@ -40,6 +40,7 @@
 | **`dual-round-review`** | 红队第一性原理穿透 + 元架构师审判校准；支持 Full / Light / Delta 三模式、审查记录锚点与交付凭据归档（报告全文进版本库 + 结构机械门禁） | [dual-round-review-design.md](./explanation/architecture/dual-round-review-design.md) |
 | **`taste-driven-designer`** | 源于 Anshu Chimala AI 双钻模型：外部随机种子 + 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 多模态增强 + 残酷减法 | [taste-driven-designer-design.md](./explanation/architecture/taste-driven-designer-design.md) |
 | **`frontend-qa-gate`** | 源于 kejun《前端开发转向 AI Coding 的常见问题全景》：五域产物断言（响应式 / 状态矩阵 / 无障碍 / 浏览器 / 性能）+ 证据三态 + 回流路由；不做分数判据、不替代人工签收、不侵入代码级审查 | [frontend-qa-gate-design.md](./explanation/architecture/frontend-qa-gate-design.md) |
+| **Backlog 治理最佳实践** | 结合软件工程史（精益/看板/Shape Up）与 AI 上下文工程的 14 项待办治理法则 | [backlog-governance-best-practices.md](./explanation/analysis/backlog-governance-best-practices.md) |
 
 ---
 
@@ -83,3 +84,4 @@
 | :--- | :--- | :--- |
 | **`ai-world-class-designer`** | Anshu Chimala (前 Apple AI 原型负责人): AI 设计双钻模型、独立 Critic 审稿闭环与 8 大反平庸工程技术 | [how-to-turn-your-ai-into-a-world-class-designer.md](./reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md) |
 | **`ai-coding-frontend-common-problems`** | kejun: AI Coding 前端常见问题全景 —— 研究证据、风险分层与十条可执行防御清单（本文献为本技能需求源） | [ai-coding-frontend-common-problems.md](./reference/articles/ai-coding-frontend-common-problems.md) |
+| **`backlog-capacity-governance`** | 真实实践调研：Linear/Jira/GitHub/actions-stale 的入口收口、自动出清、Close-as-Move 与 index+shard 拓扑 | [2026-10-04-backlog-capacity-governance.md](./research/2026-10-04-backlog-capacity-governance.md) |

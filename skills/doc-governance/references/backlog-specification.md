@@ -98,17 +98,87 @@ docs/project/
 
 ---
 
-### 2.3 扩展形态（形态 B：分片卡片式 / Issue-as-File）
-对于技术债数量庞大（>100 条）、需要数十行技术推演与上下文支撑的核心系统，可扩展为目录分片拓扑：
+### 2.3 形态 B：目录分片式 / Issue-as-File (针对复杂系统与多智能体并行)
+
+对于技术债数量庞大（数十到数百条）、条目本身携带丰富诊断上下文、变异检验要求或实验记录的核心系统，**全量推荐采用形态 B（Issue-as-File）**。
+
+#### 2.3.1 目录拓扑结构
 ```text
 docs/project/backlog/
-├── index.md             # 机器自动生成的活跃待办汇总表 (轻量视图)
-├── active/              # 活跃待办单文件 (一事一议)
+├── index.md             # 机器自动生成的活跃待办汇总视图 (包含仪表盘与分层表格，由脚本自动维护)
+├── active/              # 活跃待办卡片池 (所有处于 active / in-progress 状态的文件)
 │   ├── BK-0157-literature-aggregate-pagination.md
 │   └── BK-0158-field-id-normalization-parity.md
-└── archive/             # 历史已结项归档文件
+└── archive/             # 历史已结项卡片池 (按大版本或年份季度子目录物理隔离)
+    ├── v0.8/
+    │   └── BK-0050-micro-sandbox-env.md
+    └── v0.9/
+        └── BK-0147-payload-volume-fuse.md
 ```
-*每个 `BK-xxxx.md` 使用 YAML Frontmatter 标明元数据，正文记录详细方案、变异测试要求与审查派生细节。*
+
+#### 2.3.2 标准 YAML Frontmatter 元数据契约
+每个待办文件（`active/BK-XXXX-*.md`）顶部必须包含标准化 YAML Frontmatter，确保机器与脚本可精确解析：
+
+```yaml
+---
+id: BK-0157
+title: 文献聚合的服务端分页与截断可观测性
+type: TechDebt          # Feature | TechDebt | Bug | Security | Governance | Performance
+status: active          # active | in-progress | completed | rejected | deferred
+priority: P2            # P0 | P1 | P2 | P3
+trigger: 文献库>1000篇   # 触发条件（可选，非版本背账）
+created_at: 2026-09-23
+updated_at: 2026-10-04
+closed_at: null         # 结项/关闭日期 (YYYY-MM-DD)
+resolution: null        # delivered | superseded | wontfix
+destination: null       # 交付物去向或关联 Commit / PR / 计划文档
+source:
+  - RFC-0003 §8
+  - P3 批次 2 审查报告 R1
+acceptance_criteria:
+  - 命中上限返回 truncated=true 标志与截断告警
+  - 自动化集成用例覆盖边界
+---
+```
+
+#### 2.3.3 正文标准模板
+```markdown
+## 1. 背景与问题陈述
+详细分析当前痛点、历史成因与复现路径。
+
+## 2. 影响面与技术考量
+- 涉及模块 / 接口
+- 并发、锁与安全性考量
+
+## 3. 验收准则与验证设计 (DoD)
+- [ ] 核心功能通过自动化单元测试验证
+- [ ] 边界与变异测试用例双向成立
+
+## 4. 实施去向与结项记录
+*(未开工；结项时由 close 指令自动追加)*
+```
+
+#### 2.3.4 脚本化提取与可编程运维工具 (`manage-backlog.py`)
+为方便人类与 AI 智能体程序化读取、过滤和流转待办，提供配套脚本 `scripts/manage-backlog.py`：
+
+```bash
+# 1. 脚本化提取：查询所有处于 active 状态的 P1 待办 (表格输出)
+python3 skills/doc-governance/scripts/manage-backlog.py list --status active --priority P1
+
+# 2. 机器流转：输出纯 JSON 数组，供其他 AI 智能体消费执行
+python3 skills/doc-governance/scripts/manage-backlog.py list --status active --json
+
+# 3. 快速创建新待办 (自动分配 BK 递增编号，创建卡片并刷新 index.md)
+python3 skills/doc-governance/scripts/manage-backlog.py create "文献地图配色下限加固" \
+  --type TechDebt --priority P2 --source "R1 审查建议" --acceptance "通过 OKLab 色差断言"
+
+# 4. 结项归档 (更新元数据为 completed，物理迁入 archive/v0.9/ 目录并自动刷新 index.md)
+python3 skills/doc-governance/scripts/manage-backlog.py close BK-0157 \
+  --resolution delivered --dest "v0.10.0 I3 交付" --version "v0.10.0"
+
+# 5. 手动重新生成 index.md 索引页
+python3 skills/doc-governance/scripts/manage-backlog.py sync-index
+```
 
 ---
 

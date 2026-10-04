@@ -10,6 +10,7 @@ test_doc_governance_scripts.py - 文档治理自动化脚本全量回归单元�
   5. scaffold-doc.sh: 各类 Diátaxis 与 RFC 脚手架自动化生成。
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -35,6 +36,7 @@ check_doc_links = load_module("check_doc_links", SCRIPTS_DIR / "check-doc-links.
 trim_revision = load_module("trim_revision", SCRIPTS_DIR / "trim-revision.py")
 audit_doc_health = load_module("audit_doc_health", SCRIPTS_DIR / "audit-doc-health.py")
 generate_llms_txt = load_module("generate_llms_txt", SCRIPTS_DIR / "generate-llms-txt.py")
+manage_backlog = load_module("manage_backlog", SCRIPTS_DIR / "manage-backlog.py")
 
 
 class TestCheckDocLinks(unittest.TestCase):
@@ -458,6 +460,210 @@ class TestBacklogAudit(unittest.TestCase):
         self.assertTrue(any("为已完成状态 `[x]`，滞留在热区文档中" in w for w in warnings))
 
 
+class TestManageBacklogAndFormB(unittest.TestCase):
+    """测试 Backlog 形态 B (Issue-as-File) 自动化管理、脚本化提取与健康门禁"""
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_form_b_"))
+        self.manage_script = SCRIPTS_DIR / "manage-backlog.py"
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def run_cli(self, *args) -> subprocess.CompletedProcess:
+        cmd = [sys.executable, str(self.manage_script), "--root", str(self.test_dir)] + list(args)
+        return subprocess.run(cmd, capture_output=True, text=True)
+
+    def test_create_and_sync_index(self):
+        """测试 create 命令自动分配递增 BK 编号、生成标准卡片文件并自动同步 index.md"""
+        # 1. 创建第一条待办
+        res1 = self.run_cli(
+            "create", "多租户行级隔离",
+            "--priority", "P1",
+            "--type", "Feature",
+            "--trigger", "多租户上线时",
+            "--source", "RFC-0001",
+            "--acceptance", "各租户数据物理隔离",
+        )
+        self.assertEqual(res1.returncode, 0, f"创建失败: {res1.stderr}")
+        self.assertIn("BK-0001", res1.stdout)
+
+        active_dir = self.test_dir / "docs" / "project" / "backlog" / "active"
+        self.assertTrue(active_dir.exists())
+        cards_1 = list(active_dir.glob("BK-0001*.md"))
+        self.assertEqual(len(cards_1), 1)
+
+        card_path = cards_1[0]
+        meta, body = manage_backlog.parse_item_file(card_path)
+        self.assertEqual(meta.get("id"), "BK-0001")
+        self.assertEqual(meta.get("title"), "多租户行级隔离")
+        self.assertEqual(meta.get("priority"), "P1")
+        self.assertEqual(meta.get("type"), "Feature")
+        self.assertEqual(meta.get("status"), "active")
+        self.assertEqual(meta.get("trigger"), "多租户上线时")
+        self.assertIn("RFC-0001", meta.get("source", []))
+
+        # 2. 创建第二条待办，验证自增为 BK-0002
+        res2 = self.run_cli(
+            "create", "优化搜索性能",
+            "--priority", "P0",
+            "--type", "Performance",
+        )
+        self.assertEqual(res2.returncode, 0)
+        self.assertIn("BK-0002", res2.stdout)
+
+        # 3. 验证 index.md 已自动生成并包含两项及仪表盘
+        index_file = self.test_dir / "docs" / "project" / "backlog" / "index.md"
+        self.assertTrue(index_file.exists())
+        index_content = index_file.read_text(encoding="utf-8")
+        self.assertIn("BK-0001", index_content)
+        self.assertIn("BK-0002", index_content)
+        self.assertIn("待办健康度仪表盘", index_content)
+
+    def test_list_and_json_parsing(self):
+        """测试 list 命令的脚本化过滤与可编程 JSON 输出"""
+        # 创建测试条目
+        self.run_cli("create", "Bug 修复", "--priority", "P0", "--type", "Bug")
+        self.run_cli("create", "技术债偿还", "--priority", "P2", "--type", "TechDebt")
+
+        # 1. 验证纯 JSON 数组输出
+        res_json = self.run_cli("list", "--json")
+        self.assertEqual(res_json.returncode, 0)
+        items = json.loads(res_json.stdout)
+        self.assertEqual(len(items), 2)
+        ids = {it["id"] for it in items}
+        self.assertEqual(ids, {"BK-0001", "BK-0002"})
+
+        # 2. 验证按优先级过滤
+        res_p0 = self.run_cli("list", "--priority", "P0", "--json")
+        items_p0 = json.loads(res_p0.stdout)
+        self.assertEqual(len(items_p0), 1)
+        self.assertEqual(items_p0[0]["id"], "BK-0001")
+
+        # 3. 验证按类型过滤
+        res_tech = self.run_cli("list", "--type", "TechDebt", "--json")
+        items_tech = json.loads(res_tech.stdout)
+        self.assertEqual(len(items_tech), 1)
+        self.assertEqual(items_tech[0]["id"], "BK-0002")
+
+        # 4. 验证 id-only 格式
+        res_id = self.run_cli("list", "--format", "id-only")
+        self.assertEqual(res_id.returncode, 0)
+        self.assertEqual(res_id.stdout.strip().splitlines(), ["BK-0001", "BK-0002"])
+
+    def test_close_and_reopen_lifecycle(self):
+        """测试待办关闭归档与重新激活的生命周期流转"""
+        self.run_cli("create", "生命周期测试项", "--priority", "P1")
+        active_dir = self.test_dir / "docs" / "project" / "backlog" / "active"
+        archive_dir = self.test_dir / "docs" / "project" / "backlog" / "archive"
+        self.assertEqual(len(list(active_dir.glob("BK-0001*.md"))), 1)
+
+        # 1. 关闭归档
+        res_close = self.run_cli(
+            "close", "BK-0001",
+            "--resolution", "delivered",
+            "--destination", "docs/project/changelog.md (Commit 940e0f3)",
+        )
+        self.assertEqual(res_close.returncode, 0)
+        self.assertEqual(len(list(active_dir.glob("BK-0001*.md"))), 0)
+        archived_files = list(archive_dir.rglob("BK-0001*.md"))
+        self.assertEqual(len(archived_files), 1)
+
+        meta, _ = manage_backlog.parse_item_file(archived_files[0])
+        self.assertEqual(meta.get("status"), "completed")
+        self.assertTrue(meta.get("closed_at"))
+        self.assertEqual(meta.get("resolution"), "delivered")
+        self.assertEqual(meta.get("destination"), "docs/project/changelog.md (Commit 940e0f3)")
+
+        # 2. 重新激活 reopen
+        res_reopen = self.run_cli("reopen", "BK-0001")
+        self.assertEqual(res_reopen.returncode, 0)
+        self.assertEqual(len(list(active_dir.glob("BK-0001*.md"))), 1)
+        self.assertEqual(len(list(archive_dir.rglob("BK-0001*.md"))), 0)
+        reopened_meta, _ = manage_backlog.parse_item_file(list(active_dir.glob("BK-0001*.md"))[0])
+        self.assertEqual(reopened_meta.get("status"), "active")
+        self.assertIsNone(reopened_meta.get("closed_at"))
+
+    def test_audit_health_form_b_compliance_and_warnings(self):
+        """测试 audit-doc-health 对形态 B 拓扑的深度门禁与滞留项告警"""
+        backlog_dir = self.test_dir / "docs" / "project" / "backlog"
+        active_dir = backlog_dir / "active"
+        archive_dir = backlog_dir / "archive" / "2026-Q3"
+        active_dir.mkdir(parents=True)
+        archive_dir.mkdir(parents=True)
+
+        # 合规形态 B 索引与条目
+        (backlog_dir / "index.md").write_text(
+            "> **文档控制信息**\n> - **文档标识**: BK-INDEX\n> - **当前版本**: V2.0.0\n\n# Backlog Index\n",
+            encoding="utf-8",
+        )
+        manage_backlog.dump_item_file(
+            active_dir / "BK-0001-active.md",
+            {"id": "BK-0001", "title": "活跃待办", "status": "active", "priority": "P1", "type": "Feature"},
+            "正文描述",
+        )
+        manage_backlog.dump_item_file(
+            active_dir / "BK-0002-in-prog.md",
+            {"id": "BK-0002", "title": "进行中待办", "status": "in-progress", "priority": "P0", "type": "Security"},
+            "正文描述",
+        )
+        manage_backlog.dump_item_file(
+            archive_dir / "BK-0003-closed.md",
+            {"id": "BK-0003", "title": "已关闭冷待办", "status": "completed", "priority": "P2", "type": "Bug", "closed_at": "2026-09-01"},
+            "正文描述",
+        )
+
+        all_files = [
+            backlog_dir / "index.md",
+            active_dir / "BK-0001-active.md",
+            active_dir / "BK-0002-in-prog.md",
+            archive_dir / "BK-0003-closed.md",
+        ]
+
+        issues, warnings, metrics = audit_doc_health.audit_backlog(self.test_dir, all_files)
+        self.assertEqual(issues, [], f"合规形态 B 不得产生阻断错误: {issues}")
+        self.assertEqual(warnings, [], f"合规形态 B 不得产生告警: {warnings}")
+        self.assertTrue(metrics["has_backlog"])
+        self.assertEqual(metrics["topology"], "form_b")
+        self.assertEqual(metrics["active_total"], 2)
+        self.assertEqual(metrics["in_progress"], 1)
+        self.assertEqual(metrics["planned"], 1)
+        self.assertEqual(metrics["cold_archived_total"], 1)
+
+        # 滞留项测试：在 active 放置 status: completed 的待办
+        manage_backlog.dump_item_file(
+            active_dir / "BK-0004-stale.md",
+            {"id": "BK-0004", "title": "滞留已完成项", "status": "completed", "priority": "P1", "type": "TechDebt"},
+            "滞留正文",
+        )
+        all_files.append(active_dir / "BK-0004-stale.md")
+        issues2, warnings2, metrics2 = audit_doc_health.audit_backlog(self.test_dir, all_files)
+        self.assertEqual(issues2, [])
+        self.assertTrue(any("滞留在 active/ 目录中" in w and "BK-0004" in w for w in warnings2))
+
+    def test_audit_health_form_b_duplicate_id(self):
+        """测试形态 B 检测跨文件编号重复"""
+        backlog_dir = self.test_dir / "docs" / "project" / "backlog"
+        active_dir = backlog_dir / "active"
+        archive_dir = backlog_dir / "archive" / "2026-Q3"
+        active_dir.mkdir(parents=True)
+        archive_dir.mkdir(parents=True)
+
+        # 在 active 与 archive 各放置一个 BK-0001
+        manage_backlog.dump_item_file(
+            active_dir / "BK-0001-dup1.md",
+            {"id": "BK-0001", "title": "重复条目 1", "status": "active"},
+            "正文 1",
+        )
+        manage_backlog.dump_item_file(
+            archive_dir / "BK-0001-dup2.md",
+            {"id": "BK-0001", "title": "重复条目 2", "status": "completed"},
+            "正文 2",
+        )
+        all_files = [active_dir / "BK-0001-dup1.md", archive_dir / "BK-0001-dup2.md"]
+        issues, warnings, metrics = audit_doc_health.audit_backlog(self.test_dir, all_files)
+        self.assertTrue(any("重复" in i and "BK-0001" in i for i in issues))
+
+
 if __name__ == "__main__":
     unittest.main()
-

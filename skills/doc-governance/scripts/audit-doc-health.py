@@ -108,12 +108,13 @@ def parse_frontmatter(content: str) -> Dict[str, str]:
 
 
 def audit_backlog(root_dir: Path, all_md_files: List[Path]) -> Tuple[List[str], List[str], Dict]:
-    """审计 Backlog 体系（冷热分离、编号合规、元数据提取与对账指标自动计算）。"""
+    """审计 Backlog 体系（同时支持形态 B 目录分片卡片式与形态 A 单文件紧凑行）。"""
     backlog_issues: List[str] = []
     backlog_warnings: List[str] = []
     metrics: Dict = {
         "has_backlog": False,
-        "hot_file": None,
+        "mode": None,  # "form_b" 或 "form_a"
+        "location": None,
         "active_total": 0,
         "in_progress": 0,
         "planned": 0,
@@ -123,13 +124,122 @@ def audit_backlog(root_dir: Path, all_md_files: List[Path]) -> Tuple[List[str], 
         "type_counts": {},
     }
 
+    global_seen_ids: Dict[str, Tuple[str, int]] = {}
+
+    # 1. 优先探测形态 B (Issue-as-File 目录分片拓扑)
+    form_b_dir = None
+    for cand in [
+        root_dir / "docs" / "project" / "backlog",
+        root_dir / "project" / "backlog",
+        root_dir / "backlog",
+    ]:
+        if cand.exists() and cand.is_dir() and ((cand / "active").exists() or (cand / "archive").exists() or (cand / "index.md").exists()):
+            form_b_dir = cand
+            break
+
+    if form_b_dir:
+        metrics["has_backlog"] = True
+        metrics["mode"] = "form_b"
+        metrics["topology"] = "form_b"
+        rel_b = str(form_b_dir.relative_to(root_dir))
+        metrics["location"] = rel_b
+
+        active_dir = form_b_dir / "active"
+        archive_dir = form_b_dir / "archive"
+        index_file = form_b_dir / "index.md"
+
+        if not index_file.exists():
+            backlog_warnings.append(
+                f"{rel_b}/index.md 索引文件不存在，建议运行 `python3 scripts/manage-backlog.py sync-index` 生成索引总表"
+            )
+
+        # 扫描 active/ 目录
+        if active_dir.exists():
+            for f in sorted(active_dir.rglob("*.md")):
+                if f.name == "index.md":
+                    continue
+                rel_f = str(f.relative_to(root_dir))
+                content = f.read_text(encoding="utf-8", errors="replace")
+                meta = parse_frontmatter(content)
+
+                # 校验 ID
+                bk_id = meta.get("id") or ""
+                m_file = re.match(r"^BK-(\d{4})", f.name)
+                if not bk_id and m_file:
+                    bk_id = f"BK-{m_file.group(1)}"
+
+                m_id = re.match(r"^BK-(\d{4})$", bk_id)
+                if not m_id:
+                    backlog_issues.append(f"{rel_f} 缺少合规的 BK-XXXX 编号 (当前 id: '{bk_id}')")
+                else:
+                    id_num = m_id.group(1)
+                    if id_num in global_seen_ids:
+                        prev_file, _ = global_seen_ids[id_num]
+                        backlog_issues.append(f"{rel_f} 编号 BK-{id_num} 与 {prev_file} 重复")
+                    else:
+                        global_seen_ids[id_num] = (rel_f, 1)
+
+                    if not f.name.startswith(f"BK-{id_num}"):
+                        backlog_warnings.append(f"{rel_f} 文件名未以编号 BK-{id_num} 开头")
+
+                # 校验状态
+                st = (meta.get("status") or "active").lower()
+                if st in ("completed", "rejected", "closed"):
+                    backlog_warnings.append(
+                        f"{rel_f} 状态为 '{st}'，滞留在 active/ 目录中，建议运行 `manage-backlog.py close {bk_id}` 归档至 archive/"
+                    )
+                    metrics["hot_completed_count"] += 1
+                else:
+                    metrics["active_total"] += 1
+                    if st == "in-progress":
+                        metrics["in_progress"] += 1
+                    else:
+                        metrics["planned"] += 1
+
+                # 提取优先级与类型
+                pri = (meta.get("priority") or "P2").upper()
+                if pri in ("P0", "P1", "P2", "P3"):
+                    metrics["priority_counts"][pri] += 1
+                else:
+                    metrics["priority_counts"]["other"] += 1
+
+                tp = (meta.get("type") or "TechDebt").capitalize()
+                metrics["type_counts"][tp] = metrics["type_counts"].get(tp, 0) + 1
+
+        # 扫描 archive/ 目录
+        if archive_dir.exists():
+            for f in sorted(archive_dir.rglob("*.md")):
+                if f.name == "index.md":
+                    continue
+                rel_f = str(f.relative_to(root_dir))
+                content = f.read_text(encoding="utf-8", errors="replace")
+                meta = parse_frontmatter(content)
+
+                bk_id = meta.get("id") or ""
+                m_file = re.match(r"^BK-(\d{4})", f.name)
+                if not bk_id and m_file:
+                    bk_id = f"BK-{m_file.group(1)}"
+
+                m_id = re.match(r"^BK-(\d{4})$", bk_id)
+                if not m_id:
+                    backlog_issues.append(f"{rel_f} 归档卡片缺少合规的 BK-XXXX 编号")
+                else:
+                    id_num = m_id.group(1)
+                    if id_num in global_seen_ids:
+                        prev_file, _ = global_seen_ids[id_num]
+                        backlog_issues.append(f"{rel_f} 编号 BK-{id_num} 与 {prev_file} 重复")
+                    else:
+                        global_seen_ids[id_num] = (rel_f, 1)
+
+                metrics["cold_archived_total"] += 1
+
+        return backlog_issues, backlog_warnings, metrics
+
+    # 2. 回退探测形态 A (单文件 backlog.md)
     top_checkbox = re.compile(r"^- \[[ xX]\]\s+")
     numbered_checkbox = re.compile(r"^- \[[ xX]\]\s+(?:\*\*)?BK-(\d{4})\b(?:\*\*)?")
     pri_pattern = re.compile(r"\[(?:Pri|Priority):\s*(P[0-3])\]", re.I)
     type_pattern = re.compile(r"\[(?:Type):\s*([a-zA-Z]+)\]", re.I)
-
-    # 全局 BK 编号重号检测池 (BK-ID -> (rel_path, lineno))
-    global_seen_ids: Dict[str, Tuple[str, int]] = {}
 
     hot_backlog = None
     archive_backlogs: List[Path] = []
@@ -144,14 +254,13 @@ def audit_backlog(root_dir: Path, all_md_files: List[Path]) -> Tuple[List[str], 
         return backlog_issues, backlog_warnings, metrics
 
     metrics["has_backlog"] = True
+    metrics["mode"] = "form_a"
 
-    # 1. 扫描热区 backlog.md
     if hot_backlog:
         rel_hot = str(hot_backlog.relative_to(root_dir))
-        metrics["hot_file"] = rel_hot
+        metrics["location"] = rel_hot
         lines = hot_backlog.read_text(encoding="utf-8", errors="replace").splitlines()
 
-        # 热区体积检查 (超 300 行告警)
         if len(lines) > 300:
             backlog_warnings.append(
                 f"{rel_hot} 物理行数达 {len(lines)} 行（超过 300 行红线），请及时将已结项条目归档至 docs/project/archive/"
@@ -200,7 +309,6 @@ def audit_backlog(root_dir: Path, all_md_files: List[Path]) -> Tuple[List[str], 
                 else:
                     metrics["planned"] += 1
 
-                # 提取优先级与类型
                 pri_m = pri_pattern.search(line)
                 if pri_m:
                     pri_val = pri_m.group(1).upper()
@@ -220,7 +328,6 @@ def audit_backlog(root_dir: Path, all_md_files: List[Path]) -> Tuple[List[str], 
                 f"{rel_hot} 活跃条目达 {metrics['active_total']} 条（超过 60 条预警线），请定期执行 Backlog 理牌与修剪"
             )
 
-    # 2. 扫描冷区 archive/backlog-*.md
     for cold_f in archive_backlogs:
         rel_cold = str(cold_f.relative_to(root_dir))
         for lineno, line in enumerate(
@@ -323,6 +430,8 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
     orphan_docs = []
     for f in all_md_files:
         if f.name in ("index.md", "README.md", "GOVERNANCE.md", "llms.txt"):
+            continue
+        if "archive" in f.parts or "archived" in f.parts:
             continue
         if f not in referenced_files:
             orphan_docs.append(f)
@@ -429,16 +538,19 @@ def main():
     # 2.5 Backlog 演进与待办健康仪表盘
     if res.get("backlog_metrics", {}).get("has_backlog"):
         bm = res["backlog_metrics"]
-        print("\n📋 [Backlog 演进与待办健康仪表盘]:")
+        mode_label = "形态 B (Issue-as-File 目录分片)" if bm.get("mode") == "form_b" else "形态 A (单文件紧凑行)"
+        print(f"\n📋 [Backlog 演进与待办健康仪表盘 - {mode_label}]:")
+        if bm.get("location"):
+            print(f"   * 物理拓扑定位: {bm['location']}")
         print(f"   * 活跃待办总数: {bm['active_total']} 条 (进行中: {bm['in_progress']} 条, 计划中: {bm['planned']} 条)")
-        print(f"   * 历史已归档数: {bm['cold_archived_total']} 条 (冷区: docs/project/archive/)")
+        print(f"   * 历史已归档数: {bm['cold_archived_total']} 条 (冷区: archive/)")
         pris = bm["priority_counts"]
         print(f"   * 优先级分布:   P0: {pris.get('P0', 0)}, P1: {pris.get('P1', 0)}, P2: {pris.get('P2', 0)}, P3: {pris.get('P3', 0)}")
         types_str = ", ".join(f"{k}: {v}" for k, v in sorted(bm["type_counts"].items()))
         if types_str:
             print(f"   * 领域类型分布: {types_str}")
         if bm["hot_completed_count"] > 0:
-            print(f"   ⚠️  热区滞留已完成项: {bm['hot_completed_count']} 条 (建议及时迁出归档至 docs/project/archive/)")
+            print(f"   ⚠️  热区滞留已完成项: {bm['hot_completed_count']} 条 (建议及时迁出归档)")
 
     # 3. 诊断发现与整改建议
     print("\n💡 [体检诊断与修复建议]:")

@@ -21,7 +21,7 @@ LANG="zh"
 
 if [ -z "$TYPE" ] || [ -z "$NAME" ]; then
   echo "❌ 错误: 必须指定文档类型和文档名称。"
-  echo "用法: $0 <tutorial|how-to|reference|explanation|adr|rfc> <doc-name> [--root docs] [--lang zh|en]"
+  echo "用法: $0 <tutorial|how-to|reference|explanation|adr|rfc|backlog> <doc-name> [--root docs] [--lang zh|en]"
   exit 1
 fi
 
@@ -343,8 +343,67 @@ EOF
 EOF
     ;;
 
+  backlog)
+    TARGET_DIR="$ROOT_DIR/project/backlog/active"
+    mkdir -p "$TARGET_DIR"
+    NEXT_SEQ=1
+    if [ -d "$ROOT_DIR/project/backlog" ]; then
+      ALL_BKS=$(find "$ROOT_DIR/project/backlog" -name "BK-*.md" 2>/dev/null || true)
+      if [ -n "$ALL_BKS" ]; then
+        MAX_NUM=0
+        for f in $ALL_BKS; do
+          BASE=$(basename "$f")
+          NUM=$(echo "$BASE" | sed -n 's/^BK-\([0-9]\{4\}\).*/\1/p' | sed 's/^0*//')
+          if [ -n "$NUM" ] && [ "$NUM" -gt "$MAX_NUM" ]; then
+            MAX_NUM=$NUM
+          fi
+        done
+        NEXT_SEQ=$((MAX_NUM + 1))
+      fi
+    fi
+    SEQ_PADDED=$(printf "%04d" "$NEXT_SEQ")
+    FILE_PATH="$TARGET_DIR/BK-${SEQ_PADDED}-${NAME}.md"
+    cat <<EOF > "$FILE_PATH"
+---
+id: BK-${SEQ_PADDED}
+title: ${NAME}
+type: TechDebt
+status: active
+priority: P2
+trigger: null
+created_at: ${TODAY}
+updated_at: ${TODAY}
+closed_at: null
+resolution: null
+destination: null
+source: []
+acceptance_criteria:
+  - 核心功能通过自动化单元测试验证
+  - 无架构契约回归与漂移
+---
+
+## 1. 背景与问题陈述
+待补充具体问题描述与上下文分析。
+
+## 2. 影响面与技术考量
+- 涉及模块: 待对齐
+- 风险点: 待评估
+
+## 3. 验收准则与验证设计 (DoD)
+- [ ] 核心功能通过自动化测试 (Exit Code 0)
+- [ ] 门禁检查无告警
+
+## 4. 实施去向与结项记录
+*(未开工)*
+EOF
+    SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "$SCRIPTS_DIR/manage-backlog.py" ]; then
+      python3 "$SCRIPTS_DIR/manage-backlog.py" sync-index --root "$ROOT_DIR" 2>/dev/null || true
+    fi
+    ;;
+
   *)
-    echo "❌ 错误: 未知类型 '$TYPE'。可用类型: tutorial, how-to, reference, explanation, adr, rfc"
+    echo "❌ 错误: 未知类型 '$TYPE'。可用类型: tutorial, how-to, reference, explanation, adr, rfc, backlog"
     exit 1
     ;;
 esac
