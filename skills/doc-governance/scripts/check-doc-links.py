@@ -91,6 +91,8 @@ def extract_headings(file_path: Path) -> Set[str]:
 
 # 匹配 Markdown 链接：[text](target) 或 ![text](target)
 LINK_PATTERN = re.compile(r"!?\[([^\]]*)\]\(([^)]+)\)")
+# 匹配 CommonMark 规范行内代码（由等量反引号包裹的 span，如 `code`、`` `code` `` 等）
+INLINE_CODE_PATTERN = re.compile(r"(?<!`)(`+)(?!`)([\s\S]*?)(?<!`)\1(?!`)")
 
 
 def check_file_links(
@@ -118,8 +120,8 @@ def check_file_links(
         if in_code_block:
             continue
 
-        # 预先剥离被反引号整体包裹的行内代码示例: `[text](target)`
-        sanitized_line = re.sub(r"`\[[^`]*\]\([^`]*\)`", "", line)
+        # 预先剥离被反引号整体包裹的行内代码 (CommonMark 规范中行内代码 span 优先级最高，支持单/多反引号包裹，内容为字面文本不解析为链接/图片)
+        sanitized_line = INLINE_CODE_PATTERN.sub("", line)
 
         for match in LINK_PATTERN.finditer(sanitized_line):
             link_text = match.group(1).strip()

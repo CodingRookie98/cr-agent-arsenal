@@ -108,15 +108,16 @@ docs/
    - 修改前端组件/样式 Token ➔ 联动同步 `reference/ui/`；
    - 核心架构演化 ➔ 编写一条 MADR 决策追加至 `explanation/decisions/`；
 3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并将 `project/backlog.md` 中对应 **BK 编号**的待办移入 `project/archive/` 对应归档文件（置为 `[x]`，标注去向与日期，保持 backlog.md 热区纯粹精炼，规范见 [backlog-specification.md](./references/backlog-specification.md)）；
-4. **版本号与修订历史**：按语义化规范提升受影响文档版本，遵循 **5 条滑动窗口** 追加修订行；
-5. **门禁校验**：运行 `check-doc-links.py` 确保零断链。
+4. **版本号与修订历史**：按语义化规范提升受影响文档版本，遵循 **5 条滑动窗口** 在修订表首行（标准降序）追加修订行，并同步更新控制头版本；
+5. **门禁校验**：运行 `check-doc-links.py` 与 `check-doc-control-sync.py` 确保零断链与零版本漂移。
 
 ### 模式 2：知识库全局巡检与自愈 (Audit & Heal Mode)
 在版本发布前、大型重构后或定期维护时执行：
 1. **断链静态审计**：运行 `python3 scripts/check-doc-links.py --root docs`，检查所有相对链接有效性、`.md` 后缀与锚点是否存在；
-2. **修订历史自动裁剪**：运行 `python3 scripts/trim-revision.py --root docs --fix --keep 5`，自动将所有文档的修订历史截断在最近 5 条；
-3. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档、Backlog 演进指标与基线合规评分；
-4. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt`，刷新供智能体消费的拓扑地图。
+2. **控制头与修订表版本一致性审计**：运行 `python3 scripts/check-doc-control-sync.py --root docs`，断言控制头版本号与修订表最新行版本号严格一致，杜绝版本漂移；
+3. **修订历史自动裁剪**：运行 `python3 scripts/trim-revision.py --root docs --fix --keep 5`，自动将所有文档的修订历史截断在最近 5 条；
+4. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档、Backlog 演进指标、版本一致性与基线合规评分；
+5. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt`，刷新供智能体消费的拓扑地图。
 
 ### 模式 3：脚手架与结晶归档 (Scaffold & Archive Mode)
 1. **新建文档/提案**：运行 `scripts/scaffold-doc.sh <type> <name>`（如 `scaffold-doc.sh rfc canvas-collab`），基于规范模板创建脚手架，自动填入合规控制头；

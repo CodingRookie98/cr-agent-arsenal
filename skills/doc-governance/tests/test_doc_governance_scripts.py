@@ -34,6 +34,7 @@ def load_module(name: str, file_path: Path):
 
 check_doc_links = load_module("check_doc_links", SCRIPTS_DIR / "check-doc-links.py")
 trim_revision = load_module("trim_revision", SCRIPTS_DIR / "trim-revision.py")
+check_doc_control_sync = load_module("check_doc_control_sync", SCRIPTS_DIR / "check-doc-control-sync.py")
 audit_doc_health = load_module("audit_doc_health", SCRIPTS_DIR / "audit-doc-health.py")
 generate_llms_txt = load_module("generate_llms_txt", SCRIPTS_DIR / "generate-llms-txt.py")
 manage_backlog = load_module("manage_backlog", SCRIPTS_DIR / "manage-backlog.py")
@@ -113,6 +114,20 @@ class TestCheckDocLinks(unittest.TestCase):
         errs = check_doc_links.check_file_links(source_file, self.test_dir, cache, strict_md_extension=True)
         self.assertEqual(len(errs), 1)
         self.assertIn("未找到对应锚点 '#ghost-section'", errs[0][3])
+
+    def test_inline_code_and_image_syntax_exempted(self):
+        """测试含图片语法与多反引号的行内代码示例被正确剥离，不误报断链"""
+        source_file = self.test_dir / "source.md"
+        source_file.write_text(
+            "# Source\n\n"
+            "行内图片代码: `![alt](url \"title\")` 以及 `[link](fake.md)`\n"
+            "双反引号代码: `` `[xxx.md](./path/xxx.md)` ``\n"
+            "合规自引用: [Self](./source.md)\n",
+            encoding="utf-8",
+        )
+        cache = {}
+        errs = check_doc_links.check_file_links(source_file, self.test_dir, cache, strict_md_extension=True)
+        self.assertEqual(errs, [], f"期望行内代码中的图片/链接语法被剥离且无断链，但报错: {errs}")
 
 
 class TestTrimRevision(unittest.TestCase):
@@ -238,6 +253,24 @@ class TestAuditDocHealth(unittest.TestCase):
         self.assertEqual(report["total_files"], 3)
         self.assertEqual(report["total_link_errors"], 0)
         self.assertGreaterEqual(report["total_score"], 80.0)
+
+    def test_audit_health_detects_version_drift(self):
+        """测试健康体检能够检测到控制头与修订表版本漂移"""
+        (self.test_dir / "tutorials").mkdir(parents=True, exist_ok=True)
+        t_drift = self.test_dir / "tutorials" / "drift.md"
+        t_drift.write_text(
+            "---\nversion: V2.4.1\nid: TUT-DRIFT\n---\n"
+            "# Drift Tutorial\n\n"
+            "### 修订历史记录\n\n"
+            "| 版本号 | 修订日期 | 修订人 | 修订描述 |\n"
+            "| :--- | :--- | :--- | :--- |\n"
+            "| **V2.4.0** | 2026-10-03 | Agent | 漏登 2.4.1 |\n",
+            encoding="utf-8",
+        )
+        report = audit_doc_health.audit_health(self.test_dir, compat_mode=False)
+        self.assertIn("version_drift_files", report)
+        drift_files = [f[0].name for f in report["version_drift_files"]]
+        self.assertIn("drift.md", drift_files)
 
 
 class TestGenerateLlmsTxt(unittest.TestCase):
@@ -663,6 +696,72 @@ class TestManageBacklogAndFormB(unittest.TestCase):
         all_files = [active_dir / "BK-0001-dup1.md", archive_dir / "BK-0001-dup2.md"]
         issues, warnings, metrics = audit_doc_health.audit_backlog(self.test_dir, all_files)
         self.assertTrue(any("重复" in i and "BK-0001" in i for i in issues))
+
+
+class TestCheckDocControlSync(unittest.TestCase):
+    """测试文档控制头与修订历史版本联动一致性扫描器"""
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_sync_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def test_synced_version(self):
+        """测试控制头版本与修订历史最新行版本一致"""
+        doc = self.test_dir / "doc.md"
+        doc.write_text(
+            "# 某核心设计文档\n\n"
+            "> **文档控制信息**\n"
+            "> - **文档标识**: DOC-001\n"
+            "> - **当前版本**: V1.4.0\n\n"
+            "### 修订历史记录\n\n"
+            "| 版本号 | 修订日期 | 修订人 | 修订描述 |\n"
+            "| :--- | :--- | :--- | :--- |\n"
+            "| **V1.4.0** | 2026-10-04 | Agent | 最新特性升级 |\n"
+            "| **V1.3.0** | 2026-09-16 | Agent | 初始版本 |\n",
+            encoding="utf-8",
+        )
+        is_synced, h_ver, r_ver, err = check_doc_control_sync.check_file_version_sync(doc)
+        self.assertTrue(is_synced)
+        self.assertIsNone(err)
+
+    def test_detect_version_drift(self):
+        """测试控制头版本与修订历史发生漂移（模拟 f994dd0 漏洞场景）"""
+        doc = self.test_dir / "doc.md"
+        doc.write_text(
+            "# 智能体功能设计\n\n"
+            "> **文档控制信息**\n"
+            "> - **文档标识**: DOC-002\n"
+            "> - **当前版本**: V2.4.1\n\n"
+            "### 修订历史记录\n\n"
+            "| 版本号 | 修订日期 | 修订人 | 修订描述 |\n"
+            "| :--- | :--- | :--- | :--- |\n"
+            "| **V2.4.0** | 2026-10-03 | Agent | 历史发布版本（漏记 V2.4.1） |\n",
+            encoding="utf-8",
+        )
+        is_synced, h_ver, r_ver, err = check_doc_control_sync.check_file_version_sync(doc)
+        self.assertFalse(is_synced)
+        self.assertIn("不一致", err)
+        self.assertIn("2.4.1", err)
+        self.assertIn("2.4.0", err)
+
+    def test_scan_version_sync_batch(self):
+        """测试批量扫描与漂移文件收集"""
+        doc_ok = self.test_dir / "ok.md"
+        doc_ok.write_text(
+            "# OK\n\n> - **当前版本**: V1.0.0\n\n### 修订历史\n\n| 版本号 | 描述 |\n| :--- | :--- |\n| V1.0.0 | 初始 |\n",
+            encoding="utf-8",
+        )
+        doc_bad = self.test_dir / "bad.md"
+        doc_bad.write_text(
+            "# BAD\n\n> - **当前版本**: V2.0.0\n\n### 修订历史\n\n| 版本号 | 描述 |\n| :--- | :--- |\n| V1.9.0 | 漏升 |\n",
+            encoding="utf-8",
+        )
+        total, drifts = check_doc_control_sync.scan_version_sync(self.test_dir)
+        self.assertEqual(total, 2)
+        self.assertEqual(len(drifts), 1)
+        self.assertEqual(drifts[0]["file"], "bad.md")
 
 
 if __name__ == "__main__":

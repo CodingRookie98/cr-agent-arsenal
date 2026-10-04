@@ -51,9 +51,11 @@ def _load_sibling(filename: str, module_name: str):
 
 _links_mod = _load_sibling("check-doc-links.py", "check_doc_links")
 _trim_mod = _load_sibling("trim-revision.py", "trim_revision")
+_sync_mod = _load_sibling("check-doc-control-sync.py", "check_doc_control_sync")
 
 scan_directory = _links_mod.scan_directory
 process_markdown_file = _trim_mod.process_markdown_file
+check_file_version_sync = _sync_mod.check_file_version_sync
 
 
 DIATAXIS_CATEGORIES = {
@@ -388,6 +390,7 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
     # 2. 控制信息基线检查
     valid_meta_files = 0
     missing_meta_files = []
+    version_drift_files = []
 
     # 3. 修订历史检查
     overflow_rev_files = []
@@ -418,6 +421,11 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
             valid_meta_files += 1
         else:
             missing_meta_files.append(f)
+
+        # 控制头版本与修订历史最新行版本一致性校验
+        is_synced, h_ver, r_ver, sync_err = check_file_version_sync(f)
+        if not is_synced and sync_err:
+            version_drift_files.append((f, h_ver, r_ver, sync_err))
 
         # 修订历史检查
         overflow, count, _ = process_markdown_file(f, max_keep=5, fix=False)
@@ -481,6 +489,7 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         "root_docs": root_level_docs,
         "valid_meta_files": valid_meta_files,
         "missing_meta_files": missing_meta_files,
+        "version_drift_files": version_drift_files,
         "overflow_rev_files": overflow_rev_files,
         "total_link_errors": total_link_errors,
         "file_link_errors": file_link_errors,
@@ -579,6 +588,17 @@ def main():
         sample = [f.name for f in res["missing_meta_files"][:3]]
         print(f"   ⚠️  存在 {len(res['missing_meta_files'])} 篇文档缺少标准控制头 (示例: {', '.join(sample)})。")
 
+    if res.get("version_drift_files"):
+        has_issues = True
+        print(f"   ⛔ 存在 {len(res['version_drift_files'])} 篇文档控制头与修订历史版本漂移（未同步升级）:")
+        for f, h_ver, r_ver, msg in res["version_drift_files"][:5]:
+            try:
+                rel_f = f.relative_to(root_path)
+            except ValueError:
+                rel_f = f
+            print(f"      - {rel_f}: {msg}")
+        print(f"      运行 `python3 scripts/check-doc-control-sync.py --root {args.root}` 查看详情并修复。")
+
     if res["orphan_docs"]:
         has_issues = True
         sample = [f.name for f in res["orphan_docs"][:3]]
@@ -601,11 +621,16 @@ def main():
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")
 
     print("\n" + "=" * 60)
-    if res["total_score"] >= args.threshold and res["total_link_errors"] == 0 and not res["backlog_issues"]:
+    if (
+        res["total_score"] >= args.threshold
+        and res["total_link_errors"] == 0
+        and not res["backlog_issues"]
+        and not res.get("version_drift_files")
+    ):
         print("🏁 诊断结论: PASS (健康度达标，准予交付) ✅")
         sys.exit(0)
     else:
-        print(f"🚫 诊断结论: REJECTED (得分 {res['total_score']} < 门槛 {args.threshold}，或存在断链/backlog 编号违规，请修复后重测)")
+        print(f"🚫 诊断结论: REJECTED (得分 {res['total_score']} < 门槛 {args.threshold}，或存在断链/版本漂移/backlog 编号违规，请修复后重测)")
         sys.exit(1)
 
 
