@@ -244,16 +244,32 @@ graph LR
 
 ---
 
-## 6. 存量项目平滑迁移指引 (Migration SOP)
+## 6. 存量巨石待办平滑迁移指引 (Migration SOP to Form B)
 
-针对类似 `DeepResearcher` 等已产生巨石待办（200 KB+、数百行大表）的存量项目，执行以下三步外科手术式迁移：
+针对存量项目中已积压形成巨石待办文档（例如 100 KB+、数百行宽表格、冷热数据混杂且含手工加减日记）的场景，提供以下标准迁移 SOP：
 
-1. **第一步：冷热分离切割 (Extract Cold Data)**
-   - 将原文档中的所有已关闭条目（如 `§5 已完成/关闭清单`）提取至新建的 `docs/project/archive/backlog-vX.Y.md` 中；
-   - 将原文档中记录历史已落地特性的技术叙事（如 `§3 当前已落地`）整体合并至 `docs/project/changelog.md` 或版本总结文档中；
-2. **第二步：清理对账日记 (Remove Manual Accounting)**
-   - 彻底删除类似 `§2.1 活跃项快照` 中的手工算术演算段落；
-   - 依赖 `audit-doc-health.py` 自动计算分层数据；
-3. **第三步：活跃待办结构化对齐 (Structure Active Pool)**
-   - 将剩余的活跃条目整理至 `docs/project/backlog.md` 的 `## 进行中` 与 `## 计划中`；
-   - 确认每条活跃待办拥有 `BK-XXXX` 编号，补齐 `Type` 与 `Pri` 标签。
+### 6.1 阶段一：冷热物理切割 (Extract Cold Data)
+1. **冷数据归档**：
+   - 将原文档中所有已关闭/已完成的条目（如“已完成清单”、“已结项分区”）提取移出；
+   - 迁入 `docs/project/backlog/archive/<version>/` 目录（例如 `archive/2026/` 或 `archive/v1.0/`），以卡片或版本归档表形式固化；
+2. **技术叙事归位**：
+   - 将原待办中记录的历史特性叙事、重大重构细节整体合并至 `docs/project/changelog.md` 或独立架构决策记录（ADR），解除待办清单对交付叙事的越权承担；
+3. **消除手工算术日记**：
+   - 彻底删除原文档中各类“活跃待办快照”、“加减对账日记”等手工统计段落，统一交由 `manage-backlog.py` 机器脚本计算。
+
+### 6.2 阶段二：活跃待办卡片化解构 (Decompose to Issue-as-File)
+1. **初始化拓扑**：
+   - 在项目中创建 `docs/project/backlog/active/` 与 `docs/project/backlog/archive/` 目录；
+2. **批量录入活跃卡片**：
+   - 针对仍处于“进行中”或“计划中”的待办，使用 `manage-backlog.py create` 或编写迁移脚本逐条提取生成卡片至 `active/`；
+   - 补齐标准化元数据：稳定 `BK-XXXX` 编号、`priority` (P0-P3)、`type` (Feature/TechDebt/Bug 等)、`source` 与验收准则 (`acceptance_criteria`)；
+3. **移除旧单体文件**：
+   - 确认活跃卡片与冷区归档建立后，物理删除旧版单体 `backlog.md`（或 `后续优化方向汇总.md`）。
+
+### 6.3 阶段三：机器索引构建与门禁验收 (Reindex & Verification)
+1. **自动构建 Active 索引**：
+   - 运行 `python3 scripts/manage-backlog.py --root docs sync-index`，自动生成包含健康仪表盘与按优先级排序的 `docs/project/backlog/index.md`；
+2. **更新全局索引链接**：
+   - 在项目主索引（如 `docs/index.md`）与相关计划文档中，将旧待办文件链接更新为 `docs/project/backlog/index.md`；
+3. **门禁体检验收**：
+   - 运行 `python3 scripts/audit-doc-health.py --root docs`，验证无重复编号、无断链且健康度达到 100 分。
