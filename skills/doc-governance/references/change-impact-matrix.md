@@ -1,7 +1,7 @@
 # 文档-代码全向联动维护矩阵 (Change Impact Matrix Protocol)
 
 > **控制信息**
-> - **规范版本**: V1.1.0
+> - **规范版本**: V1.2.0
 > - **核心原则**: 严禁孤立修改，代码与契约必须双向闭环同步
 > - **适用范围**: 所有涉及功能演进、接口调整与重构任务的代码交付门禁
 
@@ -20,7 +20,7 @@
 
 | 代码或资产变更特征 | 涉及物理路径示例 | 必须同步更新的文档集合 | 验收与门禁标准 (Exit Criteria) |
 |:---|:---|:---|:---|
-| **新增/调整业务功能与规则** | `src/lib/services/*`<br>`src/rules/*` | 1. `docs/reference/rules/`<br>2. `docs/project/changelog.md`<br>3. `docs/project/backlog.md` | 业务规则/状态机图更新，发布日志记录 Commit SHA，对应 BK 编号待办移入已关闭区。 |
+| **新增/调整业务功能与规则** | `src/lib/services/*`<br>`src/rules/*` | 1. `docs/reference/rules/`<br>2. `docs/project/changelog.md`<br>3. `docs/project/backlog.md` | 业务规则/状态机图更新，发布日志记录 Commit SHA，对应 BK 编号待办移入 `docs/project/archive/` 冷区归档。 |
 | **调整 API 接口契约** | `src/controllers/*`<br>`src/api/*`<br>`src/routes/*` | 1. `docs/reference/api/`<br>2. `docs/reference/models/` | Endpoint、HTTP Method、请求/响应 Payload 字段、错误信封 100% 镜像一致。 |
 | **调整数据模型与数据库实体** | `src/models/*`<br>`src/entities/*`<br>`prisma/schema.prisma` | 1. `docs/reference/models/`<br>2. `docs/reference/api/` (若影响响应结构) | 字段命名、类型定义（nullable/optional）、枚举值严格对齐，零遗漏。 |
 | **前端页面、组件与设计 Token** | `src/components/*`<br>`src/styles/tokens.css`<br>`src/app/*` | 1. `docs/reference/ui/`<br>2. `docs/how-to/` (若涉及新页面操作流) | 设计 Token 变量名一致，组件 Props 与事件契约更新，无虚构组件。 |
@@ -44,7 +44,7 @@ git status -s
 
 ### 步骤 2：精准同步受影响文档
 1. **契约镜像同步**：如果是修改了字段名，打开对应的 `reference/api/` 或 `reference/models/`，将变更行更新；
-2. **待办闭环**：打开 `docs/project/backlog.md`，将对应 **BK 编号**的条目（含子项）整体移入 `## 已关闭` 区并置为 `[x]`，行尾追加完成说明与日期（`YYYY-MM-DD`）；Commit SHA 只记录于 changelog，严禁在 backlog 重复维护（编号与格式详见 [backlog-specification.md](./backlog-specification.md)）；
+2. **待办闭环**：打开 `docs/project/backlog.md`，将对应 **BK 编号**的条目（含子项）整体移入冷区 `docs/project/archive/` 对应归档文件（如 `backlog-vX.Y.md`）顶部并置为 `[x]`，行尾追加去向、完成说明与日期（`YYYY-MM-DD`）；Commit SHA 只记录于 changelog，严禁在 backlog 重复维护，保持 backlog.md 热区纯粹精炼（编号与格式详见 [backlog-specification.md](./backlog-specification.md)）；
 3. **日志追加**：打开 `docs/project/changelog.md`，在当前未发布的版本段落中追加一条变更陈述；
 4. **版本号与滑动修订记录**：
    - 检查被修改文档的头部 Frontmatter，根据语义化版本升级（破坏性升 Major，新增功能升 Minor，补丁修正升 Patch）；
@@ -63,5 +63,6 @@ python3 skills/doc-governance/scripts/check-doc-links.py --root docs
 
 | 版本 | 日期 | 变更摘要 |
 |:---|:---|:---|
+| V1.2.0 | 2026-10-04 | 对齐 Backlog V2.0.0 规范：待办闭环全面移入 `docs/project/archive/` 冷区，保持热区待办精炼 |
 | V1.1.0 | 2026-09-30 | 待办闭环对齐 backlog-specification.md：BK 编号引用、移入已关闭区、SHA 单一事实源归于 changelog |
 | V1.0.0 | 2026-09-10 | 初版发布：全向联动矩阵与 Sync SOP |

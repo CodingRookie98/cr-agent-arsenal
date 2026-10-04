@@ -353,5 +353,111 @@ class TestEvidenceArchiveExemption(unittest.TestCase):
         self.assertEqual(errors, 0, "归档报告内的相对链接不得被判为断链")
 
 
+class TestBacklogAudit(unittest.TestCase):
+    """测试 Backlog V2.0.0 冷热分离、编号合规与自动化指标体检"""
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_backlog_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def test_backlog_hot_and_cold_valid(self):
+        """测试合规的热区待办与冷区归档：无断链、无编号重复、指标正确计算"""
+        (self.test_dir / "index.md").write_text(
+            "> **文档控制信息**\n> - **文档标识**: DOC-001\n> - **当前版本**: V1.0.0\n\n"
+            "# Index\n\n- [Backlog](./project/backlog.md)\n- [Archive](./project/archive/backlog-v0.9.md)\n",
+            encoding="utf-8",
+        )
+        proj_dir = self.test_dir / "project"
+        arch_dir = proj_dir / "archive"
+        arch_dir.mkdir(parents=True)
+
+        (proj_dir / "backlog.md").write_text(
+            "> **文档控制信息**\n> - **文档标识**: BK-HOT\n> - **当前版本**: V2.0.0\n\n"
+            "# 待办与后续方向 (Backlog)\n\n"
+            "## 进行中\n"
+            "- [ ] **BK-0003** `[Type:Feature]` `[Pri:P1]` 画布协同通信接线\n"
+            "  - **来源**: RFC-0006\n"
+            "  - **验收**: WS 连接鉴权通过\n\n"
+            "## 计划中\n"
+            "- [ ] **BK-0004** `[Type:TechDebt]` `[Pri:P2]` `[Trigger:多实例部署时]` 状态外置 Redis\n"
+            "  - **来源**: ADR-0001\n"
+            "  - **验收**: 阶段轮询支持多实例\n"
+            "- [ ] **BK-0005** `[Type:Security]` `[Pri:P0]` 凭据泄露防护拦截\n"
+            "  - **来源**: R1 审查建议\n"
+            "  - **验收**: 403 严格 Fail-Closed\n",
+            encoding="utf-8",
+        )
+
+        (arch_dir / "backlog-v0.9.md").write_text(
+            "> **文档控制信息**\n> - **文档标识**: BK-COLD-09\n> - **当前版本**: V1.0.0\n\n"
+            "# v0.9.0 已结项归档\n\n"
+            "- [x] **BK-0001** `[Type:Feature]` `[Pri:P1]` 多租户行级隔离 (2026-09-11 交付)\n"
+            "- [x] **BK-0002** `[Type:Bug]` `[Pri:P0]` 修复登录空指针异常 (2026-09-12 交付)\n",
+            encoding="utf-8",
+        )
+
+        res = audit_doc_health.audit_health(self.test_dir)
+        self.assertNotIn("error", res)
+        self.assertEqual(res["backlog_issues"], [], f"合规用例不应报错: {res['backlog_issues']}")
+        self.assertEqual(res["backlog_warnings"], [], f"合规用例不应告警: {res['backlog_warnings']}")
+
+        bm = res["backlog_metrics"]
+        self.assertTrue(bm["has_backlog"])
+        self.assertEqual(bm["active_total"], 3)
+        self.assertEqual(bm["in_progress"], 1)
+        self.assertEqual(bm["planned"], 2)
+        self.assertEqual(bm["cold_archived_total"], 2)
+        self.assertEqual(bm["hot_completed_count"], 0)
+        self.assertEqual(bm["priority_counts"]["P0"], 1)
+        self.assertEqual(bm["priority_counts"]["P1"], 1)
+        self.assertEqual(bm["priority_counts"]["P2"], 1)
+        self.assertEqual(bm["type_counts"]["Feature"], 1)
+        self.assertEqual(bm["type_counts"]["Techdebt"], 1)
+        self.assertEqual(bm["type_counts"]["Security"], 1)
+
+    def test_backlog_detect_duplicate_and_missing_bk(self):
+        """测试探测热区与冷区之间的跨文件重号以及缺号条目"""
+        proj_dir = self.test_dir / "project"
+        arch_dir = proj_dir / "archive"
+        arch_dir.mkdir(parents=True)
+
+        hot_file = proj_dir / "backlog.md"
+        hot_file.write_text(
+            "- [ ] **BK-0001** 有编号条目\n"
+            "- [ ] 没有编号的条目\n",
+            encoding="utf-8",
+        )
+        cold_file = arch_dir / "backlog-v0.1.md"
+        cold_file.write_text(
+            "- [x] **BK-0001** 冷区重号条目\n",
+            encoding="utf-8",
+        )
+
+        issues, warnings, metrics = audit_doc_health.audit_backlog(self.test_dir, [hot_file, cold_file])
+        self.assertTrue(any("缺 BK-XXXX 编号前缀" in i for i in issues))
+        self.assertTrue(any("编号重复" in i for i in issues))
+
+    def test_backlog_hot_hygiene_warnings(self):
+        """测试热区堆积已完成项 [x]、存在「已关闭」分区与体积超标触发告警"""
+        proj_dir = self.test_dir / "project"
+        proj_dir.mkdir(parents=True)
+
+        hot_file = proj_dir / "backlog.md"
+        content = (
+            "# 待办清单\n\n"
+            "## 进行中\n- [ ] **BK-0001** 进行中项\n\n"
+            "## 已关闭\n- [x] **BK-0002** 已完成项滞留在热区\n"
+        )
+        hot_file.write_text(content, encoding="utf-8")
+
+        issues, warnings, metrics = audit_doc_health.audit_backlog(self.test_dir, [hot_file])
+        self.assertEqual(issues, [])
+        self.assertTrue(any("发现「已关闭」分区" in w for w in warnings))
+        self.assertTrue(any("为已完成状态 `[x]`，滞留在热区文档中" in w for w in warnings))
+
+
 if __name__ == "__main__":
     unittest.main()
+

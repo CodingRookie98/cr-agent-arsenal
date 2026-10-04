@@ -90,8 +90,9 @@ docs/
 │
 └── project/                 # 🚀 5. 工程演进与项目管理 (Project Management & Evolution)
     ├── roadmap.md           # 产品规划路线图与版本里程碑矩阵
-    ├── changelog.md         # 版本发布日志与交付物归档
-    └── backlog.md           # 统一待办清单（BK 编号条目）、后续优化方向与已关闭记录
+    ├── changelog.md         # 版本发布日志与交付物归档（已落地成果技术叙事单一事实源）
+    ├── backlog.md           # 【热区】现役活跃待办清单（进行中+计划中，严禁堆积关闭项，保持精炼）
+    └── archive/             # 【冷区】历史已结项待办归档（按版本 backlog-vX.Y.md 或季度归档沉淀）
 ```
 
 ---
@@ -106,7 +107,7 @@ docs/
    - 修改状态机枚举/守卫 ➔ 联动同步 `reference/rules/`；
    - 修改前端组件/样式 Token ➔ 联动同步 `reference/ui/`；
    - 核心架构演化 ➔ 编写一条 MADR 决策追加至 `explanation/decisions/`；
-3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并将 `project/backlog.md` 中对应 **BK 编号**的待办移入已关闭区（规范见 [backlog-specification.md](./references/backlog-specification.md)）；
+3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并将 `project/backlog.md` 中对应 **BK 编号**的待办移入 `project/archive/` 对应归档文件（置为 `[x]`，标注去向与日期，保持 backlog.md 热区纯粹精炼，规范见 [backlog-specification.md](./references/backlog-specification.md)）；
 4. **版本号与修订历史**：按语义化规范提升受影响文档版本，遵循 **5 条滑动窗口** 追加修订行；
 5. **门禁校验**：运行 `check-doc-links.py` 确保零断链。
 
@@ -114,7 +115,7 @@ docs/
 在版本发布前、大型重构后或定期维护时执行：
 1. **断链静态审计**：运行 `python3 scripts/check-doc-links.py --root docs`，检查所有相对链接有效性、`.md` 后缀与锚点是否存在；
 2. **修订历史自动裁剪**：运行 `python3 scripts/trim-revision.py --root docs --fix --keep 5`，自动将所有文档的修订历史截断在最近 5 条；
-3. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档与基线合规评分；
+3. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档、Backlog 演进指标与基线合规评分；
 4. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt`，刷新供智能体消费的拓扑地图。
 
 ### 模式 3：脚手架与结晶归档 (Scaffold & Archive Mode)
@@ -132,7 +133,8 @@ docs/
 3. **⛔ 严禁断链与隐式概念引用**：文档间引用必须显式保留 `.md` 后缀相对路径（如 `[规则.md](./rules/rule.md)`），严禁使用无后缀的裸路由或绝对物理路径；
 4. **⛔ 严禁修订历史无限膨胀**：修订历史严格限制在最近 5 条之内，超额部分必须裁剪；
 5. **⛔ 严禁破坏工程语言连续性**：既有中文项目必须使用中文撰写正文与解释，严禁中英文混乱杂糅；初期文件命名优先遵循全小写 kebab-case；
-6. **⛔ 严禁单体巨石文档**：单份文档原则上不得超过 800 行，复杂系统必须采用“总纲-子册”拓扑分离。
+6. **⛔ 严禁单体巨石文档**：单份文档原则上不得超过 800 行，复杂系统必须采用“总纲-子册”拓扑分离；
+7. **⛔ 严禁 Backlog 堆积冷数据与手写对账**：`backlog.md` 为热区待办池，严禁堆积已关闭条目（必须随批次迁出至 `archive/`），严禁在 Backlog 记录历史成果实现细节（归 changelog.md），严禁手写自然语言算术对账日记（指标统计由 `audit-doc-health.py` 动态扫描输出）。
 
 ---
 
@@ -144,6 +146,6 @@ docs/
 | [rfc-crystallization-lifecycle.md](./references/rfc-crystallization-lifecycle.md) | 初期提案孵化、多轮对齐与定案结晶下沉完整 SOP |
 | [language-naming-conventions.md](./references/language-naming-conventions.md) | 项目语言习惯继承铁律、文件命名规则与中英文正交分离标准 |
 | [change-impact-matrix.md](./references/change-impact-matrix.md) | 代码修改与契约演进全向联动矩阵与门禁要求 |
-| [backlog-specification.md](./references/backlog-specification.md) | Backlog 条目 BK 编号赋号规则、三区生命周期与关闭闭环格式 |
+| [backlog-specification.md](./references/backlog-specification.md) | Backlog V2.0.0 冷热物理隔离、结构化条目契约、自动化门禁与归档 SOP |
 | [adr-specification.md](./references/adr-specification.md) | MADR 3.0 架构决策记录格式规范与 Append-Only 演进流 |
 | [legacy-migration-guide.md](./references/legacy-migration-guide.md) | 瀑布老目录（requirements, design, planning 等）平滑映射指引 |
