@@ -24,7 +24,17 @@
 
 ## Project Governance (工程演进 / 发布日志与待办)
 
-- [待办与后续方向 (Backlog)](project/backlog.md): （空）
+- [BK-0001-trim-revision-py-archive-exemption](project/backlog/active/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
+- [BK-0002-generate-llms-txt-archive-exemption](project/backlog/active/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
+- [BK-0003-stable-id-pair-by-filename](project/backlog/active/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
+- [BK-0004-unique-verdict-in-review-index](project/backlog/active/BK-0004-unique-verdict-in-review-index.md): id: BK-0004
+- [BK-0005-relative-to-root-path-normalization](project/backlog/active/BK-0005-relative-to-root-path-normalization.md): id: BK-0005
+- [BK-0006-review-gates-negative-test-cases](project/backlog/active/BK-0006-review-gates-negative-test-cases.md): id: BK-0006
+- [BK-0007-governance-doc-exemption-table-accuracy](project/backlog/active/BK-0007-governance-doc-exemption-table-accuracy.md): id: BK-0007
+- [BK-0008-fence-parity-nested-block-guidance](project/backlog/active/BK-0008-fence-parity-nested-block-guidance.md): id: BK-0008
+- [BK-0009-resolve-archive-dir-slug-consistency](project/backlog/active/BK-0009-resolve-archive-dir-slug-consistency.md): id: BK-0009
+- [BK-0010-archive-root-empty-or-illegal-guard](project/backlog/active/BK-0010-archive-root-empty-or-illegal-guard.md): id: BK-0010
+- [项目待办与后续演进清单 (Backlog Index)](project/backlog/index.md): *(当前暂无进行中的待办)*
 - [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。
 - [goal-loop 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-goal-loop-v2-refactor.md): 以下四项经用户确认，作为不可回退的实现约束：
 - [派发超时预算与人机契约字段 实施方案计划 (Implementation Plan)](project/plans/2026-09-16-dispatch-budget-and-human-contract.md)

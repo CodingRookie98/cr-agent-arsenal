@@ -469,6 +469,7 @@ def sync_index(backlog_dir: Path, root_path: Path):
         "",
         "> **文档控制信息**",
         "> - **文档标识**: BK-INDEX-GOV",
+        "> - **当前版本**: V2.0.0 (动态索引)",
         "> - **维护模式**: 机器脚本自动化生成 (请勿手写对账日记，运行 `manage-backlog.py sync-index` 自动刷新)",
         f"> - **更新日期**: {date.today().isoformat()}",
         "",
@@ -525,6 +526,13 @@ def sync_index(backlog_dir: Path, root_path: Path):
         "",
     ])
 
+    custom_tail = ""
+    if index_file.exists():
+        old_text = index_file.read_text(encoding="utf-8", errors="replace")
+        m_tail = re.search(r"(\n---\s*\n\s*##\s*5\..*)$", old_text, re.DOTALL)
+        if m_tail:
+            custom_tail = m_tail.group(1).rstrip()
+
     if archived_items:
         lines.append("| 编号 | 类型 | 标题 | 结项日期 | 结论 | 交付去向 | 归档卡片 |")
         lines.append("| :--- | :--- | :--- | :--- | :--- | :--- | :--- |")
@@ -535,6 +543,9 @@ def sync_index(backlog_dir: Path, root_path: Path):
             lines.append(f"| **{it['id']}** | `{it['type']}` | {it['title']} | {c_date} | {res} | {dest} | [{it['id']}](./{it['rel_path']}) |")
         if len(archived_items) > 20:
             lines.append(f"\n*(其余 {len(archived_items)-20} 条历史记录已隐藏，可查看 archive/ 目录)*")
+
+    if custom_tail:
+        lines.append(custom_tail)
 
     index_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"📊 成功刷新待办索引总表: {index_file.relative_to(root_path)}")

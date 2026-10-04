@@ -16,7 +16,7 @@
 > - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§4.1 交付凭据归档豁免）
 > - 核心架构决策请查阅: [../explanation/decisions/0001-review-evidence-archive-layer.md](../explanation/decisions/0001-review-evidence-archive-layer.md)
 > - 审查凭据全文请查阅: [../project/reviews/2026-10-04-review-report-archive/README.md](../project/reviews/2026-10-04-review-report-archive/README.md)
-> - 遗留待办请查阅: [../project/backlog.md](../project/backlog.md)（BK-0001~BK-0010）
+> - 遗留待办请查阅: [../project/backlog/index.md](../project/backlog/index.md)（BK-0001~BK-0010）
 > 本文件仅作为立项决策历史证据保留，**不再增量维护**。
 > - **目标版本/里程碑**: `dual-round-review` V2.1.0（审查报告归档契约）
 

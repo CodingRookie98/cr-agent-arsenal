@@ -400,6 +400,16 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         content = f.read_text(encoding="utf-8", errors="replace")
         meta = parse_frontmatter(content)
         # 判定控制元数据是否合规：至少包含 version 或 当前版本
+        # 形态 B 待办卡片判定 (backlog/active 或 backlog/archive 下的卡片，以 BK-XXXX 为标识)
+        is_backlog_card = ("backlog" in f.parts and ("active" in f.parts or "archive" in f.parts))
+        if is_backlog_card:
+            has_bk_id = any(k in meta for k in ("id", "文档标识", "标识")) and bool(re.match(r"^BK-\d{4}", str(meta.get("id") or meta.get("文档标识") or "")))
+            if has_bk_id:
+                valid_meta_files += 1
+            else:
+                missing_meta_files.append(f)
+            continue
+
         has_version = any(k in meta for k in ("version", "当前版本", "规范版本", "文档版本", "版本"))
         # "决策编号" 为 MADR 3.0 的 ADR 标识字段（见 references/adr-specification.md），与 Diátaxis 文档的"文档标识"等价
         has_id = any(k in meta for k in ("id", "文档标识", "标识", "name", "doc_id", "决策编号"))
