@@ -258,11 +258,12 @@ def test_round_requires_slug(tmp_path):
 
 
 def test_invalid_round_rejected(tmp_path):
+    """R1-11 回归：原断言 `'r1' in stderr` 无鉴别力——usage 与白名单文案自带 r1。"""
     repo = _repo(tmp_path)
     (repo / 'a.txt').write_text('two\n', encoding='utf-8')
     r = _run(repo, '--slug=demo', '--round=r9', '--working')
     assert r.returncode != 0
-    assert 'r1' in r.stderr
+    assert '取值必须为' in r.stderr
 
 
 def test_round_warns_when_target_exists(tmp_path):
@@ -287,4 +288,72 @@ def test_round_delta_alias_accepted(tmp_path):
     r = _run(repo, '--slug=demo', '--round=delta-r1', '--working')
     assert r.returncode == 0, r.stderr
     assert '/delta-r1-working..' in _report_path(r.stdout)
+
+
+
+# --- RFC-0002 Delta 回归（R1-1 / R1-2 / R1-7）---------------------------------
+
+
+def test_round_requires_explicit_baseline(tmp_path):
+    """R1-1 回归：--round 禁止自适应模式。
+
+    自适应会在两次调用间切换 working/range，使预授权路径漂移、
+    Write-Once 保护静默失效（旧报告成为门禁不可枚举的孤儿）。
+    """
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=demo', '--round=r1')
+    assert r.returncode != 0
+    assert '确定性基线' in r.stderr
+
+
+def test_round_path_is_stable_on_dirty_tree(tmp_path):
+    """R1-1 不变量：显式基线下，工作区被自身产物弄脏**不得**改变预授权路径。
+
+    这是「路径是基线的确定函数」这一不变式的守护测试：R1-1 的漂移正源于
+    scaffold 自身把净树弄脏后，第二次调用落入自适应 working 分支。
+    鉴别 R1-1 本身的断言是 test_round_requires_explicit_baseline（禁止自适应）。
+    """
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    _git(repo, 'commit', '-aqm', 'second')
+    first = _run(repo, '--slug=demo', '--round=r1', 'HEAD~1', 'HEAD')
+    assert first.returncode == 0, first.stderr
+    # 前提校验：首次调用必须确实弄脏了工作区，否则本测试是空洞的
+    assert _git(repo, 'status', '--porcelain').stdout.strip(), \
+        '首次调用应已创建 .review-context/ 与归档目录使工作区变脏'
+    second = _run(repo, '--slug=demo', '--round=r1', 'HEAD~1', 'HEAD')
+    assert second.returncode == 0, second.stderr
+    assert _report_path(first.stdout) == _report_path(second.stdout), (
+        '预授权路径必须是基线的确定函数——脏树导致文件名漂移即 Write-Once 失效')
+
+
+def test_scaffold_index_header_has_write_mode_column(tmp_path):
+    """R1-2 回归：scaffold 产出的台账表头必须含「写入形态」列且列数自洽。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    _run(repo, '--slug=demo', '--working')
+    text = (_archive_dirs(repo)[0] / 'README.md').read_text(encoding='utf-8')
+    assert '| 写入形态 |' in text
+    header = next(l for l in text.splitlines() if l.startswith('| 轮次'))
+    sep = next(l for l in text.splitlines() if l.startswith('| :---'))
+    assert header.count('|') == sep.count('|'), '表头与分隔行列数必须一致'
+
+
+def test_empty_round_rejected(tmp_path):
+    """R1-7 回归：--round= 空值不得被 [[ -n ]] 静默短路。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=demo', '--round=', '--working')
+    assert r.returncode != 0
+    assert '不能为空' in r.stderr
+
+
+def test_round_with_no_record_rejected(tmp_path):
+    """R1-7 回归：--round 与 --no-record 互斥须显式拒绝，而非静默零输出。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=demo', '--round=r1', '--no-record', '--working')
+    assert r.returncode != 0
+    assert '互斥' in r.stderr
 

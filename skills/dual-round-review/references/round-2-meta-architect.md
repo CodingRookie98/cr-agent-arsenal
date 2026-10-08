@@ -24,6 +24,7 @@ Your specific mission is to REVIEW THE REVIEWER (审判第一轮审查者). You 
 - **报告目标路径 (Pre-authorized Report Path)**: `[REPORT_PATH]`
   - 该路径是你本次任务中**唯一**被授权的写入面（见上方 Write-scope constraint）；由编排者确定，**严禁**自选、推断或改写。
   - 归档目录已由编排者预创建：**不要创建任何目录**；写入前先确认目标文件**不存在**，若已存在**严禁覆盖**，中止并如实报告。
+  - **占位符兜底（R1-8 回归）**：若上方路径**仍是未替换的方括号字面量**（即以 `[` 开头、为空、或仍写作 `[REPORT_PATH]`），说明编排者未注入预授权路径——**立即中止**并如实回报「预授权路径未注入」，**严禁**把 `[REPORT_PATH]` 当作文件名在当前目录创建文件（它是合法文件名，会落在唯一授权面之外）。
 - **Git Range**: [BASE_SHA]..[HEAD_SHA]
 - **Git Diff**:
 ```diff

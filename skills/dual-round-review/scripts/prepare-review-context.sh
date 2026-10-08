@@ -81,6 +81,7 @@ HEAD_REF=""
 NO_RECORD=0
 SLUG=""
 ROUND=""
+ROUND_SET=0
 ARCHIVE_ROOT="docs/project/reviews"
 POSITIONAL=()
 for arg in "$@"; do
@@ -90,7 +91,7 @@ for arg in "$@"; do
     -s|--staged) MODE="staged" ;;
     --no-record) NO_RECORD=1 ;;
     --slug=*) SLUG="${arg#--slug=}" ;;
-    --round=*) ROUND="${arg#--round=}" ;;
+    --round=*) ROUND="${arg#--round=}"; ROUND_SET=1 ;;
     --archive-root=*) ARCHIVE_ROOT="${arg#--archive-root=}" ;;
     -*) echo "❌ 错误: 未知选项 '${arg}'" >&2; usage >&2; exit 1 ;;
     *) POSITIONAL+=("${arg}") ;;
@@ -103,8 +104,18 @@ if [[ -n "${SLUG}" && ! "${SLUG}" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
   exit 1
 fi
 
-# 2.2 轮次参数校验（RFC-0002 §3.2 路径预授权：目标路径依赖归档目录，故必须与 --slug 同用）
-if [[ -n "${ROUND}" ]]; then
+# 2.2 轮次参数校验（RFC-0002 §3.2 路径预授权）
+# R1-7 回归：以独立标志记录「选项已出现」——空值 `--round=` 不得被 [[ -n ]] 静默短路，
+# 否则预授权路径静默失联，未替换的 `[REPORT_PATH]` 会被送进派发提示词。
+if [[ "${ROUND_SET}" -eq 1 ]]; then
+  if [[ -z "${ROUND}" ]]; then
+    echo "❌ 错误: --round 值不能为空（空值会静默禁用预授权路径输出）" >&2
+    exit 1
+  fi
+  if [[ "${NO_RECORD}" -eq 1 ]]; then
+    echo "❌ 错误: --round 与 --no-record 互斥（--no-record 不落盘，无预授权写入面可言）" >&2
+    exit 1
+  fi
   if [[ -z "${SLUG}" ]]; then
     echo "❌ 错误: --round 必须与 --slug 同时使用（报告目标路径依赖归档目录）" >&2
     exit 1
@@ -125,6 +136,16 @@ elif [[ "${#POSITIONAL[@]}" -eq 1 ]]; then
   HEAD_REF="HEAD"
   MODE="range"
 elif [[ "${MODE}" != "working" && "${MODE}" != "staged" ]]; then
+  # RFC-0002 §3.2（R1-1 回归）：预授权路径必须是基线的**确定函数**。
+  # 自适应模式会因工作区是否被 scaffold 自身弄脏而在两次调用间漂移
+  # （净树→range 得 r1-<sha>..<sha>；脏树→working 得 r1-working..<sha>），
+  # 使 Write-Once 保护静默失效并产生门禁不可枚举的孤儿报告。
+  if [[ "${ROUND_SET}" -eq 1 ]]; then
+    echo "❌ 错误: --round 要求确定性基线——请显式指定 BASE_SHA [HEAD_SHA]，或显式给出 --working / --staged。" >&2
+    echo "   原因: 自适应模式会在两次调用间切换 working/range，导致预授权路径漂移（RFC-0002 §3.2 / R1-1）。" >&2
+    exit 1
+  fi
+
   # 未指定模式与区间时智能自适应：有改动优先未提交审查，否则检查最近一次提交
   DIRTY_COUNT=$(git status --porcelain | wc -l)
   if [[ "${DIRTY_COUNT}" -gt 0 ]]; then
@@ -304,8 +325,8 @@ EOF
 - **终审裁决**: 未定（取值必须**精确**为 准予交付 / 阻断交付 / 未定 三者之一；禁止保留占位符方括号或附加解释）
 
 ## 轮次台账
-| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
+| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 | 写入形态 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 
 ## 报告清单
 > 每轮归档后在此追加一行 markdown 链接，供人类与子智能体按路径直达：

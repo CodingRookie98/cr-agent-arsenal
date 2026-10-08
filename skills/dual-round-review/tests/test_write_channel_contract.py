@@ -3,6 +3,7 @@
 校验「路径预授权 + 直写通道 + 转录降级登记」在五个载体间保持一致：
 技能规程（SKILL.md）、提示词模板（R1/R2）、机械门禁与上下文脚本。
 """
+import re
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
@@ -125,3 +126,62 @@ def test_prepare_supports_round_argument():
     for r in ('r1', 'r2', 'delta-r1', 'delta-r2'):
         assert r in t, r
     assert 'Write-Once' in t
+
+
+# --- Delta 回归（R1-8 / R1-11）------------------------------------------------
+
+
+def test_templates_guard_unreplaced_placeholder():
+    """R1-8 回归：模板须有「占位符未替换即中止」兜底。
+
+    `[REPORT_PATH]` 是合法文件名——无兜底时合规执行的子智能体会在当前目录
+    真实创建该文件，落在唯一授权写入面之外。
+    """
+    for path in (R1, R2):
+        t = _text(path)
+        assert '占位符兜底' in t, path.name
+        assert '未注入' in t, path.name
+
+
+def test_skill_forbids_isolation_claim():
+    """R1-11 回归：SKILL.md 中每次出现「已隔离」都必须处于**禁止**语境。
+
+    朴素的 `'已隔离' not in t` 会假红——SKILL.md 本身含该词（写在禁令内）。
+    """
+    t = _text(SKILL)
+    hits = [m.start() for m in re.finditer('已隔离', t)]
+    assert hits, 'SKILL.md 应含「严禁表述为已隔离」的诚实边界声明'
+    for pos in hits:
+        window = t[max(0, pos - 40):pos + 12]
+        assert any(k in window for k in ('严禁', '不得', '禁止')), (
+            '出现非禁止语境的「已隔离」表述: …' + window + '…')
+
+
+def test_skill_documents_path_determinism():
+    """R1-1 回归：SKILL.md 必须写明预授权路径是基线的确定函数。"""
+    t = _text(SKILL)
+    assert '路径必须是基线的确定函数' in t
+    assert 'R1-1 回归' in t
+
+
+def test_skill_documents_replay_branch():
+    """R1-1 回归：异常降级表必须覆盖「同轮同基线需重派」。"""
+    assert '同轮同基线需重派' in _text(SKILL)
+
+
+def test_skill_fingerprint_comparison_is_full_value():
+    """R1-4 回归：核验口径必须为 64 位全值比对（12 位仅用于台账登记）。
+
+    修复前 SKILL.md 的核验动作为 `sha256sum <报告文件> | cut -c1-12`，
+    与模板回报的 64 位全值字面永不相等 → 会误判写入异常并作废整轮。
+    """
+    t = _text(SKILL)
+    assert 'R1-4 回归' in t
+    assert 'sha256sum <报告文件> | cut -c1-12' not in t, '核验不得使用截断到 12 位的复算命令'
+    assert 'sha256sum <报告文件>`）并与子智能体回报的**全值**逐字比对' in t
+
+
+def test_checker_uses_last_column_not_fixed_index():
+    """R1-12 回归：写入形态须按末列定位，避免结论含裸竖线时错位。"""
+    assert 'NF>=9' in _text(CHECKER)
+
