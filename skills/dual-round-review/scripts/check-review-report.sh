@@ -12,7 +12,9 @@
 #   4) R1 报告 5 个必需区块齐备，且不得仅出现在围栏代码块内；
 #   5) R2 报告 3 个必需区块齐备（仅当台账含 R2 / delta-r2 行）；
 #   6) 稳定 ID 对齐：R2 裁决明细表出现的 R1-<n> 必须全部存在于 R1 缺陷清单；
-#   7) 可选 --require-verdict=PASS：终审裁决必须为「准予交付」。
+#   7) 可选 --require-verdict=PASS：终审裁决必须为「准予交付」；
+#   8) 写入形态合法性：台账每行的「写入形态」列必须存在且取值 ∈ {direct, transcribed}
+#      （RFC-0002 §3.5——该列是唯一能区分「子智能体直写原文」与「主智能体转录产物」的可审计属性）。
 #
 # 用法: bash check-review-report.sh <归档目录> [--require-verdict=PASS]
 # 退出码: 0 = 通过；1 = 结构/证据缺陷；2 = 用法错误
@@ -47,6 +49,9 @@ usage() {
 
 退出码:
   0 = 通过；1 = 结构/证据缺陷；2 = 用法错误
+
+校验项 8：台账「写入形态」列必须存在且取值 ∈ {direct, transcribed}
+  （RFC-0002 §3.5；缺失或第三值均判失败）
 
 归档目录结构（推荐默认根 docs/project/reviews/）:
   README.md                   归档索引（交付单元 / 归档根 / 终审裁决 + 轮次台账）
@@ -134,19 +139,23 @@ LEDGER="$(awk -v hdr="$LEDGER_HEADER" 'index($0, hdr)==1 {f=1; next} /^## /{f=0}
 ROWS="$(awk -F'|' '
   /^\|/ {
     r=$2; f=$5; h=$6
+    # 末列为「写入形态」（R1-12 回归）：台账行以 | 结尾时存在空的尾随字段，故取 NF-1；
+    # 未以 | 结尾时退回固定第 8 字段。这样结论单元格含裸竖线时也不会错位读取。
+    m=(NF>=9) ? $(NF-1) : $8
     gsub(/^[[:space:]]+/, "", r); gsub(/[[:space:]]+$/, "", r)
+    gsub(/^[[:space:]]+/, "", m); gsub(/[[:space:]]+$/, "", m)
     gsub(/[^A-Za-z0-9._-]/, "", f)
     gsub(/[^0-9a-fA-F]/, "", h)
     if (r !~ /[A-Za-z0-9]/) next
     if (f == "") next
-    print r "\t" f "\t" h
+    print r "\t" f "\t" h "\t" m
   }' <<<"$LEDGER" || true)"
 
 R1_FILES=()
 R2_FILES=()
 REPORT_COUNT=0
 
-while IFS=$'\t' read -r round fname declared; do
+while IFS=$'\t' read -r round fname declared write_mode; do
   [[ -z "$round" ]] && continue
   rfile="$ARCHIVE/$fname"
   if [[ ! -f "$rfile" ]]; then
@@ -166,6 +175,15 @@ while IFS=$'\t' read -r round fname declared; do
     FAIL=1
   elif [[ "${declared,,}" != "${actual12,,}" ]]; then
     echo "错误: SHA256 指纹不一致: $fname 登记 $declared，实际 $actual12"
+    FAIL=1
+  fi
+
+  # --- 8) 写入形态合法性（RFC-0002 §3.5） -------------------------------------
+  if [[ -z "${write_mode}" ]]; then
+    echo "错误: 台账缺少「写入形态」登记: ${fname}（轮次 ${round}；取值须为 direct 或 transcribed）"
+    FAIL=1
+  elif [[ "${write_mode}" != "direct" && "${write_mode}" != "transcribed" ]]; then
+    echo "错误: 写入形态取值非法: ${fname} 登记 '${write_mode}'（合法值仅 direct / transcribed）"
     FAIL=1
   fi
 

@@ -4,18 +4,18 @@
 > - **文档标识**: BK-INDEX-GOV
 > - **当前版本**: V2.0.0 (动态索引)
 > - **维护模式**: 机器脚本自动化生成 (请勿手写对账日记，运行 `manage-backlog.py sync-index` 自动刷新)
-> - **更新日期**: 2026-10-04
+> - **更新日期**: 2026-10-08
 
 ---
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **10** 项 (进行中: 0, 计划中: 10)
+- **现役活跃待办**: **15** 项 (进行中: 0, 计划中: 15)
 - **历史已归档项**: **0** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 4 | 6 |
+| **活跃数量** | 0 | 0 | 4 | 11 |
 
 ---
 
@@ -39,6 +39,11 @@
 | **BK-0008** | `P3` | `Governance` | 围栏奇偶告警文案补充嵌套演示规避提示 | — | [BK-0008](./active/BK-0008-fence-parity-nested-block-guidance.md) |
 | **BK-0009** | `P3` | `Bug` | resolve_archive_dir 增加交付单元与请求 slug 一致性校验 | — | [BK-0009](./active/BK-0009-resolve-archive-dir-slug-consistency.md) |
 | **BK-0010** | `P3` | `Security` | archive-root 空值与非法形态防御校验 | — | [BK-0010](./active/BK-0010-archive-root-empty-or-illegal-guard.md) |
+| **BK-0011** | `P3` | `TechDebt` | 审查归档契约测试的弱断言改为行为断言 | — | [BK-0011](./active/BK-0011-review-contract-weak-assertions.md) |
+| **BK-0012** | `P3` | `TechDebt` | 门禁枚举未登记报告文件或收紧 --round 命名输入 | — | [BK-0012](./active/BK-0012-enumerate-unregistered-reports.md) |
+| **BK-0013** | `P3` | `TechDebt` | 台账末列定位对无尾随竖线且结论含裸竖线的行误判 | — | [BK-0013](./active/BK-0013-trailing-pipe-column-misparse.md) |
+| **BK-0014** | `P3` | `Governance` | 作废轮次的版本库留痕缺失 | — | [BK-0014](./active/BK-0014-voided-round-repo-trace.md) |
+| **BK-0015** | `P3` | `TechDebt` | working/staged 模式的报告命名与 base7..head7 模板字面不符 | — | [BK-0015](./active/BK-0015-working-staged-naming-literal.md) |
 
 ---
 

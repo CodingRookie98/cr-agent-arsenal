@@ -46,6 +46,8 @@ usage() {
   -s, --staged       审查暂存区改动
       --no-record    只打印上下文，不写审查记录锚点与归档目录
       --slug=<slug>  启用交付凭据归档 scaffold（RFC-0001）；不传则仅生成运行时锚点
+      --round=<轮次>  输出本轮「预授权报告目标路径」（RFC-0002 子智能体直写通道）；
+                     取值 r1|r2|delta-r1|delta-r2，必须与 --slug 同时使用
       --archive-root=<路径>
                      归档根（默认 docs/project/reviews，仅与 --slug 联动）
   -h, --help         显示本帮助
@@ -78,6 +80,8 @@ HEAD_REF=""
 # 2. 参数解析（选项顺序无关）
 NO_RECORD=0
 SLUG=""
+ROUND=""
+ROUND_SET=0
 ARCHIVE_ROOT="docs/project/reviews"
 POSITIONAL=()
 for arg in "$@"; do
@@ -87,6 +91,7 @@ for arg in "$@"; do
     -s|--staged) MODE="staged" ;;
     --no-record) NO_RECORD=1 ;;
     --slug=*) SLUG="${arg#--slug=}" ;;
+    --round=*) ROUND="${arg#--round=}"; ROUND_SET=1 ;;
     --archive-root=*) ARCHIVE_ROOT="${arg#--archive-root=}" ;;
     -*) echo "❌ 错误: 未知选项 '${arg}'" >&2; usage >&2; exit 1 ;;
     *) POSITIONAL+=("${arg}") ;;
@@ -99,6 +104,29 @@ if [[ -n "${SLUG}" && ! "${SLUG}" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
   exit 1
 fi
 
+# 2.2 轮次参数校验（RFC-0002 §3.2 路径预授权）
+# R1-7 回归：以独立标志记录「选项已出现」——空值 `--round=` 不得被 [[ -n ]] 静默短路，
+# 否则预授权路径静默失联，未替换的 `[REPORT_PATH]` 会被送进派发提示词。
+if [[ "${ROUND_SET}" -eq 1 ]]; then
+  if [[ -z "${ROUND}" ]]; then
+    echo "❌ 错误: --round 值不能为空（空值会静默禁用预授权路径输出）" >&2
+    exit 1
+  fi
+  if [[ "${NO_RECORD}" -eq 1 ]]; then
+    echo "❌ 错误: --round 与 --no-record 互斥（--no-record 不落盘，无预授权写入面可言）" >&2
+    exit 1
+  fi
+  if [[ -z "${SLUG}" ]]; then
+    echo "❌ 错误: --round 必须与 --slug 同时使用（报告目标路径依赖归档目录）" >&2
+    exit 1
+  fi
+  case "${ROUND}" in
+    r1|r2|delta-r1|delta-r2) ;;
+    *) echo "❌ 错误: --round 取值必须为 r1|r2|delta-r1|delta-r2，实际: ${ROUND}" >&2
+       exit 1 ;;
+  esac
+fi
+
 if [[ "${#POSITIONAL[@]}" -ge 2 ]]; then
   BASE_REF="${POSITIONAL[0]}"
   HEAD_REF="${POSITIONAL[1]}"
@@ -108,6 +136,16 @@ elif [[ "${#POSITIONAL[@]}" -eq 1 ]]; then
   HEAD_REF="HEAD"
   MODE="range"
 elif [[ "${MODE}" != "working" && "${MODE}" != "staged" ]]; then
+  # RFC-0002 §3.2（R1-1 回归）：预授权路径必须是基线的**确定函数**。
+  # 自适应模式会因工作区是否被 scaffold 自身弄脏而在两次调用间漂移
+  # （净树→range 得 r1-<sha>..<sha>；脏树→working 得 r1-working..<sha>），
+  # 使 Write-Once 保护静默失效并产生门禁不可枚举的孤儿报告。
+  if [[ "${ROUND_SET}" -eq 1 ]]; then
+    echo "❌ 错误: --round 要求确定性基线——请显式指定 BASE_SHA [HEAD_SHA]，或显式给出 --working / --staged。" >&2
+    echo "   原因: 自适应模式会在两次调用间切换 working/range，导致预授权路径漂移（RFC-0002 §3.2 / R1-1）。" >&2
+    exit 1
+  fi
+
   # 未指定模式与区间时智能自适应：有改动优先未提交审查，否则检查最近一次提交
   DIRTY_COUNT=$(git status --porcelain | wc -l)
   if [[ "${DIRTY_COUNT}" -gt 0 ]]; then
@@ -287,8 +325,8 @@ EOF
 - **终审裁决**: 未定（取值必须**精确**为 准予交付 / 阻断交付 / 未定 三者之一；禁止保留占位符方括号或附加解释）
 
 ## 轮次台账
-| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
+| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 | 写入形态 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 
 ## 报告清单
 > 每轮归档后在此追加一行 markdown 链接，供人类与子智能体按路径直达：
@@ -303,6 +341,17 @@ EOF
     fi
     upsert_archive_index "${RECORD_FILE}" "${ARCHIVE_DIR}/"
     echo "📦 归档根已登记至锚点: ${ARCHIVE_DIR}/"
+
+    # 3.2 预授权报告目标路径（RFC-0002 §3.2）：派发提示词内联该字面值，
+    #     子智能体不得自选/推断/改写路径；目标文件一律**不预创建**（Write-Once 保护）。
+    if [[ -n "${ROUND}" ]]; then
+      REPORT_PATH="${ARCHIVE_DIR}/${ROUND}-${RECORD_BASE:-unknown}..${RECORD_HEAD:-unknown}.md"
+      echo "📄 本轮报告目标路径 (预授权写入面): ${REPORT_PATH}"
+      if [[ -e "${REPORT_PATH}" ]]; then
+        echo "⚠️ 目标文件已存在（Write-Once 保护）: ${REPORT_PATH}"
+        echo "   ↳ 视为基线漂移缺陷，严禁覆盖；请排查命名冲突后再派发。"
+      fi
+    fi
   fi
 fi
 
