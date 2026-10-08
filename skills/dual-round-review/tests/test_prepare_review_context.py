@@ -1,3 +1,4 @@
+import re
 import subprocess
 from pathlib import Path
 
@@ -219,3 +220,71 @@ def test_unknown_option_fails(tmp_path):
     repo = _repo(tmp_path)
     r = _run(repo, '--bogus')
     assert r.returncode != 0
+
+
+# --- RFC-0002 子智能体直写：--round 预授权报告路径 -------------------------------
+
+
+def _report_path(stdout):
+    m = re.search(r'本轮报告目标路径[^:]*:\s*(\S+\.md)', stdout)
+    assert m, f'未从输出解析到报告目标路径:\n{stdout}'
+    return m.group(1)
+
+
+def test_help_lists_round_option(tmp_path):
+    r = _run(tmp_path, '--help')
+    assert r.returncode == 0
+    assert '--round' in r.stdout
+
+
+def test_round_prints_report_path(tmp_path):
+    """--round 必须机械化输出本轮预授权写入面，且不得预创建目标文件。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=demo', '--round=r1', '--working')
+    assert r.returncode == 0, r.stderr
+    path = _report_path(r.stdout)
+    assert '/r1-working..' in path
+    assert not (repo / path).exists(), '目标文件不得被预创建（Write-Once 保护）'
+
+
+def test_round_requires_slug(tmp_path):
+    """--round 依赖归档目录，缺少 --slug 时必须显式报错。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--round=r1', '--working')
+    assert r.returncode != 0
+    assert '必须与 --slug 同时使用' in r.stderr
+
+
+def test_invalid_round_rejected(tmp_path):
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=demo', '--round=r9', '--working')
+    assert r.returncode != 0
+    assert 'r1' in r.stderr
+
+
+def test_round_warns_when_target_exists(tmp_path):
+    """Write-Once 保护：目标已存在时告警且绝不改写既有文件。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    first = _run(repo, '--slug=demo', '--round=r1', '--working')
+    assert first.returncode == 0, first.stderr
+    target = repo / _report_path(first.stdout)
+    target.write_text('existing\n', encoding='utf-8')
+
+    second = _run(repo, '--slug=demo', '--round=r1', '--working')
+    assert second.returncode == 0, second.stderr
+    assert 'Write-Once' in second.stdout
+    assert target.read_text(encoding='utf-8') == 'existing\n'
+
+
+def test_round_delta_alias_accepted(tmp_path):
+    """Delta 再循环轮次标记必须被接受。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8')
+    r = _run(repo, '--slug=demo', '--round=delta-r1', '--working')
+    assert r.returncode == 0, r.stderr
+    assert '/delta-r1-working..' in _report_path(r.stdout)
+

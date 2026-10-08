@@ -46,6 +46,8 @@ usage() {
   -s, --staged       审查暂存区改动
       --no-record    只打印上下文，不写审查记录锚点与归档目录
       --slug=<slug>  启用交付凭据归档 scaffold（RFC-0001）；不传则仅生成运行时锚点
+      --round=<轮次>  输出本轮「预授权报告目标路径」（RFC-0002 子智能体直写通道）；
+                     取值 r1|r2|delta-r1|delta-r2，必须与 --slug 同时使用
       --archive-root=<路径>
                      归档根（默认 docs/project/reviews，仅与 --slug 联动）
   -h, --help         显示本帮助
@@ -78,6 +80,7 @@ HEAD_REF=""
 # 2. 参数解析（选项顺序无关）
 NO_RECORD=0
 SLUG=""
+ROUND=""
 ARCHIVE_ROOT="docs/project/reviews"
 POSITIONAL=()
 for arg in "$@"; do
@@ -87,6 +90,7 @@ for arg in "$@"; do
     -s|--staged) MODE="staged" ;;
     --no-record) NO_RECORD=1 ;;
     --slug=*) SLUG="${arg#--slug=}" ;;
+    --round=*) ROUND="${arg#--round=}" ;;
     --archive-root=*) ARCHIVE_ROOT="${arg#--archive-root=}" ;;
     -*) echo "❌ 错误: 未知选项 '${arg}'" >&2; usage >&2; exit 1 ;;
     *) POSITIONAL+=("${arg}") ;;
@@ -97,6 +101,19 @@ done
 if [[ -n "${SLUG}" && ! "${SLUG}" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
   echo "❌ 错误: --slug 必须为小写 kebab-case（^[a-z0-9][a-z0-9-]*$）: ${SLUG}" >&2
   exit 1
+fi
+
+# 2.2 轮次参数校验（RFC-0002 §3.2 路径预授权：目标路径依赖归档目录，故必须与 --slug 同用）
+if [[ -n "${ROUND}" ]]; then
+  if [[ -z "${SLUG}" ]]; then
+    echo "❌ 错误: --round 必须与 --slug 同时使用（报告目标路径依赖归档目录）" >&2
+    exit 1
+  fi
+  case "${ROUND}" in
+    r1|r2|delta-r1|delta-r2) ;;
+    *) echo "❌ 错误: --round 取值必须为 r1|r2|delta-r1|delta-r2，实际: ${ROUND}" >&2
+       exit 1 ;;
+  esac
 fi
 
 if [[ "${#POSITIONAL[@]}" -ge 2 ]]; then
@@ -303,6 +320,17 @@ EOF
     fi
     upsert_archive_index "${RECORD_FILE}" "${ARCHIVE_DIR}/"
     echo "📦 归档根已登记至锚点: ${ARCHIVE_DIR}/"
+
+    # 3.2 预授权报告目标路径（RFC-0002 §3.2）：派发提示词内联该字面值，
+    #     子智能体不得自选/推断/改写路径；目标文件一律**不预创建**（Write-Once 保护）。
+    if [[ -n "${ROUND}" ]]; then
+      REPORT_PATH="${ARCHIVE_DIR}/${ROUND}-${RECORD_BASE:-unknown}..${RECORD_HEAD:-unknown}.md"
+      echo "📄 本轮报告目标路径 (预授权写入面): ${REPORT_PATH}"
+      if [[ -e "${REPORT_PATH}" ]]; then
+        echo "⚠️ 目标文件已存在（Write-Once 保护）: ${REPORT_PATH}"
+        echo "   ↳ 视为基线漂移缺陷，严禁覆盖；请排查命名冲突后再派发。"
+      fi
+    fi
   fi
 fi
 
