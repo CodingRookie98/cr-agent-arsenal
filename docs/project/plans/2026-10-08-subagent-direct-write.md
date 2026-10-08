@@ -15,7 +15,7 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-10-08 10:20（「直接做A」）
 > - **批准基线**: 分支 `feature/review-subagent-direct-write`，基点 `771ad29`
-> - **状态**: 进行中
+> - **状态**: 已完成（四轮对抗审查 Zero Blockers 准予交付，已合并 master）
 > - **隔离分支**: `feature/review-subagent-direct-write`
 > - **需求确认文档**: [RFC-0002 子智能体直写契约](../../proposals/RFC-0002-subagent-direct-write.md)
 > - **技术调研备忘录**: 豁免（P0.5 未触发——复用既有两个脚本与既有 pytest 契约测试范式，无新第三方依赖；预授权语义的宿主能力边界已在 RFC-0002 §3.7 随方案拷问完成）
@@ -27,17 +27,20 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P4 双轮对抗终审 · Delta 再循环（Delta R1 已派发）
-- **当前活跃子任务**: 无
+- **当前活跃阶段**: 全阶段闭环（P5 完成，已合并 `master` 并推送）
+- **当前活跃子任务**: 无（结项）
 - **当前子任务重试计数**: R1 重派 1 次（首轮因**编排者擅自改写派发提示词区块标题**作废）；R1 重试计数 1/3
-- **外层循环迭代**: 2/5（第 1 轮 R1→R2 裁决 🔴 阻断交付；Delta 修复已提交 `d0a8fe1`）
+- **外层循环迭代**: 2/5（**未触及 3/3 熔断**）——第 1 轮 R1→R2 裁决 🔴 阻断交付；Delta 修复 `d0a8fe1`；Delta R1 确认 R1-1/R1-2 清零；Delta R2 终审 🔴 0 / 🟡 6 / ⚪ 1 → **✅ 准予交付**
 - **执行后端**: 宿主原生子智能体（当前会话 DSH `subagent`；P3 编码由主会话内联执行，P4 审查由独立子智能体隔离）
 - **最后一次验证状态**: L0 `bash -n` OK；L1 **78 passed**；L2 **215 passed**（基线 190）；契约测试变异反证通过；V2.1.0 归档迁移后门禁 rc=0 且**四个报告指纹未变**；**R1 直写通道首次真实运行成功**（独立复算 SHA256 全值一致 / 字节数一致 / 无越界写入）；R1 归档门禁 rc=0
 - **R1（`fcb6ea11`）裁决**: 🔴 阻断交付 —— **P1 × 2**（R1-1 预授权路径非稳定函数致 Write-Once 静默失效、同轮可并存双份报告；R1-2 scaffold 表头 6 列与 7 列 schema 自相矛盾）+ 🟡 7 + ⚪ 3，共 12 项
 - **R2（`fe288f87`）终审**: 🔴 **阻断交付** —— 🔴 2 / 🟡 9 / ⚪ 1（R1-5 越界定级被驳回；R1-3/R1-6/R1-9 降为 P3 并要求**改文档而非补实现**）
 - **Delta 修复（`d0a8fe1`）**: R1-1（`--round` 与自适应互斥 + 异常表补重派分支）、R1-2（scaffold 表头补列）两项阻断项根治；随行 R1-4/R1-7/R1-8/R1-12 与文档 R1-3/R1-6/R1-9/R1-10/R1-11。**实测**：无基线时 `--round` rc=1；显式基线两次调用路径一致；scaffold 表头 7 列且竖线数自洽；`--round=` 空值与 `--no-record` 组合均 rc=1。L0 OK / L1 **89 passed** / L2 **226 passed**；两处归档门禁均 rc=0
-- **最新有效提交**: `d0a8fe1`
+- **Delta R1（`2728eb8f`）**: R1-1 / R1-2 **已根治（阻断清零）**；新增 DR-1（P2）+ DR-2~DR-5（P3）+ DR-4/DR-6（历史既有 P3）
+- **Delta R2（`7fbc8da0`）终审**: ✅ **准予交付**（🔴 0 / 🟡 6 / ⚪ 1）；DR-1 裁定 P2 不升阻断但**签收前强制同轮修文档**（6 处载体，已执行）；R1-5 维持驳回
+- **最新有效提交**: 合并提交 `21599a9`（已推送 `origin/master`）
 - **阻断原因**: 无
+- **遗留待办**: BK-0011~BK-0015（源自 Delta R2 终审，均 P3，随下次变更批量处理）
 
 ---
 
@@ -277,7 +280,7 @@ def test_round_warns_when_target_exists(tmp_path):
 
 ### P5: 文档全向归档与联动升级
 
-- [ ] `docs/explanation/decisions/0002-subagent-direct-write-channel.md`（MADR 3.0）
+- [x] `docs/explanation/decisions/0002-subagent-direct-write-channel.md`（MADR 3.0，含四轮审查实质产出）
 - [ ] `docs/explanation/architecture/dual-round-review-design.md` → V2.2.0
 - [ ] RFC-0002 状态流转 In Review → Implemented + Archival Notice
 - [ ] `docs/index.md` 版本升级 + 修订历史行
