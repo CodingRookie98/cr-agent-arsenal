@@ -27,13 +27,13 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P1 计划完成 → P2/P3 待启动
+- **当前活跃阶段**: P4 双轮对抗终审（R1 已派发）
 - **当前活跃子任务**: 无
 - **当前子任务重试计数**: 0/3
-- **外层循环迭代**: 0/5
-- **执行后端**: 宿主原生子智能体（当前会话 DSH `subagent`；P3 编码可由主会话内联执行，P4 审查**强制**独立子智能体隔离）
-- **最后一次验证状态**: 未开始
-- **最新有效提交**: `771ad29`（分支基点）
+- **外层循环迭代**: 1/5
+- **执行后端**: 宿主原生子智能体（当前会话 DSH `subagent`；P3 编码由主会话内联执行，P4 审查由独立子智能体隔离）
+- **最后一次验证状态**: L0 `bash -n` OK；L1 `pytest skills/dual-round-review/tests/` **78 passed**；L2 `pytest skills/` **215 passed**（基线 190）；契约测试变异反证通过（2 处变异各自触发对应用例失败）；V2.1.0 归档迁移后门禁 rc=0 且**四个报告指纹未变**
+- **最新有效提交**: `455eccc`
 - **阻断原因**: 无
 
 ---
@@ -129,8 +129,8 @@
 ### P3 准备: 隔离分支与环境前置检查
 
 - [x] 分支 `feature/review-subagent-direct-write` 已从 `771ad29` 创建
-- [ ] 基线验证：`python3 -m pytest skills/ -q` 绿色（记录基线用例数）
-- [ ] 基线记录：`python3 skills/doc-governance/scripts/audit-doc-health.py` 记录交付前健康度
+- [x] 基线验证：`python3 -m pytest skills/ -q` → **190 passed**
+- [x] 基线记录：`audit-doc-health.py` → PASS（交付前存在 1 篇孤儿文档告警，为新建计划自身，P5 收录）
 
 ---
 

@@ -6,6 +6,7 @@
 ## Proposals & RFCs (需求与设计孵化层)
 
 - [RFC-0001: dual-round-review 审查报告持久化归档契约](proposals/RFC-0001-review-report-archive.md): `dual-round-review` 的两轮提示词模板已定义完整的报告输出契约——R1 需产出「第一性原理分析 / 红队攻击路径推演 / 潜在缺陷清单」，R2 需产出「元审查质询 / 终审裁决明细表 / 放行结论」。但**技能全流程没有任...
+- [RFC-0002: dual-round-review 审查报告子智能体直写契约](proposals/RFC-0002-subagent-direct-write.md): RFC-0001 解决了「报告全文从未落盘」，但其选定方案把写盘动作判给了**主智能体**（[RFC-0001 §3.7](../../docs/proposals/RFC-0001-review-report-archive.md)）：
 
 ## Reference (技术参考 / 机器事实唯一真相源)
 
@@ -21,6 +22,7 @@
 - [goal-loop 目标实现循环技能架构设计书 (Architecture & Design Specification)](explanation/architecture/goal-loop-design.md): 在大语言模型（LLM）驱动的软件研发自动化进程中，单轮对话或无状态的多轮交互在应对跨模块、多阶段的长任务（Long-Horizon Tasks）时暴露出以下系统性缺陷：
 - [taste-driven-designer 品味驱动设计技能架构设计书 (Architecture & Design Specification)](explanation/architecture/taste-driven-designer-design.md): LLM 是 Next-Token Predictor + RLHF 的产物：每次设计决策（配色、布局、文案）都倾向选择"最可能取悦大多数人的安全 Token"。结果是千篇一律的 AI Slop——紫色渐变、左文右图 Hero、Bento 卡...
 - [ADR-0001: 将审查交付凭据归档至版本库跟踪的独立目录层](explanation/decisions/0001-review-evidence-archive-layer.md): `dual-round-review` 的两轮提示词模板定义了完整的报告输出契约（R1 的攻击路径推演与缺陷清单、R2 的裁决明细表与放行结论），但**技能全流程没有任何一步要求把子智能体返回的报告原文写入磁盘**：铁律 5 只规定写入 8...
+- [ADR-0002: 审查报告改由子智能体直写至预授权路径](explanation/decisions/0002-subagent-direct-write-channel.md): RFC-0001 把审查报告的写盘责任判给**主智能体**，并自认其信任边界：
 
 ## Project Governance (工程演进 / 发布日志与待办)
 
@@ -44,11 +46,13 @@
 - [frontend-qa-gate 前端产物验收技能 实施方案计划 (Implementation Plan)](project/plans/2026-09-21-frontend-qa-gate.md): 1. 新技能 `skills/frontend-qa-gate/` 结构完整（SKILL.md + references + templates + tests），description 能在"前端验收 / 响应式是否完整 / 键盘能不能用...
 - [frontend-qa-gate 后续待办闭环 维护修复计划 (Maintenance-Patch Plan)](project/plans/2026-09-21-qa-gate-followups.md): 复现脚本：`/tmp/fu_repro.py`、`/tmp/fu_scan2.py`（扫描剥离围栏，避免示例代码块误报）。
 - [dual-round-review 审查报告持久化归档实施方案计划 (Implementation Plan)](project/plans/2026-10-04-review-report-archive.md): 1. 对一次真实双轮审查，归档目录以**被版本库跟踪**的新增文件出现在 `docs/project/reviews/` 下；
+- [dual-round-review 审查报告子智能体直写实施方案计划 (Implementation Plan)](project/plans/2026-10-08-subagent-direct-write.md): 1. 对**本交付自身**跑一次真实双轮审查（dogfooding），R1 与 R2 报告均由**子智能体直写**落盘，文件中**不含**任何主智能体转录痕迹；
 - [审查归档 · review-report-archive](project/reviews/2026-10-04-review-report-archive/README.md): `trim-revision.py` 归档豁免 · `generate-llms-txt.py` 归档豁免 · 方向二按 `base7..head7` 配对 ·
 - [第一轮对抗审查报告 (Round 1 Red-Team Review Report)](project/reviews/2026-10-04-review-report-archive/delta-r1-8d820c3..cef2655.md): 1. **R1-1 已按处置要求根治**（25 组实跑向量，`--require-verdict=PASS`）：`准予交付` → rc=0；`✅ 准予交付` → rc=0；RFC §3.4 官方占位符 `[🔴 阻断交付 | ✅ 准予交付 |...
 - [第二轮元对抗审查与终审裁决书 (Round 2 Meta-Architect Verdict)](project/reviews/2026-10-04-review-report-archive/delta-r2-8d820c3..cef2655.md): **归档与转录保真核验（通道 A · 先验指纹）**
 - [第一轮对抗审查报告 (Round 1 Red-Team Review Report)](project/reviews/2026-10-04-review-report-archive/r1-940e0f3..8d820c3.md): 1. **分层是对的，但归档根选错了容器语义**。方案 A 把"不可重建的审计凭据"放进 `docs/`，理由是"复用 doc-governance 既有门禁"。实测该假设反向成立：归档产物**本身违反** doc-governance 的...
 - [第二轮元对抗审查与终审裁决书 (Round 2 Meta-Architect Verdict)](project/reviews/2026-10-04-review-report-archive/r2-940e0f3..8d820c3.md): 1. **R1 §3 攻击路径 4 / 缺陷表 R1-2 的量化失真**：R1 称「单条相对链接使断链项 **35 分直接归零** → REJECTED（≈63.8 分）」。反证据：`skills/doc-governance/script...
+- [审查归档 · subagent-direct-write](project/reviews/2026-10-08-subagent-direct-write/README.md)
 
 ## Other Documentation (其他文档)
 

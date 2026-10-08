@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.15.0 (收录 Backlog 容量治理与最佳实践调研分析，升级形态 B 工具链)
+> - **当前版本**: V1.16.0 (收录 dual-round-review V2.2.0 子智能体直写契约：RFC-0002 + ADR-0002 + 实施计划)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.16.0** | 2026-10-08 | DSH AI Agent | 王辉 | 收录 RFC-0002 子智能体直写契约、dual-round-review V2.2.0 实施计划与 ADR-0002：写盘权归还内容作者（Write-Scope 单路径例外 + 主智能体独立复算指纹 + 写入形态登记）；门禁追加第 8 项 |
 | **V1.15.0** | 2026-10-04 | DSH AI Agent | 王辉 | 收录 Backlog 容量治理真实实践调研与最佳实践深度剖析（精益看板/上下文工程/14项落地法则），升级 doc-governance 至形态 B (Issue-as-File) |
 | **V1.14.0** | 2026-10-04 | DSH AI Agent | 王辉 | 新增 ADR-0001 交付凭据归档层（MADR 3.0，固化三方案裁决与四轮审查证据）；RFC-0001 状态流转至 Implemented 并置防腐声明，结晶下沉完成 |
 | **V1.13.0** | 2026-10-04 | DSH AI Agent | 王辉 | 收录 `docs/project/backlog.md` 待办清单（BK-0001~BK-0010，源自 `dual-round-review` V2.1.0 Delta R2 终审）；该交付经四轮对抗审查取得 **Zero Blockers ✅ 准予交付** |
 | **V1.12.0** | 2026-10-04 | DSH AI Agent | 王辉 | 收录 RFC-0001 审查报告持久化归档契约与 `dual-round-review` V2.1.0 实施计划；新增 `docs/project/reviews/` 交付凭据归档象限（报告全文进版本库）+ 结构机械门禁 |
-| **V1.11.0** | 2026-09-22 | DSH AI Agent | 王辉 | 收录 `frontend-qa-gate` 后续待办闭环维护计划（FU-1「：无」误拒 / FU-2 跨技能断链自检 / FU-3 结论列 N/A 白名单）；补 REF 外部文献控制元数据（id/version）；知识库健康度体检 100 分 |
 
 ---
 
@@ -72,9 +72,12 @@
 | **`frontend-qa-gate` 后续待办闭环** | 闭环交付遗留三项待办：「：无」声明变体误拒、跨技能相对链接断链自检、结论列 `N/A` 白名单（Maintenance-Patch 通道，已闭环） | [2026-09-21-qa-gate-followups.md](./project/plans/2026-09-21-qa-gate-followups.md) |
 | **Critic 门禁加固 V1.1** | 实跑反证驱动：绝对评分门禁换代三信号门禁，补版本回执/鉴别力自检/冲突仲裁/评审账本 | [2026-09-20-critic-gate-hardening.md](./project/plans/2026-09-20-critic-gate-hardening.md) |
 | **RFC-0001 审查报告归档契约** | 为 `dual-round-review` 引入交付凭据归档：报告全文逐字落盘至版本库归档根 + SHA256 指纹 + 机械门禁（需求确认，状态 In Review） | [RFC-0001-review-report-archive.md](./proposals/RFC-0001-review-report-archive.md) |
+| **RFC-0002 子智能体直写契约** | 执行 RFC-0001 §7.3 A1 预留路径：子智能体直写报告至预授权路径（Write-Scope 单路径例外）+ 主智能体独立复算指纹 + 写入形态登记；含诚实边界（预授权是提示词契约而非沙箱强制）（需求确认，状态 In Review） | [RFC-0002-subagent-direct-write.md](./proposals/RFC-0002-subagent-direct-write.md) |
 | **`dual-round-review` V2.1.0** | 审查报告持久化归档：三层职责分离（运行时状态/交付凭据/机械门禁）、`check-review-report.sh`、R2 双通道输入、模板↔门禁标题漂移防护（**已终审放行 ✅**，审查归档见 `docs/project/reviews/2026-10-04-review-report-archive/`） | [2026-10-04-review-report-archive.md](./project/plans/2026-10-04-review-report-archive.md) |
+| **`dual-round-review` V2.2.0** | 子智能体直写通道：Write-Scope 单路径例外 + 路径预授权五条 + 主智能体独立复算指纹 + 转录降级显式登记（台账第 7 列）+ `--round` 预授权路径 + 门禁第 8 项 + 旧归档补列迁移 | [2026-10-08-subagent-direct-write.md](./project/plans/2026-10-08-subagent-direct-write.md) |
 | **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；当前 10 项源自 Delta R2 终审） | [index.md](./project/backlog/index.md) |
 | **ADR-0001 交付凭据归档层** | 审查凭据按「可否重建」分层：运行时状态留隐藏目录、交付凭据进版本库独立目录并对齐治理豁免语义（MADR 3.0；含四轮对抗审查证据） | [0001-review-evidence-archive-layer.md](./explanation/decisions/0001-review-evidence-archive-layer.md) |
+| **ADR-0002 子智能体直写通道** | 写盘权归还内容作者：消除转录失真、写盘与核验分离；显式登记三项代价（授权面由零扩大为单文件、路径预授权是提示词契约而非沙箱强制、写入形态声明不可机械验证）（MADR 3.0） | [0002-subagent-direct-write-channel.md](./explanation/decisions/0002-subagent-direct-write-channel.md) |
 
 ---
 
