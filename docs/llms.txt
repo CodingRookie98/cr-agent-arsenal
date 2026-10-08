@@ -36,6 +36,11 @@
 - [BK-0008-fence-parity-nested-block-guidance](project/backlog/active/BK-0008-fence-parity-nested-block-guidance.md): id: BK-0008
 - [BK-0009-resolve-archive-dir-slug-consistency](project/backlog/active/BK-0009-resolve-archive-dir-slug-consistency.md): id: BK-0009
 - [BK-0010-archive-root-empty-or-illegal-guard](project/backlog/active/BK-0010-archive-root-empty-or-illegal-guard.md): id: BK-0010
+- [BK-0011-review-contract-weak-assertions](project/backlog/active/BK-0011-review-contract-weak-assertions.md): id: BK-0011
+- [BK-0012-enumerate-unregistered-reports](project/backlog/active/BK-0012-enumerate-unregistered-reports.md): id: BK-0012
+- [BK-0013-trailing-pipe-column-misparse](project/backlog/active/BK-0013-trailing-pipe-column-misparse.md): id: BK-0013
+- [BK-0014-voided-round-repo-trace](project/backlog/active/BK-0014-voided-round-repo-trace.md): id: BK-0014
+- [BK-0015-working-staged-naming-literal](project/backlog/active/BK-0015-working-staged-naming-literal.md): id: BK-0015
 - [项目待办与后续演进清单 (Backlog Index)](project/backlog/index.md): *(当前暂无进行中的待办)*
 - [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。
 - [goal-loop 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-goal-loop-v2-refactor.md): 以下四项经用户确认，作为不可回退的实现约束：
@@ -53,6 +58,10 @@
 - [第一轮对抗审查报告 (Round 1 Red-Team Review Report)](project/reviews/2026-10-04-review-report-archive/r1-940e0f3..8d820c3.md): 1. **分层是对的，但归档根选错了容器语义**。方案 A 把"不可重建的审计凭据"放进 `docs/`，理由是"复用 doc-governance 既有门禁"。实测该假设反向成立：归档产物**本身违反** doc-governance 的...
 - [第二轮元对抗审查与终审裁决书 (Round 2 Meta-Architect Verdict)](project/reviews/2026-10-04-review-report-archive/r2-940e0f3..8d820c3.md): 1. **R1 §3 攻击路径 4 / 缺陷表 R1-2 的量化失真**：R1 称「单条相对链接使断链项 **35 分直接归零** → REJECTED（≈63.8 分）」。反证据：`skills/doc-governance/script...
 - [审查归档 · subagent-direct-write](project/reviews/2026-10-08-subagent-direct-write/README.md)
+- [第一轮对抗审查报告 (Round 1 Red-Team Review Report)](project/reviews/2026-10-08-subagent-direct-write/delta-r1-455eccc..d0a8fe1.md): **结论**：R1-1 的原始逃逸路径（净树→range、脏树→working 的自动切换）在 --round 下**已不可达**；R2 处置要求 (a) 显式基线、(b) 异常表补重派分支、(c) 补回归断言三项均已落地且经变异反证。
+- [第二轮元对抗审查与终审裁决书 (Round 2 Meta-Architect Verdict)](project/reviews/2026-10-08-subagent-direct-write/delta-r2-455eccc..d0a8fe1.md): 1. **DR-1 是否升级为阻断 → 裁定：不升级（🟡 P2），但列为「签收前强制同轮修正」**。依据：① **无功能失效** —— A1 报错自解释，交付物的操作性规程（[SKILL.md:153](skills/dual-round-...
+- [第一轮对抗审查报告 (Round 1 Red-Team Review Report)](project/reviews/2026-10-08-subagent-direct-write/r1-771ad29..455eccc.md): 1. `--round` 制造了**第二个真相源**。文件名格式已被 `SKILL.md:118` 用散文规定，脚本又在 `prepare-review-context.sh:327` 用代码实现一次，而**两边都不是判定者**（门禁不校验...
+- [第二轮元对抗审查与终审裁决书 (Round 2 Meta-Architect Verdict)](project/reviews/2026-10-08-subagent-direct-write/r2-771ad29..455eccc.md): 1. **R1-5 的包含性校验 → 驳回**：为授权方自持的配置参数加边界校验，既不能防御任何子智能体行为，又会破坏宿主自定义归档根能力（`SKILL.md:117`）。
 
 ## Other Documentation (其他文档)
 

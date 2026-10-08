@@ -2,7 +2,7 @@
 
 > **提案元数据**
 > - **标识**: RFC-202610-SUBAGENT-DIRECT-WRITE
-> - **当前状态**: In Review
+> - **当前状态**: Implemented
 > - **发起人**: DSH AI Agent
 > - **设计所有者**: 核心架构组
 > - **当前版本**: V0.1.0
@@ -13,6 +13,17 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-10-08 10:20
 > - **批准基线**: 分支 `feature/review-subagent-direct-write`，基点 `771ad29`
+
+> [!IMPORTANT]
+> **历史溯源备忘 (Archival Notice)**:
+> 本提案已于 2026-10-08 经**四轮对抗审查闭环**（R1 红队 → R2 元审判 → Delta R1 定向复核 → Delta R2 终审）取得 **🔴 0 阻断 ✅ 准予交付**（迭代收敛于 **2/3**，未触及 3/3 熔断），并结晶下沉至系统生产基线。
+> - 权威技能规程请查阅: [../../skills/dual-round-review/SKILL.md](../../skills/dual-round-review/SKILL.md)（步骤 1.6 交付凭据归档 · 写入通道与路径预授权）
+> - 核心架构决策请查阅: [../explanation/decisions/0002-subagent-direct-write-channel.md](../explanation/decisions/0002-subagent-direct-write-channel.md)
+> - 设计说明请查阅: [../explanation/architecture/dual-round-review-design.md](../explanation/architecture/dual-round-review-design.md)（V2.2.0）
+> - 审查凭据全文请查阅: [../project/reviews/2026-10-08-subagent-direct-write/README.md](../project/reviews/2026-10-08-subagent-direct-write/README.md)（四轮报告逐字直写归档）
+> - 遗留待办请查阅: [../project/backlog/index.md](../project/backlog/index.md)（BK-0011~BK-0015，源自 Delta R2 终审）
+> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
+> - **目标版本/里程碑**: `dual-round-review` V2.2.0（子智能体直写通道）——**已交付**
 
 ---
 
