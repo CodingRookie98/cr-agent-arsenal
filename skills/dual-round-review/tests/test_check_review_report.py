@@ -58,8 +58,8 @@ INDEX_TMPL = """# 审查归档 · 示例交付
 - **终审裁决**: {verdict}
 
 ## 轮次台账
-| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
+| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 | 写入形态 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 {rows}
 
 ## 待办与后续轮次
@@ -71,23 +71,33 @@ def _sha12(text):
     return hashlib.sha256(text.encode('utf-8')).hexdigest()[:12]
 
 
+def _row(rank, fname, sha, conclusion, write_mode='direct'):
+    """构造台账数据行；write_mode=None 表示该行**不登记**「写入形态」列（RFC-0002 缺列场景）。"""
+    cells = [rank, '`940e0f3..a1b2c3d`', 'sub-%s' % rank, '`%s`' % fname,
+             '`%s`' % sha, conclusion]
+    if write_mode is not None:
+        cells.append(write_mode)
+    return '| ' + ' | '.join(cells) + ' |'
+
+
 def _build(tmp_path, *, mode='full', verdict='✅ 准予交付', with_r2=True,
            r1_body=R1_BODY, r2_body=R2_BODY, r1_sha=None, r2_sha=None,
-           tamper_after_index=False, index_override=None, drop_file=False):
+           tamper_after_index=False, index_override=None, drop_file=False,
+           r1_mode='direct', r2_mode='direct'):
     """构造一个归档目录；返回 (目录, r1 文件, r2 文件或 None)。"""
     d = tmp_path / 'archive'
     d.mkdir()
     r1_name = 'r1-940e0f3..a1b2c3d.md'
     r2_name = 'r2-940e0f3..a1b2c3d.md'
     (d / r1_name).write_text(r1_body, encoding='utf-8')
-    rows = ['| R1 | `940e0f3..a1b2c3d` | sub-1 | `%s` | `%s` | 🔴 1 / 🟡 1 / ⚪ 0 |'
-            % (r1_name, r1_sha if r1_sha is not None else _sha12(r1_body))]
+    rows = [_row('R1', r1_name, r1_sha if r1_sha is not None else _sha12(r1_body),
+                 '🔴 1 / 🟡 1 / ⚪ 0', r1_mode)]
     r2_file = None
     if with_r2:
         r2_file = d / r2_name
         r2_file.write_text(r2_body, encoding='utf-8')
-        rows.append('| R2 | `940e0f3..a1b2c3d` | sub-2 | `%s` | `%s` | %s |'
-                    % (r2_name, r2_sha if r2_sha is not None else _sha12(r2_body), verdict))
+        rows.append(_row('R2', r2_name, r2_sha if r2_sha is not None else _sha12(r2_body),
+                         verdict, r2_mode))
     index = index_override if index_override is not None else INDEX_TMPL.format(
         mode=mode, verdict=verdict, rows='\n'.join(rows))
     (d / 'README.md').write_text(index, encoding='utf-8')
@@ -357,3 +367,77 @@ def test_require_verdict_ok_on_bare_value(tmp_path):
     d, _, _ = _build(tmp_path, verdict='准予交付')
     r = _run(d, '--require-verdict=PASS')
     assert r.returncode == 0, r.stdout
+
+
+# --- RFC-0002 第 8 项：写入形态合法性 ------------------------------------------
+
+
+def test_direct_write_mode_passes(tmp_path):
+    """子智能体直写通道登记 direct，必须通过。"""
+    d, _, _ = _build(tmp_path, r1_mode='direct', r2_mode='direct')
+    assert _run(d).returncode == 0
+
+
+def test_transcribed_write_mode_passes(tmp_path):
+    """转录降级通道登记 transcribed，必须通过（合法通道之一）。"""
+    d, _, _ = _build(tmp_path, r1_mode='transcribed', r2_mode='transcribed')
+    assert _run(d).returncode == 0
+
+
+def test_missing_write_mode_fails(tmp_path):
+    """台账缺「写入形态」列即失败（RFC-0002 §3.5 第 8 项）。"""
+    d, _, _ = _build(tmp_path, r1_mode=None)
+    r = _run(d)
+    assert r.returncode != 0
+    assert '写入形态' in r.stdout + r.stderr
+
+
+def test_invalid_write_mode_fails(tmp_path):
+    """写入形态取值非法（第三值）即失败。"""
+    d, _, _ = _build(tmp_path, r1_mode='auto')
+    r = _run(d)
+    assert r.returncode != 0
+    assert '写入形态' in r.stdout + r.stderr
+
+
+def test_usage_documents_write_mode_check(tmp_path):
+    r = _run(tmp_path, '--help')
+    assert r.returncode == 0
+    assert '写入形态' in r.stdout
+
+
+
+LEGACY_INDEX_TMPL = """# 审查归档 · 示例交付
+
+- **交付单元**: sample-delivery
+- **归档根**: docs/project/reviews/2026-10-04-sample-delivery/
+- **审查模式**: full
+- **当前迭代计数**: 1/3
+- **终审裁决**: ✅ 准予交付
+
+## 轮次台账
+| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+{rows}
+
+## 待办与后续轮次
+- [ ] 无
+"""
+
+
+def test_legacy_six_column_ledger_fails(tmp_path):
+    """V2.1.0 六列表头（删掉「写入形态」列）必须判失败。
+
+    门禁不得留「删表头即绕过第 8 项」的后门——历史归档须一次性补列迁移
+    （取值 transcribed，因 V2.1.0 只有转录通道），而非让门禁宽容跳过。
+    """
+    d, r1, r2 = _build(tmp_path)
+    legacy_rows = '\n'.join([
+        _row('R1', r1.name, _sha12(R1_BODY), '🔴 1 / 🟡 1 / ⚪ 0', None),
+        _row('R2', r2.name, _sha12(R2_BODY), '✅ 准予交付', None),
+    ])
+    (d / 'README.md').write_text(LEGACY_INDEX_TMPL.format(rows=legacy_rows), encoding='utf-8')
+    r = _run(d)
+    assert r.returncode != 0
+    assert '写入形态' in r.stdout + r.stderr
+
