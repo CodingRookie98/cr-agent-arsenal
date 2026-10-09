@@ -11,7 +11,7 @@ closed_at: null
 resolution: null
 destination: null
 source:
-- RFC-0003 Delta 审查 R1-15（历史既有 · R2 封顶 P3）
+- RFC-0003 首轮审查 r1-95863c9..2583210 的 R1-15（历史既有；Delta R2 封顶 P3 正确；DR1-7 修正溯源标注）
 acceptance_criteria:
 - 先明确该字段的权威定义（生成器/算法）再决定是否重算全量，避免按未证前提批量改写 86 条记录
 ---

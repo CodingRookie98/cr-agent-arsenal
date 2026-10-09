@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **18** 项 (进行中: 0, 计划中: 18)
+- **现役活跃待办**: **21** 项 (进行中: 0, 计划中: 21)
 - **历史已归档项**: **0** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 4 | 14 |
+| **活跃数量** | 0 | 0 | 5 | 16 |
 
 ---
 
@@ -33,6 +33,7 @@
 | **BK-0002** | `P2` | `TechDebt` | generate-llms-txt.py 复用归档豁免常量 | — | [BK-0002](./active/BK-0002-generate-llms-txt-archive-exemption.md) |
 | **BK-0003** | `P2` | `Governance` | 稳定 ID 方向二改为按文件名配对 R1-R2 后施加 | — | [BK-0003](./active/BK-0003-stable-id-pair-by-filename.md) |
 | **BK-0004** | `P2` | `Security` | 新增终审裁决在索引中唯一校验 | — | [BK-0004](./active/BK-0004-unique-verdict-in-review-index.md) |
+| **BK-0020** | `P2` | `TechDebt` | 修订表头定位限定在修订历史章节作用域内 | — | [BK-0020](./active/BK-0020-修订表头定位限定在修订历史章节作用域内.md) |
 | **BK-0005** | `P3` | `Governance` | 豁免判定前执行路径根相对语义归一化 | — | [BK-0005](./active/BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0006** | `P3` | `TechDebt` | 四条审查护栏各补 1 条反证测试用例 | — | [BK-0006](./active/BK-0006-review-gates-negative-test-cases.md) |
 | **BK-0007** | `P3` | `Governance` | GOVERNANCE.md 豁免表文本精确化 | — | [BK-0007](./active/BK-0007-governance-doc-exemption-table-accuracy.md) |
@@ -47,6 +48,8 @@
 | **BK-0016** | `P3` | `TechDebt` | 象限索引幂等判据精确匹配（剥离锚点与查询串） | — | [BK-0016](./active/BK-0016-象限索引幂等判据精确匹配-剥离锚点与查询串.md) |
 | **BK-0017** | `P3` | `TechDebt` | scaffold ADR 模板补控制头版本字段 | — | [BK-0017](./active/BK-0017-scaffold-adr-模板补控制头版本字段.md) |
 | **BK-0018** | `P3` | `Governance` | 明确 skills-lock.json computedHash 权威定义并评估全量重算 | — | [BK-0018](./active/BK-0018-明确-skills-lock-json-computedhash-权威定义并评估.md) |
+| **BK-0019** | `P3` | `Governance` | README 入口象限的索引自愈与健康评分语义对齐 | — | [BK-0019](./active/BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md) |
+| **BK-0021** | `P3` | `Bug` | generate-llms-txt.py 的 --root 与 --output 落点解耦缺陷 | — | [BK-0021](./active/BK-0021-generate-llms-txt-py-的-root-与-output-落点解.md) |
 
 ---
 
