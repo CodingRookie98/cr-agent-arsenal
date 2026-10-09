@@ -72,6 +72,7 @@
 - [批次 A 归档豁免与 llms 落点修复实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-a-archive-exemption.md): R1 判定：三项待办**技术内核均为本质根因修复**（经 git archive 隔离三树 A/B 反证：归档实扫 17 篇全跳过 / llms 归档条目 17→0 / `--output` 落点随 `--root` 派生），但**交付物层...
 - [批次 B 机器地图写入侧安全与一致性门禁实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-b-llms-integrity.md): **编排者加固（两轮，均以 TDD + 变异自验闭环）**：
 - [批次 C 机器地图提示文案净化和零覆盖口径登记实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-c-llms-hardening.md): **决定性转向**：前三轮修复都在「提示文案层」打补丁，第三轮 R1 指出根因后改为**双侧闸门**——① 生成器 CLI 落盘咽喉处的身份写保护（与提示内容无关，覆盖全部提示路径）；② fail-closed 分支删除可执行命令。测试判据...
+- [批次 D 机器地图身份写保护契约实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-d-identity-contract.md)
 - [doc-governance 目录级索引约定与 scaffold 索引自愈实施方案计划 (Implementation Plan)](project/plans/2026-10-09-quadrant-index-convention.md)
 
 ## Other Documentation (其他文档)
