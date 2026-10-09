@@ -160,6 +160,19 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
 DEFAULT_PROJECT_NAME = "System"
 
 
+def _can_roundtrip_as_identity(name: str) -> bool:
+    """BK-0030 ②：名字写入 H1 后能否被逐字反解还原。
+
+    行分隔符（LF/CR/U+2028/U+000B/U+0085…）会破坏 H1 的单行性，使生成物永久落在
+    fail-closed 态（此后任何重生成都被拒、只能删除文件恢复），故在生成前即拒绝。
+    """
+    head_line = f"# {name} Machine-Readable Knowledge Base Map"
+    if len(head_line.splitlines()) != 1:
+        return False
+    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", head_line)
+    return match is not None and match.group(1) == name
+
+
 def _resolve_outgoing_name(out_path: Path, requested: Optional[str]) -> str:
     """确定本次生成写入的项目名（BK-0030 身份写保护闸门）。
 
@@ -168,8 +181,21 @@ def _resolve_outgoing_name(out_path: Path, requested: Optional[str]) -> str:
       显式指定且与既有身份相同则放行；不同则拒绝（改名须先移除既有地图）；
     - 既有地图存在但不可读、非合法 UTF-8 或 H1 不可反解：**fail-closed 拒绝**。
     """
+    if requested is not None and not _can_roundtrip_as_identity(requested):
+        print(
+            "❌ 拒绝生成：项目名含行分隔符，写入后无法被逐字反解还原"
+            "（会铸出永久不可修复的地图身份）；请改用不含换行/分隔符的项目名",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     if not out_path.exists():
-        return requested or DEFAULT_PROJECT_NAME
+        return requested if requested is not None else DEFAULT_PROJECT_NAME
+
+    if not out_path.is_file():
+        # R1-6：目录/设备等非规则文件不得进入无界读取面（/dev/urandom 会挂起）
+        print(f"❌ 拒绝改写机器地图身份：既有落点不是常规文件（{out_path}）", file=sys.stderr)
+        sys.exit(1)
 
     try:
         head_line = out_path.read_text(encoding="utf-8").splitlines()[0]
@@ -180,7 +206,8 @@ def _resolve_outgoing_name(out_path: Path, requested: Optional[str]) -> str:
         )
         sys.exit(1)
 
-    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", head_line.strip())
+    # R1-5：不 strip —— 行边界空白属身份的一部分，strip 会把「沿用」变成「归一化改写」
+    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", head_line)
     if match is None:
         print(
             "❌ 拒绝改写机器地图身份：既有地图首行不符合标准 H1 格式"

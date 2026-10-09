@@ -1346,24 +1346,70 @@ class TestBatchDIdentityContract(unittest.TestCase):
                          f"自定义身份的合法重生成必须放行（沿用既有身份）：{again.stderr}")
         self.assertEqual((self.docs / "llms.txt").read_bytes(), baseline, "身份必须逐字节保持")
 
-    def test_gate_fails_closed_on_unreadable_or_non_utf8_map(self):
-        """BK-0030 ③ / BK-0031：既有地图不可读或非合法 UTF-8 时必须拒绝（fail-closed）"""
-        path = self._write_map("# Secret Project Machine-Readable Knowledge Base Map\n\n- 条目\n")
+    def test_gate_fails_closed_on_non_utf8_map(self):
+        """BK-0031：非合法 UTF-8 既有地图必须拒绝（独立成例，不受执行权限影响）"""
+        path = self._write_map("# placeholder Machine-Readable Knowledge Base Map\n")
+        path.write_bytes(b"# A" + bytes([0xFF]) + b"B Machine-Readable Knowledge Base Map\n\n- item\n")
+        before = path.read_bytes()
 
+        res = self._run_llms("--output", str(path))
+
+        self.assertNotEqual(res.returncode, 0, "非 UTF-8 既有地图必须拒绝")
+        self.assertEqual(path.read_bytes(), before, "字节必须逐字节不变（不得归一化为 U+FFFD）")
+
+    def test_gate_fails_closed_on_unreadable_map(self):
+        """BK-0030 ③：既有地图不可读时必须拒绝（仅在特权环境下跳过本用例）"""
+        path = self._write_map("# Secret Project Machine-Readable Knowledge Base Map\n\n- item\n")
         path.chmod(0o200)
         try:
             if os.access(path, os.R_OK):
                 self.skipTest("当前环境以特权运行，无法构造不可读文件")
-            unreadable = self._run_llms("--output", str(path))
-            self.assertNotEqual(unreadable.returncode, 0, "不可读既有地图必须拒绝")
+            res = self._run_llms("--output", str(path))
+            self.assertNotEqual(res.returncode, 0, "不可读既有地图必须拒绝")
         finally:
             path.chmod(0o600)
 
-        path.write_bytes(b"# A\xffB Machine-Readable Knowledge Base Map\n\n- item\n")
-        before = path.read_bytes()
-        non_utf8 = self._run_llms("--output", str(path))
-        self.assertNotEqual(non_utf8.returncode, 0, "非 UTF-8 既有地图必须拒绝")
-        self.assertEqual(path.read_bytes(), before, "字节必须逐字节不变（不得归一化为 U+FFFD）")
+    def test_explicit_foreign_name_is_refused(self):
+        """BK-0031 契约：显式异名重生成必须拒绝且既有地图逐字节不变"""
+        created = self._run_llms("--output", str(self.docs / "llms.txt"), "--name=Origin Identity")
+        self.assertEqual(created.returncode, 0, created.stderr)
+        before = (self.docs / "llms.txt").read_bytes()
+
+        res = self._run_llms("--output", str(self.docs / "llms.txt"), "--name=Other Identity")
+
+        self.assertNotEqual(res.returncode, 0, "显式异名必须拒绝（改名须先移除既有地图）")
+        self.assertEqual((self.docs / "llms.txt").read_bytes(), before, "字节必须逐字节不变")
+
+    def test_audit_reports_non_utf8_map(self):
+        """BK-0031 / R1-13：audit 对非合法 UTF-8 地图必须报缺陷（严格解码不得归一化放行）"""
+        (self.docs / "llms.txt").write_bytes(
+            b"# A" + bytes([0xFF]) + b"B Machine-Readable Knowledge Base Map\n\n- item\n")
+
+        res = self._audit()
+        out = res.stdout + res.stderr
+
+        self.assertIn("机器地图", out, "非 UTF-8 既有地图必须被报为缺陷")
+        # 有损解码（errors="replace"）会把身份归一化为 U+FFFD 并当作可安全回显的名字下发 → 必须禁止
+        self.assertNotIn("--name=", out, "非法 UTF-8 身份不得被归一化后作为 --name 下发")
+        self.assertNotEqual(res.returncode, 0, "非 UTF-8 地图不得通过一致性判定")
+
+    def test_split_line_names_are_refused_at_generation(self):
+        """BK-0030 ②：含行分隔符的项目名必须在生成前被拒（不得铸出永久不可修复的地图）"""
+        for name in ("A\nB", "A\rB", "A\u2028B", "A\u000bB", "A\u0085B"):
+            with self.subTest(name=repr(name[:6])):
+                res = self._run_llms("--output", str(self.docs / "llms.txt"), "--name=" + name)
+                self.assertNotEqual(res.returncode, 0, "含行分隔符的项目名必须被拒绝")
+                self.assertFalse((self.docs / "llms.txt").exists(), "不得留下不可修复的地图")
+
+    def test_empty_explicit_name_is_not_silently_replaced(self):
+        """BK-0030：显式 --name="" 不得被静默替换为 System"""
+        res = self._run_llms("--output", str(self.docs / "llms.txt"), "--name=")
+        if res.returncode == 0:
+            head = (self.docs / "llms.txt").read_text(encoding="utf-8").splitlines()[0]
+            self.assertTrue(head.startswith("#  Machine-Readable"),
+                            f"空名不得被替换为 System：{head!r}")
+        else:
+            self.assertIn("--name", res.stdout + res.stderr)
 
 
 if __name__ == "__main__":
