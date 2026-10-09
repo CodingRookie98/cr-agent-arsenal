@@ -9,12 +9,14 @@
 - **交付单元**: quadrant-index-convention
 - **归档根**: docs/project/reviews/2026-10-09-quadrant-index-convention/
 - **审查模式**: full
-- **当前迭代计数**: 2/3（第 2 次循环闭环：Delta R1 → Delta R2，裁决阻断（DR1-1）→ 进入二次精准修复）
-- **终审裁决**: 阻断交付
+- **当前迭代计数**: 3/3（第 3 次循环闭环：Delta R1 → Delta R2，**✅ 准予交付（Blockers == 0）**）
+- **终审裁决**: 准予交付
 
 ## 轮次台账
 | 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 | 写入形态 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| delta-r2 · loop3 | 458b4d2..e7cd191 | `3ad546f3-655a-4740-a4a0-2a265a968649` | delta-r2-458b4d2..e7cd191.md | 9b9980bf489d | ✅ **准予交付**（Blockers = 0 / 4×P3 / 0 驳回；DR1-1 根因闭合经独立复算） | direct |
+| delta-r1 · loop3 | 458b4d2..e7cd191 | `52e67c51-d318-4cde-b799-0a2310a70e7e` | delta-r1-458b4d2..e7cd191.md | 1b3d2104ef4e | DR1-1 根因闭合（三重反证）；无新增阻断；新增 4×P3（DR1-11~14） | direct |
 | delta-r2 | 2583210..458b4d2 | `b7a22049-3d99-426f-8dd5-346cadbbec49` | delta-r2-2583210..458b4d2.md | 56f9b4d28fbb | 🔴 阻断交付（DR1-1 维持 P1 阻断 / 9 建议 / 0 驳回；DR1-3 降 P3，DR1-8·DR1-10 封顶正确） | direct |
 | delta-r1 | 2583210..458b4d2 | `8b2ae635-2ba6-429e-9417-1f60c3291e17` | delta-r1-2583210..458b4d2.md | 860906e0e20e | 🔴 阻断交付（上轮 2 阻断已根治；本轮新增 1 阻断 DR1-1 / 9 建议） | direct |
 | r2 | 95863c9..2583210 | `4b6dc703-cf95-42e5-987b-7afe7ec5c5ed` | r2-95863c9..2583210.md | 0e2f799a6ade | 🔴 阻断交付（2 阻断 / 13 建议 / 0 驳回） | direct |
@@ -26,6 +28,8 @@
 > - [r2-95863c9..2583210.md](./r2-95863c9..2583210.md)
 > - [delta-r1-2583210..458b4d2.md](./delta-r1-2583210..458b4d2.md)
 > - [delta-r2-2583210..458b4d2.md](./delta-r2-2583210..458b4d2.md)
+> - [delta-r1-458b4d2..e7cd191.md](./delta-r1-458b4d2..e7cd191.md)
+> - [delta-r2-458b4d2..e7cd191.md](./delta-r2-458b4d2..e7cd191.md)
 >
 > 指纹复算：主智能体独立 `sha256sum` = `052f0772ea85f57754c631a43dab9195abe31b61a4b124e691098f198625c7b7`（27939 字节），与子智能体回报全值逐字一致。
 
@@ -37,6 +41,9 @@
 - [x] **P5.1 闭环**（提交 458b4d2）：docs/index.md 收录 + llms.txt 重生成 + health 复测 = 100.0/100、孤儿 0/46（R1-2 放行前置条件满足）
 - [x] Delta R1 复核完成（direct 直写，21055B / sha256 860906e0e2…，独立复算一致）：上轮 2 阻断经 A/B 反证根治，但**修复补丁自造 1 处新阻断 DR1-1**（f-string 无效转义 → 生成物含多余反斜杠 + 每次调用 SyntaxWarning）
 - [x] **Delta R2 终审**（19317B / sha256 56f9b4d28fbb…，direct）：🔴 阻断交付；DR1-1 维持 P1；DR1-2 维持 P2 并要求同轮最小硬化（剥 BOM + 跳 frontmatter，否决新判据框架）；DR1-3 降 P3；DR1-4/5/6/7/9 为 P3；DR1-8/DR1-10 历史既有封顶正确；首轮 R2 四项禁止项一项未引入；首轮 2 阻断根治成立
-- [ ] **二次精准修复**（进行中）：删除 manage-doc-index.py:52/:67 的 4 个反斜杠 + 1 条回归断言（DR1-1）；is_managed 剥离 BOM 并跳过 frontmatter 围栏（DR1-2）；resolve_within_root 拒绝解析为 root 本身（DR1-4）
-- [ ] 放行条件（R2 明令）：重跑三件套 + `python3 -W error::SyntaxWarning` 编译 + 生成物字节检查，再走第三轮 Delta 复验
+- [x] **二次精准修复**（提交 `45b61ad`）：DR1-1 删 4 处无效转义 + DR1-2 前导健壮化 + DR1-4 root 自指拒绝 + DR1-9 注释如实化；新增 5 条回归用例
+- [x] **放行条件复算通过**：三件套 rc=0、`-W error::SyntaxWarning` 编译 rc=0、生成物 0 转义残留、stderr 0 告警、pytest 57 passed
+- [x] Delta R1 第三轮复核（direct，12919B / sha256 1b3d2104ef4e…）：**DR1-1 根因闭合**（字节/编译/工具链三重反证）、DR1-2/4/9 硬化有效、DR1-5/6/7 收尾成立、**无新增阻断**；新增 4×P3（DR1-11 RFC 修订行措辞、DR1-12 检查点数字漂移、DR1-13 未闭合 frontmatter 无兜底、DR1-14 index 状态行未刷新）
+- [x] **Delta R2 第三轮终审：✅ 准予交付（Blockers == 0）**（direct，15878B / sha256 9b9980bf489d…）：DR1-1 根因闭合经独立复算（隔离树 A/B）；四项禁止构造经导入面结构级证明未引入
+- [ ] P5 归档（仅文档动作，受 R2 放行边界约束）：RFC-0003 流转 Implemented + 修订行措辞收窄（DR1-11）；计划结项重写检查点（DR1-12）；docs/index.md 状态刷新（DR1-14）+ 版本联动；llms.txt 重生成；BK 新增（DR1-13）
 - [ ] 待办登记：DR1-3（README 入口象限产物健康评分后果披露）、DR1-8（修订表头作用域）、DR1-10（llms 输出落点）

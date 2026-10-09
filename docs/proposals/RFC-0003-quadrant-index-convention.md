@@ -2,11 +2,23 @@
 
 > **提案元数据**
 > - **标识**: RFC-2026-QUADRANT-INDEX-CONVENTION
-> - **当前状态**: In Review
+> - **当前状态**: Implemented
 > - **发起人**: 工程师 / AI Agent
 > - **当前版本**: V0.3.0
 > - **初次发起日期**: 2026-10-09
 > - **目标里程碑**: doc-governance V2.0.0（技能内部一致性收敛，不涉及仓库版本号变更）
+> - **定案日期**: 2026-10-09
+
+> [!IMPORTANT]
+> **历史溯源备忘 (Archival Notice)**:
+> 本提案已于 2026-10-09 经三轮双轮对抗审查（R1 → R2 → Delta R1 → Delta R2；共 6 份归档报告）取得 **Zero Blockers ✅ 准予交付**，并结晶下沉至系统生产基线。
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（「目录级索引约定」节）
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（目录拓扑与工具链表）
+> - 架构设计书请查阅: [../explanation/architecture/doc-governance-design.md](../explanation/architecture/doc-governance-design.md)（目录级索引约定）
+> - 实施计划请查阅: [../project/plans/2026-10-09-quadrant-index-convention.md](../project/plans/2026-10-09-quadrant-index-convention.md)
+> - 审查凭据全文请查阅: [../project/reviews/2026-10-09-quadrant-index-convention/README.md](../project/reviews/2026-10-09-quadrant-index-convention/README.md)
+> - 遗留待办请查阅: [../project/backlog/index.md](../project/backlog/index.md)（BK-0016~BK-0022）
+> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
 
 ---
 
@@ -14,7 +26,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **V0.3.0** | 2026-10-09 | DSH AI Agent | 王辉 | 依 Delta 审查裁决修订：§7.3 DA-2 并发后果描述更正为「静默丢弃登记行」（原「重复行」不实）；托管标记判据明确为位置契约、README 入口按 DA-4 跳过；门禁不变式 GI-1/GI-4 补充入参校验与防 ghost 登记语义 |
+| **V0.3.0** | 2026-10-09 | DSH AI Agent | 王辉 | 依 Delta 审查裁决修订：§7.3 DA-2 并发后果描述更正为「静默丢弃登记行」（原「重复行」不实）；托管标记判据的位置契约、README 入口跳过、入参校验（--dir 封边 / --file 存在性）与防 ghost 登记**均由实现层承载**（RFC 正文条文未随同扩写，避免规范与实现重复定义） |
 | **V0.2.0** | 2026-10-09 | DSH AI Agent | 王辉 | 补全术语表、决策台账与门禁不变式；P-1 裁定采用「方案 A（象限索引托管化 + 规范登记 + scaffold 自愈）」 |
 | **V0.1.0** | 2026-10-09 | DSH AI Agent | 王辉 | 脚手架初始化，登记象限索引未定义区缺陷与三类候选方案 |
 

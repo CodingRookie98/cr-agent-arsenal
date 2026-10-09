@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **21** 项 (进行中: 0, 计划中: 21)
+- **现役活跃待办**: **22** 项 (进行中: 0, 计划中: 22)
 - **历史已归档项**: **0** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 5 | 16 |
+| **活跃数量** | 0 | 0 | 5 | 17 |
 
 ---
 
@@ -50,6 +50,7 @@
 | **BK-0018** | `P3` | `Governance` | 明确 skills-lock.json computedHash 权威定义并评估全量重算 | — | [BK-0018](./active/BK-0018-明确-skills-lock-json-computedhash-权威定义并评估.md) |
 | **BK-0019** | `P3` | `Governance` | README 入口象限的索引自愈与健康评分语义对齐 | — | [BK-0019](./active/BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md) |
 | **BK-0021** | `P3` | `Bug` | generate-llms-txt.py 的 --root 与 --output 落点解耦缺陷 | — | [BK-0021](./active/BK-0021-generate-llms-txt-py-的-root-与-output-落点解.md) |
+| **BK-0022** | `P3` | `TechDebt` | strip_leading_noise 对未闭合 frontmatter 围栏兜底 | — | [BK-0022](./active/BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜.md) |
 
 ---
 
