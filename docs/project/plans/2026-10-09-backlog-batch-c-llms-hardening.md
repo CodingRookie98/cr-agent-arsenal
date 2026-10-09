@@ -26,7 +26,7 @@
 - **当前活跃子任务**: Task P4.1（Light 模式 R1 派发）
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/3
-- **最后一次验证状态**: ✅ 全绿（pytest **79 passed**；实仓健康度 100.0/100）
+- **最后一次验证状态**: ✅ 全绿（pytest **83 passed**；实仓健康度 100.0/100；Light R1 判 1×P1 → 已二次修复）
 - **最新有效提交**: 见分支 `fix/backlog-batch-c-llms-hardening` HEAD
 - **阻断原因**: 无
 
@@ -47,14 +47,17 @@
 - 零覆盖豁免（BK-0023 为避免死胡同而引入）的真实代价此前只存在于审查报告，未落入治理条文（SSOT）。
 
 ## 3. 锁定修复范围 (Locked Diff Scope)
-- `skills/doc-governance/scripts/audit-doc-health.py`：新增 `_sanitize_project_name()`（可打印字符过滤 + 64 字符上限 + 非法回落 `System`）并在 `_map_project_name` 出口应用；提示命令改用 `--name=<value>` 赋值形式；
+- `skills/doc-governance/scripts/audit-doc-health.py`：新增 `_resolve_project_name()`（反解**未净化原名**供判定逐字同源，并回报 `resolved` 可信标志）与 `_is_safely_displayable()`（全可打印 + 非空 + ≤64 字符）；**反解不可信或名字不可安全回显时一律不下发 `--name` 命令**，改以 prose 指引；可安全回显时用 `--name=<value>` 赋值形式；
 - `docs/GOVERNANCE.md` §4.1：新增「零覆盖态边界（BK-0027 显式登记）」，写明所选口径为**显式登记豁免**（不引入条目可解析性校验）及其代价；
 - `skills/doc-governance/tests/test_doc_governance_scripts.py`：新增 3 条用例；修正零覆盖用例 docstring，指明其所锁定的是**登记豁免**而非正确性契约；
 - **严禁**：新增独立脚本层、裁决语义解析器、`.docignore` 机制或共享模块重构。
 
 ## 4. 回归测试 (Regression Tests)
 - `TestBatchCLlmsHintHardening::test_hint_strips_terminal_control_sequences`（D2-3：输出零裸 ESC/BEL）；
-- `TestBatchCLlmsHintHardening::test_hint_rejects_nul_and_overlong_names`（D2-5：零 NUL、输出不被膨胀）；
+- `TestBatchCLlmsHintHardening::test_hint_rejects_nul_name` / `test_hint_rejects_overlong_name`（D2-5：零 NUL、输出不被膨胀）；
+- `TestBatchCLlmsHintHardening::test_legit_edge_names_are_not_misjudged_as_drift`（R1-1：4 类合法边缘名不得被误判漂移）；
+- `TestBatchCLlmsHintHardening::test_malformed_names_never_emit_a_name_option`（R1-1：畸形名不得下发改名命令）；
+- `TestBatchCLlmsHintHardening::test_hint_name_matches_map_identity`（R1-3：提示 `--name` 值须逐字等于地图身份）；
 - `TestBatchCLlmsHintHardening::test_hint_command_is_executable_for_dash_prefixed_name`（D2-4：`--name=--root` 被 argparse 接受，rc≠2）。
 
 ## 5. 审查与放行 (Review & Release)

@@ -1195,5 +1195,37 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
         self.assertNotIn("expected one argument", gen.stderr)
 
 
+    def test_malformed_names_never_emit_a_name_option(self):
+        """R1-1 / R1-9：反解不可信或名字不可安全回显时，提示不得下发改名命令
+
+        （否则用户照做会把地图 H1 静默改写为占位名或截断名，项目身份在 SSOT 中丢失）
+        """
+        for name in ("", "A\nB", "A\u2028B", "A\x1b]0;X\x07", "X" * 100000):
+            with self.subTest(name=repr(name[:8])):
+                self._write_drifted_map(name)
+
+                res = self._audit()
+                out = res.stdout + res.stderr
+                self.assertIn("机器地图", out, "前置：漂移必须被检出")
+                self.assertNotIn("--name=", out, f"R1-1: 畸形名 {name[:8]!r} 不得下发改名命令")
+
+    def test_hint_name_matches_map_identity(self):
+        """R1-3 / R1-9：提示中的 --name 值必须与地图 H1 项目名逐字相同（身份保真）"""
+        for name in ("CR 公共技能库", " Foo ", "--root"):
+            with self.subTest(name=repr(name)):
+                self._write_drifted_map(name)
+
+                res = self._audit()
+                out = res.stdout + res.stderr
+                line = next((ln for ln in out.splitlines() if "--name=" in ln), None)
+                self.assertIsNotNone(line, f"可安全回显的名字应下发可执行命令：{name!r}")
+                segment = line.split("--name=", 1)[1]
+                end = segment.find(" 运行")
+                token = (segment[:end] if end > 0 else segment).strip()
+                if token.startswith("'") and token.endswith("'"):
+                    token = token[1:-1]
+                self.assertEqual(token, name, "提示 --name 值必须逐字等于地图身份")
+
+
 if __name__ == "__main__":
     unittest.main()
