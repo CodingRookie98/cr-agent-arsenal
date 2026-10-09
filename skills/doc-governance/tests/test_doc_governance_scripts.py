@@ -831,5 +831,51 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
         self.assertFalse((cwd / "docs" / "llms.txt").exists(), "BK-0021: 不得写回 CWD 相对路径")
 
 
+    def test_trim_revision_rejects_archive_under_narrow_root(self):
+        """R1-2：--root 收窄到归档子树内时仍不得改写交付凭据"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+        before = archived.read_bytes()
+        narrow_root = self.test_dir / "docs" / "project" / "reviews"
+
+        trim_revision.scan_and_trim(narrow_root, max_keep=5, fix=True)
+
+        self.assertEqual(archived.read_bytes(), before, "R1-2: 任意 --root 下归档都必须只读")
+
+    def test_trim_revision_rejects_archive_under_wide_root(self):
+        """R1-2：--root 放宽到仓库上层时仍不得改写交付凭据"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+        before = archived.read_bytes()
+
+        trim_revision.scan_and_trim(self.test_dir, max_keep=5, fix=True)
+
+        self.assertEqual(archived.read_bytes(), before, "R1-2: 宽 root 下归档也必须只读")
+
+    def test_trim_revision_single_file_archive_reports_skip(self):
+        """R1-3：单文件模式与目录模式判定同构，且必须显式提示跳过（不得静默假绿）"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+        before = archived.read_bytes()
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "trim-revision.py"), "--root", str(archived), "--fix"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertEqual(archived.read_bytes(), before, "R1-3: 单文件模式不得改写归档")
+        self.assertIn("归档", res.stdout + res.stderr, "R1-3: 必须显式说明跳过，而非静默假绿")
+
+    def test_generate_llms_txt_excludes_archive_under_narrow_root(self):
+        """R1-7 兜底：--root 收窄时机器地图同样不得收录归档条目"""
+        self._write_revision_doc("docs/project/reviews/report.md", rows=1)
+        self._write_revision_doc("docs/project/plans/plan.md", rows=1)
+        narrow = self.test_dir / "docs" / "project"
+        out = self.test_dir / "out.txt"
+
+        generate_llms_txt.generate_llms_txt(narrow, out, project_name="T")
+
+        content = out.read_text(encoding="utf-8")
+        self.assertNotIn("report.md", content, "R1-7: 收窄 root 下归档条目仍须被排除")
+        self.assertIn("plan.md", content, "非归档文档必须保留")
+
+
 if __name__ == "__main__":
     unittest.main()

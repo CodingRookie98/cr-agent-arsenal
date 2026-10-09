@@ -33,6 +33,15 @@ def in_evidence_archive(path: Path, root_dir: Path) -> bool:
         return False
     return rel.parts[:2] == EVIDENCE_ARCHIVE_PARTS
 
+def is_archive_path(path: Path) -> bool:
+    """不依赖 root 锚定的写入侧安全闸：任一祖先含相邻 project/reviews 段即判定为交付凭据归档。
+
+    in_evidence_archive 以 --root 锚定，当 --root 收窄至归档子树内时会失效（R1-2）；
+    本函数保证在任何 --root 取值下都正确识别归档（G1 逐字归档红线不可写/不可收录）。
+    """
+    parts = path.parts
+    return any(parts[i:i + 2] == EVIDENCE_ARCHIVE_PARTS for i in range(len(parts) - 1))
+
 
 def process_markdown_file(file_path: Path, max_keep: int = 5, fix: bool = False) -> Tuple[bool, int, Optional[str]]:
     """
@@ -139,9 +148,9 @@ def scan_and_trim(root_path: Path, max_keep: int = 5, fix: bool = False) -> Tupl
     """扫描目录或单文件并执行裁剪检查"""
     md_files = []
     if root_path.is_file() and root_path.suffix == ".md":
-        # 显式指定单文件时，仍拒绝交付凭据归档（G1 逐字归档红线不可写）
-        parts = root_path.parts
-        if any(parts[i:i + 2] == EVIDENCE_ARCHIVE_PARTS for i in range(len(parts) - 1)):
+        # 显式指定单文件时同样拒绝交付凭据归档（与目录模式判定同构，且必须显式告知）
+        if is_archive_path(root_path):
+            print(f"ℹ️  目标文件位于交付凭据归档内（project/reviews），已跳过：G1 逐字归档红线不可改写: {root_path}", file=sys.stderr)
             md_files = []
         else:
             md_files = [root_path]
@@ -149,7 +158,7 @@ def scan_and_trim(root_path: Path, max_keep: int = 5, fix: bool = False) -> Tupl
         for f in root_path.rglob("*.md"):
             if any(p in f.parts for p in ("node_modules", ".git", ".next", "dist", "build")):
                 continue
-            if in_evidence_archive(f, root_path):
+            if in_evidence_archive(f, root_path) or is_archive_path(f):
                 continue
             md_files.append(f)
 
