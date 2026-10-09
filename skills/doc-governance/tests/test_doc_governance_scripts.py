@@ -1448,7 +1448,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
     def test_audit_suggestion_is_executable_by_generator(self):
         """DR1-2：审计下发的 --name 必须能被生成器接受（不得退化为必然失败的死循环）"""
         (self.docs / "llms.txt").write_text(
-            "# Foo  Machine-Readable Knowledge Base Map\n\n- 漂移条目\n", encoding="utf-8")
+            "# Foo Machine-Readable Knowledge Base Map  \n\n- 漂移条目\n", encoding="utf-8")
 
         res = self._audit()
         out = res.stdout + res.stderr
@@ -1481,6 +1481,18 @@ class TestBatchDIdentityContract(unittest.TestCase):
         )
         self.assertNotEqual(res.returncode, 0, "不可编码的项目名必须被拒绝")
         self.assertFalse((self.docs / "llms.txt").exists(), "不得留下 0 字节地图")
+
+
+    def test_generator_does_not_normalize_identity_whitespace(self):
+        """R1-5：既有 H1 含行边界空白时必须拒绝，不得静默归一化为去空白后的身份"""
+        (self.docs / "llms.txt").write_text(
+            "# Foo Machine-Readable Knowledge Base Map  \n\n- 漂移条目\n", encoding="utf-8")
+        before = (self.docs / "llms.txt").read_bytes()
+
+        res = self._run_llms("--output", str(self.docs / "llms.txt"))
+
+        self.assertNotEqual(res.returncode, 0, "含行边界空白的既有身份必须拒绝（不 strip）")
+        self.assertEqual((self.docs / "llms.txt").read_bytes(), before, "字节必须逐字节不变")
 
 
 if __name__ == "__main__":
