@@ -405,5 +405,80 @@ class TestDeltaHardening(IndexConventionTestBase):
         self.assertEqual(original, self.read("how-to/index.md"), "R1-5: 失败时不得留下半成品改写")
 
 
+    def test_generated_skeleton_has_no_stray_backslash_before_backtick(self):
+        """DR1-1：ensure 生成物不得含「反斜杠+反引号」无效转义残留"""
+        res = self.run_manage("ensure", "--root", str(self.test_dir), "--dir", "how-to")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        content = self.read("how-to/index.md")
+        stray = chr(92) + chr(96)
+        self.assertNotIn(stray, content, "DR1-1: 生成物含反斜杠转义残留")
+
+    def test_script_compiles_under_strict_syntax_warnings(self):
+        """DR1-1：脚本须在 -W error::SyntaxWarning 下零告警编译（未来 Python 的硬错误前哨）"""
+        res = subprocess.run(
+            [sys.executable, "-W", "error::SyntaxWarning", "-c",
+             "import py_compile, sys; py_compile.compile(sys.argv[1], doraise=True)",
+             str(SCRIPTS_DIR / "manage-doc-index.py")],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(res.returncode, 0, "DR1-1: 严格告警下编译失败\n" + res.stderr)
+
+    def test_is_managed_tolerates_bom_prefix(self):
+        """DR1-2：托管索引被加 BOM 后仍应识别为托管并正常登记"""
+        index_dir = self.test_dir / "how-to"
+        index_dir.mkdir(parents=True)
+        body = ("\ufeff" + "# How To 象限索引\n\n<!-- doc-index:managed -->\n\n"
+                "> **文档控制信息**\n> - **当前版本**: V1.0.0\n\n"
+                "---\n\n### 修订历史记录 (Revision History)\n\n"
+                "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+                "| :--- | :--- | :--- | :--- | :--- |\n"
+                "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n\n"
+                "---\n\n## 文档清单 (Document Inventory)\n")
+        (index_dir / "index.md").write_text(body, encoding="utf-8")
+        self.prepare_doc("how-to", "deployment.md")
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertIn("](./deployment.md)", self.read("how-to/index.md"), "DR1-2: BOM 前导时仍应登记")
+
+    def test_is_managed_tolerates_frontmatter_comment(self):
+        """DR1-2：frontmatter 围栏内含 # 注释时不得抢占 H1 锚点"""
+        index_dir = self.test_dir / "how-to"
+        index_dir.mkdir(parents=True)
+        body = ("---\ntitle: how-to index\n# note comment\n---\n\n"
+                "# How To 象限索引\n\n<!-- doc-index:managed -->\n\n"
+                "> **文档控制信息**\n> - **当前版本**: V1.0.0\n\n"
+                "---\n\n### 修订历史记录 (Revision History)\n\n"
+                "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+                "| :--- | :--- | :--- | :--- | :--- |\n"
+                "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n\n"
+                "---\n\n## 文档清单 (Document Inventory)\n")
+        (index_dir / "index.md").write_text(body, encoding="utf-8")
+        self.prepare_doc("how-to", "deployment.md")
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertIn("](./deployment.md)", self.read("how-to/index.md"), "DR1-2: frontmatter 注释不得抢占锚点")
+
+    def test_register_rejects_dir_resolving_to_root(self):
+        """DR1-4：--dir 经符号链接解析为 root 本身时必须拒绝（N3）"""
+        docs = self.test_dir / "docs"
+        docs.mkdir(parents=True)
+        (docs / "index.md").write_text("# 人工根索引\n", encoding="utf-8")
+        try:
+            (docs / "self").symlink_to(docs)
+        except OSError:
+            self.skipTest("平台不支持符号链接")
+
+        res = self.run_manage("ensure", "--root", str(docs), "--dir", "self")
+        self.assertNotEqual(res.returncode, 0, "DR1-4: 解析为 root 本身的 --dir 必须拒绝")
+
+
 if __name__ == "__main__":
     unittest.main()

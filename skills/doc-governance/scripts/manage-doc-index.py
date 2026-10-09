@@ -28,7 +28,8 @@ from pathlib import Path
 MANAGED_MARKER = "<!-- doc-index:managed -->"
 INVENTORY_HEADING = "## 文档清单 (Document Inventory)"
 MAX_REVISION_ROWS = 5
-# 归一化语义与 check-doc-control-sync.py:normalize_version 对齐：容忍 "V1.0.0 (Draft)" 等注记后缀
+# 容忍 "V1.0.0 (Draft)" 等注记后缀（注释号语义与门禁 normalize_version 一致）；
+# 已知差异：本正则大小写敏感，小写 "v1.0.0" 会被拒绝并显式报错（方向保守、不写盘），不追求与校验器逐字符等价（DR1-9）
 HEADER_VERSION_RE = re.compile(r"^> - \*\*当前版本\*\*: (V?\d+(?:\.\d+)*)(.*)$", re.MULTILINE)
 
 
@@ -49,7 +50,7 @@ def build_skeleton(dir_rel: str, title: str, today: str) -> str:
     return f"""# {title} 象限索引 (Quadrant Index)
 
 {MANAGED_MARKER}
-> ⚙️ **托管索引声明**: 本文件由 \`manage-doc-index.py\` 自动创建与维护（\`scaffold-doc.sh\` 生成文档时同步登记）。删除上方托管标记即可转为人工维护，届时脚本将不再改写本文件。
+> ⚙️ **托管索引声明**: 本文件由 `manage-doc-index.py` 自动创建与维护（`scaffold-doc.sh` 生成文档时同步登记）。删除上方托管标记即可转为人工维护，届时脚本将不再改写本文件。
 
 > **文档控制信息**
 > - **文档标识**: DOCIDX-{slug}-{year}
@@ -64,7 +65,7 @@ def build_skeleton(dir_rel: str, title: str, today: str) -> str:
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **V1.0.0** | {today} | AI Agent | 架构师 | 初始化 \`{dir_rel}/\` 托管象限索引 |
+| **V1.0.0** | {today} | AI Agent | 架构师 | 初始化 `{dir_rel}/` 托管象限索引 |
 
 ---
 
@@ -74,13 +75,28 @@ def build_skeleton(dir_rel: str, title: str, today: str) -> str:
 """
 
 
+def strip_leading_noise(text: str) -> str:
+    """剥离 BOM 与其后的 YAML frontmatter 围栏，返回正文起点（DR1-2 最小硬化）。"""
+    lines = text.lstrip("\ufeff").splitlines()
+    idx = 0
+    while idx < len(lines) and not lines[idx].strip():
+        idx += 1
+    if idx < len(lines) and lines[idx].strip() == "---":
+        idx += 1
+        while idx < len(lines) and lines[idx].strip() != "---":
+            idx += 1
+        idx += 1
+    return "\n".join(lines[idx:])
+
+
 def is_managed(text: str) -> bool:
     """托管判据（RFC §3.2 位置契约）：H1 之后的首个非空行精确等于托管标记。
 
-    仅正文引用该标记字符串的人工索引不得被判为托管（R1-1 回归）。
+    仅正文引用该标记字符串的人工索引不得被判为托管（R1-1 回归）；
+    前导 BOM / frontmatter 围栏不影响锚点（DR1-2）。
     """
     h1_seen = False
-    for raw_line in text.splitlines():
+    for raw_line in strip_leading_noise(text).splitlines():
         line = raw_line.strip()
         if not h1_seen:
             if line.startswith("# "):
@@ -119,7 +135,9 @@ def resolve_within_root(root: Path, dir_rel: str) -> Path:
     """解析后必须仍位于 --root 之内（校验的确定性兜底）。"""
     target = (root / dir_rel).resolve()
     root_resolved = root.resolve()
-    if target != root_resolved and root_resolved not in target.parents:
+    if target == root_resolved:
+        raise IndexMaintenanceError(f"--dir 解析后为 --root 本身，拒绝（N3：根级索引为人工唯一入口）: {dir_rel}")
+    if root_resolved not in target.parents:
         raise IndexMaintenanceError(f"--dir 解析后越出 --root: {dir_rel}")
     return target
 
