@@ -1,4 +1,4 @@
-# CR Public Skills Machine-Readable Knowledge Base Map
+# System Machine-Readable Knowledge Base Map
 
 > 本文件遵循 llmstxt.org 规范，为 AI 智能体提供全景知识拓扑与物理文件导航地图。
 > 严禁凭空猜测路径，查阅具体模块前请通过下述相对链接精准索引对应文件。
@@ -60,6 +60,7 @@
 - [frontend-qa-gate 后续待办闭环 维护修复计划 (Maintenance-Patch Plan)](project/plans/2026-09-21-qa-gate-followups.md): 复现脚本：`/tmp/fu_repro.py`、`/tmp/fu_scan2.py`（扫描剥离围栏，避免示例代码块误报）。
 - [dual-round-review 审查报告持久化归档实施方案计划 (Implementation Plan)](project/plans/2026-10-04-review-report-archive.md): 1. 对一次真实双轮审查，归档目录以**被版本库跟踪**的新增文件出现在 `docs/project/reviews/` 下；
 - [dual-round-review 审查报告子智能体直写实施方案计划 (Implementation Plan)](project/plans/2026-10-08-subagent-direct-write.md): 1. 对**本交付自身**跑一次真实双轮审查（dogfooding），R1 与 R2 报告均由**子智能体直写**落盘，文件中**不含**任何主智能体转录痕迹；
+- [批次 A 归档豁免与 llms 落点修复实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-a-archive-exemption.md)
 - [doc-governance 目录级索引约定与 scaffold 索引自愈实施方案计划 (Implementation Plan)](project/plans/2026-10-09-quadrant-index-convention.md)
 
 ## Other Documentation (其他文档)

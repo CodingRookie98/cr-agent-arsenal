@@ -107,6 +107,11 @@ docs/
 | 工具 | 豁免项 | 理由 |
 | :--- | :--- | :--- |
 | `check-doc-links.py` | 全量跳过（不计入扫描文件数） | 报告正文可能引用归档目录外的相对路径，逐字归档不得改写 |
+| `check-doc-control-sync.py` | 控制头与修订表版本一致性校验 | 报告无标准控制头，不参与版本联动扫描 |
 | `audit-doc-health.py` | 元数据控制头合规率、孤儿文档计分 | 报告不得添加控制头；报告无 markdown 入链 |
+| `trim-revision.py` | 修订历史裁剪（含 `--fix` 就地写入） | 报告逐字归档，任何写入都会破坏 SHA256 指纹（BK-0001） |
+| `generate-llms-txt.py` | 机器地图收录 | 逐字凭据不进入智能体引导地图，保持机器地图纯净（BK-0002） |
+
+**判定实现**：只读消费者采用 root 锚定判定（`in_evidence_archive(path, root_dir)`）；**具备写能力的 `trim-revision.py` 额外采用不依赖 root 的路径段扫描兜底**（`is_archive_path`），保证 `--root` 被收窄或放宽时仍不写入交付凭据（BK-0001 / R1-2）。
 
 **边界**：豁免仅覆盖 `<docs 根>/project/reviews/**`。归档**索引** `README.md` 仍应携带标准控制头（`prepare-review-context.sh` 的 scaffold 模板已内置），以保持人类可读性。

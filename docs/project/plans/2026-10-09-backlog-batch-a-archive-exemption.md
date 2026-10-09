@@ -22,11 +22,11 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Maintenance-Patch
-- **当前活跃阶段**: P4 定向单轮红队审查
-- **当前活跃子任务**: Task P4.1（Light 模式 R1 派发）
+- **当前活跃阶段**: P4 定向单轮红队审查（Light-Delta 复核）
+- **当前活跃子任务**: Task P4.2（Light R1 已返回：1×P1 + 3×P2 + 3×P3；全部修复完成，待 Light-Delta 复核）
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/3
-- **最后一次验证状态**: ✅ 全绿（pytest **60 passed**；三件套 rc=0；health 100.0/100；归档树指纹 `--fix` 前后一致；llms.txt 归档条目 17→0，条目数 65→48）
+- **最后一次验证状态**: ✅ 全绿（pytest **64 passed**；三件套 rc=0；health **100.0/100**、孤儿 0/51；llms.txt 以注册命令重生成可复现：**49 条**、H1 `System`、归档条目 0）
 - **最新有效提交**: 见分支 `fix/backlog-batch-a-archive-exemption` HEAD
 - **阻断原因**: 无
 
@@ -47,7 +47,7 @@
 ## 3. 修复范围 (Locked Diff Scope)
 - `skills/doc-governance/scripts/trim-revision.py`：新增同构豁免常量与判断；目录遍历与单文件模式均拒绝归档路径；
 - `skills/doc-governance/scripts/generate-llms-txt.py`：新增同构豁免判断（生成循环跳过归档）；`--output` 缺省改为 `<root>/llms.txt`；
-- `docs/llms.txt`：重生成一次（归档条目 18 → 0，总条目 65 → 48）；
+- `docs/llms.txt`：以 **GOVERNANCE §3 登记的注册命令**重生成一次（归档条目 **17 → 0**；总条目 65 → 48；该树 md 总数 67 → 新增计划后 68 → 68 − 17 归档 − 2 根文件 = 49）；
 - **严禁**：引入裁决语义解析器、`.docignore` 配置机制、共享模块重构或其它过度工程（遵循 BK-0001/0002 卡片所载 R2 YAGNI 指令）。
 
 ## 4. 回归测试 (Regression Tests)
@@ -58,6 +58,20 @@
 ## 5. 审查与放行 (Review & Release)
 - 通道：Maintenance-Patch → `dual-round-review` **Light 单轮定向红队**（未触及公共契约与核心链路）；
 - 命中 Blocker 时按 Light-Delta 仅重跑 R1 再裁决。
+
+### 5.1 首轮 Light 审查结论与修复（R1：`docs/project/reviews/2026-10-09-batch-a-archive-exemption/r1-8ea3f65..6e7b92d.md`）
+
+R1 判定：三项待办**技术内核均为本质根因修复**（经 git archive 隔离三树 A/B 反证：归档实扫 17 篇全跳过 / llms 归档条目 17→0 / `--output` 落点随 `--root` 派生），但**交付物层面 1 项 P1 阻断**。逐项处置：
+
+| 稳定 ID | 终审前定级 | 缺陷 | 处置 |
+|:---|:---:|:---|:---|
+| R1-1 | **P1** | 交付的 `docs/llms.txt` 非其生成器在该树上的输出：同提交新增的计划文档未收录（应 49 条、实 48），且 H1 由**未注册的 `--name`** 决定 | ✅ 以 GOVERNANCE §3 **注册命令**（不传 `--name`）重生成：H1 恢复 `System`、条目 **49**、归档条目 0，可复现 |
+| R1-2 | P2 | 归档豁免为 root 锚定，写入侧未闭合：`--root .` / `--root docs/project` 下 `--fix` 仍改写归档 | ✅ 新增 `is_archive_path()` **不依赖 root 的路径段扫描兜底**，两个消费者统一使用；任意 root 下均不写/不收录 |
+| R1-3 | P2 | 单文件模式与目录模式判定非同构 → 同一文件两种入口结论相反，且输出「共检查 0 个文件/✅ 完美」假绿；该分支零覆盖 | ✅ 单文件模式改用同一 `is_archive_path()`，并**显式打印跳过原因**；补 3 条覆盖用例 |
+| R1-4 | P2 | 新增计划文档零入链、未登记 `index.md`/`llms.txt` → 孤儿（head 健康度 99.8） | ✅ 登记 `docs/index.md`（V1.20.0 + 修订行）并随重生成入机器地图 → 孤儿 0/51、health **100.0** |
+| R1-5 | P3 | GOVERNANCE §4.1 豁免登记表未补登 2 个新消费者 | ✅ 补登至**全部 5 个消费者**，并新增「判定实现」段说明写入侧 root 无关兜底 |
+| R1-6 | P3 | 计划书「18→0」与「65→48」算术互斥（实为 17） | ✅ 勘误为 **17 → 0**，并补全口径（该树 md 67→68，68 − 17 − 2 = 49） |
+| R1-7 | P3（封顶） | 三个只读消费者的 root 锚定债（历史既有，未在本 Diff 改动） | 保留为后续迭代统一排期；本批次已在写入侧与两个新消费者上闭合 |
 
 ---
 
