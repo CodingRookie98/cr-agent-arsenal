@@ -112,6 +112,6 @@ docs/
 | `trim-revision.py` | 修订历史裁剪（含 `--fix` 就地写入） | 报告逐字归档，任何写入都会破坏 SHA256 指纹（BK-0001） |
 | `generate-llms-txt.py` | 机器地图收录 | 逐字凭据不进入智能体引导地图，保持机器地图纯净（BK-0002） |
 
-**判定实现**：只读消费者采用 root 锚定判定（`in_evidence_archive(path, root_dir)`）；**具备写能力的 `trim-revision.py` 额外采用不依赖 root 的路径段扫描兜底**（`is_archive_path`），保证 `--root` 被收窄或放宽时仍不写入交付凭据（BK-0001 / R1-2）。
+**判定实现**：只读消费者采用 root 锚定判定（`in_evidence_archive(path, root_dir)`）；**具备写能力的 `trim-revision.py` 与 `generate-llms-txt.py` 额外采用路径段扫描（`is_archive_path`）** —— 该判定**不依赖 `--root`**，凡路径中出现相邻的 `project/reviews` 段即视为交付凭据。它是有意为之的**保守超集**（比上方 `<docs 根>/project/reviews/**` 边界更宽：即使该段不位于 docs 根之下亦受保护），以换取「任何 `--root` 形态下都不写入交付凭据」的写入安全（BK-0001 / R1-2）；机器地图落点若解析落入归档则直接拒绝写入。
 
 **边界**：豁免仅覆盖 `<docs 根>/project/reviews/**`。归档**索引** `README.md` 仍应携带标准控制头（`prepare-review-context.sh` 的 scaffold 模板已内置），以保持人类可读性。
