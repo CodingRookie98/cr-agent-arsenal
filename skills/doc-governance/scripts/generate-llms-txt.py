@@ -151,6 +151,7 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
         return 0
 
     content = "\n".join(output_lines)
+    output_file.parent.mkdir(parents=True, exist_ok=True)  # R1-7：仅在确认落盘时才创建父目录
     output_file.write_text(content, encoding="utf-8")
     print(f"✅ 机器可读地图成功生成至: {output_file} (共收录 {total_docs} 篇有效文档)")
     return total_docs
@@ -175,7 +176,6 @@ def main():
         print(f"❌ 错误: 目标根目录不存在: {root_path}", file=sys.stderr)
         sys.exit(1)
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
     written = generate_llms_txt(root_path, out_path, project_name=args.name)
     if written == 0:
         print(f"❌ 机器地图收录 0 篇文档，拒绝落盘（零覆盖守卫，避免覆盖既有 SSOT 地图）: {out_path}", file=sys.stderr)

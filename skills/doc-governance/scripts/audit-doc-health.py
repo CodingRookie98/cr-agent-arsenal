@@ -79,6 +79,16 @@ LEGACY_CATEGORIES = {
 }
 
 
+def _map_project_name(llms_file: Path) -> str:
+    """从既有机器地图首行反解项目名，使判定参数与生成参数同源（R1-2）。"""
+    try:
+        first_line = llms_file.read_text(encoding="utf-8", errors="replace").splitlines()[0]
+    except (OSError, IndexError):
+        return "System"
+    match = re.match(r"# (.+?) Machine-Readable Knowledge Base Map", first_line)
+    return match.group(1) if match else "System"
+
+
 def check_llms_map_consistency(root_dir: Path) -> str:
     """机器地图一致性门禁（BK-0025）：以注册命令语义重生成并与 <root>/llms.txt 逐字节比对。
 
@@ -87,17 +97,19 @@ def check_llms_map_consistency(root_dir: Path) -> str:
     llms_file = root_dir / "llms.txt"
     if not llms_file.exists():
         return ""
+    project_name = _map_project_name(llms_file)
     try:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_out = Path(tmp_dir) / "llms.txt"
             buffer = io.StringIO()
             with contextlib.redirect_stdout(buffer):
-                written = _llms_mod.generate_llms_txt(root_dir, tmp_out, project_name="System")
+                written = _llms_mod.generate_llms_txt(root_dir, tmp_out, project_name=project_name)
             if written == 0:
-                return "机器地图收录 0 篇文档（零覆盖守卫触发），既有 <root>/llms.txt 不可信"
+                # R1-1：无可收录文档时本项不适用——否则修复命令必然 rc=1，形成不可修复的死胡同
+                return ""
             if tmp_out.read_bytes() != llms_file.read_bytes():
                 return (
-                    "机器地图与注册命令生成物不一致 —— 请运行 "
+                    '机器地图与生成物不一致 —— 请以 --name "' + project_name + '" 运行 '
                     "generate-llms-txt.py --root docs --output docs/llms.txt 重新生成后再提交"
                 )
     except Exception as exc:  # noqa: BLE001 - 门禁不得因单点异常中断整体体检
@@ -666,7 +678,18 @@ def main():
         print("🏁 诊断结论: PASS (健康度达标，准予交付) ✅")
         sys.exit(0)
     else:
-        print(f"🚫 诊断结论: REJECTED (得分 {res['total_score']} < 门槛 {args.threshold}，或存在断链/版本漂移/backlog 编号违规，请修复后重测)")
+        reasons = []
+        if res["total_score"] < args.threshold:
+            reasons.append(f"得分 {res['total_score']} < 门槛 {args.threshold}")
+        if res["total_link_errors"]:
+            reasons.append(f"{res['total_link_errors']} 处断链")
+        if res.get("version_drift_files"):
+            reasons.append(f"{len(res['version_drift_files'])} 处版本漂移")
+        if res["backlog_issues"]:
+            reasons.append(f"{len(res['backlog_issues'])} 处 backlog 编号违规")
+        if res.get("llms_map_issue"):
+            reasons.append("机器地图不一致")
+        print(f"🚫 诊断结论: REJECTED（{'；'.join(reasons) or '存在阻断项'}），请修复后重测")
         sys.exit(1)
 
 

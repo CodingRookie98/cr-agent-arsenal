@@ -975,7 +975,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         )
 
         combined = res.stdout + res.stderr
-        self.assertIn("机器地图", combined, "BK-0025: 漂移必须被机械检出")
+        self.assertIn("机器地图一致性缺陷", combined, "BK-0025: 漂移必须被机械检出（精确断言，防接线空转）")
         self.assertNotEqual(res.returncode, 0, "BK-0025: 漂移必须导致门禁失败")
 
     def test_audit_accepts_consistent_llms_map(self):
@@ -987,8 +987,61 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
             capture_output=True, text=True,
         )
-        self.assertNotIn("机器地图与注册命令生成物不一致", res.stdout + res.stderr,
-                         "BK-0025: 一致的机器地图不得被误报")
+        self.assertNotIn("机器地图", res.stdout + res.stderr,
+                         "BK-0025: 一致的机器地图不得被误报（精确断言，防通用假阳性）")
+
+
+    def test_audit_accepts_map_generated_with_custom_name(self):
+        """R1-2：以合法 --name 参数生成的地图不得被判漂移（判定参数须与生成参数同源）"""
+        gen = self._run_llms("--name", "Custom Project", "--output", str(self.docs / "llms.txt"))
+        self.assertEqual(gen.returncode, 0, gen.stderr)
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
+            capture_output=True, text=True,
+        )
+        self.assertNotIn("机器地图", res.stdout + res.stderr,
+                         "R1-2: 自定义 --name 的地图不得被误报为漂移")
+
+    def test_audit_skips_when_nothing_indexable(self):
+        """R1-1：无可收录文档时不得形成不可修复的硬阻断死胡同"""
+        shutil.rmtree(self.docs / "explanation")
+        archived_dir = self.docs / "project" / "reviews"
+        archived_dir.mkdir(parents=True)
+        (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8")
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
+            capture_output=True, text=True,
+        )
+        self.assertNotIn("机器地图", res.stdout + res.stderr,
+                         "R1-1: 零覆盖场景不适用本项，不得硬阻断")
+
+    def test_llms_zero_coverage_leaves_no_empty_dirs(self):
+        """R1-7：零覆盖拒绝落盘时不得留下空目录副作用"""
+        shutil.rmtree(self.docs / "explanation")
+        out = self.test_dir / "newdir" / "llms.txt"
+
+        res = self._run_llms("--output", str(out))
+
+        self.assertNotEqual(res.returncode, 0, "R1-7: 零覆盖必须拒绝落盘")
+        self.assertFalse((self.test_dir / "newdir").exists(), "R1-7: 拒绝落盘不得留下空目录")
+
+
+    def test_audit_skips_when_map_exists_but_nothing_indexable(self):
+        """R1-1：地图存在但已无文档可收录时，不得形成不可修复的硬阻断死胡同"""
+        shutil.rmtree(self.docs / "explanation")
+        archived_dir = self.docs / "project" / "reviews"
+        archived_dir.mkdir(parents=True)
+        (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8")
+        (self.docs / "llms.txt").write_text("# 陈旧地图\n\n- 旧条目\n", encoding="utf-8")
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
+            capture_output=True, text=True,
+        )
+        self.assertNotIn("机器地图", res.stdout + res.stderr,
+                         "R1-1: 零覆盖场景本项不适用，不得硬阻断（修复命令必然 rc=1）")
 
 
 if __name__ == "__main__":
