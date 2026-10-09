@@ -83,7 +83,7 @@ docs/
 | :--- | :--- | :--- | :--- |
 | **`check-doc-links.py`** | 静态扫描物理文件超链接与 `#anchor` 锚点 | 提交前 / CI 门禁 | `python3 skills/doc-governance/scripts/check-doc-links.py --root docs` |
 | **`trim-revision.py`** | 自动裁剪历史记录至最近 5 条滑动窗口 | 提交前 / 维护 | `python3 skills/doc-governance/scripts/trim-revision.py --root docs --fix --keep 5` |
-| **`audit-doc-health.py`** | 综合健康体检（打分 0-100 分，断链/元数据/孤儿/架构） | 交付验收 / 定期体检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs` |
+| **`audit-doc-health.py`** | 综合健康体检（打分 0-100 分，断链/元数据/孤儿/架构/**机器地图一致性**） | 交付验收 / 定期体检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs` |
 | **`generate-llms-txt.py`** | 自动提取 Frontmatter 并刷新机器地图 `llms.txt` | 文档拓扑变动后 | `python3 skills/doc-governance/scripts/generate-llms-txt.py --root docs --output docs/llms.txt` |
 | **`manage-doc-index.py`** | 象限索引托管维护（ensure 骨架 / register 幂等登记 / 人工索引零改写） | 新建文档后 / 拓扑变动 | `python3 skills/doc-governance/scripts/manage-doc-index.py register --root docs --dir how-to --file deployment.md --title "部署 SOP" --kind HowTo` |
 | **`scaffold-doc.sh`** | 快速生成符合 Diátaxis 规范的文档脚手架，并自动 ensure 象限索引与登记（跨象限链接按需降级） | 新建文档时 | `skills/doc-governance/scripts/scaffold-doc.sh <type> <name>` |
@@ -94,9 +94,10 @@ docs/
 
 1. **⛔ 严禁 404 断链**：所有相对链接必须显式保留 `.md` 物理后缀，严禁裸路由或失效相对路径；
 2. **⛔ 严禁跨象限职责混淆**：技术参考（Reference）只记录冷峻事实，严禁加入教程或背景说理；操作指南（How-To）直奔步骤，理论分析外链至 Explanation；
-3. **⛔ 严禁修订历史无限膨胀**：每个文档修订历史表格最多保留 5 条最新记录，超过部分必须裁剪；
-4. **⛔ 严禁瀑布生命周期旧目录**：严禁创建 `docs/requirements/`、`docs/design/`、`docs/planning/` 等旧时代目录，必须归入对应 Diátaxis 象限；
-5. **⛔ 严禁文件命名随意混乱**：一律采用纯小写 `kebab-case` 命名风格（如 `goal-loop-design.md`），禁止驼峰与无规则空格。
+3. **⛔ 严禁机器地图与生成物不一致**：`docs/llms.txt` 必须是注册命令 `generate-llms-txt.py --root docs --output docs/llms.txt` 在该树上的**逐字节产物**（先定稿全部文档、最后重生成）；`audit-doc-health.py` 已将其固化为硬阻断项，漂移即 REJECT；
+4. **⛔ 严禁修订历史无限膨胀**：每个文档修订历史表格最多保留 5 条最新记录，超过部分必须裁剪；
+5. **⛔ 严禁瀑布生命周期旧目录**：严禁创建 `docs/requirements/`、`docs/design/`、`docs/planning/` 等旧时代目录，必须归入对应 Diátaxis 象限；
+6. **⛔ 严禁文件命名随意混乱**：一律采用纯小写 `kebab-case` 命名风格（如 `goal-loop-design.md`），禁止驼峰与无规则空格。
 
 ---
 
