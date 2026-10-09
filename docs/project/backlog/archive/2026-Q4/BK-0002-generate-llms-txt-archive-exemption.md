@@ -2,17 +2,18 @@
 id: BK-0002
 title: generate-llms-txt.py 复用归档豁免常量
 type: TechDebt
-status: active
+status: completed
 priority: P2
 trigger: null
 created_at: '2026-10-04'
-closed_at: null
-resolution: null
-destination: null
+closed_at: '2026-10-09'
+resolution: delivered
+destination: generate-llms-txt.py 追加同构归档豁免 + 机器地图纯净重生成（归档条目 17→0）；提交 45089b9/9108fbe
 source:
 - Delta R2 R1-2
 acceptance_criteria:
 - generate-llms-txt.py 复用同一豁免常量（与 audit/links 三消费者保持一致），或明确排除归档条目后重生成并提交一次
+updated_at: '2026-10-09'
 ---
 
 ## 1. 背景与问题描述
@@ -35,3 +36,8 @@ acceptance_criteria:
 ## 4. 结项与闭环记录
 
 *(当前处于活跃计划中，结项后由 `manage-backlog.py close` 自动迁入 archive/)*
+
+### 结项记录 (2026-10-09)
+- **结论**: delivered
+- **去向/凭据**: generate-llms-txt.py 追加同构归档豁免 + 机器地图纯净重生成（归档条目 17→0）；提交 45089b9/9108fbe
+- **归档目录**: archive/2026-Q4/

@@ -2,14 +2,14 @@
 id: BK-0021
 title: generate-llms-txt.py 的 --root 与 --output 落点解耦缺陷
 type: Bug
-status: active
+status: completed
 priority: P3
 trigger: null
 created_at: '2026-10-09'
 updated_at: '2026-10-09'
-closed_at: null
-resolution: null
-destination: null
+closed_at: '2026-10-09'
+resolution: delivered
+destination: --output 缺省落点随 --root 派生（并拒绝写入归档）；提交 45089b9/9108fbe
 source:
 - RFC-0003 Delta 审查 DR1-10（历史既有；Delta R2 封顶正确）
 acceptance_criteria:
@@ -28,3 +28,8 @@ generate-llms-txt.py 的 --output 默认值为相对 CWD 的 docs/llms.txt，不
 
 ## 4. 实施去向与结项记录
 *(未开工)*
+
+### 结项记录 (2026-10-09)
+- **结论**: delivered
+- **去向/凭据**: --output 缺省落点随 --root 派生（并拒绝写入归档）；提交 45089b9/9108fbe
+- **归档目录**: archive/2026-Q4/
