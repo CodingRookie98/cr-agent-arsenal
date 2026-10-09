@@ -1476,8 +1476,15 @@ class TestBatchDIdentityContract(unittest.TestCase):
         token = shlex.split(line.split("请以 ", 1)[1])[0].split("=", 1)[1]
 
         self.assertEqual(token, name, "抽取的项目名必须逐字等于地图身份")
-        gen = self._run_llms("--output", str(self.docs / "llms.txt"))
-        self.assertEqual(gen.returncode, 0, f"缺省重生成必须沿用该身份：{gen.stderr}")
+
+        # R1-23：真实执行被建议的 --name argv（仅断言字面量会放过"显式同名被拒"这类回归）
+        gen = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
+             "--root", str(self.docs), "--output", str(self.docs / "llms.txt"),
+             shlex.split(line.split("请以 ", 1)[1])[0]],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(gen.returncode, 0, f"按审计建议执行必须成功：{gen.stderr}")
 
 
     def test_unencodable_byte_name_is_refused(self):
@@ -1505,6 +1512,44 @@ class TestBatchDIdentityContract(unittest.TestCase):
 
         self.assertNotEqual(res.returncode, 0, "含行边界空白的既有身份必须拒绝（不 strip）")
         self.assertEqual((self.docs / "llms.txt").read_bytes(), before, "字节必须逐字节不变")
+
+
+    def test_audit_refuses_non_regular_map(self):
+        """R1-4 / R1-23：审计读路径对非规则文件必须立即拒绝（不得挂死或无界读取）"""
+        os.mkfifo(self.docs / "llms.txt")
+        try:
+            res = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
+                capture_output=True, text=True, timeout=20,
+            )
+        except subprocess.TimeoutExpired:
+            self.fail("审计对 FIFO 必须立即拒绝，不得进入阻塞读取")
+        self.assertIn("机器地图", res.stdout + res.stderr, "必须给出可读缺陷串")
+        self.assertNotEqual(res.returncode, 0, "非规则文件不得通过审计")
+
+    def test_generation_failure_leaves_no_partial_map(self):
+        """R1-5 / R1-23：生成失败不得留下半成品地图或临时残 file"""
+        bad_name = b"bad" + bytes([0xFF]) + b".md"
+        (self.docs / "explanation" / os.fsdecode(bad_name)).write_text("# B\n\n正文\n", encoding="utf-8")
+
+        res = self._run_llms("--output", str(self.docs / "llms.txt"))
+
+        self.assertNotEqual(res.returncode, 0, "含不可编码文件名的树必须拒绝生成")
+        self.assertFalse((self.docs / "llms.txt").exists(), "不得留下半成品地图")
+        leftovers = sorted(p.name for p in self.docs.glob("llms.txt.*"))
+        self.assertEqual(leftovers, [], f"不得留下临时残 file：{leftovers}")
+
+    def test_preset_tmp_symlink_is_not_followed(self):
+        """R1-21 / R1-23：预置的 llms.txt.tmp 软链不得被跟随（影子路径写保护）"""
+        victim = self.docs / "victim.txt"
+        victim.write_text("原始内容\n", encoding="utf-8")
+        before = victim.read_bytes()
+        (self.docs / "llms.txt.tmp").symlink_to(victim)
+
+        res = self._run_llms("--output", str(self.docs / "llms.txt"))
+
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertEqual(victim.read_bytes(), before, "预置 .tmp 软链的目标不得被写入")
 
 
 if __name__ == "__main__":

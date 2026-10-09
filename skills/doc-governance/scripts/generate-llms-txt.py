@@ -10,9 +10,11 @@ generate-llms-txt.py - 机器可读 llms.txt 自动化生成器
 """
 
 import argparse
+import contextlib
 import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -153,9 +155,20 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
     content = "\n".join(output_lines)
     output_file.parent.mkdir(parents=True, exist_ok=True)  # R1-7：仅在确认落盘时才创建父目录
     # R1-5：先写临时文件再原子替换 —— 编码/写入失败不得留下 0 字节地图把双工具楔死
-    tmp_path = output_file.with_name(output_file.name + ".tmp")
-    tmp_path.write_text(content, encoding="utf-8")
-    os.replace(tmp_path, output_file)
+    # R1-21/22/24：用 mkstemp 生成**不可预测**的唯一临时名（与目标同目录）
+    #   · 不可预测 ⇒ 无法预置同名软/硬链接劫持写入面（归档写保护之外的影子路径）
+    #   · 唯一 ⇒ 并发同名输出不再互相消耗，也不会因失败残留固定名文件
+    handle_fd, tmp_name = tempfile.mkstemp(
+        dir=str(output_file.parent), prefix=output_file.name + ".", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(handle_fd, "w", encoding="utf-8") as handle:
+            handle.write(content)
+        os.replace(tmp_name, output_file)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_name)
+        raise
     print(f"✅ 机器可读地图成功生成至: {output_file} (共收录 {total_docs} 篇有效文档)")
     return total_docs
 
