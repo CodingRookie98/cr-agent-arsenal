@@ -71,7 +71,7 @@ case "$TYPE" in
     if [ -f "$ROOT_DIR/how-to/index.md" ]; then
       NEXT_STEP_LINE="- 探索更多实战操作: [how-to 指南](../how-to/index.md)"
     else
-      NEXT_STEP_LINE="- 探索更多实战操作: 运行 \`scaffold-doc.sh how-to <name>\` 创建 \`how-to/\` 象限指南（当前尚无该象限索引）"
+      NEXT_STEP_LINE="- 探索更多实战操作: 运行 \`scaffold-doc.sh how-to <name>\` 创建 \`how-to/\` 象限指南"
     fi
     cat <<EOF > "$FILE_PATH"
 # ${NAME} 新手上路指南 (Tutorial)

@@ -23,16 +23,6 @@ REPO_ROOT = SKILL_DIR.parent.parent
 MANAGED_MARKER = "<!-- doc-index:managed -->"
 
 
-def run_script(args, **kwargs):
-    """以子进程方式运行脚本，返回 CompletedProcess。"""
-    return subprocess.run(
-        [sys.executable, *args] if str(args[0]).endswith(".py") else list(args),
-        capture_output=True,
-        text=True,
-        **kwargs,
-    )
-
-
 class IndexConventionTestBase(unittest.TestCase):
     def setUp(self):
         self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_index_"))
@@ -71,6 +61,13 @@ class IndexConventionTestBase(unittest.TestCase):
 
     def read(self, rel):
         return (self.test_dir / rel).read_text(encoding="utf-8")
+
+    def prepare_doc(self, dir_rel, filename, content="# 占位文档\n"):
+        """按 R1-6 契约：register 前目标文档必须真实存在。"""
+        path = self.test_dir / dir_rel / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return path
 
 
 class TestManageDocIndexEnsure(IndexConventionTestBase):
@@ -119,6 +116,7 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
     """register 子命令：幂等登记与版本联动"""
 
     def test_register_appends_row_and_bumps_patch_version(self):
+        self.prepare_doc("how-to", "deployment.md")
         res = self.run_manage(
             "register", "--root", str(self.test_dir), "--dir", "how-to",
             "--file", "deployment.md", "--title", "生产部署 SOP", "--kind", "HowTo",
@@ -134,6 +132,7 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
         self.assertEqual(sync.returncode, 0, sync.stdout + sync.stderr)
 
     def test_register_is_idempotent(self):
+        self.prepare_doc("how-to", "deployment.md")
         args = (
             "register", "--root", str(self.test_dir), "--dir", "how-to",
             "--file", "deployment.md", "--title", "生产部署 SOP", "--kind", "HowTo",
@@ -149,8 +148,9 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
         self.assertIn("**当前版本**: V1.0.1", content, "重复登记不得重复升版本")
 
     def test_register_skips_manual_index(self):
+        self.prepare_doc("how-to", "deployment.md")
         manual_dir = self.test_dir / "how-to"
-        manual_dir.mkdir(parents=True)
+        manual_dir.mkdir(parents=True, exist_ok=True)
         manual_body = "# 人工索引\n\n- 手工条目\n"
         (manual_dir / "index.md").write_text(manual_body, encoding="utf-8")
 
@@ -163,6 +163,7 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
 
     def test_revision_window_capped_at_five(self):
         for i in range(7):
+            self.prepare_doc("how-to", f"doc-{i}.md")
             res = self.run_manage(
                 "register", "--root", str(self.test_dir), "--dir", "how-to",
                 "--file", f"doc-{i}.md", "--title", f"文档 {i}", "--kind", "HowTo",
@@ -208,6 +209,7 @@ class TestScaffoldIndexSelfHealing(IndexConventionTestBase):
         body = self.read("tutorials/quick-start.md")
         self.assertNotIn("](../how-to/index.md)", body, "AS-4: 目标索引缺失时必须降级为纯文本")
         self.assertIn("how-to", body)
+        self.assertNotIn("当前尚无该象限索引", body, "R1-8: 降级文案不得包含事实断言")
 
     def test_tutorial_link_kept_when_howto_index_exists(self):
         ensure = self.run_manage("ensure", "--root", str(self.test_dir), "--dir", "how-to")
@@ -275,6 +277,132 @@ class TestSkillSpecQuadrantIndexConvention(unittest.TestCase):
     def test_change_impact_matrix_requires_index_sync(self):
         body = (SKILL_DIR / "references" / "change-impact-matrix.md").read_text(encoding="utf-8")
         self.assertIn("象限索引", body)
+
+
+class TestDeltaHardening(IndexConventionTestBase):
+    """Delta Re-Loop 回归（R2 终审：2 阻断 + 同轮 P2/P3 修复项成对交付）"""
+
+    def test_manual_index_referencing_marker_is_not_managed(self):
+        """R1-1：人工索引仅在正文引用标记字符串时，不得被判为托管（位置契约）"""
+        manual_dir = self.test_dir / "how-to"
+        manual_dir.mkdir(parents=True)
+        body = "# 人工索引\n\n本文件不含 <!-- doc-index:managed --> 标记，请勿改写。\n"
+        (manual_dir / "index.md").write_text(body, encoding="utf-8")
+        self.prepare_doc("how-to", "deployment.md")
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertEqual(body, self.read("how-to/index.md"), "R1-1: 仅引用标记的人工索引必须逐字节不变")
+
+    def test_ensure_skips_when_readme_entry_exists(self):
+        """R1-3：README 入口象限按 DA-4 跳过生成"""
+        entry_dir = self.test_dir / "how-to"
+        entry_dir.mkdir(parents=True)
+        readme = "# 人工 README 入口\n"
+        (entry_dir / "README.md").write_text(readme, encoding="utf-8")
+
+        res = self.run_manage("ensure", "--root", str(self.test_dir), "--dir", "how-to")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertFalse((entry_dir / "index.md").exists(), "R1-3: README 入口存在时不得生成第二份索引")
+        self.assertEqual(readme, (entry_dir / "README.md").read_text(encoding="utf-8"))
+
+    def test_register_skips_when_readme_entry_exists(self):
+        """R1-3：README 入口象限不登记、不生成"""
+        entry_dir = self.test_dir / "how-to"
+        entry_dir.mkdir(parents=True)
+        (entry_dir / "README.md").write_text("# 人工入口\n", encoding="utf-8")
+        self.prepare_doc("how-to", "deployment.md")
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertFalse((entry_dir / "index.md").exists(), "R1-3: 不得凭空生成托管索引")
+
+    def test_register_rejects_missing_file(self):
+        """R1-6：目标文档不存在时必须拒绝（杜绝 ghost 登记制造 404）"""
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "ghost.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertNotEqual(res.returncode, 0, "R1-6: 不存在的文档必须报错非 0")
+        self.assertFalse((self.test_dir / "how-to" / "index.md").exists())
+
+    def test_register_rejects_file_with_path_separator(self):
+        """R1-6 / SH-1：--file 必须是纯 basename"""
+        self.prepare_doc("how-to/sub", "x.md")
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "sub/x.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertNotEqual(res.returncode, 0, "SH-1: 含路径分隔符的 --file 必须报错非 0")
+
+    def test_register_rejects_dir_escape(self):
+        """R1-7 / R1-10：--dir 不得逃逸 root，也不得为 root 本身"""
+        escape = self.run_manage(
+            "register", "--root", str(self.test_dir / "docs"), "--dir", "../escape",
+            "--file", "e.md", "--title", "E", "--kind", "K",
+        )
+        self.assertNotEqual(escape.returncode, 0, "R1-7: 含 .. 的 --dir 必须报错非 0")
+        self.assertFalse((self.test_dir / "escape").exists(), "R1-7: 不得创建越界目录")
+
+        root_dir = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", ".",
+            "--file", "e.md", "--title", "E", "--kind", "K",
+        )
+        self.assertNotEqual(root_dir.returncode, 0, "R1-10: --dir 为 root 本身必须拒绝（N3）")
+
+    def test_register_tolerates_annotated_version_header(self):
+        """R1-4：控制头版本带注记时仍应升补丁版并写修订行"""
+        index_dir = self.test_dir / "how-to"
+        index_dir.mkdir(parents=True)
+        (index_dir / "index.md").write_text(
+            "# How To 象限索引\n\n<!-- doc-index:managed -->\n\n"
+            "> **文档控制信息**\n> - **当前版本**: V1.0.0 (Draft)\n\n"
+            "---\n\n### 修订历史记录 (Revision History)\n\n"
+            "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+            "| :--- | :--- | :--- | :--- | :--- |\n"
+            "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n\n"
+            "---\n\n## 文档清单 (Document Inventory)\n",
+            encoding="utf-8",
+        )
+        self.prepare_doc("how-to", "deployment.md")
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        content = self.read("how-to/index.md")
+        self.assertIn("**当前版本**: V1.0.1", content, "R1-4: 带注记的版本行也必须升版")
+        sync = self.run_control_sync()
+        self.assertEqual(sync.returncode, 0, "R1-4: 升版后不得出现版本漂移\n" + sync.stdout)
+
+    def test_register_aborts_when_revision_table_unrecognized(self):
+        """R1-5：修订表结构无法识别时必须整体放弃（要么都不动、要么都动）"""
+        index_dir = self.test_dir / "how-to"
+        index_dir.mkdir(parents=True)
+        original = (
+            "# How To 象限索引\n\n<!-- doc-index:managed -->\n\n"
+            "> **文档控制信息**\n> - **当前版本**: V1.0.0\n\n"
+            "---\n\n### 修订历史记录 (Revision History)\n\n"
+            "| 版本 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+            "| :--- | :--- | :--- | :--- | :--- |\n"
+            "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n"
+        )
+        (index_dir / "index.md").write_text(original, encoding="utf-8")
+        self.prepare_doc("how-to", "deployment.md")
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertNotEqual(res.returncode, 0, "R1-5: 修订表不可识别时必须报错非 0")
+        self.assertEqual(original, self.read("how-to/index.md"), "R1-5: 失败时不得留下半成品改写")
 
 
 if __name__ == "__main__":

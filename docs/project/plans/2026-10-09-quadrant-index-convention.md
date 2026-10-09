@@ -26,12 +26,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3 TDD 循环
-- **当前活跃子任务**: Task P3.1
+- **当前活跃阶段**: P4 双轮对抗终审
+- **当前活跃子任务**: Task P4.1（R1 已归档并核验：3×P1 / 6×P2 / 6×P3；R2 元审判已派发，等待真实裁决）
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
-- **最后一次验证状态**: 基线全绿（pytest 26 passed；links 0 断链；control-sync 0 漂移；health PASS）
-- **最新有效提交**: `95863c9`（分支基线，尚无本次提交）
+- **最后一次验证状态**: ✅ 全绿（pytest 44 passed；L3 端到端全类型零断链/零漂移/幂等复跑一致/人工索引逐字节不变；本仓库 docs 三件套 rc=0 且 health PASS）
+- **最新有效提交**: `2583210`（RFC/计划收录 + 实现与规范补登记，共 2 个原子提交）
 - **阻断原因**: 无
 
 ---
@@ -58,7 +58,7 @@
 - [ ] 脚手架改造: `skills/doc-governance/scripts/scaffold-doc.sh`（六分支 register + tutorial 链接降级）
 - [ ] 规范补登记: `skills/doc-governance/SKILL.md`（拓扑 + 目录级索引约定节）、`skills/doc-governance/references/change-impact-matrix.md`
 - [ ] 治理与设计同步: `docs/GOVERNANCE.md`、`docs/explanation/architecture/doc-governance-design.md`
-- [ ] 自动化测试: `skills/doc-governance/tests/test_doc_governance_scripts.py`（新增用例覆盖 AS-1~AS-4）
+- [x] 自动化测试: `skills/doc-governance/tests/test_doc_index_convention.py`（AS-1~AS-5 验收用例 + Delta 回归 8 例；R1-13 勘误：本交付新增独立测试文件，非 `test_doc_governance_scripts.py`）
 - [ ] 索引与机器地图: `docs/index.md` 版本联动、`docs/llms.txt` 重生成
 - [ ] 需求确认与审查: `docs/proposals/RFC-0003-quadrant-index-convention.md`、`docs/project/reviews/2026-10-09-quadrant-index-convention/`
 
@@ -131,27 +131,27 @@
   - **验收方式**: `python3 -m pytest skills/doc-governance/tests/ -q` Exit Code 0（已取证：26 passed）
 
 ### P3: 核心功能原子实现 (TDD 循环)
-- [ ] **Task P3.1**: 新增 `manage-doc-index.py`（`ensure` / `register` + 托管标记 + 版本联动）
-  - **涉及文件**: `skills/doc-governance/scripts/manage-doc-index.py`, `skills/doc-governance/tests/test_doc_governance_scripts.py`
+- [x] **Task P3.1**: 新增 `manage-doc-index.py`（`ensure` / `register` + 托管标记 + 版本联动）
+  - **涉及文件**: `skills/doc-governance/scripts/manage-doc-index.py`, `skills/doc-governance/tests/test_doc_index_convention.py`
   - **TDD 步骤**: 🔴 失败单测（ensure 创建骨架 / register 幂等 / 人工索引只读）➔ 🟢 最简实现 ➔ 🔵 重构 ➔ ✅ 单元测试通过 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/doc-governance/tests/ -q -k ManageDocIndex`
-- [ ] **Task P3.2**: `scaffold-doc.sh` 集成自愈（六分支 register + tutorial 条件渲染）
-  - **涉及文件**: `skills/doc-governance/scripts/scaffold-doc.sh`, `skills/doc-governance/tests/test_doc_governance_scripts.py`
+- [x] **Task P3.2**: `scaffold-doc.sh` 集成自愈（六分支 register + tutorial 条件渲染）
+  - **涉及文件**: `skills/doc-governance/scripts/scaffold-doc.sh`, `skills/doc-governance/tests/test_doc_index_convention.py`
   - **TDD 步骤**: 🔴 失败集成测试（AS-1 断链闭环 / AS-2 索引自愈 / AS-4 降级双分支）➔ 🟢 集成调用与条件渲染 ➔ 🔵 重构 ➔ ✅ 测试通过 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/doc-governance/tests/ -q -k ScaffoldDocSh`
-- [ ] **Task P3.3**: 补规范——SKILL.md 拓扑与"目录级索引约定"节 + 变更联动矩阵
+- [x] **Task P3.3**: 补规范——SKILL.md 拓扑与"目录级索引约定"节 + 变更联动矩阵
   - **涉及文件**: `skills/doc-governance/SKILL.md`, `skills/doc-governance/references/change-impact-matrix.md`
   - **TDD 步骤**: 🔴 规范断言测试（SKILL.md 含托管标记契约与象限索引约定关键字）➔ 🟢 补写规范 ➔ 🔵 校对术语一致性 ➔ ✅ 测试通过 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/doc-governance/tests/ -q -k SkillSpec`
-- [ ] **Task P3.4**: 设计书与治理规程同步（版本联动 + 拓扑一致）
+- [x] **Task P3.4**: 设计书与治理规程同步（版本联动 + 拓扑一致）
   - **涉及文件**: `docs/explanation/architecture/doc-governance-design.md`, `docs/GOVERNANCE.md`
   - **TDD 步骤**: 🔴 一致性测试（三处拓扑对象限索引的表述同构）➔ 🟢 同步补写 + 升版本 + 修订行 ➔ ✅ 三件套门禁通过 ➔ 💾 原子提交
   - **验收命令**: `python3 skills/doc-governance/scripts/check-doc-control-sync.py --root docs`
 
 ### P3.5: 集成验证与端到端贯通
-- [ ] **Task P3.5.1**: 隔离根目录全类型端到端链路（生成 ➔ 门禁 ➔ 幂等重跑 ➔ 人工索引零改写复算）
+- [x] **Task P3.5.1**: 隔离根目录全类型端到端链路（生成 ➔ 门禁 ➔ 幂等重跑 ➔ 人工索引零改写复算）
   - **验收命令**: 一次性脚本（`mktemp -d` 隔离 + `cmp` 校验人工索引逐字节不变 + 三件套 rc=0）
-- [ ] **Task P3.5.2**: 本仓库真实 `docs/` 与技能目录 L-Doc 复核
+- [x] **Task P3.5.2**: 本仓库真实 `docs/` 与技能目录 L-Doc 复核
   - **验收命令**: `check-doc-links.py --root docs`、`check-doc-control-sync.py --root docs`、`audit-doc-health.py --root docs` 全部 rc=0 且健康分不下降
 
 ### P4: 双轮对抗终审与再循环闭环硬门禁 (Dual-Round Review & Re-Loop Gate)
@@ -173,6 +173,8 @@
 
 - **[2026-10-09 11:02] 探查记录 1（基线）**：本仓库 `docs/` 三件套门禁全绿（41 md / 0 断链；26 md / 0 版本漂移；health PASS），pytest 26 passed。缺陷复现：仅含 tutorial 模板产物的临时根目录执行 `check-doc-links.py` 得 rc=1（404 → `how-to/index.md`）。
 - **[2026-10-09 11:03] 探查记录 2（契约）**：`check-doc-links.py:173-177` 与 `audit-doc-health.py:447-451` 已支持多层级 `index.md`/`README.md`；`check-doc-control-sync.py:152-162` 对"无控制头且无修订表"文档跳过，对"有修订表无控制头"报错 → 托管索引必须携带控制头并保持版本联动。
+- **[2026-10-09 11:18] 探查记录 5（R1 等待期只读自我加固）**：新增脚本存在两处**输入契约缺口**（仅直接调用 CLI 时可触发，scaffold 内部路径不受影响）——SH-1 `--file` 未校验 basename（传 `sub/x.md` 会登记出指向不存在路径的清单行）；SH-2 `--dir` 未拒绝 `..`（`../escape` 会在 root 之外创建目录并写索引）。另有 SH-3 标题未转义（含 `]`/`|` 时破坏链接语法，scaffold 传 kebab 文件名故正常路径不触发）。正向结论：空文件/非 UTF-8 索引安全 no-op、前缀相似名幂等无误判、`--root` 绝对路径与尾斜杠均正常。**处置待 R1/R2 裁决**（若坐实为本次引入的契约缺陷则并入同一轮精准修复）。另核查：`skills-lock.json` 的 `computedHash` 与基线提交 `95863c9` 的 SKILL.md 字节 sha256 不一致（且仓库内无校验实现）→ 拟不擅自改写，登记为已知边界交 R2 裁决。
+- **[2026-10-09 11:12] 探查记录 4（实现与验证）**：新增 `manage-doc-index.py`（196 行）与验收测试 `test_doc_index_convention.py`（R1-13 勘误：实测 18 个用例，非 17）；`scaffold-doc.sh` 六分支接入自愈、tutorial 条件渲染。L3 端到端：6 个托管索引自动生成、幂等复跑零重复登记、人工索引 sha256 逐字节不变。**发现既有脆弱点**：设计书 §4.1 的「修订历史格式示例」被 `check-doc-control-sync.py` 当作真实修订记录解析，控制头升版必须同步该示例行（本次按既有惯例同步为 V1.3.0）→ 候选 Suggestion，待 P4 裁决。
 - **[2026-10-09 11:04] 探查记录 3（环境）**：`skills/doc-governance/*` 与 `.agents/skills/doc-governance/*` 为**硬链接同 inode**（抽样 4 例一致），写入需复核两份视图一致；`skills-lock.json` 记录 `computedHash`，但仓库内 `tools/skills-manager/skills_manager.py` 无校验实现。
 
 ---
