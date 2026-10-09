@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.4.0
+> - **当前版本**: V1.5.0
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-09-10
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.5.0** | 2026-10-09 | DSH AI Agent | 王辉 | 补「目录级索引约定」：根级人类入口唯一、象限索引按需托管（`<!-- doc-index:managed -->` 标记 + 幂等登记 + 人工索引零改写），新增工具 `manage-doc-index.py` 与 `scaffold-doc.sh` 索引自愈 |
 | **V1.4.0** | 2026-10-04 | DSH AI Agent | 王辉 | 目录拓扑补 `docs/project/reviews/`（交付凭据归档：审查报告全文进版本库）与 `docs/project/plans/`；归档根遵循「推荐默认 + 宿主优先」 |
 | **V1.3.0** | 2026-09-16 | DSH AI Agent | 王辉 | 需求确认文档补「验收口径」（验收人/验收场景/不验收项/口径裁决人）；人机契约字段（需求方/批准人/批准基线）进入计划与 RFC 模板 |
 | **V1.2.0** | 2026-09-16 | DSH AI Agent | 王辉 | RFC 标准模板新增「术语表与易歧义对齐」段（术语先行前置条件）与 `docs/reference/rules/glossary.md` SSOT 落位；决策台账顺延为 §7 |
 | **V1.1.0** | 2026-09-16 | DSH AI Agent | 王辉 | RFC 标准模板新增「决策台账与默认假设」段（提案收敛证据链）；明确需求确认文档落位 `docs/proposals/`，继续禁止 `docs/requirements/` 瀑布旧目录 |
-| **V1.0.0** | 2026-09-10 | Antigravity AI Agent | 王辉 | 初始化项目级文档治理规程与 CI 门禁标准 |
 
 ---
 
@@ -71,6 +71,8 @@ docs/
     └── reviews/             # 交付凭据归档（审查报告全文；推荐默认归档根，schema 见 RFC-0001）
 ```
 
+**目录级索引约定**：根级 `docs/index.md` 为**唯一**的人类总索引入口；象限/子目录 `index.md`（或 `README.md`）为**按需存在**的分流入口，由 `scaffold-doc.sh` 经 `manage-doc-index.py` 自动创建与幂等登记（托管标记 `<!-- doc-index:managed -->`）。不含托管标记的索引视为人工维护，脚本只读不改；严禁为凑齐拓扑批量创建空索引。
+
 ---
 
 ## 3. 自动化门禁与工具链 (CI Toolchain)
@@ -83,7 +85,8 @@ docs/
 | **`trim-revision.py`** | 自动裁剪历史记录至最近 5 条滑动窗口 | 提交前 / 维护 | `python3 skills/doc-governance/scripts/trim-revision.py --root docs --fix --keep 5` |
 | **`audit-doc-health.py`** | 综合健康体检（打分 0-100 分，断链/元数据/孤儿/架构） | 交付验收 / 定期体检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs` |
 | **`generate-llms-txt.py`** | 自动提取 Frontmatter 并刷新机器地图 `llms.txt` | 文档拓扑变动后 | `python3 skills/doc-governance/scripts/generate-llms-txt.py --root docs --output docs/llms.txt` |
-| **`scaffold-doc.sh`** | 快速生成符合 Diátaxis 规范的文档脚手架 | 新建文档时 | `skills/doc-governance/scripts/scaffold-doc.sh <type> <name>` |
+| **`manage-doc-index.py`** | 象限索引托管维护（ensure 骨架 / register 幂等登记 / 人工索引零改写） | 新建文档后 / 拓扑变动 | `python3 skills/doc-governance/scripts/manage-doc-index.py register --root docs --dir how-to --file deployment.md --title "部署 SOP" --kind HowTo` |
+| **`scaffold-doc.sh`** | 快速生成符合 Diátaxis 规范的文档脚手架，并自动 ensure 象限索引与登记（跨象限链接按需降级） | 新建文档时 | `skills/doc-governance/scripts/scaffold-doc.sh <type> <name>` |
 
 ---
 
