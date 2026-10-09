@@ -975,7 +975,12 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         )
 
         combined = res.stdout + res.stderr
-        self.assertIn("机器地图一致性缺陷", combined, "BK-0025: 漂移必须被机械检出（精确断言，防接线空转）")
+        self.assertIn("机器地图一致性缺陷", combined, "BK-0025: 漂移必须被机械检出")
+        reject_lines = [ln for ln in combined.splitlines() if "REJECTED" in ln]
+        self.assertTrue(
+            any("机器地图不一致" in ln for ln in reject_lines),
+            "BK-0025: PASS 接线必须承重——REJECTED 原因行须显式列出机器地图不一致（防接线空转）",
+        )
         self.assertNotEqual(res.returncode, 0, "BK-0025: 漂移必须导致门禁失败")
 
     def test_audit_accepts_consistent_llms_map(self):
@@ -1006,6 +1011,8 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
     def test_audit_skips_when_nothing_indexable(self):
         """R1-1：无可收录文档时不得形成不可修复的硬阻断死胡同"""
         shutil.rmtree(self.docs / "explanation")
+        # 根文件不入机器地图但计入 total_files，用于绕过 audit 的 total_files==0 早退（否则本用例空转）
+        (self.docs / "index.md").write_text("# 索引\n\n根文件不进入机器地图。\n", encoding="utf-8")
         archived_dir = self.docs / "project" / "reviews"
         archived_dir.mkdir(parents=True)
         (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8")
@@ -1031,6 +1038,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
     def test_audit_skips_when_map_exists_but_nothing_indexable(self):
         """R1-1：地图存在但已无文档可收录时，不得形成不可修复的硬阻断死胡同"""
         shutil.rmtree(self.docs / "explanation")
+        (self.docs / "index.md").write_text("# 索引\n\n根文件不进入机器地图。\n", encoding="utf-8")
         archived_dir = self.docs / "project" / "reviews"
         archived_dir.mkdir(parents=True)
         (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8")
@@ -1042,6 +1050,45 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         )
         self.assertNotIn("机器地图", res.stdout + res.stderr,
                          "R1-1: 零覆盖场景本项不适用，不得硬阻断（修复命令必然 rc=1）")
+
+
+    _CTRL = (
+        "> **文档控制信息**\n"
+        "> - **文档标识**: {doc_id}\n"
+        "> - **当前版本**: V1.0.0\n"
+        "\n### 修订历史记录 (Revision History)\n\n"
+        "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+        "| :--- | :--- | :--- | :--- | :--- |\n"
+        "| **V1.0.0** | 2026-10-09 | DSH AI Agent | 王辉 | 初版 |\n"
+    )
+
+    def _prepare_compliant_tree(self):
+        """构造分数达标的合规树：用于锁定 PASS 接线，使漂移成为唯一阻断原因。"""
+        shutil.rmtree(self.docs / "explanation", ignore_errors=True)
+        (self.docs / "explanation").mkdir(parents=True, exist_ok=True)
+        (self.docs / "explanation" / "a.md").write_text(
+            "# A 文档\n\n" + self._CTRL.format(doc_id="DOC-A"), encoding="utf-8")
+        (self.docs / "index.md").write_text(
+            "# 索引\n\n" + self._CTRL.format(doc_id="DOC-IDX") + "\n- [A 文档](./explanation/a.md)\n",
+            encoding="utf-8")
+
+    def test_audit_blocks_drift_on_a_perfect_tree(self):
+        """BK-0025：合规树上的漂移必须阻断——锁定 PASS 接线承重（防 MUT-E1 空转）"""
+        self._prepare_compliant_tree()
+        gen = self._run_llms("--output", str(self.docs / "llms.txt"))
+        self.assertEqual(gen.returncode, 0, gen.stderr)
+
+        audit_cmd = [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)]
+        baseline = subprocess.run(audit_cmd, capture_output=True, text=True)
+        self.assertEqual(baseline.returncode, 0,
+                         f"夹具本身必须是 PASS 的合规树：{baseline.stdout}{baseline.stderr}")
+
+        (self.docs / "llms.txt").write_text("# Stale Map\n\n- 过期条目\n", encoding="utf-8")
+        drifted = subprocess.run(audit_cmd, capture_output=True, text=True)
+
+        self.assertNotEqual(drifted.returncode, 0,
+                            "漂移必须阻断：若 PASS 接线被移除，本断言即打红（接线承重）")
+        self.assertIn("机器地图不一致", drifted.stdout + drifted.stderr)
 
 
 if __name__ == "__main__":

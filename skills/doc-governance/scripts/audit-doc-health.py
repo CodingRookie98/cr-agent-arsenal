@@ -18,6 +18,7 @@ import contextlib
 import io
 import os
 import re
+import shlex
 import sys
 import tempfile
 from pathlib import Path
@@ -108,8 +109,10 @@ def check_llms_map_consistency(root_dir: Path) -> str:
                 # R1-1：无可收录文档时本项不适用——否则修复命令必然 rc=1，形成不可修复的死胡同
                 return ""
             if tmp_out.read_bytes() != llms_file.read_bytes():
+                # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
+                quoted_name = shlex.quote(project_name)
                 return (
-                    '机器地图与生成物不一致 —— 请以 --name "' + project_name + '" 运行 '
+                    "机器地图与生成物不一致 —— 请以 --name " + quoted_name + " 运行 "
                     "generate-llms-txt.py --root docs --output docs/llms.txt 重新生成后再提交"
                 )
     except Exception as exc:  # noqa: BLE001 - 门禁不得因单点异常中断整体体检
