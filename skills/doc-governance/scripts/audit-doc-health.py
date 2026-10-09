@@ -80,14 +80,31 @@ LEGACY_CATEGORIES = {
 }
 
 
+PROJECT_NAME_MAX_LEN = 64
+PROJECT_NAME_FALLBACK = "System"
+
+
+def _sanitize_project_name(raw: str) -> str:
+    """净化反解出的项目名（BK-0026）：仅保留可打印字符并限制长度，非法即回落占位名。
+
+    - D2-3：裸 ESC/OSC/BEL 等控制字符会穿透到终端层（可篡改窗口标题/剪贴板并污染 CI 日志）；
+    - D2-4：以 `-` 开头的名字需配合 `--name=<value>` 形式才能被执行器接受；
+    - D2-5：NUL 会使提示命令在 execve 层不可执行，超长名会把缺陷行膨胀。
+    """
+    cleaned = "".join(ch for ch in raw if ch.isprintable()).strip()
+    if not cleaned or len(cleaned) > PROJECT_NAME_MAX_LEN:
+        return PROJECT_NAME_FALLBACK
+    return cleaned
+
+
 def _map_project_name(llms_file: Path) -> str:
-    """从既有机器地图首行反解项目名，使判定参数与生成参数同源（R1-2）。"""
+    """从既有机器地图首行反解项目名，使判定参数与生成参数同源（R1-2），并净化后使用。"""
     try:
         first_line = llms_file.read_text(encoding="utf-8", errors="replace").splitlines()[0]
     except (OSError, IndexError):
-        return "System"
+        return PROJECT_NAME_FALLBACK
     match = re.match(r"# (.+?) Machine-Readable Knowledge Base Map", first_line)
-    return match.group(1) if match else "System"
+    return _sanitize_project_name(match.group(1)) if match else PROJECT_NAME_FALLBACK
 
 
 def check_llms_map_consistency(root_dir: Path) -> str:
@@ -110,9 +127,10 @@ def check_llms_map_consistency(root_dir: Path) -> str:
                 return ""
             if tmp_out.read_bytes() != llms_file.read_bytes():
                 # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
+                # D2-4：以 --name=<value> 赋值形式拼装，使 `-` 开头的名字同样可执行（否则 argparse rc=2）
                 quoted_name = shlex.quote(project_name)
                 return (
-                    "机器地图与生成物不一致 —— 请以 --name " + quoted_name + " 运行 "
+                    "机器地图与生成物不一致 —— 请以 --name=" + quoted_name + " 运行 "
                     "generate-llms-txt.py --root docs --output docs/llms.txt 重新生成后再提交"
                 )
     except Exception as exc:  # noqa: BLE001 - 门禁不得因单点异常中断整体体检
