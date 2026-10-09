@@ -157,6 +157,38 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
     return total_docs
 
 
+def _reject_identity_rewrite(out_path: Path, requested_name: str) -> None:
+    """R1-1 根因闸门：既有机器地图的项目身份与本次请求名不一致时拒绝落盘。
+
+    提示文案只是修复面之一，缺省 `--name`（System）仍会静默改写地图身份；本闸门使
+    「照做任何提示 / 直接重新生成」都无法在未显式声明身份的情况下改写既有 H1。
+    """
+    if not out_path.is_file():
+        return
+    try:
+        head_line = out_path.read_text(encoding="utf-8", errors="replace").splitlines()[0]
+    except (OSError, IndexError):
+        return
+    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", head_line.strip())
+    if match is None:
+        # fail-closed：既有 H1 不符合标准格式 ⇒ 身份不可确认，拒绝覆盖（否则提示路径照做即永久改写）
+        print(
+            "❌ 拒绝改写机器地图身份：既有地图首行不符合标准 H1 格式"
+            "（应形如 [# <项目名> Machine-Readable Knowledge Base Map]），无法确认其项目身份；"
+            "请先人工核对；如确需重建，请先删除该文件再生成",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if match.group(1) == requested_name:
+        return
+    print(
+        f"❌ 拒绝改写机器地图身份：既有地图项目名为 {match.group(1)!r}，本次请求名为 {requested_name!r}；"
+        f"如确需改名，请显式传入 --name 并在提交信息中说明",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description="机器可读 llms.txt 自动化生成器")
     parser.add_argument("--root", default="docs", help="文档根目录 (默认 docs)")
@@ -165,6 +197,7 @@ def main():
 
     args = parser.parse_args()
     root_path = Path(args.root).resolve()
+    _reject_identity_rewrite(Path(args.output).resolve() if args.output else (root_path / "llms.txt").resolve(), args.name)
     # BK-0023：显式与缺省落点统一 resolve()，使符号链接穿透同样落入归档判定
     out_path = Path(args.output).resolve() if args.output else (root_path / "llms.txt").resolve()
 

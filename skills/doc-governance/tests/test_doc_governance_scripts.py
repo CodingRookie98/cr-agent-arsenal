@@ -1167,6 +1167,7 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
         """R1-1：合法但边缘的项目名不得因显示净化而被误判漂移（判定必须用未净化原名）"""
         for name in ("L" * 65, "中" * 65, " Foo ", "A\u00a0B"):
             with self.subTest(name=repr(name[:10])):
+                (self.docs / "llms.txt").unlink(missing_ok=True)  # 显式改名须先移除既有地图（身份写保护）
                 gen = subprocess.run(
                     [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
                      "--output", str(self.docs / "llms.txt"), "--name=" + name],
@@ -1225,6 +1226,52 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
                 if token.startswith("'") and token.endswith("'"):
                     token = token[1:-1]
                 self.assertEqual(token, name, "提示 --name 值必须逐字等于地图身份")
+
+
+    def test_failclosed_hints_contain_no_executable_command(self):
+        """R1-1：fail-closed 分支不得内嵌可执行命令（其缺省 --name=System 即会改写身份）"""
+        for name in ("", "A\nB", "A\u2028B", "A\x1b]0;X\x07", "A\u00a0B", "X" * 100000):
+            with self.subTest(name=repr(name[:8])):
+                self._write_drifted_map(name)
+
+                res = self._audit()
+                out = res.stdout + res.stderr
+                self.assertIn("机器地图", out, "前置：漂移必须被检出")
+                self.assertNotIn("generate-llms-txt.py", out,
+                                 "R1-1: fail-closed 分支不得给出可执行命令")
+
+    def test_generator_refuses_identity_rewrite_with_default_name(self):
+        """R1-1 根因闸门：照做提示（缺省 --name）时，既有地图身份必须拒绝被改写（后果级断言）"""
+        for name in ("", "A\nB", "A\u2028B", "CR 公共技能库", "A\u00a0B"):
+            with self.subTest(name=repr(name[:8])):
+                self._write_drifted_map(name)
+                before = (self.docs / "llms.txt").read_bytes()
+
+                res = subprocess.run(
+                    [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
+                     "--output", str(self.docs / "llms.txt")],
+                    capture_output=True, text=True,
+                )
+
+                self.assertNotEqual(res.returncode, 0, "缺省名不得静默改写既有地图身份")
+                self.assertEqual((self.docs / "llms.txt").read_bytes(), before,
+                                 "既有地图必须逐字节不变")
+
+    def test_contract_phrase_name_round_trips(self):
+        """R1-3：名含契约短语时提示 --name 值必须逐字等于地图身份（fullmatch 关闭截断）"""
+        name = "X Machine-Readable Knowledge Base Map Y"
+        self._write_drifted_map(name)
+
+        res = self._audit()
+        out = res.stdout + res.stderr
+
+        self.assertIn("机器地图", out, "前置：漂移必须被检出")
+        segment = out.split("--name=", 1)[1]
+        end = segment.find(" 运行")
+        token = (segment[:end] if end > 0 else segment).strip()
+        if token.startswith("'") and token.endswith("'"):
+            token = token[1:-1]
+        self.assertEqual(token, name, "R1-3: 契约短语名不得被截断")
 
 
 if __name__ == "__main__":

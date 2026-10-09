@@ -82,6 +82,7 @@ LEGACY_CATEGORIES = {
 
 PROJECT_NAME_MAX_LEN = 64
 PROJECT_NAME_FALLBACK = "System"
+REGEN_COMMAND = "generate-llms-txt.py --root docs --output docs/llms.txt"
 
 
 def _is_safely_displayable(name: str) -> bool:
@@ -106,7 +107,8 @@ def _resolve_project_name(llms_file: Path) -> Tuple[str, bool]:
         first_line = llms_file.read_text(encoding="utf-8", errors="replace").splitlines()[0]
     except (OSError, IndexError):
         return PROJECT_NAME_FALLBACK, False
-    match = re.match(r"# (.*?) Machine-Readable Knowledge Base Map", first_line)
+    # 用 fullmatch + 贪婪捕获：名中含契约短语时不得被非贪婪截断（R1-3）
+    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", first_line.strip())
     if match is None:
         return PROJECT_NAME_FALLBACK, False
     return match.group(1), True
@@ -135,23 +137,23 @@ def check_llms_map_consistency(root_dir: Path) -> str:
                 # （否则用户照做会把地图 H1 静默改写为占位名或截断名，项目身份在 SSOT 中丢失）
                 if not name_resolved:
                     return (
-                        "机器地图与生成物不一致 —— 既有地图首行不符合标准 H1 格式"
-                        "（应形如 `# <项目名> Machine-Readable Knowledge Base Map`），无法反解项目名；"
-                        "请人工核对后以正确项目名重新运行 generate-llms-txt.py "
-                        "--root docs --output docs/llms.txt 再提交"
+                        "机器地图与生成物不一致，且既有地图首行不符合标准 H1 格式"
+                        "（应形如 `# <项目名> Machine-Readable Knowledge Base Map`），无法反解项目名。"
+                        "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
+                        "请先人工确认正确的项目名，再以显式 `--name` 重新生成后再提交"
                     )
                 if not _is_safely_displayable(project_name):
                     return (
-                        "机器地图与生成物不一致 —— 既有地图首行项目名含不可打印字符或超长，无法安全回显；"
-                        "请以该项目名原值重新运行 generate-llms-txt.py "
-                        "--root docs --output docs/llms.txt 后再提交"
+                        "机器地图与生成物不一致，且既有地图首行项目名不可安全回显（含不可打印字符或超长）。"
+                        "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
+                        "请以该项目名原值显式重新生成后再提交"
                     )
                 # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
                 # D2-4：以 --name=<value> 赋值形式拼装，使 `-` 开头的名字同样可执行（否则 argparse rc=2）
                 quoted_name = shlex.quote(project_name)
                 return (
                     "机器地图与生成物不一致 —— 请以 --name=" + quoted_name + " 运行 "
-                    "generate-llms-txt.py --root docs --output docs/llms.txt 重新生成后再提交"
+                    + REGEN_COMMAND + " 重新生成后再提交"
                 )
     except Exception as exc:  # noqa: BLE001 - 门禁不得因单点异常中断整体体检
         return f"机器地图一致性检查无法完成: {exc}"
