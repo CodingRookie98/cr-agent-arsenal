@@ -877,5 +877,46 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
         self.assertIn("plan.md", content, "非归档文档必须保留")
 
 
+    def test_trim_revision_empty_scope_does_not_claim_compliance(self):
+        """R1-3：目标全部被豁免（或为空）时不得输出「完美/符合规范」的结论性文案"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "trim-revision.py"), "--root", str(archived), "--fix"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertNotIn("完美", res.stdout, "R1-3: 无可检查文档时不得宣称符合规范")
+        self.assertIn("归档", res.stdout + res.stderr, "R1-3: 必须说明跳过原因")
+
+    def test_trim_revision_library_call_resolves_root(self):
+        """DR1-2：库调用 + cwd 位于归档内时同样不得改写归档"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+        before = archived.read_bytes()
+        cwd = self.test_dir / "docs" / "project" / "reviews"
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(cwd)
+            trim_revision.scan_and_trim(Path("."), max_keep=5, fix=True)
+        finally:
+            os.chdir(old_cwd)
+        self.assertEqual(archived.read_bytes(), before, "DR1-2: 库调用形态也必须只读归档")
+
+    def test_generate_llms_txt_refuses_output_inside_archive(self):
+        """DR1-3：--output 落在交付凭据归档内时必须拒绝写入"""
+        archived_dir = self.test_dir / "docs" / "project" / "reviews"
+        archived_dir.mkdir(parents=True)
+        (self.test_dir / "docs" / "explanation").mkdir(parents=True, exist_ok=True)
+        (self.test_dir / "docs" / "explanation" / "a.md").write_text("# A\n\n正文\n", encoding="utf-8")
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
+             "--root", str(archived_dir), "--name", "T"],
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(res.returncode, 0, "DR1-3: 不得向交付凭据归档内写机器地图")
+        self.assertFalse((archived_dir / "llms.txt").exists(), "DR1-3: 归档内不得出现 llms.txt")
+
+
 if __name__ == "__main__":
     unittest.main()

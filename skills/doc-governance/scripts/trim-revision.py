@@ -146,7 +146,9 @@ def process_markdown_file(file_path: Path, max_keep: int = 5, fix: bool = False)
 
 def scan_and_trim(root_path: Path, max_keep: int = 5, fix: bool = False) -> Tuple[int, int, List[Tuple[Path, int]]]:
     """扫描目录或单文件并执行裁剪检查"""
+    root_path = Path(root_path).resolve()  # DR1-2：库调用形态同样以绝对路径判定归档
     md_files = []
+    skipped_archive = 0
     if root_path.is_file() and root_path.suffix == ".md":
         # 显式指定单文件时同样拒绝交付凭据归档（与目录模式判定同构，且必须显式告知）
         if is_archive_path(root_path):
@@ -159,8 +161,15 @@ def scan_and_trim(root_path: Path, max_keep: int = 5, fix: bool = False) -> Tupl
             if any(p in f.parts for p in ("node_modules", ".git", ".next", "dist", "build")):
                 continue
             if in_evidence_archive(f, root_path) or is_archive_path(f):
+                skipped_archive += 1
                 continue
             md_files.append(f)
+
+    if skipped_archive:
+        print(
+            f"ℹ️  已跳过 {skipped_archive} 篇交付凭据归档文档（project/reviews：G1 逐字归档红线不可写入）",
+            file=sys.stderr,
+        )
 
     total_scanned = len(md_files)
     overflow_files = []
@@ -195,6 +204,9 @@ def main():
     total, overflow_count, overflow_list = scan_and_trim(target_path, max_keep=args.keep, fix=args.fix)
 
     print(f"\n📊 审计汇总: 共检查 {total} 个文件")
+    if total == 0:
+        print("ℹ️  无可检查文档（目标为空，或全部位于交付凭据归档内）—— 不输出合规结论。")
+        sys.exit(0)
     if overflow_count == 0:
         print(f"✅ 完美！所有文档的修订历史记录行数均 <= {args.keep} 条，符合滑动窗口规范！")
         sys.exit(0)

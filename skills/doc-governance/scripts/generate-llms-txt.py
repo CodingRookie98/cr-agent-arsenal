@@ -160,6 +160,10 @@ def main():
     root_path = Path(args.root).resolve()
     out_path = Path(args.output).resolve() if args.output else (root_path / "llms.txt")
 
+    if is_archive_path(out_path) or in_evidence_archive(out_path, root_path):
+        print(f"❌ 拒绝写入交付凭据归档（G1 逐字归档红线）: {out_path}", file=sys.stderr)
+        sys.exit(1)
+
     if not root_path.exists():
         print(f"❌ 错误: 目标根目录不存在: {root_path}", file=sys.stderr)
         sys.exit(1)
