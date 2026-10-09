@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.24.0 (批次 C 机器地图提示文案净化与零覆盖口径登记：BK-0026/BK-0027 交付中)
+> - **当前版本**: V1.25.0 (批次 C 交付完成：BK-0026/BK-0027 经四轮审查末轮 Zero Blockers 准予交付，机器地图身份写保护闸门落地)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.25.0** | 2026-10-09 | DSH AI Agent | 王辉 | **批次 C 交付完成**（四轮审查：前三轮各指 1×P1 且均为实质缺陷，第四轮后果级复核根治，4 份归档报告）：BK-0026/BK-0027 关闭归档 2026-Q4；落地**生成器侧身份写保护闸门**与 fail-closed 提示；新增 BK-0030/BK-0031 |
 | **V1.24.0** | 2026-10-09 | DSH AI Agent | 王辉 | 批次 C（BK-0026/BK-0027）：提示文案项目名新增**可打印字符校验 + 长度上限**（消除终端控制序列注入与畸形名死巷）、改用 `--name=<value>` 赋值形式；GOVERNANCE §4.1 显式登记**零覆盖态无门禁兜底**的口径与代价 |
 | **V1.23.0** | 2026-10-09 | DSH AI Agent | 王辉 | **批次 B 交付完成**（三轮审查均 Zero P0/P1，3 份归档报告）：BK-0023/BK-0025 关闭归档 2026-Q4；加固含命令注入闭合（`shlex.quote`）、判定与生成参数同源、合规树接线用例；新增 BK-0026~0029 |
 | **V1.22.0** | 2026-10-09 | DSH AI Agent | 王辉 | 批次 B（BK-0023/BK-0025）：机器地图缺省落点统一 `resolve()`（消除符号链接穿透）、收录 0 篇拒绝落盘；`audit-doc-health.py` 新增**机器地图一致性硬阻断**（产物必须等于注册命令生成物）；GOVERNANCE 新增红线 3 |
 | **V1.21.0** | 2026-10-09 | DSH AI Agent | 王辉 | **批次 A 交付完成**（Light 单轮 + 两轮 Delta 复核，终审 **Zero Blockers ✅ 准予交付**，3 份归档报告）：BK-0001/BK-0002/BK-0021 关闭归档 2026-Q4；新增 BK-0023~0025 登记审查遗留 |
-| **V1.20.0** | 2026-10-09 | DSH AI Agent | 王辉 | 批次 A 闭环（BK-0001/BK-0002/BK-0021）：`trim-revision.py` 与 `generate-llms-txt.py` 补齐交付凭据归档豁免（写入侧含 root 无关兜底）、`--output` 落点随 `--root` 派生；GOVERNANCE §4.1 豁免登记表补登全部 5 个消费者；llms.txt 以注册命令重生成 |
 
 ---
 
@@ -76,7 +76,7 @@
 | **RFC-0002 子智能体直写契约** | 执行 RFC-0001 §7.3 A1 预留路径：子智能体直写报告至预授权路径（Write-Scope 单路径例外）+ 主智能体独立复算指纹 + 写入形态登记；含诚实边界（预授权是提示词契约而非沙箱强制）（需求确认，状态 In Review） | [RFC-0002-subagent-direct-write.md](./proposals/RFC-0002-subagent-direct-write.md) |
 | **`dual-round-review` V2.1.0** | 审查报告持久化归档：三层职责分离（运行时状态/交付凭据/机械门禁）、`check-review-report.sh`、R2 双通道输入、模板↔门禁标题漂移防护（**已终审放行 ✅**，审查归档见 `docs/project/reviews/2026-10-04-review-report-archive/`） | [2026-10-04-review-report-archive.md](./project/plans/2026-10-04-review-report-archive.md) |
 | **`dual-round-review` V2.2.0** | 子智能体直写通道：Write-Scope 单路径例外 + 路径预授权六条 + 主智能体独立复算指纹 + 转录降级显式登记（台账第 7 列）+ `--round` 预授权路径 + 门禁第 8 项 + 旧归档补列迁移 | [2026-10-08-subagent-direct-write.md](./project/plans/2026-10-08-subagent-direct-write.md) |
-| **批次 C 机器地图提示文案净化与零覆盖口径登记** | BK-0026/BK-0027 交付（Light 单轮红队审查）：项目名可打印字符校验 + 64 字符上限 + `--name=` 形式（修复建议恒可执行）；GOVERNANCE 显式登记零覆盖态豁免口径（Maintenance-Patch 通道，Light 单轮红队审查） | [2026-10-09-backlog-batch-c-llms-hardening.md](./project/plans/2026-10-09-backlog-batch-c-llms-hardening.md) |
+| **批次 C 机器地图提示文案净化与零覆盖口径登记** | BK-0026/BK-0027 交付（Light 单轮红队审查）：项目名可打印字符校验 + 64 字符上限 + `--name=` 形式（修复建议恒可执行）；GOVERNANCE 显式登记零覆盖态豁免口径（**已完成**，Maintenance-Patch 通道：四轮审查末轮 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-c-llms-hardening.md](./project/plans/2026-10-09-backlog-batch-c-llms-hardening.md) |
 | **批次 B 机器地图写入侧安全与一致性门禁** | 闭环 BK-0023/BK-0025：缺省落点统一 `resolve()`、零覆盖拒绝落盘；`audit-doc-health.py` 将「机器地图 == 注册命令生成物」固化为硬阻断（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-b-llms-integrity.md](./project/plans/2026-10-09-backlog-batch-b-llms-integrity.md) |
 | **批次 A 归档豁免与 llms 落点修复** | 闭环 BK-0001/BK-0002/BK-0021：两个治理消费者补齐交付凭据归档豁免（写入侧 root 无关兜底）、机器地图落点随 `--root` 派生（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-a-archive-exemption.md](./project/plans/2026-10-09-backlog-batch-a-archive-exemption.md) |
 | **`doc-governance` 目录级索引约定** | 象限索引托管化与 scaffold 索引自愈：`manage-doc-index.py`（ensure/register/入参校验）+ 六分支自愈接入 + tutorial 条件渲染（**已完成**，三轮双轮对抗审查 Zero Blockers 准予交付） | [2026-10-09-quadrant-index-convention.md](./project/plans/2026-10-09-quadrant-index-convention.md) |
