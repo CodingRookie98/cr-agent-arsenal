@@ -125,6 +125,9 @@ def check_llms_map_consistency(root_dir: Path) -> str:
     llms_file = root_dir / "llms.txt"
     if not llms_file.exists():
         return ""
+    if not llms_file.is_file():
+        # R1-4：非规则文件（FIFO/字符设备/目录）不得进入无界读取面
+        return f"机器地图落点不是常规文件（{llms_file}），无法安全比对"
     project_name, name_resolved = _resolve_project_name(llms_file)
     try:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -143,13 +146,13 @@ def check_llms_map_consistency(root_dir: Path) -> str:
                         "机器地图与生成物不一致，且既有地图首行不符合标准 H1 格式"
                         "（应形如 `# <项目名> Machine-Readable Knowledge Base Map`），无法反解项目名。"
                         "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
-                        "请先人工确认正确的项目名，再以显式 `--name` 重新生成后再提交"
+                        "如需重建，请**先移除既有地图文件**，再以显式 `--name` 重新生成后再提交"
                     )
                 if not _is_safely_displayable(project_name):
                     return (
                         "机器地图与生成物不一致，且既有地图首行项目名不可安全回显（为空、含不可打印字符或超长）。"
                         "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
-                        "请以该项目名原值显式重新生成后再提交"
+                        "如需重建，请**先移除既有地图文件**，再以该项目名原值显式生成"
                     )
                 # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
                 # D2-4：以 --name=<value> 赋值形式拼装，使 `-` 开头的名字同样可执行（否则 argparse rc=2）

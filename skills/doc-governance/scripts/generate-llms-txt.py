@@ -152,7 +152,10 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
 
     content = "\n".join(output_lines)
     output_file.parent.mkdir(parents=True, exist_ok=True)  # R1-7：仅在确认落盘时才创建父目录
-    output_file.write_text(content, encoding="utf-8")
+    # R1-5：先写临时文件再原子替换 —— 编码/写入失败不得留下 0 字节地图把双工具楔死
+    tmp_path = output_file.with_name(output_file.name + ".tmp")
+    tmp_path.write_text(content, encoding="utf-8")
+    os.replace(tmp_path, output_file)
     print(f"✅ 机器可读地图成功生成至: {output_file} (共收录 {total_docs} 篇有效文档)")
     return total_docs
 
@@ -185,8 +188,9 @@ def _resolve_outgoing_name(out_path: Path, requested: Optional[str]) -> str:
     """
     if requested is not None and not _can_roundtrip_as_identity(requested):
         print(
-            "❌ 拒绝生成：项目名含行分隔符，写入后无法被逐字反解还原"
-            "（会铸出永久不可修复的地图身份）；请改用不含换行/分隔符的项目名",
+            "❌ 拒绝生成：项目名无法安全写入 H1 —— 含行分隔符或不可编码字节，"
+            "写入后无法被逐字反解还原（会铸出永久不可修复的地图身份）；"
+            "请改用不含换行/分隔符、且为合法 UTF-8 的项目名",
             file=sys.stderr,
         )
         sys.exit(1)

@@ -12,6 +12,7 @@ test_doc_governance_scripts.py - 文档治理自动化脚本全量回归单元�
 
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -1445,27 +1446,38 @@ class TestBatchDIdentityContract(unittest.TestCase):
         self.assertEqual(res.returncode, 0, f"软链→常规文件必须放行：{res.stderr}")
         self.assertEqual(link.resolve().read_bytes(), real.read_bytes(), "应写到同一常规文件")
 
-    def test_audit_suggestion_is_executable_by_generator(self):
-        """DR1-2：审计下发的 --name 必须能被生成器接受（不得退化为必然失败的死循环）"""
+    def test_audit_never_suggests_unexecutable_name_for_malformed_h1(self):
+        """DR1-2：H1 畸形时审计不得下发任何 --name（任何 --name 都会被生成器拒绝）
+
+        同时必须给出唯一有效通道（先移除既有地图）。
+        """
         (self.docs / "llms.txt").write_text(
             "# Foo Machine-Readable Knowledge Base Map  \n\n- 漂移条目\n", encoding="utf-8")
+
+        res = self._audit()
+        out = res.stdout + res.stderr
+
+        self.assertIn("机器地图", out, "前置：漂移必须被检出")
+        self.assertNotIn("--name=", out, "H1 畸形时不得下发必然被拒的 --name")
+        self.assertIn("移除", out, "必须给出唯一有效通道：先移除既有地图")
+
+    def test_audit_suggestion_is_executable_for_valid_h1(self):
+        """DR1-2 正向：H1 合法且漂移时，审计下发的 --name 必须真的可执行（含名字带空格）"""
+        name = "A 运行 B"
+        (self.docs / "llms.txt").write_text(
+            f"# {name} Machine-Readable Knowledge Base Map\n\n- 漂移条目\n", encoding="utf-8")
 
         res = self._audit()
         out = res.stdout + res.stderr
         self.assertIn("机器地图", out, "前置：漂移必须被检出")
 
         line = next((ln for ln in out.splitlines() if "--name=" in ln), None)
-        if line is None:
-            return  # fail-closed 分支：不下发命令本身即可接受
-        segment = line.split("--name=", 1)[1]
-        end = segment.find(" 运行")
-        token = (segment[:end] if end > 0 else segment).strip()
-        if token.startswith("'") and token.endswith("'"):
-            token = token[1:-1]
+        self.assertIsNotNone(line, "合法 H1 必须下发可执行命令")
+        token = shlex.split(line.split("请以 ", 1)[1])[0].split("=", 1)[1]
 
-        gen = self._run_llms("--output", str(self.docs / "llms.txt"), "--name=" + token)
-        self.assertEqual(gen.returncode, 0,
-                         f"审计建议的 --name={token!r} 必须可执行，不得是死循环：{gen.stderr}")
+        self.assertEqual(token, name, "抽取的项目名必须逐字等于地图身份")
+        gen = self._run_llms("--output", str(self.docs / "llms.txt"))
+        self.assertEqual(gen.returncode, 0, f"缺省重生成必须沿用该身份：{gen.stderr}")
 
 
     def test_unencodable_byte_name_is_refused(self):
