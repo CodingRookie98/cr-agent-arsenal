@@ -7,6 +7,7 @@
 
 - [RFC-0001: dual-round-review 审查报告持久化归档契约](proposals/RFC-0001-review-report-archive.md): `dual-round-review` 的两轮提示词模板已定义完整的报告输出契约——R1 需产出「第一性原理分析 / 红队攻击路径推演 / 潜在缺陷清单」，R2 需产出「元审查质询 / 终审裁决明细表 / 放行结论」。但**技能全流程没有任...
 - [RFC-0002: dual-round-review 审查报告子智能体直写契约](proposals/RFC-0002-subagent-direct-write.md): RFC-0001 解决了「报告全文从未落盘」，但其选定方案把写盘动作判给了**主智能体**（[RFC-0001 §3.7](../../docs/proposals/RFC-0001-review-report-archive.md)）：
+- [RFC-0003: 目录级索引约定与 scaffold 索引自愈](proposals/RFC-0003-quadrant-index-convention.md): `doc-governance` 的脚手架生成器 `scaffold-doc.sh` 在 `tutorial` 分支的产物模板中硬编码了一条跨象限链接：
 
 ## Reference (技术参考 / 机器事实唯一真相源)
 
@@ -41,6 +42,9 @@
 - [BK-0013-trailing-pipe-column-misparse](project/backlog/active/BK-0013-trailing-pipe-column-misparse.md): id: BK-0013
 - [BK-0014-voided-round-repo-trace](project/backlog/active/BK-0014-voided-round-repo-trace.md): id: BK-0014
 - [BK-0015-working-staged-naming-literal](project/backlog/active/BK-0015-working-staged-naming-literal.md): id: BK-0015
+- [BK-0016-象限索引幂等判据精确匹配-剥离锚点与查询串](project/backlog/active/BK-0016-象限索引幂等判据精确匹配-剥离锚点与查询串.md): id: BK-0016
+- [BK-0017-scaffold-adr-模板补控制头版本字段](project/backlog/active/BK-0017-scaffold-adr-模板补控制头版本字段.md): id: BK-0017
+- [BK-0018-明确-skills-lock-json-computedhash-权威定义并评估](project/backlog/active/BK-0018-明确-skills-lock-json-computedhash-权威定义并评估.md): id: BK-0018
 - [项目待办与后续演进清单 (Backlog Index)](project/backlog/index.md): *(当前暂无进行中的待办)*
 - [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。
 - [goal-loop 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-goal-loop-v2-refactor.md): 以下四项经用户确认，作为不可回退的实现约束：
@@ -52,6 +56,7 @@
 - [frontend-qa-gate 后续待办闭环 维护修复计划 (Maintenance-Patch Plan)](project/plans/2026-09-21-qa-gate-followups.md): 复现脚本：`/tmp/fu_repro.py`、`/tmp/fu_scan2.py`（扫描剥离围栏，避免示例代码块误报）。
 - [dual-round-review 审查报告持久化归档实施方案计划 (Implementation Plan)](project/plans/2026-10-04-review-report-archive.md): 1. 对一次真实双轮审查，归档目录以**被版本库跟踪**的新增文件出现在 `docs/project/reviews/` 下；
 - [dual-round-review 审查报告子智能体直写实施方案计划 (Implementation Plan)](project/plans/2026-10-08-subagent-direct-write.md): 1. 对**本交付自身**跑一次真实双轮审查（dogfooding），R1 与 R2 报告均由**子智能体直写**落盘，文件中**不含**任何主智能体转录痕迹；
+- [doc-governance 目录级索引约定与 scaffold 索引自愈实施方案计划 (Implementation Plan)](project/plans/2026-10-09-quadrant-index-convention.md)
 - [审查归档 · review-report-archive](project/reviews/2026-10-04-review-report-archive/README.md): `trim-revision.py` 归档豁免 · `generate-llms-txt.py` 归档豁免 · 方向二按 `base7..head7` 配对 ·
 - [第一轮对抗审查报告 (Round 1 Red-Team Review Report)](project/reviews/2026-10-04-review-report-archive/delta-r1-8d820c3..cef2655.md): 1. **R1-1 已按处置要求根治**（25 组实跑向量，`--require-verdict=PASS`）：`准予交付` → rc=0；`✅ 准予交付` → rc=0；RFC §3.4 官方占位符 `[🔴 阻断交付 | ✅ 准予交付 |...
 - [第二轮元对抗审查与终审裁决书 (Round 2 Meta-Architect Verdict)](project/reviews/2026-10-04-review-report-archive/delta-r2-8d820c3..cef2655.md): **归档与转录保真核验（通道 A · 先验指纹）**
@@ -62,6 +67,9 @@
 - [第二轮元对抗审查与终审裁决书 (Round 2 Meta-Architect Verdict)](project/reviews/2026-10-08-subagent-direct-write/delta-r2-455eccc..d0a8fe1.md): 1. **DR-1 是否升级为阻断 → 裁定：不升级（🟡 P2），但列为「签收前强制同轮修正」**。依据：① **无功能失效** —— A1 报错自解释，交付物的操作性规程（[SKILL.md:153](skills/dual-round-...
 - [第一轮对抗审查报告 (Round 1 Red-Team Review Report)](project/reviews/2026-10-08-subagent-direct-write/r1-771ad29..455eccc.md): 1. `--round` 制造了**第二个真相源**。文件名格式已被 `SKILL.md:118` 用散文规定，脚本又在 `prepare-review-context.sh:327` 用代码实现一次，而**两边都不是判定者**（门禁不校验...
 - [第二轮元对抗审查与终审裁决书 (Round 2 Meta-Architect Verdict)](project/reviews/2026-10-08-subagent-direct-write/r2-771ad29..455eccc.md): 1. **R1-5 的包含性校验 → 驳回**：为授权方自持的配置参数加边界校验，既不能防御任何子智能体行为，又会破坏宿主自定义归档根能力（`SKILL.md:117`）。
+- [审查归档 · quadrant-index-convention](project/reviews/2026-10-09-quadrant-index-convention/README.md)
+- [第一轮对抗审查报告 (Round 1 Red-Team Review Report)](project/reviews/2026-10-09-quadrant-index-convention/r1-95863c9..2583210.md): 1. 托管标记判据是**全文子串**，而契约要求"正文首行（H1 之后）作唯一判据"→ 人工索引被误判并改写（R1-1，GI-4 失效）；
+- [第二轮元对抗审查与终审裁决书 (Round 2 Meta-Architect Verdict)](project/reviews/2026-10-09-quadrant-index-convention/r2-95863c9..2583210.md): 1. **R1-2 的核心论据「L-Doc 行在 2583210 即为 [x] 等于宣称得分不下降已通过」属模板语义误读**。反证据一：`skills/goal-loop/templates/goal-plan-template.md:72...
 
 ## Other Documentation (其他文档)
 

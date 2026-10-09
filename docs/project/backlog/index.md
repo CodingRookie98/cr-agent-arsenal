@@ -4,18 +4,18 @@
 > - **文档标识**: BK-INDEX-GOV
 > - **当前版本**: V2.0.0 (动态索引)
 > - **维护模式**: 机器脚本自动化生成 (请勿手写对账日记，运行 `manage-backlog.py sync-index` 自动刷新)
-> - **更新日期**: 2026-10-08
+> - **更新日期**: 2026-10-09
 
 ---
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **15** 项 (进行中: 0, 计划中: 15)
+- **现役活跃待办**: **18** 项 (进行中: 0, 计划中: 18)
 - **历史已归档项**: **0** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 4 | 11 |
+| **活跃数量** | 0 | 0 | 4 | 14 |
 
 ---
 
@@ -44,6 +44,9 @@
 | **BK-0013** | `P3` | `TechDebt` | 台账末列定位对无尾随竖线且结论含裸竖线的行误判 | — | [BK-0013](./active/BK-0013-trailing-pipe-column-misparse.md) |
 | **BK-0014** | `P3` | `Governance` | 作废轮次的版本库留痕缺失 | — | [BK-0014](./active/BK-0014-voided-round-repo-trace.md) |
 | **BK-0015** | `P3` | `TechDebt` | working/staged 模式的报告命名与 base7..head7 模板字面不符 | — | [BK-0015](./active/BK-0015-working-staged-naming-literal.md) |
+| **BK-0016** | `P3` | `TechDebt` | 象限索引幂等判据精确匹配（剥离锚点与查询串） | — | [BK-0016](./active/BK-0016-象限索引幂等判据精确匹配-剥离锚点与查询串.md) |
+| **BK-0017** | `P3` | `TechDebt` | scaffold ADR 模板补控制头版本字段 | — | [BK-0017](./active/BK-0017-scaffold-adr-模板补控制头版本字段.md) |
+| **BK-0018** | `P3` | `Governance` | 明确 skills-lock.json computedHash 权威定义并评估全量重算 | — | [BK-0018](./active/BK-0018-明确-skills-lock-json-computedhash-权威定义并评估.md) |
 
 ---
 
