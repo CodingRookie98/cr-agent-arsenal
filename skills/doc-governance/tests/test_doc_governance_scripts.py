@@ -1240,22 +1240,22 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
                 self.assertNotIn("generate-llms-txt.py", out,
                                  "R1-1: fail-closed 分支不得给出可执行命令")
 
-    def test_generator_refuses_identity_rewrite_with_default_name(self):
-        """R1-1 根因闸门：照做提示（缺省 --name）时，既有地图身份必须拒绝被改写（后果级断言）"""
+    def test_bare_regeneration_never_rewrites_identity(self):
+        """R1-1 + BK-0030：缺省重生成要么拒绝、要么逐字沿用既有身份（H1 永不被改写）"""
         for name in ("", "A\nB", "A\u2028B", "CR 公共技能库", "A\u00a0B"):
             with self.subTest(name=repr(name[:8])):
                 self._write_drifted_map(name)
-                before = (self.docs / "llms.txt").read_bytes()
+                before_h1 = (self.docs / "llms.txt").read_text(encoding="utf-8").splitlines()[0]
 
-                res = subprocess.run(
+                subprocess.run(
                     [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
                      "--output", str(self.docs / "llms.txt")],
                     capture_output=True, text=True,
                 )
 
-                self.assertNotEqual(res.returncode, 0, "缺省名不得静默改写既有地图身份")
-                self.assertEqual((self.docs / "llms.txt").read_bytes(), before,
-                                 "既有地图必须逐字节不变")
+                after_h1 = (self.docs / "llms.txt").read_text(encoding="utf-8").splitlines()[0]
+                self.assertEqual(after_h1, before_h1,
+                                 "缺省重生成不得改写地图身份（要么拒绝，要么沿用）")
 
     def test_contract_phrase_name_round_trips(self):
         """R1-3：名含契约短语时提示 --name 值必须逐字等于地图身份（fullmatch 关闭截断）"""
@@ -1272,6 +1272,98 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
         if token.startswith("'") and token.endswith("'"):
             token = token[1:-1]
         self.assertEqual(token, name, "R1-3: 契约短语名不得被截断")
+
+
+class TestBatchDIdentityContract(unittest.TestCase):
+    """批次 D 回归（BK-0030 / BK-0031）：身份写保护闸门的完备性与契约登记"""
+
+    _CTRL = (
+        "> **文档控制信息**\n"
+        "> - **文档标识**: {doc_id}\n"
+        "> - **当前版本**: V1.0.0\n"
+        "\n### 修订历史记录 (Revision History)\n\n"
+        "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+        "| :--- | :--- | :--- | :--- | :--- |\n"
+        "| **V1.0.0** | 2026-10-09 | DSH AI Agent | 王辉 | 初版 |\n"
+    )
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_batch_d_"))
+        self.docs = self.test_dir / "docs"
+        (self.docs / "explanation").mkdir(parents=True)
+        (self.docs / "explanation" / "a.md").write_text(
+            "# A 文档\n\n" + self._CTRL.format(doc_id="DOC-A"), encoding="utf-8")
+        (self.docs / "index.md").write_text(
+            "# 索引\n\n" + self._CTRL.format(doc_id="DOC-IDX") + "\n- [A 文档](./explanation/a.md)\n",
+            encoding="utf-8")
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def _run_llms(self, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs), *extra],
+            capture_output=True, text=True,
+        )
+
+    def _audit(self):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
+            capture_output=True, text=True,
+        )
+
+    def _write_map(self, head: str) -> Path:
+        path = self.docs / "llms.txt"
+        path.write_text(head, encoding="utf-8")
+        return path
+
+    def test_regeneration_keeps_identity_and_passes(self):
+        """BK-0030 ①④：合法重生成（未显式 --name / 显式同名）必须放行且 H1 逐字节不变"""
+        first = self._run_llms("--output", str(self.docs / "llms.txt"))
+        self.assertEqual(first.returncode, 0, first.stderr)
+        baseline = (self.docs / "llms.txt").read_bytes()
+
+        again = self._run_llms("--output", str(self.docs / "llms.txt"))
+        self.assertEqual(again.returncode, 0,
+                         f"缺省 --name 必须沿用既有身份并放行：{again.stderr}")
+        self.assertEqual((self.docs / "llms.txt").read_bytes(), baseline,
+                         "重生成不得改变既有地图身份或内容")
+
+        same = self._run_llms("--output", str(self.docs / "llms.txt"), "--name=System")
+        self.assertEqual(same.returncode, 0, "显式同名必须放行")
+
+        res = self._audit()
+        self.assertNotIn("机器地图", res.stdout + res.stderr, "一致地图不得被报缺陷")
+
+    def test_custom_identity_survives_bare_regeneration(self):
+        """BK-0030 ①：自定义身份地图在未显式 --name 的重生成下必须保持不变（不再被拒或改名）"""
+        created = self._run_llms("--output", str(self.docs / "llms.txt"), "--name=CR 公共技能库")
+        self.assertEqual(created.returncode, 0, created.stderr)
+        baseline = (self.docs / "llms.txt").read_bytes()
+
+        again = self._run_llms("--output", str(self.docs / "llms.txt"))
+        self.assertEqual(again.returncode, 0,
+                         f"自定义身份的合法重生成必须放行（沿用既有身份）：{again.stderr}")
+        self.assertEqual((self.docs / "llms.txt").read_bytes(), baseline, "身份必须逐字节保持")
+
+    def test_gate_fails_closed_on_unreadable_or_non_utf8_map(self):
+        """BK-0030 ③ / BK-0031：既有地图不可读或非合法 UTF-8 时必须拒绝（fail-closed）"""
+        path = self._write_map("# Secret Project Machine-Readable Knowledge Base Map\n\n- 条目\n")
+
+        path.chmod(0o200)
+        try:
+            if os.access(path, os.R_OK):
+                self.skipTest("当前环境以特权运行，无法构造不可读文件")
+            unreadable = self._run_llms("--output", str(path))
+            self.assertNotEqual(unreadable.returncode, 0, "不可读既有地图必须拒绝")
+        finally:
+            path.chmod(0o600)
+
+        path.write_bytes(b"# A\xffB Machine-Readable Knowledge Base Map\n\n- item\n")
+        before = path.read_bytes()
+        non_utf8 = self._run_llms("--output", str(path))
+        self.assertNotEqual(non_utf8.returncode, 0, "非 UTF-8 既有地图必须拒绝")
+        self.assertEqual(path.read_bytes(), before, "字节必须逐字节不变（不得归一化为 U+FFFD）")
 
 
 if __name__ == "__main__":

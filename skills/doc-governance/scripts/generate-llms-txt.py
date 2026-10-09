@@ -14,7 +14,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 EVIDENCE_ARCHIVE_PARTS = ("project", "reviews")
@@ -157,21 +157,31 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
     return total_docs
 
 
-def _reject_identity_rewrite(out_path: Path, requested_name: str) -> None:
-    """R1-1 根因闸门：既有机器地图的项目身份与本次请求名不一致时拒绝落盘。
+DEFAULT_PROJECT_NAME = "System"
 
-    提示文案只是修复面之一，缺省 `--name`（System）仍会静默改写地图身份；本闸门使
-    「照做任何提示 / 直接重新生成」都无法在未显式声明身份的情况下改写既有 H1。
+
+def _resolve_outgoing_name(out_path: Path, requested: Optional[str]) -> str:
+    """确定本次生成写入的项目名（BK-0030 身份写保护闸门）。
+
+    - 无既有地图：用显式 --name，缺省 DEFAULT_PROJECT_NAME；
+    - 既有地图身份可解析：未显式指定则**沿用既有身份**（正常重生成不改名）；
+      显式指定且与既有身份相同则放行；不同则拒绝（改名须先移除既有地图）；
+    - 既有地图存在但不可读、非合法 UTF-8 或 H1 不可反解：**fail-closed 拒绝**。
     """
-    if not out_path.is_file():
-        return
+    if not out_path.exists():
+        return requested or DEFAULT_PROJECT_NAME
+
     try:
-        head_line = out_path.read_text(encoding="utf-8", errors="replace").splitlines()[0]
-    except (OSError, IndexError):
-        return
+        head_line = out_path.read_text(encoding="utf-8").splitlines()[0]
+    except (OSError, IndexError, UnicodeDecodeError) as exc:
+        print(
+            f"❌ 拒绝改写机器地图身份：既有地图无法安全读取（{type(exc).__name__}: {exc}）",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", head_line.strip())
     if match is None:
-        # fail-closed：既有 H1 不符合标准格式 ⇒ 身份不可确认，拒绝覆盖（否则提示路径照做即永久改写）
         print(
             "❌ 拒绝改写机器地图身份：既有地图首行不符合标准 H1 格式"
             "（应形如 [# <项目名> Machine-Readable Knowledge Base Map]），无法确认其项目身份；"
@@ -179,25 +189,26 @@ def _reject_identity_rewrite(out_path: Path, requested_name: str) -> None:
             file=sys.stderr,
         )
         sys.exit(1)
-    if match.group(1) == requested_name:
-        return
+
+    existing = match.group(1)
+    if requested is None or requested == existing:
+        return existing
+
     print(
-        f"❌ 拒绝改写机器地图身份：既有地图项目名为 {match.group(1)!r}，本次请求名为 {requested_name!r}；"
-        f"如确需改名，请显式传入 --name 并在提交信息中说明",
+        f"❌ 拒绝改写机器地图身份：既有地图项目名为 {existing!r}，本次请求名为 {requested!r}；"
+        f"如确需改名，请先移除既有地图文件，再以显式 --name 生成",
         file=sys.stderr,
     )
     sys.exit(1)
-
 
 def main():
     parser = argparse.ArgumentParser(description="机器可读 llms.txt 自动化生成器")
     parser.add_argument("--root", default="docs", help="文档根目录 (默认 docs)")
     parser.add_argument("--output", default=None, help="输出路径 (缺省为 <root>/llms.txt，随 --root 派生)")
-    parser.add_argument("--name", default="System", help="项目名称")
+    parser.add_argument("--name", default=None, help="项目名称 (缺省：沿用既有地图身份；无既有地图时为 System)")
 
     args = parser.parse_args()
     root_path = Path(args.root).resolve()
-    _reject_identity_rewrite(Path(args.output).resolve() if args.output else (root_path / "llms.txt").resolve(), args.name)
     # BK-0023：显式与缺省落点统一 resolve()，使符号链接穿透同样落入归档判定
     out_path = Path(args.output).resolve() if args.output else (root_path / "llms.txt").resolve()
 
@@ -209,7 +220,8 @@ def main():
         print(f"❌ 错误: 目标根目录不存在: {root_path}", file=sys.stderr)
         sys.exit(1)
 
-    written = generate_llms_txt(root_path, out_path, project_name=args.name)
+    project_name = _resolve_outgoing_name(out_path, args.name)
+    written = generate_llms_txt(root_path, out_path, project_name=project_name)
     if written == 0:
         print(f"❌ 机器地图收录 0 篇文档，拒绝落盘（零覆盖守卫，避免覆盖既有 SSOT 地图）: {out_path}", file=sys.stderr)
         sys.exit(1)

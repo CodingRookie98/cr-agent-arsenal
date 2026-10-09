@@ -90,7 +90,8 @@ def _is_safely_displayable(name: str) -> bool:
 
     - D2-3：裸 ESC/OSC/BEL 等控制字符会穿透终端层（可篡改窗口标题/剪贴板并污染 CI 日志）；
     - D2-5：NUL 使提示命令在 execve 层不可执行，超长名把缺陷行膨胀；
-    - 前后空格与 NBSP 属**可打印**范畴，不做 strip（R1-10：strip 会把合法名 `" Foo "` 误诊为畸形）。
+    - 前后空格属可打印范畴，不做 strip（R1-10：strip 会把合法名 `" Foo "` 误诊为畸形）；
+    - NBSP（U+00A0）等分隔符**不可打印**（实测 `'\xa0'.isprintable()` 为 False），会走 fail-closed 分支。
     """
     return bool(name) and len(name) <= PROJECT_NAME_MAX_LEN and all(ch.isprintable() for ch in name)
 
@@ -104,8 +105,9 @@ def _resolve_project_name(llms_file: Path) -> Tuple[str, bool]:
     判定路径必须使用本函数返回的**未净化原名**（生成物 H1 用的就是它），保证逐字同源。
     """
     try:
-        first_line = llms_file.read_text(encoding="utf-8", errors="replace").splitlines()[0]
-    except (OSError, IndexError):
+        first_line = llms_file.read_text(encoding="utf-8").splitlines()[0]
+    except (OSError, IndexError, UnicodeDecodeError):
+        # BK-0031：严格解码——非法 UTF-8 不得被 errors="replace" 归一化后当作可信身份
         return PROJECT_NAME_FALLBACK, False
     # 用 fullmatch + 贪婪捕获：名中含契约短语时不得被非贪婪截断（R1-3）
     match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", first_line.strip())
@@ -144,7 +146,7 @@ def check_llms_map_consistency(root_dir: Path) -> str:
                     )
                 if not _is_safely_displayable(project_name):
                     return (
-                        "机器地图与生成物不一致，且既有地图首行项目名不可安全回显（含不可打印字符或超长）。"
+                        "机器地图与生成物不一致，且既有地图首行项目名不可安全回显（为空、含不可打印字符或超长）。"
                         "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
                         "请以该项目名原值显式重新生成后再提交"
                     )
