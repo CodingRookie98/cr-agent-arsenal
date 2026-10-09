@@ -50,11 +50,29 @@ YEAR=$(date +%Y)
 # 确保根目录存在
 mkdir -p "$ROOT_DIR"
 
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 象限索引自愈（RFC-0003）：生成文档后 ensure 象限索引并幂等登记；失败不阻断主产物
+heal_doc_index() {
+  local dir_rel="$1" file="$2" title="$3" kind="$4"
+  if [ -f "$SCRIPTS_DIR/manage-doc-index.py" ]; then
+    python3 "$SCRIPTS_DIR/manage-doc-index.py" register \
+      --root "$ROOT_DIR" --dir "$dir_rel" --file "$file" --title "$title" --kind "$kind" \
+      || echo "⚠️  象限索引自愈失败（主产物已生成，索引需人工补登记）: $dir_rel/$file"
+  fi
+}
+
 case "$TYPE" in
   tutorial)
     TARGET_DIR="$ROOT_DIR/tutorials"
     mkdir -p "$TARGET_DIR"
     FILE_PATH="$TARGET_DIR/${NAME}.md"
+    # 跨象限链接按目标索引存在性条件渲染（缺失时降级为纯文本，杜绝 404）
+    if [ -f "$ROOT_DIR/how-to/index.md" ]; then
+      NEXT_STEP_LINE="- 探索更多实战操作: [how-to 指南](../how-to/index.md)"
+    else
+      NEXT_STEP_LINE="- 探索更多实战操作: 运行 \`scaffold-doc.sh how-to <name>\` 创建 \`how-to/\` 象限指南（当前尚无该象限索引）"
+    fi
     cat <<EOF > "$FILE_PATH"
 # ${NAME} 新手上路指南 (Tutorial)
 
@@ -96,8 +114,9 @@ case "$TYPE" in
 \`\`\`
 
 ## 4. 下一步探索 (Next Steps)
-- 探索更多实战操作: [how-to 指南](../how-to/index.md)
+${NEXT_STEP_LINE}
 EOF
+    heal_doc_index "tutorials" "${NAME}.md" "$NAME" "Tutorial"
     ;;
 
   how-to)
@@ -145,6 +164,7 @@ EOF
 - 如何验证操作成功（预期状态码与输出日志）
 - 常见偶发问题与对策
 EOF
+    heal_doc_index "how-to" "${NAME}.md" "$NAME" "HowTo"
     ;;
 
   reference)
@@ -193,6 +213,7 @@ EOF
 ## 2. 状态机与不可变约束 (Invariants)
 - 状态转换规则与守卫条件
 EOF
+    heal_doc_index "reference" "${NAME}.md" "$NAME" "Reference"
     ;;
 
   explanation)
@@ -233,6 +254,7 @@ graph TD
 - 核心算法推导
 - 边界并发竞争与防护机理
 EOF
+    heal_doc_index "explanation" "${NAME}.md" "$NAME" "Explanation"
     ;;
 
   adr)
@@ -289,6 +311,7 @@ EOF
 ### 4.2 方案 2 (选定)
 * 赞同理由 (+): ...
 EOF
+    heal_doc_index "explanation/decisions" "${SEQ_PADDED}-${NAME}.md" "$NAME" "ADR"
     ;;
 
   rfc|proposal)
@@ -341,6 +364,7 @@ EOF
 - [ ] 焦点 1: ...
 - [ ] 焦点 2: ...
 EOF
+    heal_doc_index "proposals" "RFC-${SEQ_PADDED}-${NAME}.md" "$NAME" "RFC"
     ;;
 
   backlog)
@@ -396,7 +420,6 @@ acceptance_criteria:
 ## 4. 实施去向与结项记录
 *(未开工)*
 EOF
-    SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     if [ -f "$SCRIPTS_DIR/manage-backlog.py" ]; then
       python3 "$SCRIPTS_DIR/manage-backlog.py" sync-index --root "$ROOT_DIR" 2>/dev/null || true
     fi

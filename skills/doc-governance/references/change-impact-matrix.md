@@ -1,7 +1,7 @@
 # 文档-代码全向联动维护矩阵 (Change Impact Matrix Protocol)
 
 > **控制信息**
-> - **规范版本**: V1.2.0
+> - **规范版本**: V1.3.0
 > - **核心原则**: 严禁孤立修改，代码与契约必须双向闭环同步
 > - **适用范围**: 所有涉及功能演进、接口调整与重构任务的代码交付门禁
 
@@ -26,7 +26,7 @@
 | **前端页面、组件与设计 Token** | `src/components/*`<br>`src/styles/tokens.css`<br>`src/app/*` | 1. `docs/reference/ui/`<br>2. `docs/how-to/` (若涉及新页面操作流) | 设计 Token 变量名一致，组件 Props 与事件契约更新，无虚构组件。 |
 | **核心架构、框架与基础设施** | `src/core/*`<br>`package.json`<br>`docker-compose.yml` | 1. `docs/explanation/architecture/`<br>2. `docs/explanation/decisions/` (新建 MADR)<br>3. `docs/explanation/analysis/` | 记录架构分层演进、选型评估对比与 MADR 决策记录。 |
 | **部署配置、环境与调试脚本** | `.env.example`<br>`Dockerfile`<br>`scripts/deploy.sh` | 1. `docs/how-to/deployment.md`<br>2. `docs/how-to/local-setup.md` | 环境变量清单 100% 完整，部署与启动命令在干净环境中可复现。 |
-| **文档拓扑变动 (增/删/重命名)** | `docs/**/*.md` | 1. `docs/index.md` (全局人类索引)<br>2. `docs/llms.txt` (智能体机器地图)<br>3. 所有上游引用文件相对路径 | 运行 `check-doc-links.py` 严格 Exit Code 0，全局零 404 断链。 |
+| **文档拓扑变动 (增/删/重命名)** | `docs/**/*.md` | 1. `docs/index.md` (全局人类索引)<br>2. `docs/llms.txt` (智能体机器地图)<br>3. 受影响目录的象限索引 `<dir>/index.md`（托管索引由 `manage-doc-index.py` 自动登记）<br>4. 所有上游引用文件相对路径 | 运行 `check-doc-links.py` 严格 Exit Code 0，全局零 404 断链；托管索引控制头版本与修订表联动一致。 |
 
 ---
 

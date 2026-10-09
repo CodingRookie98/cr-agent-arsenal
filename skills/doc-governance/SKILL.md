@@ -1,6 +1,6 @@
 ---
 name: doc-governance
-description: Standardized documentation engineering and knowledge base governance skill based on the Diátaxis framework, RFC-to-Crystallization lifecycle, MADR architecture decisions, and Docs-as-Code automation. Use when creating or structuring docs, managing API/model contracts, executing doc-code synchronization, auditing doc links and health, scaffolding new docs, or migrating legacy docs.
+description: Standardized documentation engineering and knowledge base governance skill based on the Diátaxis framework, RFC-to-Crystallization lifecycle, MADR architecture decisions, and Docs-as-Code automation. Use when creating or structuring docs, managing API/model contracts, executing doc-code synchronization, auditing doc links and health, scaffolding new docs, governing hierarchical quadrant index conventions, or migrating legacy docs.
 license: MIT
 ---
 
@@ -95,6 +95,28 @@ docs/
     └── archive/             # 【冷区】历史已结项待办归档（按版本 backlog-vX.Y.md 或季度归档沉淀）
 ```
 
+### 目录级索引约定 (Directory Index Convention)
+
+索引是**分层**的，但**根级人类入口唯一**：
+
+| 层级 | 文件 | 地位 | 维护者 |
+|:---|:---|:---|:---|
+| 根级 | `docs/index.md` | **唯一**的全局人类总索引入口（全景拓扑与分类） | 人工，纳入版本治理 |
+| 根级机器地图 | `docs/llms.txt` | 供智能体消费的机器可读拓扑 | `generate-llms-txt.py` |
+| 象限/子目录 | `<dir>/index.md` 或 `<dir>/README.md` | 本目录分流入口，**按需存在、非强制** | 托管（脚本）或人工 |
+
+1. **目录即入口铁律**：任何链接指向目录时，该目录必须含 `index.md` 或 `README.md`（由 `check-doc-links.py` 强制校验）；
+2. **托管索引自动生成**：`scaffold-doc.sh` 生成文档后自动调用 [manage-doc-index.py](./scripts/manage-doc-index.py) 创建象限索引并**幂等登记**本文档；托管索引正文含标记 `<!-- doc-index:managed -->`，携带标准控制头并随登记递增补丁版本（修订历史恒 ≤ 5 条）；
+3. **人工索引零改写**：不含托管标记的索引视为人工维护，脚本只读不改（安全 no-op）；
+4. **严禁追溯性空索引**：象限索引按需生成，严禁为凑齐拓扑批量创建空目录与空索引；
+5. **收录边界**：象限索引只收录本目录**直属**文档，跨象限收录统一归根级 `docs/index.md`。
+
+> 🔧 手动维护命令：
+> ```bash
+> python3 scripts/manage-doc-index.py ensure   --root docs --dir how-to
+> python3 scripts/manage-doc-index.py register --root docs --dir how-to --file deployment.md --title "生产部署 SOP" --kind HowTo
+> ```
+
 ---
 
 ## 核心运行模式 SOP (Operational Modes)
@@ -120,7 +142,7 @@ docs/
 5. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt`，刷新供智能体消费的拓扑地图。
 
 ### 模式 3：脚手架与结晶归档 (Scaffold & Archive Mode)
-1. **新建文档/提案**：运行 `scripts/scaffold-doc.sh <type> <name>`（如 `scaffold-doc.sh rfc canvas-collab`），基于规范模板创建脚手架，自动填入合规控制头；
+1. **新建文档/提案**：运行 `scripts/scaffold-doc.sh <type> <name>`（如 `scaffold-doc.sh rfc canvas-collab`），基于规范模板创建脚手架，自动填入合规控制头，并自动 ensure 象限索引与登记本文档（跨象限链接按目标索引是否存在自动降级，杜绝 404）；
 2. **初期 RFC 对齐**：在 `docs/proposals/` 单文档中闭环业务故事、契约草案与选型权衡；
 3. **定案结晶下沉**：方案批准后，遵循 [rfc-crystallization-lifecycle.md](./references/rfc-crystallization-lifecycle.md) 将接口、规则、架构解构沉淀至 Diátaxis 对应目录；
 4. **提案归档防腐**：原 RFC 标记为 `Implemented` 并移至 `docs/proposals/archive/`，加注防腐历史备忘。
