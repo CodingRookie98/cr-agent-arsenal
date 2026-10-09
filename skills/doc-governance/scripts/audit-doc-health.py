@@ -85,11 +85,14 @@ PROJECT_NAME_FALLBACK = "System"
 
 
 def _sanitize_project_name(raw: str) -> str:
-    """净化反解出的项目名（BK-0026）：仅保留可打印字符并限制长度，非法即回落占位名。
+    """净化项目名**仅用于人读输出**（BK-0026），绝不参与判定。
 
     - D2-3：裸 ESC/OSC/BEL 等控制字符会穿透到终端层（可篡改窗口标题/剪贴板并污染 CI 日志）；
     - D2-4：以 `-` 开头的名字需配合 `--name=<value>` 形式才能被执行器接受；
     - D2-5：NUL 会使提示命令在 execve 层不可执行，超长名会把缺陷行膨胀。
+
+    R1-1：判定路径必须使用**未净化的原名**（生成物的 H1 用的是原名，净化会让合法边缘名
+    —— 超长、前后空格、含 NBSP/ZWSP —— 被误判漂移，并可能误导用户把地图改名）。
     """
     cleaned = "".join(ch for ch in raw if ch.isprintable()).strip()
     if not cleaned or len(cleaned) > PROJECT_NAME_MAX_LEN:
@@ -98,13 +101,13 @@ def _sanitize_project_name(raw: str) -> str:
 
 
 def _map_project_name(llms_file: Path) -> str:
-    """从既有机器地图首行反解项目名，使判定参数与生成参数同源（R1-2），并净化后使用。"""
+    """从既有机器地图首行反解项目名：**不做净化**，保证判定参数与生成参数逐字同源（R1-1）。"""
     try:
         first_line = llms_file.read_text(encoding="utf-8", errors="replace").splitlines()[0]
     except (OSError, IndexError):
         return PROJECT_NAME_FALLBACK
     match = re.match(r"# (.+?) Machine-Readable Knowledge Base Map", first_line)
-    return _sanitize_project_name(match.group(1)) if match else PROJECT_NAME_FALLBACK
+    return match.group(1) if match else PROJECT_NAME_FALLBACK
 
 
 def check_llms_map_consistency(root_dir: Path) -> str:
@@ -126,9 +129,16 @@ def check_llms_map_consistency(root_dir: Path) -> str:
                 # R1-1：无可收录文档时本项不适用——否则修复命令必然 rc=1，形成不可修复的死胡同
                 return ""
             if tmp_out.read_bytes() != llms_file.read_bytes():
+                # 显示路径净化（BK-0026）：畸形名不回显为命令，避免把地图 H1 改写成占位名（R1-1/R1-3）
+                display_name = _sanitize_project_name(project_name)
+                if display_name != project_name:
+                    return (
+                        "机器地图与生成物不一致 —— 既有地图首行项目名含不可打印字符或超长，无法安全回显；"
+                        "请以该项目名原值重新运行 generate-llms-txt.py --root docs --output docs/llms.txt 后再提交"
+                    )
                 # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
                 # D2-4：以 --name=<value> 赋值形式拼装，使 `-` 开头的名字同样可执行（否则 argparse rc=2）
-                quoted_name = shlex.quote(project_name)
+                quoted_name = shlex.quote(display_name)
                 return (
                     "机器地图与生成物不一致 —— 请以 --name=" + quoted_name + " 运行 "
                     "generate-llms-txt.py --root docs --output docs/llms.txt 重新生成后再提交"

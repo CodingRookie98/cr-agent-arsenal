@@ -1143,16 +1143,40 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
         self.assertNotIn("\x1b", combined, "D2-3: 不得把裸 ESC 写入输出（可篡改终端标题/剪贴板）")
         self.assertNotIn("\x07", combined, "D2-3: 不得把裸 BEL 写入输出")
 
-    def test_hint_rejects_nul_and_overlong_names(self):
-        """BK-0026 / D2-5：畸形名（NUL / 超长）必须回落占位名，不得膨胀或污染输出"""
-        self._write_drifted_map("X" * 100000)
+    def test_hint_rejects_nul_name(self):
+        """BK-0026 / D2-5：真含 NUL 的项目名不得把 NUL 写入输出（此前该断言因夹具不含 NUL 而恒真）"""
+        self._write_drifted_map("A\x00B")
 
         res = self._audit()
         combined = res.stdout + res.stderr
 
         self.assertIn("机器地图", combined, "前置：漂移必须被检出")
         self.assertNotIn("\x00", combined, "D2-5: 不得把 NUL 写入输出")
+
+    def test_hint_rejects_overlong_name(self):
+        """BK-0026 / D2-5：超长项目名不得把缺陷行膨胀"""
+        self._write_drifted_map("X" * 100000)
+
+        res = self._audit()
+        combined = res.stdout + res.stderr
+
+        self.assertIn("机器地图", combined, "前置：漂移必须被检出")
         self.assertLess(len(combined), 20000, "D2-5: 超长项目名不得把缺陷行膨胀 10 万字节")
+
+    def test_legit_edge_names_are_not_misjudged_as_drift(self):
+        """R1-1：合法但边缘的项目名不得因显示净化而被误判漂移（判定必须用未净化原名）"""
+        for name in ("L" * 65, "中" * 65, " Foo ", "A\u00a0B"):
+            with self.subTest(name=repr(name[:10])):
+                gen = subprocess.run(
+                    [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
+                     "--output", str(self.docs / "llms.txt"), "--name=" + name],
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(gen.returncode, 0, gen.stderr)
+
+                res = self._audit()
+                self.assertNotIn("机器地图", res.stdout + res.stderr,
+                                 f"R1-1: 合法边缘名 {name[:10]!r} 不得被误判漂移")
 
     def test_hint_command_is_executable_for_dash_prefixed_name(self):
         """BK-0026 / D2-4：以 - 开头的项目名不得让修复建议变成 rc=2 死巷"""
