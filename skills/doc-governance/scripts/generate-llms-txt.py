@@ -92,8 +92,8 @@ SECTION_ORDER = [
 ]
 
 
-def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Project"):
-    """生成 llms.txt"""
+def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Project") -> int:
+    """生成 llms.txt。返回收录文档数；收录 0 篇时**不落盘**并返回 0（BK-0023 零覆盖守卫）。"""
     sections: Dict[str, List[Tuple[str, str, str]]] = {k: [] for k, _ in SECTION_ORDER}
     other_docs: List[Tuple[str, str, str]] = []
 
@@ -145,9 +145,15 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
             output_lines.append(f"- [{title}]({link}){desc_text}")
         output_lines.append("")
 
+    total_docs = sum(len(v) for v in sections.values()) + len(other_docs)
+    if total_docs == 0:
+        # 零覆盖守卫：绝不用空壳地图覆盖既有 SSOT 地图（BK-0023 / R1-17）
+        return 0
+
     content = "\n".join(output_lines)
     output_file.write_text(content, encoding="utf-8")
-    print(f"✅ 机器可读地图成功生成至: {output_file} (共收录 {sum(len(v) for v in sections.values()) + len(other_docs)} 篇有效文档)")
+    print(f"✅ 机器可读地图成功生成至: {output_file} (共收录 {total_docs} 篇有效文档)")
+    return total_docs
 
 
 def main():
@@ -158,7 +164,8 @@ def main():
 
     args = parser.parse_args()
     root_path = Path(args.root).resolve()
-    out_path = Path(args.output).resolve() if args.output else (root_path / "llms.txt")
+    # BK-0023：显式与缺省落点统一 resolve()，使符号链接穿透同样落入归档判定
+    out_path = Path(args.output).resolve() if args.output else (root_path / "llms.txt").resolve()
 
     if is_archive_path(out_path) or in_evidence_archive(out_path, root_path):
         print(f"❌ 拒绝写入交付凭据归档（G1 逐字归档红线）: {out_path}", file=sys.stderr)
@@ -169,7 +176,10 @@ def main():
         sys.exit(1)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    generate_llms_txt(root_path, out_path, project_name=args.name)
+    written = generate_llms_txt(root_path, out_path, project_name=args.name)
+    if written == 0:
+        print(f"❌ 机器地图收录 0 篇文档，拒绝落盘（零覆盖守卫，避免覆盖既有 SSOT 地图）: {out_path}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

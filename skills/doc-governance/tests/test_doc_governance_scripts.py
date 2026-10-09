@@ -918,5 +918,78 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
         self.assertFalse((archived_dir / "llms.txt").exists(), "DR1-3: 归档内不得出现 llms.txt")
 
 
+class TestBatchBLlmsIntegrity(unittest.TestCase):
+    """批次 B 回归（BK-0023 / BK-0025）：机器地图写入侧安全与一致性门禁"""
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_batch_b_"))
+        self.docs = self.test_dir / "docs"
+        (self.docs / "explanation").mkdir(parents=True)
+        (self.docs / "explanation" / "a.md").write_text("# A 文档\n\n正文段落。\n", encoding="utf-8")
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def _run_llms(self, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs), *extra],
+            capture_output=True, text=True,
+        )
+
+    def test_llms_output_symlinked_into_archive_is_refused(self):
+        """BK-0023：缺省落点经符号链接指向归档文件时必须拒绝（不得穿透写入）"""
+        archived_dir = self.docs / "project" / "reviews"
+        archived_dir.mkdir(parents=True)
+        victim = archived_dir / "victim.md"
+        victim.write_text("# 归档受害者\n\n逐字凭据\n", encoding="utf-8")
+        before = victim.read_bytes()
+        try:
+            (self.docs / "llms.txt").symlink_to(Path("project") / "reviews" / "victim.md")
+        except OSError:
+            self.skipTest("平台不支持符号链接")
+
+        res = self._run_llms()
+
+        self.assertNotEqual(res.returncode, 0, "BK-0023: 符号链接穿透必须被拒绝")
+        self.assertEqual(victim.read_bytes(), before, "BK-0023: 归档文件不得被改写")
+
+    def test_llms_zero_coverage_is_refused(self):
+        """BK-0023：收录 0 篇时拒绝落盘（避免用空壳覆盖既有 SSOT 地图）"""
+        shutil.rmtree(self.docs / "explanation")
+        archived_dir = self.docs / "project" / "reviews"
+        archived_dir.mkdir(parents=True)
+        (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8")
+
+        res = self._run_llms()
+
+        self.assertNotEqual(res.returncode, 0, "BK-0023: 零覆盖必须拒绝落盘")
+        self.assertFalse((self.docs / "llms.txt").exists(), "BK-0023: 不得生成空壳机器地图")
+
+    def test_audit_detects_llms_map_drift(self):
+        """BK-0025：机器地图与注册命令生成物不一致时，健康门禁必须报出"""
+        (self.docs / "llms.txt").write_text("# Stale Map\n\n- 过期的条目\n", encoding="utf-8")
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
+            capture_output=True, text=True,
+        )
+
+        combined = res.stdout + res.stderr
+        self.assertIn("机器地图", combined, "BK-0025: 漂移必须被机械检出")
+        self.assertNotEqual(res.returncode, 0, "BK-0025: 漂移必须导致门禁失败")
+
+    def test_audit_accepts_consistent_llms_map(self):
+        """BK-0025：以注册命令生成的机器地图不得被误报"""
+        gen = self._run_llms("--output", str(self.docs / "llms.txt"))
+        self.assertEqual(gen.returncode, 0, gen.stderr)
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
+            capture_output=True, text=True,
+        )
+        self.assertNotIn("机器地图与注册命令生成物不一致", res.stdout + res.stderr,
+                         "BK-0025: 一致的机器地图不得被误报")
+
+
 if __name__ == "__main__":
     unittest.main()

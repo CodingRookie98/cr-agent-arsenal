@@ -14,9 +14,12 @@ audit-doc-health.py - 知识库全面健康度体检引擎
 """
 
 import argparse
+import contextlib
+import io
 import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
 
@@ -52,6 +55,7 @@ def _load_sibling(filename: str, module_name: str):
 _links_mod = _load_sibling("check-doc-links.py", "check_doc_links")
 _trim_mod = _load_sibling("trim-revision.py", "trim_revision")
 _sync_mod = _load_sibling("check-doc-control-sync.py", "check_doc_control_sync")
+_llms_mod = _load_sibling("generate-llms-txt.py", "generate_llms_txt")
 
 scan_directory = _links_mod.scan_directory
 process_markdown_file = _trim_mod.process_markdown_file
@@ -73,6 +77,32 @@ LEGACY_CATEGORIES = {
     "planning": "⚠️ 历史规划目录 (建议迁移至 explanation/analysis/ 或 project/)",
     "operations": "⚠️ 历史运维目录 (建议迁移至 how-to/ 或 tutorials/)",
 }
+
+
+def check_llms_map_consistency(root_dir: Path) -> str:
+    """机器地图一致性门禁（BK-0025）：以注册命令语义重生成并与 <root>/llms.txt 逐字节比对。
+
+    返回缺陷描述；空串表示一致或本项不适用（未生成机器地图的项目不参与判定）。
+    """
+    llms_file = root_dir / "llms.txt"
+    if not llms_file.exists():
+        return ""
+    try:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_out = Path(tmp_dir) / "llms.txt"
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                written = _llms_mod.generate_llms_txt(root_dir, tmp_out, project_name="System")
+            if written == 0:
+                return "机器地图收录 0 篇文档（零覆盖守卫触发），既有 <root>/llms.txt 不可信"
+            if tmp_out.read_bytes() != llms_file.read_bytes():
+                return (
+                    "机器地图与注册命令生成物不一致 —— 请运行 "
+                    "generate-llms-txt.py --root docs --output docs/llms.txt 重新生成后再提交"
+                )
+    except Exception as exc:  # noqa: BLE001 - 门禁不得因单点异常中断整体体检
+        return f"机器地图一致性检查无法完成: {exc}"
+    return ""
 
 
 def parse_frontmatter(content: str) -> Dict[str, str]:
@@ -497,6 +527,7 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         "backlog_issues": backlog_issues,
         "backlog_warnings": backlog_warnings,
         "backlog_metrics": backlog_metrics,
+        "llms_map_issue": check_llms_map_consistency(root_dir),
         "scores": {
             "link_score": round(link_score, 1),
             "meta_score": round(meta_score, 1),
@@ -617,6 +648,10 @@ def main():
             print(f"      - {issue}")
         print("      赋号与格式规范见 references/backlog-specification.md。")
 
+    if res.get("llms_map_issue"):
+        has_issues = True
+        print(f"   ⛔ 机器地图一致性缺陷: {res['llms_map_issue']}")
+
     if not has_issues:
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")
 
@@ -626,6 +661,7 @@ def main():
         and res["total_link_errors"] == 0
         and not res["backlog_issues"]
         and not res.get("version_drift_files")
+        and not res.get("llms_map_issue")
     ):
         print("🏁 诊断结论: PASS (健康度达标，准予交付) ✅")
         sys.exit(0)
