@@ -166,11 +166,13 @@ def _can_roundtrip_as_identity(name: str) -> bool:
     行分隔符（LF/CR/U+2028/U+000B/U+0085…）会破坏 H1 的单行性，使生成物永久落在
     fail-closed 态（此后任何重生成都被拒、只能删除文件恢复），故在生成前即拒绝。
     """
-    head_line = f"# {name} Machine-Readable Knowledge Base Map"
-    if len(head_line.splitlines()) != 1:
+    try:
+        name.encode("utf-8")  # 写出半程：孤立代理（surrogateescape 读入的非法字节）不可编码
+    except UnicodeEncodeError:
         return False
-    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", head_line)
-    return match is not None and match.group(1) == name
+    # 载荷全部在 splitlines 半边：它识别的行分隔符远多于 "\n"（含 U+2028/U+2029/U+0085 等）；
+    # H1 一旦被切成多行，读取端的 fullmatch 必然失败 ⇒ 生成物永久不可反解。
+    return len(f"# {name} Machine-Readable Knowledge Base Map".splitlines()) == 1
 
 
 def _resolve_outgoing_name(out_path: Path, requested: Optional[str]) -> str:

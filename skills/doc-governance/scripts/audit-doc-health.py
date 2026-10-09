@@ -109,8 +109,9 @@ def _resolve_project_name(llms_file: Path) -> Tuple[str, bool]:
     except (OSError, IndexError, UnicodeDecodeError):
         # BK-0031：严格解码——非法 UTF-8 不得被 errors="replace" 归一化后当作可信身份
         return PROJECT_NAME_FALLBACK, False
-    # 用 fullmatch + 贪婪捕获：名中含契约短语时不得被非贪婪截断（R1-3）
-    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", first_line.strip())
+    # fullmatch + 贪婪捕获：名中含契约短语时不得被非贪婪截断（R1-3）；
+    # 不 strip：与生成器同语义，避免审计下发一个生成器必然拒绝的 --name（DR1-2）
+    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", first_line)
     if match is None:
         return PROJECT_NAME_FALLBACK, False
     return match.group(1), True

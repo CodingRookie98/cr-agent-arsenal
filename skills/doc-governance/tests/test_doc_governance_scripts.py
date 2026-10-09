@@ -1412,5 +1412,76 @@ class TestBatchDIdentityContract(unittest.TestCase):
             self.assertIn("--name", res.stdout + res.stderr)
 
 
+    def test_non_regular_file_output_is_refused(self):
+        """BK-0030 ③ / DR1-6：落点为目录或 FIFO 时必须拒绝（不得进入无界读取面）"""
+        out_dir = self.test_dir / "outdir"
+        out_dir.mkdir()
+        as_dir = self._run_llms("--output", str(out_dir))
+        self.assertNotEqual(as_dir.returncode, 0, "目录落点必须拒绝")
+        self.assertTrue(out_dir.is_dir(), "不得破坏既有目录")
+
+        fifo = self.test_dir / "fifo"
+        os.mkfifo(fifo)
+        try:
+            as_fifo = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
+                 "--root", str(self.docs), "--output", str(fifo)],
+                capture_output=True, text=True, timeout=15,
+            )
+        except subprocess.TimeoutExpired:
+            self.fail("FIFO 落点必须被闸门立即拒绝，不得进入阻塞读取（无界读取面）")
+        self.assertNotEqual(as_fifo.returncode, 0, "FIFO 落点必须拒绝")
+
+    def test_symlink_to_regular_map_is_allowed(self):
+        """BK-0030 ③ / DR1-6：落点为指向常规文件的符号链接时必须放行（不得误伤）"""
+        real = self.docs / "llms.txt"
+        first = self._run_llms("--output", str(real))
+        self.assertEqual(first.returncode, 0, first.stderr)
+
+        link = self.test_dir / "link.txt"
+        link.symlink_to(real)
+        res = self._run_llms("--output", str(link))
+
+        self.assertEqual(res.returncode, 0, f"软链→常规文件必须放行：{res.stderr}")
+        self.assertEqual(link.resolve().read_bytes(), real.read_bytes(), "应写到同一常规文件")
+
+    def test_audit_suggestion_is_executable_by_generator(self):
+        """DR1-2：审计下发的 --name 必须能被生成器接受（不得退化为必然失败的死循环）"""
+        (self.docs / "llms.txt").write_text(
+            "# Foo  Machine-Readable Knowledge Base Map\n\n- 漂移条目\n", encoding="utf-8")
+
+        res = self._audit()
+        out = res.stdout + res.stderr
+        self.assertIn("机器地图", out, "前置：漂移必须被检出")
+
+        line = next((ln for ln in out.splitlines() if "--name=" in ln), None)
+        if line is None:
+            return  # fail-closed 分支：不下发命令本身即可接受
+        segment = line.split("--name=", 1)[1]
+        end = segment.find(" 运行")
+        token = (segment[:end] if end > 0 else segment).strip()
+        if token.startswith("'") and token.endswith("'"):
+            token = token[1:-1]
+
+        gen = self._run_llms("--output", str(self.docs / "llms.txt"), "--name=" + token)
+        self.assertEqual(gen.returncode, 0,
+                         f"审计建议的 --name={token!r} 必须可执行，不得是死循环：{gen.stderr}")
+
+
+    def test_unencodable_byte_name_is_refused(self):
+        """DR1-1：argv 中的非法字节（surrogateescape 孤立代理）必须在生成前被拒，
+
+        不得先建出 0 字节地图把双工具楔死。
+        """
+        res = subprocess.run(
+            [sys.executable.encode(), str(SCRIPTS_DIR / "generate-llms-txt.py").encode(),
+             b"--root", str(self.docs).encode(), b"--output", str(self.docs / "llms.txt").encode(),
+             b"--name=" + bytes([0xFF])],
+            capture_output=True,
+        )
+        self.assertNotEqual(res.returncode, 0, "不可编码的项目名必须被拒绝")
+        self.assertFalse((self.docs / "llms.txt").exists(), "不得留下 0 字节地图")
+
+
 if __name__ == "__main__":
     unittest.main()
