@@ -162,6 +162,9 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
         dir=str(output_file.parent), prefix=output_file.name + ".", suffix=".tmp"
     )
     try:
+        # R1-27：mkstemp 默认 0600，且 os.replace 会把模式位带到产物上 ⇒ 显式按 umask 放开
+        # （必须走 fchmod(fd)：按名 chmod 会重新引入影子路径）
+        os.fchmod(handle_fd, 0o666 & ~_current_umask())
         with os.fdopen(handle_fd, "w", encoding="utf-8") as handle:
             handle.write(content)
         os.replace(tmp_name, output_file)
@@ -174,6 +177,13 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
 
 
 DEFAULT_PROJECT_NAME = "System"
+
+
+def _current_umask() -> int:
+    """读取当前进程 umask（临时置 0 后立即还原）。"""
+    current = os.umask(0)
+    os.umask(current)
+    return current
 
 
 def _can_roundtrip_as_identity(name: str) -> bool:

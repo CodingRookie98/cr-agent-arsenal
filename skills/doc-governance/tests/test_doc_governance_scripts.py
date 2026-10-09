@@ -1552,5 +1552,32 @@ class TestBatchDIdentityContract(unittest.TestCase):
         self.assertEqual(victim.read_bytes(), before, "预置 .tmp 软链的目标不得被写入")
 
 
+    def _umask(self):
+        current = os.umask(0)
+        os.umask(current)
+        return current
+
+    def test_generated_map_permissions_follow_umask(self):
+        """R1-27：产物权限必须与 umask 一致（不得被 mkstemp 的 0600 降级，git 对此不可见）"""
+        res = self._run_llms("--output", str(self.docs / "llms.txt"))
+        self.assertEqual(res.returncode, 0, res.stderr)
+
+        mode = (self.docs / "llms.txt").stat().st_mode & 0o777
+        expected = 0o666 & ~self._umask()
+        self.assertEqual(mode, expected, f"产物权限 {oct(mode)} 必须等于 {oct(expected)}")
+
+    def test_branch2_prescription_recommends_registered_command(self):
+        """R1-20 / R1-28：身份可反解但不可安全回显时，处方必须指向注册命令而非劝离删除"""
+        (self.docs / "llms.txt").write_text(
+            "# A\x07B Machine-Readable Knowledge Base Map\n\n- 漂移条目\n", encoding="utf-8")
+
+        res = self._audit()
+        out = res.stdout + res.stderr
+
+        self.assertIn("机器地图", out, "前置：漂移必须被检出")
+        self.assertIn("注册命令", out, "处方必须指向注册命令")
+        self.assertNotIn("先移除", out, "该分支不得建议移除既有地图（会丢失唯一身份载体）")
+
+
 if __name__ == "__main__":
     unittest.main()
