@@ -764,5 +764,72 @@ class TestCheckDocControlSync(unittest.TestCase):
         self.assertEqual(drifts[0]["file"], "bad.md")
 
 
+class TestArchiveExemptionBatchA(unittest.TestCase):
+    """批次 A 回归（BK-0001 / BK-0002 / BK-0021）：归档豁免与 --output 落点解耦"""
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_batch_a_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def _write_revision_doc(self, rel_path, rows=7):
+        path = self.test_dir / rel_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        body = [
+            "# 文档",
+            "",
+            "### 修订历史记录 (Revision History)",
+            "",
+            "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |",
+            "| :--- | :--- | :--- | :--- | :--- |",
+        ]
+        for i in range(rows):
+            body.append(f"| **V1.0.{i}** | 2026-01-0{i + 1} | AI Agent | 架构师 | r{i} |")
+        path.write_text("\n".join(body) + "\n", encoding="utf-8")
+        return path
+
+    def test_trim_revision_exempts_archive_reports(self):
+        """BK-0001：--fix 不得改写 project/reviews 归档报告（G1 逐字归档红线）"""
+        archived = self._write_revision_doc("project/reviews/report.md")
+        normal = self._write_revision_doc("project/plans/plan.md")
+        before = archived.read_bytes()
+
+        total, overflow, overflow_list = trim_revision.scan_and_trim(self.test_dir, max_keep=5, fix=True)
+
+        self.assertEqual(archived.read_bytes(), before, "BK-0001: 归档报告必须逐字节不变")
+        self.assertNotIn("report.md", " ".join(str(p) for p, _ in overflow_list),
+                         "BK-0001: 归档报告不得计入超额清单")
+        self.assertLess(normal.read_text(encoding="utf-8").count("| **V1.0."), 7,
+                        "非归档文档仍应被正常裁剪")
+
+    def test_generate_llms_txt_excludes_archive_reports(self):
+        """BK-0002：机器地图不得收录归档条目（与 links/audit 三消费者一致）"""
+        self._write_revision_doc("project/reviews/report.md", rows=1)
+        self._write_revision_doc("project/plans/plan.md", rows=1)
+        out = self.test_dir / "llms.txt"
+
+        generate_llms_txt.generate_llms_txt(self.test_dir, out, project_name="T")
+        content = out.read_text(encoding="utf-8")
+        self.assertNotIn("project/reviews/", content, "BK-0002: 归档条目必须被排除")
+        self.assertIn("project/plans/plan.md", content, "BK-0002: 非归档文档必须保留")
+
+    def test_generate_llms_txt_output_defaults_to_root(self):
+        """BK-0021：--output 缺省时落点随 --root 派生，隔离复算成立"""
+        docs = self.test_dir / "docs"
+        (docs / "explanation").mkdir(parents=True)
+        (docs / "explanation" / "a.md").write_text("# A\n\n正文段落\n", encoding="utf-8")
+        cwd = self.test_dir / "cwd"
+        cwd.mkdir()
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(docs), "--name", "T"],
+            capture_output=True, text=True, cwd=str(cwd),
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertTrue((docs / "llms.txt").exists(), "BK-0021: 默认落点应随 --root 派生")
+        self.assertFalse((cwd / "docs" / "llms.txt").exists(), "BK-0021: 不得写回 CWD 相对路径")
+
+
 if __name__ == "__main__":
     unittest.main()

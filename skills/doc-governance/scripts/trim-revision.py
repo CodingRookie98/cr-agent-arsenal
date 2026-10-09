@@ -22,6 +22,17 @@ REVISION_HEADER_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+EVIDENCE_ARCHIVE_PARTS = ("project", "reviews")
+
+
+def in_evidence_archive(path: Path, root_dir: Path) -> bool:
+    """判定路径是否落在交付凭据归档根内（<root>/project/reviews/**）。"""
+    try:
+        rel = path.relative_to(root_dir)
+    except ValueError:
+        return False
+    return rel.parts[:2] == EVIDENCE_ARCHIVE_PARTS
+
 
 def process_markdown_file(file_path: Path, max_keep: int = 5, fix: bool = False) -> Tuple[bool, int, Optional[str]]:
     """
@@ -128,10 +139,17 @@ def scan_and_trim(root_path: Path, max_keep: int = 5, fix: bool = False) -> Tupl
     """扫描目录或单文件并执行裁剪检查"""
     md_files = []
     if root_path.is_file() and root_path.suffix == ".md":
-        md_files = [root_path]
+        # 显式指定单文件时，仍拒绝交付凭据归档（G1 逐字归档红线不可写）
+        parts = root_path.parts
+        if any(parts[i:i + 2] == EVIDENCE_ARCHIVE_PARTS for i in range(len(parts) - 1)):
+            md_files = []
+        else:
+            md_files = [root_path]
     elif root_path.is_dir():
         for f in root_path.rglob("*.md"):
             if any(p in f.parts for p in ("node_modules", ".git", ".next", "dist", "build")):
+                continue
+            if in_evidence_archive(f, root_path):
                 continue
             md_files.append(f)
 
