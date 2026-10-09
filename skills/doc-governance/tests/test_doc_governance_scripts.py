@@ -764,5 +764,159 @@ class TestCheckDocControlSync(unittest.TestCase):
         self.assertEqual(drifts[0]["file"], "bad.md")
 
 
+class TestArchiveExemptionBatchA(unittest.TestCase):
+    """批次 A 回归（BK-0001 / BK-0002 / BK-0021）：归档豁免与 --output 落点解耦"""
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_batch_a_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def _write_revision_doc(self, rel_path, rows=7):
+        path = self.test_dir / rel_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        body = [
+            "# 文档",
+            "",
+            "### 修订历史记录 (Revision History)",
+            "",
+            "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |",
+            "| :--- | :--- | :--- | :--- | :--- |",
+        ]
+        for i in range(rows):
+            body.append(f"| **V1.0.{i}** | 2026-01-0{i + 1} | AI Agent | 架构师 | r{i} |")
+        path.write_text("\n".join(body) + "\n", encoding="utf-8")
+        return path
+
+    def test_trim_revision_exempts_archive_reports(self):
+        """BK-0001：--fix 不得改写 project/reviews 归档报告（G1 逐字归档红线）"""
+        archived = self._write_revision_doc("project/reviews/report.md")
+        normal = self._write_revision_doc("project/plans/plan.md")
+        before = archived.read_bytes()
+
+        total, overflow, overflow_list = trim_revision.scan_and_trim(self.test_dir, max_keep=5, fix=True)
+
+        self.assertEqual(archived.read_bytes(), before, "BK-0001: 归档报告必须逐字节不变")
+        self.assertNotIn("report.md", " ".join(str(p) for p, _ in overflow_list),
+                         "BK-0001: 归档报告不得计入超额清单")
+        self.assertLess(normal.read_text(encoding="utf-8").count("| **V1.0."), 7,
+                        "非归档文档仍应被正常裁剪")
+
+    def test_generate_llms_txt_excludes_archive_reports(self):
+        """BK-0002：机器地图不得收录归档条目（与 links/audit 三消费者一致）"""
+        self._write_revision_doc("project/reviews/report.md", rows=1)
+        self._write_revision_doc("project/plans/plan.md", rows=1)
+        out = self.test_dir / "llms.txt"
+
+        generate_llms_txt.generate_llms_txt(self.test_dir, out, project_name="T")
+        content = out.read_text(encoding="utf-8")
+        self.assertNotIn("project/reviews/", content, "BK-0002: 归档条目必须被排除")
+        self.assertIn("project/plans/plan.md", content, "BK-0002: 非归档文档必须保留")
+
+    def test_generate_llms_txt_output_defaults_to_root(self):
+        """BK-0021：--output 缺省时落点随 --root 派生，隔离复算成立"""
+        docs = self.test_dir / "docs"
+        (docs / "explanation").mkdir(parents=True)
+        (docs / "explanation" / "a.md").write_text("# A\n\n正文段落\n", encoding="utf-8")
+        cwd = self.test_dir / "cwd"
+        cwd.mkdir()
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(docs), "--name", "T"],
+            capture_output=True, text=True, cwd=str(cwd),
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertTrue((docs / "llms.txt").exists(), "BK-0021: 默认落点应随 --root 派生")
+        self.assertFalse((cwd / "docs" / "llms.txt").exists(), "BK-0021: 不得写回 CWD 相对路径")
+
+
+    def test_trim_revision_rejects_archive_under_narrow_root(self):
+        """R1-2：--root 收窄到归档子树内时仍不得改写交付凭据"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+        before = archived.read_bytes()
+        narrow_root = self.test_dir / "docs" / "project" / "reviews"
+
+        trim_revision.scan_and_trim(narrow_root, max_keep=5, fix=True)
+
+        self.assertEqual(archived.read_bytes(), before, "R1-2: 任意 --root 下归档都必须只读")
+
+    def test_trim_revision_rejects_archive_under_wide_root(self):
+        """R1-2：--root 放宽到仓库上层时仍不得改写交付凭据"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+        before = archived.read_bytes()
+
+        trim_revision.scan_and_trim(self.test_dir, max_keep=5, fix=True)
+
+        self.assertEqual(archived.read_bytes(), before, "R1-2: 宽 root 下归档也必须只读")
+
+    def test_trim_revision_single_file_archive_reports_skip(self):
+        """R1-3：单文件模式与目录模式判定同构，且必须显式提示跳过（不得静默假绿）"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+        before = archived.read_bytes()
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "trim-revision.py"), "--root", str(archived), "--fix"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertEqual(archived.read_bytes(), before, "R1-3: 单文件模式不得改写归档")
+        self.assertIn("归档", res.stdout + res.stderr, "R1-3: 必须显式说明跳过，而非静默假绿")
+
+    def test_generate_llms_txt_excludes_archive_under_narrow_root(self):
+        """R1-7 兜底：--root 收窄时机器地图同样不得收录归档条目"""
+        self._write_revision_doc("docs/project/reviews/report.md", rows=1)
+        self._write_revision_doc("docs/project/plans/plan.md", rows=1)
+        narrow = self.test_dir / "docs" / "project"
+        out = self.test_dir / "out.txt"
+
+        generate_llms_txt.generate_llms_txt(narrow, out, project_name="T")
+
+        content = out.read_text(encoding="utf-8")
+        self.assertNotIn("report.md", content, "R1-7: 收窄 root 下归档条目仍须被排除")
+        self.assertIn("plan.md", content, "非归档文档必须保留")
+
+
+    def test_trim_revision_empty_scope_does_not_claim_compliance(self):
+        """R1-3：目标全部被豁免（或为空）时不得输出「完美/符合规范」的结论性文案"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "trim-revision.py"), "--root", str(archived), "--fix"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertNotIn("完美", res.stdout, "R1-3: 无可检查文档时不得宣称符合规范")
+        self.assertIn("归档", res.stdout + res.stderr, "R1-3: 必须说明跳过原因")
+
+    def test_trim_revision_library_call_resolves_root(self):
+        """DR1-2：库调用 + cwd 位于归档内时同样不得改写归档"""
+        archived = self._write_revision_doc("docs/project/reviews/report.md")
+        before = archived.read_bytes()
+        cwd = self.test_dir / "docs" / "project" / "reviews"
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(cwd)
+            trim_revision.scan_and_trim(Path("."), max_keep=5, fix=True)
+        finally:
+            os.chdir(old_cwd)
+        self.assertEqual(archived.read_bytes(), before, "DR1-2: 库调用形态也必须只读归档")
+
+    def test_generate_llms_txt_refuses_output_inside_archive(self):
+        """DR1-3：--output 落在交付凭据归档内时必须拒绝写入"""
+        archived_dir = self.test_dir / "docs" / "project" / "reviews"
+        archived_dir.mkdir(parents=True)
+        (self.test_dir / "docs" / "explanation").mkdir(parents=True, exist_ok=True)
+        (self.test_dir / "docs" / "explanation" / "a.md").write_text("# A\n\n正文\n", encoding="utf-8")
+
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
+             "--root", str(archived_dir), "--name", "T"],
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(res.returncode, 0, "DR1-3: 不得向交付凭据归档内写机器地图")
+        self.assertFalse((archived_dir / "llms.txt").exists(), "DR1-3: 归档内不得出现 llms.txt")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -17,6 +17,27 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 
+EVIDENCE_ARCHIVE_PARTS = ("project", "reviews")
+
+
+def in_evidence_archive(path: Path, root_dir: Path) -> bool:
+    """判定路径是否落在交付凭据归档根内（<root>/project/reviews/**）。"""
+    try:
+        rel = path.relative_to(root_dir)
+    except ValueError:
+        return False
+    return rel.parts[:2] == EVIDENCE_ARCHIVE_PARTS
+
+def is_archive_path(path: Path) -> bool:
+    """不依赖 root 锚定的写入侧安全闸：任一祖先含相邻 project/reviews 段即判定为交付凭据归档。
+
+    in_evidence_archive 以 --root 锚定，当 --root 收窄至归档子树内时会失效（R1-2）；
+    本函数保证在任何 --root 取值下都正确识别归档（G1 逐字归档红线不可写/不可收录）。
+    """
+    parts = path.parts
+    return any(parts[i:i + 2] == EVIDENCE_ARCHIVE_PARTS for i in range(len(parts) - 1))
+
+
 def extract_doc_info(file_path: Path) -> Tuple[str, str]:
     """提取文档的标题与摘要描述"""
     try:
@@ -81,6 +102,8 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
     for f in all_files:
         if any(p in f.parts for p in ("node_modules", ".git", ".next", "dist", "build")):
             continue
+        if in_evidence_archive(f, root_dir) or is_archive_path(f):
+            continue
         rel_parts = f.relative_to(root_dir).parts
         if len(rel_parts) == 1:
             # 根文件（如 index.md, GOVERNANCE.md）
@@ -130,12 +153,16 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
 def main():
     parser = argparse.ArgumentParser(description="机器可读 llms.txt 自动化生成器")
     parser.add_argument("--root", default="docs", help="文档根目录 (默认 docs)")
-    parser.add_argument("--output", default="docs/llms.txt", help="输出路径 (默认 docs/llms.txt)")
+    parser.add_argument("--output", default=None, help="输出路径 (缺省为 <root>/llms.txt，随 --root 派生)")
     parser.add_argument("--name", default="System", help="项目名称")
 
     args = parser.parse_args()
     root_path = Path(args.root).resolve()
-    out_path = Path(args.output).resolve()
+    out_path = Path(args.output).resolve() if args.output else (root_path / "llms.txt")
+
+    if is_archive_path(out_path) or in_evidence_archive(out_path, root_path):
+        print(f"❌ 拒绝写入交付凭据归档（G1 逐字归档红线）: {out_path}", file=sys.stderr)
+        sys.exit(1)
 
     if not root_path.exists():
         print(f"❌ 错误: 目标根目录不存在: {root_path}", file=sys.stderr)

@@ -2,18 +2,20 @@
 id: BK-0001
 title: trim-revision.py 复用 project-reviews 归档豁免常量
 type: TechDebt
-status: active
+status: completed
 priority: P2
 trigger: null
 created_at: '2026-10-04'
-closed_at: null
-resolution: null
-destination: null
+closed_at: '2026-10-09'
+resolution: delivered
+destination: trim-revision.py 追加交付凭据归档豁免（root 无关段扫描兜底 + 库调用 resolve + 空范围不报合规）；提交
+  45089b9/9108fbe
 source:
 - Delta R2 R1-1
 acceptance_criteria:
 - trim-revision.py 复用同一 project/reviews 归档豁免常量（≤3 行），或令 --fix 拒写归档路径
 - 补 1 条回归测试用例
+updated_at: '2026-10-09'
 ---
 
 ## 1. 背景与问题描述
@@ -37,3 +39,8 @@ acceptance_criteria:
 ## 4. 结项与闭环记录
 
 *(当前处于活跃计划中，结项后由 `manage-backlog.py close` 自动迁入 archive/)*
+
+### 结项记录 (2026-10-09)
+- **结论**: delivered
+- **去向/凭据**: trim-revision.py 追加交付凭据归档豁免（root 无关段扫描兜底 + 库调用 resolve + 空范围不报合规）；提交 45089b9/9108fbe
+- **归档目录**: archive/2026-Q4/
