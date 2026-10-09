@@ -47,15 +47,17 @@
 - [BK-0020-修订表头定位限定在修订历史章节作用域内](project/backlog/active/BK-0020-修订表头定位限定在修订历史章节作用域内.md): id: BK-0020
 - [BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜](project/backlog/active/BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜.md): id: BK-0022
 - [BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染](project/backlog/active/BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染.md): id: BK-0024
-- [BK-0026-机器地图提示文案的终端注入面与畸形项目名](project/backlog/active/BK-0026-机器地图提示文案的终端注入面与畸形项目名.md): id: BK-0026
-- [BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验](project/backlog/active/BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验.md): id: BK-0027
 - [BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约](project/backlog/active/BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md): id: BK-0028
 - [BK-0029-交付凭据写入侧历史残留-硬链接穿透与删除逃逸](project/backlog/active/BK-0029-交付凭据写入侧历史残留-硬链接穿透与删除逃逸.md): id: BK-0029
+- [BK-0030-机器地图身份写保护闸门的完备性残余](project/backlog/active/BK-0030-机器地图身份写保护闸门的完备性残余.md): id: BK-0030
+- [BK-0031-身份写保护契约登记与历史防护面残留](project/backlog/active/BK-0031-身份写保护契约登记与历史防护面残留.md): id: BK-0031
 - [BK-0001-trim-revision-py-archive-exemption](project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0021-generate-llms-txt-py-的-root-与-output-落点解](project/backlog/archive/2026-Q4/BK-0021-generate-llms-txt-py-的-root-与-output-落点解.md): id: BK-0021
 - [BK-0023-机器地图写入侧安全加固-符号链接穿透与零覆盖守卫](project/backlog/archive/2026-Q4/BK-0023-机器地图写入侧安全加固-符号链接穿透与零覆盖守卫.md): id: BK-0023
 - [BK-0025-机器地图与生成物一致性需要门禁固化](project/backlog/archive/2026-Q4/BK-0025-机器地图与生成物一致性需要门禁固化.md): id: BK-0025
+- [BK-0026-机器地图提示文案的终端注入面与畸形项目名](project/backlog/archive/2026-Q4/BK-0026-机器地图提示文案的终端注入面与畸形项目名.md): id: BK-0026
+- [BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验](project/backlog/archive/2026-Q4/BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验.md): id: BK-0027
 - [项目待办与后续演进清单 (Backlog Index)](project/backlog/index.md): *(当前暂无进行中的待办)*
 - [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。
 - [goal-loop 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-goal-loop-v2-refactor.md): 以下四项经用户确认，作为不可回退的实现约束：
@@ -69,6 +71,7 @@
 - [dual-round-review 审查报告子智能体直写实施方案计划 (Implementation Plan)](project/plans/2026-10-08-subagent-direct-write.md): 1. 对**本交付自身**跑一次真实双轮审查（dogfooding），R1 与 R2 报告均由**子智能体直写**落盘，文件中**不含**任何主智能体转录痕迹；
 - [批次 A 归档豁免与 llms 落点修复实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-a-archive-exemption.md): R1 判定：三项待办**技术内核均为本质根因修复**（经 git archive 隔离三树 A/B 反证：归档实扫 17 篇全跳过 / llms 归档条目 17→0 / `--output` 落点随 `--root` 派生），但**交付物层...
 - [批次 B 机器地图写入侧安全与一致性门禁实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-b-llms-integrity.md): **编排者加固（两轮，均以 TDD + 变异自验闭环）**：
+- [批次 C 机器地图提示文案净化和零覆盖口径登记实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-c-llms-hardening.md): **决定性转向**：前三轮修复都在「提示文案层」打补丁，第三轮 R1 指出根因后改为**双侧闸门**——① 生成器 CLI 落盘咽喉处的身份写保护（与提示内容无关，覆盖全部提示路径）；② fail-closed 分支删除可执行命令。测试判据...
 - [doc-governance 目录级索引约定与 scaffold 索引自愈实施方案计划 (Implementation Plan)](project/plans/2026-10-09-quadrant-index-convention.md)
 
 ## Other Documentation (其他文档)

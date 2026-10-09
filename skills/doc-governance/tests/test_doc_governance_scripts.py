@@ -1036,7 +1036,11 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
 
 
     def test_audit_skips_when_map_exists_but_nothing_indexable(self):
-        """R1-1：地图存在但已无文档可收录时，不得形成不可修复的硬阻断死胡同"""
+        """R1-1：地图存在但已无文档可收录时，不得形成不可修复的硬阻断死胡同
+
+        注意：本用例锁定的是 **BK-0027 显式登记的豁免**（零覆盖时一致性检查不适用），
+        而非「该状态下地图条目已被校验」这一正确性契约——见 GOVERNANCE §4.1 零覆盖态边界。
+        """
         shutil.rmtree(self.docs / "explanation")
         (self.docs / "index.md").write_text("# 索引\n\n根文件不进入机器地图。\n", encoding="utf-8")
         archived_dir = self.docs / "project" / "reviews"
@@ -1089,6 +1093,185 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         self.assertNotEqual(drifted.returncode, 0,
                             "漂移必须阻断：若 PASS 接线被移除，本断言即打红（接线承重）")
         self.assertIn("机器地图不一致", drifted.stdout + drifted.stderr)
+
+
+class TestBatchCLlmsHintHardening(unittest.TestCase):
+    """批次 C 回归（BK-0026 / BK-0027）：提示文案的终端净化与零覆盖口径登记"""
+
+    _CTRL = (
+        "> **文档控制信息**\n"
+        "> - **文档标识**: {doc_id}\n"
+        "> - **当前版本**: V1.0.0\n"
+        "\n### 修订历史记录 (Revision History)\n\n"
+        "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+        "| :--- | :--- | :--- | :--- | :--- |\n"
+        "| **V1.0.0** | 2026-10-09 | DSH AI Agent | 王辉 | 初版 |\n"
+    )
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_batch_c_"))
+        self.docs = self.test_dir / "docs"
+        (self.docs / "explanation").mkdir(parents=True)
+        (self.docs / "explanation" / "a.md").write_text(
+            "# A 文档\n\n" + self._CTRL.format(doc_id="DOC-A"), encoding="utf-8")
+        (self.docs / "index.md").write_text(
+            "# 索引\n\n" + self._CTRL.format(doc_id="DOC-IDX") + "\n- [A 文档](./explanation/a.md)\n",
+            encoding="utf-8")
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def _write_drifted_map(self, project_name):
+        """写入首行为指定项目名的漂移地图（触发一致性缺陷并带上该项目名）。"""
+        (self.docs / "llms.txt").write_text(
+            f"# {project_name} Machine-Readable Knowledge Base Map\n\n- 过期条目\n", encoding="utf-8")
+
+    def _audit(self):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
+            capture_output=True, text=True,
+        )
+
+    def test_hint_strips_terminal_control_sequences(self):
+        """BK-0026 / D2-3：项目名含 OSC/ESC/BEL 时不得把裸控制序列写入门禁输出"""
+        self._write_drifted_map("A\x1b]0;PWNED\x07")
+
+        res = self._audit()
+        combined = res.stdout + res.stderr
+
+        self.assertIn("机器地图", combined, "前置：漂移必须被检出（否则断言无意义）")
+        self.assertNotIn("\x1b", combined, "D2-3: 不得把裸 ESC 写入输出（可篡改终端标题/剪贴板）")
+        self.assertNotIn("\x07", combined, "D2-3: 不得把裸 BEL 写入输出")
+
+    def test_hint_rejects_nul_name(self):
+        """BK-0026 / D2-5：真含 NUL 的项目名不得把 NUL 写入输出（此前该断言因夹具不含 NUL 而恒真）"""
+        self._write_drifted_map("A\x00B")
+
+        res = self._audit()
+        combined = res.stdout + res.stderr
+
+        self.assertIn("机器地图", combined, "前置：漂移必须被检出")
+        self.assertNotIn("\x00", combined, "D2-5: 不得把 NUL 写入输出")
+
+    def test_hint_rejects_overlong_name(self):
+        """BK-0026 / D2-5：超长项目名不得把缺陷行膨胀"""
+        self._write_drifted_map("X" * 100000)
+
+        res = self._audit()
+        combined = res.stdout + res.stderr
+
+        self.assertIn("机器地图", combined, "前置：漂移必须被检出")
+        self.assertLess(len(combined), 20000, "D2-5: 超长项目名不得把缺陷行膨胀 10 万字节")
+
+    def test_legit_edge_names_are_not_misjudged_as_drift(self):
+        """R1-1：合法但边缘的项目名不得因显示净化而被误判漂移（判定必须用未净化原名）"""
+        for name in ("L" * 65, "中" * 65, " Foo ", "A\u00a0B"):
+            with self.subTest(name=repr(name[:10])):
+                (self.docs / "llms.txt").unlink(missing_ok=True)  # 显式改名须先移除既有地图（身份写保护）
+                gen = subprocess.run(
+                    [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
+                     "--output", str(self.docs / "llms.txt"), "--name=" + name],
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(gen.returncode, 0, gen.stderr)
+
+                res = self._audit()
+                self.assertNotIn("机器地图", res.stdout + res.stderr,
+                                 f"R1-1: 合法边缘名 {name[:10]!r} 不得被误判漂移")
+
+    def test_hint_command_is_executable_for_dash_prefixed_name(self):
+        """BK-0026 / D2-4：以 - 开头的项目名不得让修复建议变成 rc=2 死巷"""
+        self._write_drifted_map("--root")
+
+        res = self._audit()
+        combined = res.stdout + res.stderr
+
+        self.assertIn("--name=--root", combined, "D2-4: 提示须用 --name=<value> 赋值形式")
+        gen = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
+             "--output", str(self.docs / "llms.txt"), "--name=--root"],
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(gen.returncode, 2, "D2-4: --name= 形式必须被 argparse 正常接受")
+        self.assertNotIn("expected one argument", gen.stderr)
+
+
+    def test_malformed_names_never_emit_a_name_option(self):
+        """R1-1 / R1-9：反解不可信或名字不可安全回显时，提示不得下发改名命令
+
+        （否则用户照做会把地图 H1 静默改写为占位名或截断名，项目身份在 SSOT 中丢失）
+        """
+        for name in ("", "A\nB", "A\u2028B", "A\x1b]0;X\x07", "X" * 100000):
+            with self.subTest(name=repr(name[:8])):
+                self._write_drifted_map(name)
+
+                res = self._audit()
+                out = res.stdout + res.stderr
+                self.assertIn("机器地图", out, "前置：漂移必须被检出")
+                self.assertNotIn("--name=", out, f"R1-1: 畸形名 {name[:8]!r} 不得下发改名命令")
+
+    def test_hint_name_matches_map_identity(self):
+        """R1-3 / R1-9：提示中的 --name 值必须与地图 H1 项目名逐字相同（身份保真）"""
+        for name in ("CR 公共技能库", " Foo ", "--root"):
+            with self.subTest(name=repr(name)):
+                self._write_drifted_map(name)
+
+                res = self._audit()
+                out = res.stdout + res.stderr
+                line = next((ln for ln in out.splitlines() if "--name=" in ln), None)
+                self.assertIsNotNone(line, f"可安全回显的名字应下发可执行命令：{name!r}")
+                segment = line.split("--name=", 1)[1]
+                end = segment.find(" 运行")
+                token = (segment[:end] if end > 0 else segment).strip()
+                if token.startswith("'") and token.endswith("'"):
+                    token = token[1:-1]
+                self.assertEqual(token, name, "提示 --name 值必须逐字等于地图身份")
+
+
+    def test_failclosed_hints_contain_no_executable_command(self):
+        """R1-1：fail-closed 分支不得内嵌可执行命令（其缺省 --name=System 即会改写身份）"""
+        for name in ("", "A\nB", "A\u2028B", "A\x1b]0;X\x07", "A\u00a0B", "X" * 100000):
+            with self.subTest(name=repr(name[:8])):
+                self._write_drifted_map(name)
+
+                res = self._audit()
+                out = res.stdout + res.stderr
+                self.assertIn("机器地图", out, "前置：漂移必须被检出")
+                self.assertNotIn("generate-llms-txt.py", out,
+                                 "R1-1: fail-closed 分支不得给出可执行命令")
+
+    def test_generator_refuses_identity_rewrite_with_default_name(self):
+        """R1-1 根因闸门：照做提示（缺省 --name）时，既有地图身份必须拒绝被改写（后果级断言）"""
+        for name in ("", "A\nB", "A\u2028B", "CR 公共技能库", "A\u00a0B"):
+            with self.subTest(name=repr(name[:8])):
+                self._write_drifted_map(name)
+                before = (self.docs / "llms.txt").read_bytes()
+
+                res = subprocess.run(
+                    [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
+                     "--output", str(self.docs / "llms.txt")],
+                    capture_output=True, text=True,
+                )
+
+                self.assertNotEqual(res.returncode, 0, "缺省名不得静默改写既有地图身份")
+                self.assertEqual((self.docs / "llms.txt").read_bytes(), before,
+                                 "既有地图必须逐字节不变")
+
+    def test_contract_phrase_name_round_trips(self):
+        """R1-3：名含契约短语时提示 --name 值必须逐字等于地图身份（fullmatch 关闭截断）"""
+        name = "X Machine-Readable Knowledge Base Map Y"
+        self._write_drifted_map(name)
+
+        res = self._audit()
+        out = res.stdout + res.stderr
+
+        self.assertIn("机器地图", out, "前置：漂移必须被检出")
+        segment = out.split("--name=", 1)[1]
+        end = segment.find(" 运行")
+        token = (segment[:end] if end > 0 else segment).strip()
+        if token.startswith("'") and token.endswith("'"):
+            token = token[1:-1]
+        self.assertEqual(token, name, "R1-3: 契约短语名不得被截断")
 
 
 if __name__ == "__main__":

@@ -80,14 +80,38 @@ LEGACY_CATEGORIES = {
 }
 
 
-def _map_project_name(llms_file: Path) -> str:
-    """从既有机器地图首行反解项目名，使判定参数与生成参数同源（R1-2）。"""
+PROJECT_NAME_MAX_LEN = 64
+PROJECT_NAME_FALLBACK = "System"
+REGEN_COMMAND = "generate-llms-txt.py --root docs --output docs/llms.txt"
+
+
+def _is_safely_displayable(name: str) -> bool:
+    """BK-0026：名字能否安全回显为**人读且可复制执行**的命令（全可打印、非空、不超长）。
+
+    - D2-3：裸 ESC/OSC/BEL 等控制字符会穿透终端层（可篡改窗口标题/剪贴板并污染 CI 日志）；
+    - D2-5：NUL 使提示命令在 execve 层不可执行，超长名把缺陷行膨胀；
+    - 前后空格与 NBSP 属**可打印**范畴，不做 strip（R1-10：strip 会把合法名 `" Foo "` 误诊为畸形）。
+    """
+    return bool(name) and len(name) <= PROJECT_NAME_MAX_LEN and all(ch.isprintable() for ch in name)
+
+
+def _resolve_project_name(llms_file: Path) -> Tuple[str, bool]:
+    """反解既有机器地图首行的项目名。
+
+    返回 `(name, resolved)`：`resolved=False` 表示首行不符合标准 H1 格式，**名字不可信**
+    （此时调用方不得据此下发任何 `--name` 命令 —— 否则会把地图身份静默改写为回落占位名，R1-1）。
+
+    判定路径必须使用本函数返回的**未净化原名**（生成物 H1 用的就是它），保证逐字同源。
+    """
     try:
         first_line = llms_file.read_text(encoding="utf-8", errors="replace").splitlines()[0]
     except (OSError, IndexError):
-        return "System"
-    match = re.match(r"# (.+?) Machine-Readable Knowledge Base Map", first_line)
-    return match.group(1) if match else "System"
+        return PROJECT_NAME_FALLBACK, False
+    # 用 fullmatch + 贪婪捕获：名中含契约短语时不得被非贪婪截断（R1-3）
+    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", first_line.strip())
+    if match is None:
+        return PROJECT_NAME_FALLBACK, False
+    return match.group(1), True
 
 
 def check_llms_map_consistency(root_dir: Path) -> str:
@@ -98,7 +122,7 @@ def check_llms_map_consistency(root_dir: Path) -> str:
     llms_file = root_dir / "llms.txt"
     if not llms_file.exists():
         return ""
-    project_name = _map_project_name(llms_file)
+    project_name, name_resolved = _resolve_project_name(llms_file)
     try:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_out = Path(tmp_dir) / "llms.txt"
@@ -109,11 +133,27 @@ def check_llms_map_consistency(root_dir: Path) -> str:
                 # R1-1：无可收录文档时本项不适用——否则修复命令必然 rc=1，形成不可修复的死胡同
                 return ""
             if tmp_out.read_bytes() != llms_file.read_bytes():
+                # R1-1：反解不可信或名字不可安全回显时，**绝不下发任何 --name 命令**
+                # （否则用户照做会把地图 H1 静默改写为占位名或截断名，项目身份在 SSOT 中丢失）
+                if not name_resolved:
+                    return (
+                        "机器地图与生成物不一致，且既有地图首行不符合标准 H1 格式"
+                        "（应形如 `# <项目名> Machine-Readable Knowledge Base Map`），无法反解项目名。"
+                        "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
+                        "请先人工确认正确的项目名，再以显式 `--name` 重新生成后再提交"
+                    )
+                if not _is_safely_displayable(project_name):
+                    return (
+                        "机器地图与生成物不一致，且既有地图首行项目名不可安全回显（含不可打印字符或超长）。"
+                        "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
+                        "请以该项目名原值显式重新生成后再提交"
+                    )
                 # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
+                # D2-4：以 --name=<value> 赋值形式拼装，使 `-` 开头的名字同样可执行（否则 argparse rc=2）
                 quoted_name = shlex.quote(project_name)
                 return (
-                    "机器地图与生成物不一致 —— 请以 --name " + quoted_name + " 运行 "
-                    "generate-llms-txt.py --root docs --output docs/llms.txt 重新生成后再提交"
+                    "机器地图与生成物不一致 —— 请以 --name=" + quoted_name + " 运行 "
+                    + REGEN_COMMAND + " 重新生成后再提交"
                 )
     except Exception as exc:  # noqa: BLE001 - 门禁不得因单点异常中断整体体检
         return f"机器地图一致性检查无法完成: {exc}"
