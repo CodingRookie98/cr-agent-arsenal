@@ -125,6 +125,20 @@
       "names": [
         "thermo-nuclear-code-quality-review"
       ]
+    },
+    {
+      "source": "https://github.com/yylo-dev/yylo-skills",
+      "mode": "all",
+      "names": [
+        "artifact-yylo",
+        "benchmark-yylo",
+        "ledger-tasks-yylo",
+        "plan-ledger-tasks-yylo",
+        "ralph-loop-yylo",
+        "understand-project-yylo",
+        "wiki-yylo",
+        "workflow-yylo"
+      ]
     }
   ]
 }

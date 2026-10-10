@@ -99,7 +99,7 @@ python3 contexts/install.py
 位于 [`tools/skills-manager/`](./tools/skills-manager/)，基于 `npx skills` 封装，提供分类技能集的批量查看与安装：
 
 ```bash
-# 查看默认基础技能清单 (默认预设 common.json：12 个来源组，含 55 条具名技能配置)
+# 查看默认基础技能清单 (默认预设 common.json：13 个来源组，含 63 条具名技能配置)
 python3 tools/skills-manager/skills_manager.py list
 
 # 查看指定预设 (frontend, architecture, superpowers 等)
