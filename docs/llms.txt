@@ -75,6 +75,7 @@
 - [批次 C 机器地图提示文案净化和零覆盖口径登记实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-c-llms-hardening.md): **决定性转向**：前三轮修复都在「提示文案层」打补丁，第三轮 R1 指出根因后改为**双侧闸门**——① 生成器 CLI 落盘咽喉处的身份写保护（与提示内容无关，覆盖全部提示路径）；② fail-closed 分支删除可执行命令。测试判据...
 - [批次 D 机器地图身份写保护契约实施计划 (Implementation Plan)](project/plans/2026-10-09-backlog-batch-d-identity-contract.md): **本轮最有价值的教训**：我的连续修复多次在**错误的层次**上打补丁 —— ① 把「身份保真」做成提示文案的正确性（应为生成器侧写保护）；② 把「原子落盘」直接拼固定 `.tmp` 名（绕过了既有的归档写保护闸门）；③ 用「统一处方」收...
 - [doc-governance 目录级索引约定与 scaffold 索引自愈实施方案计划 (Implementation Plan)](project/plans/2026-10-09-quadrant-index-convention.md)
+- [全局提示词渐进披露重构实施计划 (AGENTS.md Progressive Disclosure)](project/plans/2026-10-10-agents-md-progressive-disclosure.md): 2026-10-10，一次 **9 行**的全局提示词改动被挂载了 `dual-round-review` 完整流程：**6 轮**独立子智能体对抗审查、**6 份报告共 216KB**、6 次提交。用户判语：
 
 ## Other Documentation (其他文档)
 
