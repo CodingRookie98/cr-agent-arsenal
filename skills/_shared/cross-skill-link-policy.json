@@ -1,6 +1,6 @@
 {
   "purpose": "跨技能相对路径硬链接禁令的唯一真相源（独立技能分发时相对链接会断链）。",
-  "status": "已生效：仓库级自检 skills/_shared/tests/test_cross_skill_links.py 覆盖全部 6 个技能（2026-09-21 FU-2 闭环后）",
+  "status": "已生效：仓库级自检 skills/_shared/tests/test_cross_skill_links.py 覆盖全部 7 个技能（2026-09-21 FU-2 闭环后；2026-10-11 AGENTS.md 渐进披露批 2 纳入 clarification-protocol）",
   "rationale": "每个技能可独立安装（npx skills add --skill <name>），跨技能相对路径在单装后必然断链。引用他技能只允许命名引用（反引号内的技能名）。",
   "consumers": [
     "skills/_shared/tests/test_cross_skill_links.py（仓库级自检，覆盖全部技能）",
@@ -14,7 +14,8 @@
       "goal-loop",
       "frontend-qa-gate",
       "doc-governance",
-      "agy-delegation-workflow"
+      "agy-delegation-workflow",
+      "clarification-protocol"
     ],
     "covered_by": "skills/_shared/tests/test_cross_skill_links.py：跨技能相对链接 = 0 且技能内断链 = 0（剥离围栏代码块与行内代码，豁免命令行示例）",
     "not_covered": [],
@@ -26,7 +27,8 @@
     "goal-loop",
     "frontend-qa-gate",
     "doc-governance",
-    "agy-delegation-workflow"
+    "agy-delegation-workflow",
+    "clarification-protocol"
   ],
   "match_forms": [
     "(../goal-loop/SKILL.md)",
