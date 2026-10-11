@@ -85,7 +85,7 @@ P3 的 TDD 执行可以落在多种后端上。本规程定义**后端无关的�
 ### 5.2 提示词自包含约束 (Self-Contained Prompt)
 派发给子智能体的提示词**必须自包含其运行所需的全部决策与约束**，严禁把"运行时向人类提问"作为任务的一部分。
 
-**依据（实测约束）**：子智能体在另一智能体存活期间调用人类交互通道会被宿主拒绝（`human interaction is unavailable while the calling agent is owned by another live agent`），导致该子智能体挂死并阻塞整条流水线。凡需要人类裁决的点，必须在派发时给定，或按提问收敛律转为显式默认假设。
+**依据（实测约束）**：子智能体在另一智能体存活期间调用人类交互通道会被宿主拒绝（`human interaction is unavailable while the calling agent is owned by another live agent`），导致该子智能体挂死并阻塞整条流水线。凡需要人类裁决的点，必须在派发时给定，或按 `clarification-protocol` 技能的收敛规程转为显式默认假设。
 
 ### 5.3 等待预算 (Waiting Budget)
 1. **同步派发**：调用即在本次返回结果；主调度在当前回合等待，**严禁在等待期间另行派发下一轮审查**（级联顺序铁律见 `dual-round-review` 技能）。**若该后端无法在调用内取回结果**（调用不返回、或返回时无结构化结果），视为该后端不支持同步模式，必须改用异步派发或宿主可中断的等价原语后方可继续；严禁把“阻塞在调用内”当作等待。
