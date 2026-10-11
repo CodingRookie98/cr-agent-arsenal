@@ -127,31 +127,35 @@ def _run_gate(archive):
 
 # --- 1. 零迁移回归 ------------------------------------------------------------
 
-# 已知既有失败（引入 schema 支持前即存在，已用 HEAD 版本脚本对照确认）：该归档台账的「轮次」列
-# 写作 `delta-r1 · 第6轮`（非 schema 值），门禁无法识别轮次标记。此处**登记**而非修复——
-# 该归档是交付凭据，改动它等于改写审计记录；修好后本测试会失败，提示同步移除本登记。
-KNOWN_PREEXISTING_FAILURES = {'2026-10-10-global-agent-delegation-redlines'}
+def test_existing_archives_all_pass_gate():
+    """既有归档必须全部通过门禁（schema 支持与台账修正后的统一基线）。
 
-
-def test_existing_archives_have_no_schema_regression():
+    历史：2026-10-10-global-agent-delegation-redlines 的台账「轮次」列曾写作 `delta-r1 · 第6轮`
+    （带描述，非 schema 值），自归档生成起门禁即无法识别轮次标记。该缺陷于 2026-10-11 经用户批准
+    修正——只规范轮次列、原描述移入「结论」列开头，六份报告文件与 SHA256 指纹一字未动。
+    本断言即修正确认，同时守护其它归档不再漂移。
+    """
     archives = sorted(p for p in REVIEWS.glob('*') if (p / 'README.md').is_file())
     assert archives, '未找到任何归档目录（回归测试失去意义）'
-    unexpected = []
+    failures = []
     for a in archives:
-        if a.name in KNOWN_PREEXISTING_FAILURES:
-            continue
         r = _run_gate(a)
         if r.returncode != 0:
-            unexpected.append('%s: %s' % (a.name, r.stdout.strip().splitlines()[:2]))
-    assert not unexpected, 'schema 支持引入了既有归档回归: %s' % unexpected
+            failures.append('%s: %s' % (a.name, r.stdout.strip().splitlines()[:3]))
+    assert not failures, '既有归档门禁失败: %s' % failures
 
 
-def test_registered_preexisting_failure_still_fails_for_ledger_reason():
-    if not (REVIEWS / next(iter(KNOWN_PREEXISTING_FAILURES))).is_dir():
-        return
-    r = _run_gate(REVIEWS / next(iter(KNOWN_PREEXISTING_FAILURES)))
+def test_ledger_round_column_must_be_bare_token(tmp_path):
+    """防回归：轮次列必须是裸标记值。
+
+    带描述（如 `delta-r1 · 第1轮`）会被门禁解析为「未登记任何 R1 报告」——这正是上述既有缺陷的
+    成因，故以测试固定该契约，让未来的记述者立刻看到失败。
+    """
+    d = _build(tmp_path, 'decorated-round',
+               [('delta-r1 · 第1轮', 'r1-aaa..bbb.md', R1_ARTIFACT_BODY)])
+    r = _run_gate(d)
     assert r.returncode != 0
-    assert '台账未登记任何 R1 报告' in r.stdout, '既有失败原因已变化，请复核登记'
+    assert '台账未登记任何 R1 报告' in r.stdout
 
 
 # --- 2. schema 判定 ----------------------------------------------------------

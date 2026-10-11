@@ -21,12 +21,21 @@
 ## 轮次台账
 | 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 | 写入形态 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| delta-r1 · 第6轮 | 42618b3..c059a01 | DSH subagent（同步派发，无外部句柄） | delta-r1-42618b3..c059a01.md | 7fe7ba659fd0 | ✅ **准予交付**（P0/P1 = 0；DR4-1/DR4-2/DR4-4 已根治、DR4-3 部分根治；新增 1×P2 + 2×P3） | direct |
-| delta-r1 · 第5轮 | bf2e103..42618b3 | DSH subagent（同步派发，无外部句柄） | delta-r1-bf2e103..42618b3.md | 2b106a88175b | 🔴 **阻断交付**（1×P1 DR4-1：新增豁免句把约束效力交回被约束者；另 2×P2 + 2×P3） | direct |
-| delta-r1 · 第4轮 | 1a72323..bf2e103 | DSH subagent（同步派发，无外部句柄） | delta-r1-1a72323..bf2e103.md | 1159b93b0260 | ✅ **准予交付**（Blockers = 0；DR2-1 已根治 / DR2-2 部分根治；新增 3×P2 + 2×P3） | direct |
-| delta-r1 · 第3轮 | 1d2e5e2..1a72323 | DSH subagent（同步派发，无外部句柄） | delta-r1-1d2e5e2..1a72323.md | f01cf8242f02 | ✅ **准予交付**（Blockers = 0；DR1-1 已根治 / R1-3 已闭环；新增 2×P2 + 2×P3） | direct |
-| delta-r1 · 第2轮 | ed9d391..1d2e5e2 | DSH subagent（同步派发，无外部句柄） | delta-r1-ed9d391..1d2e5e2.md | 9463fed41ed4 | 🔴 **阻断交付**（新增 DR1-1 P1；另 4×P2 + 2×P3） | direct |
-| r1 · 第1轮 | working..ed9d391 | DSH subagent（同步派发，无外部句柄） | r1-working..ed9d391.md | f699b4a58ae6 | 🔴 **阻断交付**（4×P1 / 3×P2 / 1×P3） | direct |
+| delta-r1 | 42618b3..c059a01 | DSH subagent（同步派发，无外部句柄） | delta-r1-42618b3..c059a01.md | 7fe7ba659fd0 | 第6轮 · ✅ **准予交付**（P0/P1 = 0；DR4-1/DR4-2/DR4-4 已根治、DR4-3 部分根治；新增 1×P2 + 2×P3） | direct |
+| delta-r1 | bf2e103..42618b3 | DSH subagent（同步派发，无外部句柄） | delta-r1-bf2e103..42618b3.md | 2b106a88175b | 第5轮 · 🔴 **阻断交付**（1×P1 DR4-1：新增豁免句把约束效力交回被约束者；另 2×P2 + 2×P3） | direct |
+| delta-r1 | 1a72323..bf2e103 | DSH subagent（同步派发，无外部句柄） | delta-r1-1a72323..bf2e103.md | 1159b93b0260 | 第4轮 · ✅ **准予交付**（Blockers = 0；DR2-1 已根治 / DR2-2 部分根治；新增 3×P2 + 2×P3） | direct |
+| delta-r1 | 1d2e5e2..1a72323 | DSH subagent（同步派发，无外部句柄） | delta-r1-1d2e5e2..1a72323.md | f01cf8242f02 | 第3轮 · ✅ **准予交付**（Blockers = 0；DR1-1 已根治 / R1-3 已闭环；新增 2×P2 + 2×P3） | direct |
+| delta-r1 | ed9d391..1d2e5e2 | DSH subagent（同步派发，无外部句柄） | delta-r1-ed9d391..1d2e5e2.md | 9463fed41ed4 | 第2轮 · 🔴 **阻断交付**（新增 DR1-1 P1；另 4×P2 + 2×P3） | direct |
+| r1 | working..ed9d391 | DSH subagent（同步派发，无外部句柄） | r1-working..ed9d391.md | f699b4a58ae6 | 第1轮 · 🔴 **阻断交付**（4×P1 / 3×P2 / 1×P3） | direct |
+
+> [!NOTE] 台账 schema 修正（2026-10-11，经用户批准）
+> 本归档「轮次」列原写作 `delta-r1 · 第6轮` 这类带描述的形式，**不是门禁可识别的轮次标记值**，
+> 导致 `check-review-report.sh` 解析不出任何 R1 报告（该失败自归档生成时即存在，与本仓库后续
+> 引入的 schema 支持无关）。本次仅把「轮次」列规范为 `delta-r1` / `r1`，原「第N轮」描述**原样移至
+> 「结论」列开头**——信息零丢失，列数仍为 7。
+> **六份报告文件与其 SHA256 指纹一字未动**：修正后指纹校验仍全部一致，门禁实测通过
+> （`结构校验通过: 索引齐备 · 报告 6 份 · 指纹一致 · 区块齐备 · 稳定 ID 对齐`）。
+> 修正仅触及本索引的轮次台账，不改动任何审查结论、评级与待办。
 
 ## 报告清单
 > - [r1-working..ed9d391.md](./r1-working..ed9d391.md)
