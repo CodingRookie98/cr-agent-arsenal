@@ -1,6 +1,6 @@
 ---
 name: dual-round-review
-description: Use when completing core architectural changes, major feature implementations, complex bug fixes, or before committing code and merging PRs. Triggers when high-confidence verification is needed to catch shallow patching, subtle concurrency/race conditions, resource leaks, or architectural regressions before delivery. Supports a full two-round adversarial review plus a single-round light mode for fast-track changes.
+description: Use when completing core architectural changes, major feature implementations, complex bug fixes, or before committing code and merging PRs. Triggers when high-confidence verification is needed to catch shallow patching, subtle concurrency/race conditions, resource leaks, or architectural regressions before delivery. Also use for non-code artifacts that have external readers or irreversible consequences — published specs, policies and rule files, proposals, decision records, client-facing reports and guides — via an artifact review schema built on a frozen artifact contract, structured pre-mortem, and an explicit undecidable exit. Supports a full two-round adversarial review plus a single-round light mode for fast-track changes.
 license: MIT
 ---
 
@@ -13,6 +13,9 @@ license: MIT
 本技能通过**辩证双轮级联对抗审查机制**，在代码交付入库前构建一道高置信度的质量防波堤：
 * **第一轮 (Round 1)**：极度苛刻的红队破坏者与底层物理/业务本质探究者（Non-Compliant 视角），专攻第一性原理穿透与极限破坏。
 * **第二轮 (Round 2)**：务实严谨的资深系统架构师——**专门审判第一轮审查者（Review the Reviewer）**，去伪存真、拦截过度工程，合成终审定性裁决。
+
+本技能支持两类**审查对象**（Schema，与轮次强度 Mode 正交）：`code`（默认，代码变更）与 `artifact`
+（非代码产物）。选择判据、触发线与前置换条件见「审查对象 (Review Schema)」一节。
 
 ```mermaid
 graph TD
@@ -29,13 +32,34 @@ graph TD
 
 ## 铁律 (Invariants)
 
-1. **上下文隔离**：R1、R2 各自在独立子智能体中运行，只接收 Spec、Diff 与（R2 额外）R1 报告；主会话聊天历史不传入。
+1. **上下文隔离**：R1、R2 各自在独立子智能体中运行，只接收 Spec（产物模式为冻结契约）、Diff（产物模式为产物正文）与（R2 额外）R1 报告；主会话聊天历史不传入。
 2. **真实产出优先**：主智能体在子智能体真实返回前不输出任何审查结论；终审裁决只根据 R2 的真实结果生成。
 3. **范围锁定**：候选缺陷必须标注是否由当前变更引入；历史技术债记入 Suggestion/Backlog。
 4. **证据支撑**：驳回或降级 R1 的评级必须附 `文件:行` 级反证据；无证据的降级不生效。
 5. **三层落盘（状态 + 凭据 + 通道登记）**：每轮结论写入 `.review-context/review-<baseline-sha>.md`（运行时状态，已 gitignore）供再循环读取 `Previous Blockers` 与迭代计数；**《审查报告全文》必须逐字归档**至 `<归档根>/<YYYY-MM-DD>-<slug>/`（交付凭据，进版本库，见步骤 1.6），**默认由子智能体在路径预授权下直写**；轮次台账必须登记**写入形态**（`direct` / `transcribed`）。**严禁以摘要替代报告全文归档，严禁以「子智能体已写成功」替代独立指纹复算**。
 6. **有界收敛**：同一模块连续 3 次双轮循环未清零阻断项时，产出争议焦点报告并升级人类裁决；修复收敛在最小改动范围。
 7. **派发即登记**：派发 R1/R2 前在 `.goal-loop/dispatch-ledger.md` 维护派发账本明细（角色、后端句柄、基线 SHA、**派发次数**、状态），并在计划检查点保留一行派生摘要。预算内未返回即按 `goal-loop` 技能的 `references/host-adapters.md` §5 收口；**同一角色对同一基线的重派上限 2 次**，超期中断计入铁律 6 的循环计数。跨会话恢复时先读账本明细，明细已丢失则以计划摘要为锚点，禁止凭记忆重建派发状态。
+
+---
+
+## 审查对象 (Review Schema)
+
+Schema（审什么）与 Mode（审几轮）**正交**，可自由组合（如 `artifact + light`）：
+
+| Schema | 适用对象 | R1 模板 | 分级与终止条件 |
+|---|---|---|---|
+| **`code`（默认）** | 代码变更（Git Diff） | [round-1-red-team.md](references/round-1-red-team.md) | [verdict-rubric.md](references/verdict-rubric.md) |
+| **`artifact`** | 非代码产物：规范 / 协议 / 规则文件、方案与提案、决策记录、对外报告与指南 | [round-1-artifact-red-team.md](references/round-1-artifact-red-team.md) | [verdict-rubric-artifact.md](references/verdict-rubric-artifact.md) |
+
+**触发线**（判定线一句话：**产物有外部读者 或 有不可逆后果**）：
+- **必须触发**：对外发布的规范/协议/规则文件；外部读者可见的方案与报告；有不可逆后果的决策书（含契约变更）；他人据此行动的指南与模板。
+- **无需触发**：一次性草稿、会话内讨论稿、个人笔记、纯检索产出、无外部读者的中间产物。
+
+**前置条件（硬）**：`artifact` 开审前必须冻结 [产物契约](references/artifact-contract.md)
+（Intent / Audience / Constraints / Out of Scope / Evidence Bar / Value Calls）——**无契约不得开审**；
+产物须已物化为仓库内文件（用 `--working` 或提交区间模式提取上下文）。
+
+**默认强度**：`artifact` 默认 `light`（1 轮 R1 + 裁决）；仅「不可逆后果」级交付升 `full`（R1 → R2）。最多 1 次 Delta。
 
 ---
 
@@ -62,11 +86,14 @@ graph TD
 * **关键业务逻辑实现**：鉴权与授权、支付交易、并发调度、复杂算法等核心主干链路。
 * **高风险缺陷修复**：排查并修复隐蔽并发死锁、内存/句柄泄漏、以及多次尝试未解的问题。
 * **交付与合并准入 (Pre-Merge Gate)**：PR 最终合并或版本发布前。
+* **非代码产物**（Schema = `artifact`）：见「审查对象 (Review Schema)」的触发线——对外规范/协议/规则文件、外部可见的方案与报告、有不可逆后果的决策书、他人据此行动的指南与模板。
 
 ### 无需触发 (When NOT to Use)
 * 纯文案调整、拼写错误修正、无业务逻辑的样式微调。
+  （**边界提示**：改变**规则语义**的文档改动不属于「纯文案调整」——它是规范性文档，按上行走 `artifact`。）
 * 临时探索脚本（Scratch scripts）或投机性 Prototype 原型验证。
 * 规则工具（Linter/Prettier/TypeChecker）已经完全覆盖并自动修复的机械约束。
+* 非代码产物中无外部读者的中间产物、会话内讨论稿、个人笔记、纯检索产出。
 
 ---
 
@@ -75,6 +102,10 @@ graph TD
 作为主调度智能体（Main Agent），请严格按照以下 5 个步骤执行审查：
 
 ### 1. 锁定审查基线与规格上下文 (Pin Baseline & Context)
+**先选 Schema**：按「审查对象 (Review Schema)」判定 `code` 或 `artifact`。选 `artifact` 时，**开审前**必须冻结
+[产物契约](references/artifact-contract.md)（六项：Intent / Audience / Constraints / Out of Scope / Evidence Bar /
+Value Calls），逐字内联进派发提示词，并向用户输出一行开审前通告（如有异议请在开审前驳回）。**无契约不得开审。**
+
 确定审查模式（未提交改动、暂存区或 Commit 区间），并运行辅助脚本提取结构化上下文：
 ```bash
 # 技能目录随安装方式而定（源码仓库通常为 skills/dual-round-review，安装后通常为 .agents/skills/dual-round-review）
@@ -135,13 +166,13 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
   7. **同轮同基线需重派（报告不合格）** → 确定性命名 + Write-Once 组合下**没有就地恢复路径**（目标文件已存在且不可覆盖）。合法处置：**作废该轮**——将不合格报告移出归档目录留痕（如 `.review-context/`，已 gitignore），**不登记台账**，再以**同一轮次标记与同一基线**重派（重写同一路径）。若重派仍不合格，按铁律 7「同一角色对同一基线的重派上限 2 次」收口并升级人类裁决。**严禁**覆盖、**严禁**改用其他路径规避、**严禁**把不合格报告登记进台账。
 
 ### 2. 委派第一轮审查：红队与第一性原理 (Dispatch Round 1)
-**上下文隔离红线**：分发独立的子智能体，**严禁传入主会话的聊天历史**。使用 [round-1-red-team.md](references/round-1-red-team.md) 提示词模板：
+**上下文隔离红线**：分发独立的子智能体，**严禁传入主会话的聊天历史**。提示词模板按 Schema 选择：`code` → [round-1-red-team.md](references/round-1-red-team.md)；`artifact` → [round-1-artifact-red-team.md](references/round-1-artifact-red-team.md)（该模板内含三条硬约束：steelman 义务、过去时 pre-mortem、Toulmin 四元组）：
 * **派发能力（宿主无关）**：使用当前宿主实际的子智能体派发能力，按能力语义选择，不绑定具体工具名或平台（以本会话声明的工具为准）。
 * **派发模式判定**：
   * **同步派发**（调用即在本次返回结果）：在当前回合直接取回 R1 报告后继续步骤 3；
   * **异步派发**（先返回句柄、稍后以消息唤醒）：启动后结束当前回合等待唤醒，收到真实报告后再继续；
   * 判定依据是工具的返回语义，而不是平台名称。
-* **角色预设**：极度苛刻、不讲客气（Non-Compliant）、预设代码必定有隐蔽缺陷。
+* **角色预设**：`code` → 极度苛刻、不讲客气（Non-Compliant）、预设代码必定有隐蔽缺陷；`artifact` → Pre-mortem Facilitator and Hostile Reader（预演失败 + 敌对读者，不评文风）。
 * **审查重点**：
   1. **Diff 范围边界锁 (Diff-Scope Boundary Lock)**：完整规则见 [verdict-rubric.md](references/verdict-rubric.md) §3；派发给 R1 的提示词中必须内联该规则（子智能体上下文隔离，无法自行读取本文件）。
   2. **第一性原理穿透**：是否为浅层修补？是否存在原生极简解法？
@@ -172,7 +203,7 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
 * 获取终审输出的《最终裁决明细表》。
 
 ### 4. 裁决分流与定性处理 (Verdict Triage)
-严格对照 [verdict-rubric.md](references/verdict-rubric.md) 判定结论：
+严格对照分级源判定结论（`code` → [verdict-rubric.md](references/verdict-rubric.md)；`artifact` → [verdict-rubric-artifact.md](references/verdict-rubric-artifact.md)，含 ⚖️ 不可判定出口）：
 * 🔴 **阻断项 (Blockers, P0/P1)**：
   * **结论**：审查不通过。
   * **状态机锁死**：任务状态强制维持“进行中/未通过”，**严禁在修改代码后自行宣布通过**。
@@ -189,6 +220,8 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
 
 ### 5. 防死锁收敛机制 (Convergence Guardrails)
 * **精准收敛原则**：修改阻断项时，严格收敛修改范围，防止因顺带重构引入新变量导致审查循环发散。
+* **信息增量收敛（`artifact` 模式的终止判据）**：某一轮不再产生新的、带 Warrant 的可定级指控即判定收敛。产物没有「阻断项清零」这个客观终点，**不得**以「再辩一轮更保险」追加轮次（`artifact` 默认 `light`，最多 1 次 Delta）。
+* **⚖️ 不可判定出口（`artifact` 模式）**：争点若落在无客观判据的价值取舍（品味、取向、优先级）上，**禁止继续辩论**，直接交人类裁决。既不得计入 P1 以自动阻断，也不得静默降为 P2 以自动放行。
 * **困境突破法则 (The 3-Tries Rule)**：若针对同一模块连续 **3 次** 双轮循环未能清零阻断项，或 R1/R2 陷入无法调和的哲学争议：
   1. 立即停止自动循环。
   2. 整理《双轮审查争议焦点报告》（含分歧代码、两轮观点与潜在风险）。
@@ -214,13 +247,18 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
 | “子智能体回报说写成功了，我直接登记 `direct`” | **⛔ 严重违规（跳过核验）**！回报是子智能体的**自述**，不是证据。必须**独立复算** SHA256 并与回报值比对，同时确认文件确实存在于预授权路径；不一致或缺失按 §1.6 异常降级第 5 条收口，**不得登记**。 |
 | “报告没落盘，我替它写一份，照样登记 `direct`” | **⛔ 严重违规（虚假登记）**！转录就登记 `transcribed`。把转录产物登记为 `direct` 会让「写入形态」列失去全部审计价值——该列存在的意义正是**暴露降级**，而不是掩盖它。 |
 | “路径预授权只是提示词，宿主又不强制，写哪儿都行” | **⛔ 违规（越界写入）**！预授权路径是子智能体**唯一**被授权的写入面。在无沙箱强制的宿主上约束强度确实等同于自律——**正因如此**，编排者必须在派发时给出唯一字面路径、在回报核验中确认落位，并在有 CI/门禁能力时于门禁侧兜底；「宿主不强制」是必须被登记的**已知边界**，不是放行越界写入的理由。 |
+| “产物没有测试，挑几条建议就算审过了”（artifact） | **⛔ 违规（判据缺失）**！产物审查的判据源是**冻结的产物契约**，不是审查者的个人偏好。无契约不得开审；每条指控必须过 Toulmin 四元组（Claim/Grounds/Warrant/Impact），**缺 Warrant 直接驳回**。 |
+| “契约写得宽一点，免得审出问题”（artifact） | **⛔ 严重违规（自我豁免）**！契约一旦成为被审查者的免罪符，审查就被预先掏空了。三道防线：开审前对人类可见（可驳回）、冻结后不可改、R2 有权把契约本身列为 P1（判定「契约过宽 / 过窄」）。 |
 
 ---
 
 ## 参考文档与实战案例导航
 
 ### 规程与提示词参考
-* [verdict-rubric.md](references/verdict-rubric.md) - 裁决分级标准与严重级别判定细则
+* [verdict-rubric.md](references/verdict-rubric.md) - 裁决分级标准与严重级别判定细则（Schema = `code`）
+* [artifact-contract.md](references/artifact-contract.md) - **（artifact）** 产物契约模板、冻结规程与契约层反模式
+* [round-1-artifact-red-team.md](references/round-1-artifact-red-team.md) - **（artifact）** 第一轮失败预演与敌对读者任务模板
+* [verdict-rubric-artifact.md](references/verdict-rubric-artifact.md) - **（artifact）** 四级裁决（P1 / P2 / Dismissed / ⚖️）与终止条件
 * [failure-modes-catalog.md](references/failure-modes-catalog.md) - 大模型代码生成与审查高频失败模式库
 * [round-1-red-team.md](references/round-1-red-team.md) - 第一轮红队与第一性原理子智能体任务模板
 * [round-2-meta-architect.md](references/round-2-meta-architect.md) - 第二轮元审判资深架构师子智能体任务模板

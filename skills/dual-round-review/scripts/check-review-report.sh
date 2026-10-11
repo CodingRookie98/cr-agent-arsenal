@@ -15,6 +15,8 @@
 #   7) 可选 --require-verdict=PASS：终审裁决必须为「准予交付」；
 #   8) 写入形态合法性：台账每行的「写入形态」列必须存在且取值 ∈ {direct, transcribed}
 #      （RFC-0002 §3.5——该列是唯一能区分「子智能体直写原文」与「主智能体转录产物」的可审计属性）。
+#   9) schema 自描述（2026-10-11 产物审查能力）：报告首部含 `> **Review Schema**: artifact` 时，
+#      R1 按产物 schema 校验五区块与稳定 ID 区块；未声明则缺省 code —— 既有归档零迁移。
 #
 # 用法: bash check-review-report.sh <归档目录> [--require-verdict=PASS]
 # 退出码: 0 = 通过；1 = 结构/证据缺陷；2 = 用法错误
@@ -34,6 +36,18 @@ R2_SECTIONS=(
   "## 2. 最终裁决明细表"
   "## 3. 终审放行结论"
 )
+# 产物 schema（Review Schema: artifact）——R2 三区块与稳定 ID 命名空间（R1-<n>）与 code 完全共用，
+# 故仅 R1 五区块与 R1 稳定 ID 区块需要按 schema 切换。
+R1_ARTIFACT_SECTIONS=(
+  "## 1. 产物契约核验与意图溯源"
+  "## 2. 事实与证据核验"
+  "## 3. 失败预演与误用路径推演"
+  "## 4. 指控清单"
+  "## 5. 第一轮结论概要"
+)
+ARTIFACT_MARKER='> **Review Schema**: artifact'
+CODE_R1_ID_SECTION='## 4. 潜在缺陷清单'
+ARTIFACT_R1_ID_SECTION='## 4. 指控清单'
 INDEX_FIELDS=("**交付单元**" "**归档根**" "**终审裁决**")
 LEDGER_HEADER='## 轮次台账'
 
@@ -115,6 +129,17 @@ heading_present() {
 }
 heading_present_stdin() {
   awk -v s="$1" 'index($0, s)==1 {found=1; exit} END{exit !found}'
+}
+
+# schema 判定（第 9 项）：报告自描述，缺省 code。标记须为**行首整行**且不在围栏内，
+# 否则视为未声明（防把标记写进示例代码块来切换校验口径）。
+report_schema() {
+  local file="$1"
+  if strip_fences "$file" | grep -qxF -- "$ARTIFACT_MARKER"; then
+    echo "artifact"
+  else
+    echo "code"
+  fi
 }
 
 FAIL=0
@@ -225,7 +250,15 @@ check_sections() {
 
 for f in "${R1_FILES[@]:-}"; do
   [[ -z "$f" ]] && continue
-  check_sections "$f" "R1 报告（$(basename "$f")）" "${R1_SECTIONS[@]}"
+  if [[ "$(report_schema "$f")" == "artifact" ]]; then
+    check_sections "$f" "R1 报告（$(basename "$f")）" "${R1_ARTIFACT_SECTIONS[@]}"
+  else
+    fail_before="$FAIL"
+    check_sections "$f" "R1 报告（$(basename "$f")）" "${R1_SECTIONS[@]}"
+    if [[ "$FAIL" -ne "$fail_before" ]]; then
+      echo "提示: 未发现 Review Schema 标记，按 code schema 校验；若本报告为产物审查，请在报告首部加入 '$ARTIFACT_MARKER' 后重跑。"
+    fi
+  fi
 done
 for f in "${R2_FILES[@]:-}"; do
   [[ -z "$f" ]] && continue
@@ -248,7 +281,11 @@ section_ids() {
 R1_IDS=""
 for f in "${R1_FILES[@]:-}"; do
   [[ -z "$f" ]] && continue
-  R1_IDS+="$(section_ids "$f" "## 4. 潜在缺陷清单")"$'\n'
+  if [[ "$(report_schema "$f")" == "artifact" ]]; then
+    R1_IDS+="$(section_ids "$f" "$ARTIFACT_R1_ID_SECTION")"$'\n'
+  else
+    R1_IDS+="$(section_ids "$f" "$CODE_R1_ID_SECTION")"$'\n'
+  fi
 done
 R1_IDS="$(sort -u <<<"$R1_IDS" || true)"
 

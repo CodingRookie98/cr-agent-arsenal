@@ -78,6 +78,24 @@ Your specific mission is to REVIEW THE REVIEWER (审判第一轮审查者). You 
 - 🟡 **优化建议 (Suggestions, P2/P3)**：真实存在但不影响当前正确性与稳定性的非阻断改进，以及扫描中发现的**历史既有技术债**（记入待办，准予放行）。
 - ⚪ **驳回项 (Dismissed)**：证实为第一轮的误报、幻觉、过度设计或越界挑刺（予以技术驳回并丢弃）。
 
+### 8. 产物 Schema 核验（条件维度 · 仅当 Review Schema = ARTIFACT 时执行）
+
+> **激活条件**：R1 报告首部含 `> **Review Schema**: artifact`。未激活时整块跳过，不要凭空执行。
+> 本维度激活时，§7 的分级源替换为 [verdict-rubric-artifact.md](verdict-rubric-artifact.md) 的四级表
+> （🔴 P1 / 🟡 P2 / ⚪ Dismissed / ⚖️ Undecidable）。
+
+1. **Steelman 齐备性**：R1 §3 首段是否做了 steelman，且失败预演以**过去时**叙述？缺失 → **判本轮审查无效**，
+   退回主智能体重派（不得就地补写，重派上限见铁律 7）。
+2. **Warrant 成立性**：逐条核验每条指控的 Warrant。无 Warrant 或 Warrant 被反证据驳倒 → **强制 Dismissed**；
+   四条准入（契约内 / 位置确切 / Warrant 显式且成立 / Impact 具体）缺任一条 → **至少降为 P2**。
+3. **契约范围拦截**：落点在 Out of Scope 内的指控 → 强制 Dismissed（对应代码模式的「历史代码越界」）。
+4. **契约过宽 / 过窄判定**：若契约把真实风险排除在 Out of Scope 之外，或 Evidence Bar 高到无法举证 →
+   **把契约本身列为 P1 缺陷**并终止本轮审查。
+5. **⚖️ 不可判定分诊**：把「无客观判据的价值取舍」争点摘出并标注 ⚖️ 交人类。**严禁**强行裁决；
+   **严禁**把它计入 P1 以自动阻断，也**严禁**静默降为 P2 以自动放行。
+6. **ID 对齐与去重**：沿用既有规则（`R1-<n>` 命名空间不变；R1 的每条指控都必须在裁决明细表出现，
+   误报须显式登记为驳回项）。
+
 ## Output Format
 
 请严格以中文输出《第二轮元对抗审查与终审裁决书》：

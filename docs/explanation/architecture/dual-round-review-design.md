@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-DUAL-ROUND-REVIEW-2026
-> - **当前版本**: V2.2.0 (宿主无关派发 + 审查记录锚点 + 三模式 + 交付凭据归档 + 子智能体直写通道)
+> - **当前版本**: V2.3.0 (宿主无关派发 + 审查记录锚点 + 三模式 + 交付凭据归档 + 子智能体直写通道 + 产物审查 schema)
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-09-14
 
@@ -29,6 +29,24 @@ V2.0 的三项结构目标：
 | **Delta（再循环）** | Full 或 Light 的再循环 | 阻断项修复后，以修复提交为新基线 | 更新后的审查记录与终审 |
 
 **升级为 Full 的触发条件**：改动触及公共契约、核心业务链路、鉴权/并发/数据一致性，或即将合并 PR/发布。
+
+### 2.1 审查对象 (Review Schema · V2.3.0)
+
+Schema（审什么）与 Mode（审几轮）**正交**，可自由组合（如 `artifact + light`）：
+
+| Schema | 适用对象 | R1 模板 | 分级源 |
+|---|---|---|---|
+| **`code`（默认）** | 代码变更（Git Diff） | `round-1-red-team.md` | `verdict-rubric.md` |
+| **`artifact`** | 非代码产物：规范 / 协议 / 规则文件、方案与提案、决策记录、对外报告与指南 | `round-1-artifact-red-team.md` | `verdict-rubric-artifact.md` |
+
+**触发线**（产物）：**有外部读者 或 有不可逆后果**。默认 `light`，仅「不可逆后果」级升 `full`，最多 1 次 Delta。
+
+产物模式的三处结构性差异：
+1. **判据源外部化**：开审前冻结**产物契约**（Intent / Audience / Constraints / Out of Scope / Evidence Bar / Value Calls），**无契约不得开审**——产物没有可执行真值，契约即真值；
+2. **指控结构化**：每条指控须过 Toulmin 四元组（Claim / Grounds / Warrant / Impact），**缺 Warrant 直接驳回**；R1 角色为「失败预演者 + 敌对读者」，必须先做 steelman 且以过去时叙述失败；
+3. **终止条件更换**：以「信息增量收敛」替代「阻断项清零」，新增 ⚖️ **不可判定出口**（无客观判据的价值取舍禁止继续辩论，交人类裁决）。
+
+门禁侧以报告内自描述标记 `> **Review Schema**: artifact` 识别 schema，**缺省 `code`——既有归档零迁移**。
 
 ---
 
@@ -160,10 +178,34 @@ React Rules of Hooks、SSR 水合、Storage 沙盒等维度**按 diff 文件特�
 
 ---
 
+### 9.3 V2.3.0 变更摘要 (V2.3.0 Refactor Summary)
+
+| 关注点 | V2.2.0 | V2.3.0 |
+|---|---|---|
+| 审查对象 | 仅代码变更（Git Diff） | **代码 + 非代码产物**（`Schema: code \| artifact`，与 Mode 正交） |
+| 判据源 | 需求规格 + Diff 范围锁 | 产物模式追加**冻结产物契约**（六项；无契约不得开审） |
+| 指控形式 | `文件:行` 反证据 + 严重级别 | 产物模式追加 **Toulmin 四元组**（缺 Warrant 直接驳回） |
+| R1 角色 | 红队 / 非顺从审查者 | 产物模式为 **Pre-mortem Facilitator + Hostile Reader**（steelman 义务 + 过去时失败预演） |
+| 终止条件 | 阻断项清零 / 3-Tries | 产物模式为**信息增量收敛**，新增 ⚖️ **不可判定出口** |
+| 成本护栏 | 无报告篇幅上限 | 产物模式 R1 ≤ 400 行 / R2 ≤ 200 行 |
+| 触发面 | 代码门禁与 Pre-Merge | 追加判定线「**有外部读者 或 有不可逆后果**」；显式堵住「规范性文档」定义缝 |
+| 机械门禁 | 8 项校验（code schema） | **9 项**：追加 schema 自描述识别（缺省 code，**既有归档零迁移**） |
+| 新增文件 | — | `artifact-contract.md` / `round-1-artifact-red-team.md` / `verdict-rubric-artifact.md` |
+| 验证 | 23 + 14 项契约测试 | 追加 10 项产物 schema 契约测试（含既有归档零迁移回归） |
+
+设计依据：Schweiger/Sandberg/Ragan（DI/DA 决策质量优于 consensus，AMJ 1986 及 1990 meta-analysis）、
+Klein premortem 的 prospective hindsight（风险识别约 +30%，且不需要真值）、Liang et al. EMNLP 2024
+（Degeneration-of-Thought；自适应中断是取得好效果的必要条件）、The Cost of Consensus（同质辩论因
+modal sycophancy 输给孤立自纠错，故本模式不做同质辩论而用「批判级联 + 审判者」）、Toulmin 论证模型
+（把「意见」变成可判定论证）。
+
+---
+
 ## 10. 修订历史 (Revision History)
 
 | 版本号 | 修订日期 | 修订人 | 修订描述 |
 | :--- | :--- | :--- | :--- |
+| **V2.3.0** | 2026-10-11 | DSH AI Agent | 产物审查 schema（非代码产物）：冻结产物契约 + Toulmin 四元组 + 过去时 pre-mortem + 信息增量收敛 + ⚖️ 不可判定出口 + 报告篇幅上限；门禁第 9 项 schema 自描述（既有归档零迁移） |
 | **V2.2.0** | 2026-10-08 | DSH AI Agent | 子智能体直写通道 + 路径预授权 + 写入形态登记（`direct`/`transcribed`）+ 门禁第 8 项；需求源 RFC-0002 |
 | **V2.1.0** | 2026-10-04 | DSH AI Agent | 交付凭据归档（三层职责分离）+ `check-review-report.sh` 机械门禁 + R2 双通道输入；需求源 RFC-0001 |
 | **V2.0.0** | 2026-09-14 | Antigravity AI Agent | 宿主无关派发、审查记录锚点、Light 模式、条件维度、R2 证据契约 |
