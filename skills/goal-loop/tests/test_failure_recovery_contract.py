@@ -69,6 +69,22 @@ def test_report_template_has_gate_fields():
         assert field in body, f"报告模板缺少字段: {field}"
 
 
+def test_reentry_counter_is_persisted_and_shell_safe():
+    """G4 的计数与成本判定依赖落盘记录；跨会话恢复不得依赖会话记忆。"""
+    body = _protocol()
+    token = "0/3+R1-1/2"
+    assert token in body, "缺少重入计数落盘记法"
+    assert "计数落盘" in body and "报告同步" in body, "缺少计数落盘 / 报告同步条款"
+    assert "每轮 HALF-OPEN 结束" in body, "报告必须在每轮重入后更新，否则跨会话 G4 计数失效"
+    for doc in (PROTOCOL,
+                SKILL_DIR / "templates" / "goal-plan-template.md",
+                SKILL_DIR / "references" / "context-engineering.md"):
+        assert token in doc.read_text(encoding="utf-8"), \
+            f"{doc.name} 的检查点字段未承载重入记法"
+    assert not any(c.isspace() for c in token), \
+        "记法不得含空白（tracker 按单个 argv 整值写入，含空白会被截断）"
+
+
 def test_routing_layer_matches_detail_layer():
     skill = SKILL_MD.read_text(encoding="utf-8")
     assert "证据门控" in skill, "SKILL.md 未声明证据门控重入"
