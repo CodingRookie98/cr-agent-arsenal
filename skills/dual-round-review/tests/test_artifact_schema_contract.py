@@ -145,14 +145,23 @@ def test_existing_archives_all_pass_gate():
     assert not failures, '既有归档门禁失败: %s' % failures
 
 
-def test_ledger_round_column_must_be_bare_token(tmp_path):
-    """防回归：轮次列必须是裸标记值。
+def test_ledger_round_column_tolerates_human_description(tmp_path):
+    """轮次列容忍人类记述：`delta-r1 · 第1轮` 按前导标记值解析后应通过。
 
-    带描述（如 `delta-r1 · 第1轮`）会被门禁解析为「未登记任何 R1 报告」——这正是上述既有缺陷的
-    成因，故以测试固定该契约，让未来的记述者立刻看到失败。
+    历史：2026-10-10 归档因该写法自生成起即无法通过校验。处置分两步——先在数据侧规范台账
+    （e166725），再在门禁侧容忍记述习惯（本次），使同类台账无需规范即可通过。
     """
-    d = _build(tmp_path, 'decorated-round',
-               [('delta-r1 · 第1轮', 'r1-aaa..bbb.md', R1_ARTIFACT_BODY)])
+    for i, token in enumerate(('delta-r1 · 第1轮', 'r1 · 第1轮', 'delta-r1')):
+        d = _build(tmp_path, 'decorated-%d' % i,
+                   [(token, 'r1-aaa..bbb.md', R1_ARTIFACT_BODY)])
+        r = _run_gate(d)
+        assert r.returncode == 0, '%r 未被容忍: %s%s' % (token, r.stdout, r.stderr)
+
+
+def test_ledger_round_column_rejects_unknown_token(tmp_path):
+    """容忍不等于放宽：非标记值轮次（如 `round-1`）仍须判为未登记 R1。"""
+    d = _build(tmp_path, 'unknown-round',
+               [('round-1', 'r1-aaa..bbb.md', R1_ARTIFACT_BODY)])
     r = _run_gate(d)
     assert r.returncode != 0
     assert '台账未登记任何 R1 报告' in r.stdout
