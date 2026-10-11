@@ -36,7 +36,7 @@ license: MIT
 6. **按裁定级别测试，先红后绿**：级别以计划中的《测试策略裁定书》为准，Exit Code 0 才允许原子提交。
 7. **分支隔离**：在功能分支工作，不在 `main`/`master` 直接写代码。
 8. **交付前必须有独立子智能体的 Zero Blockers 裁决**：Heavy Track 走全量双轮对抗审查；Fast-Track 走定向单轮红队审查，触及公共契约或核心链路时升级为全量双轮。
-9. **重试有上限**：单错误修复上限 3 次（第 2 次触发微观调研，第 3 次熔断上报）；场景级更小上限（如编译失败 2 次、重构破坏测试 2 次）优先触发其对应动作；Delta Re-Loop 迭代上限 5 次。
+9. **重试有上限**：单错误修复上限 3 次（第 2 次触发微观调研，第 3 次熔断）；Heavy Track 熔断后可经**证据门控**有限重入（≤2 轮 × 每轮 ≤2 次，须过 Re-Entry Gate 四条判据），其余通道熔断即升级；场景级更小上限（编译 2 次 / 重构破坏测试 2 次）优先触发；Delta Re-Loop ≤ 5 次。
 10. **事实即刻落盘**：每 2 次只读探查后，把结论写入 `.goal-loop/scratchpad.md` 或检查点锚点。
 11. **写入后 Read-Modify-Verify**：用 `git diff`、关键行回读或测试/编译退出码确认变更生效。
 12. **不执行破坏性 Git 命令**（`reset`/`rebase`/`revert`/`restore`/`clean -fd`/强制推送）。
@@ -69,7 +69,7 @@ license: MIT
 
 ## 异常恢复
 
-同一错误连续 3 次未解决即触发熔断（STOP → RECORD → RESEARCH → ESCALATE），生成结构化仲裁报告并暂停等待人类裁决。完整失败矩阵与报告模板见 [failure-recovery-protocol.md](references/failure-recovery-protocol.md)。
+同一错误连续 3 次未解决即触发熔断（STOP → RECORD → RESEARCH）；Heavy Track 可在**证据门控**通过后有限重入（≤2 轮 × 每轮 ≤2 次），其余通道直接 ESCALATE，且**不因重入权存在而延迟升级**。升级为非阻塞：报告落盘、阻塞点 `parked`、主调度继续推进不依赖该点的独立工作项；第 1 次重入通过 Gate 时先发异步告知。完整状态机、门控判据与报告模板见 [failure-recovery-protocol.md](references/failure-recovery-protocol.md)。
 
 ---
 

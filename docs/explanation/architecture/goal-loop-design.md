@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-GOAL-LOOP-2026
-> - **当前版本**: V2.0.0 (宿主无关适配器 + 计划文件唯一真相源)
+> - **当前版本**: V2.1.0 (宿主无关适配器 + 计划文件唯一真相源 + 3-Tries 证据门控重入)
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-08
@@ -91,7 +91,7 @@ graph TD
         T3 --> T4["验证: 本地执行单测 (必须 Exit Code 0)"]
         T4 --> PassCheck{"单元测试全绿?"}
         PassCheck -->|"否 - 重试不超过3次"| T2
-        PassCheck -->|"连续3次失败"| Escalate["触发 3-Tries 熔断: 记录原因并上报人类"]
+        PassCheck -->|"连续3次失败"| Escalate["3-Tries 熔断: 冻结取证；Heavy 经门控可重入"]
         PassCheck -->|"是"| Commit["原子提交当前子任务 Git Commit"]
         Commit --> Persist["持久化更新任务状态与进度文件"]
     end
@@ -266,8 +266,8 @@ graph TD
 2. **重构破坏既有测试**：最多重试 **2 次**；若无法快速收敛，立即使用安全暂存（`git stash push -m "failed-refactor"`）保存并回退重构实验代码，恢复原可用 Green 状态基线，禁止为追求完美抽象而破坏稳定性。
 3. **集成回归缺陷**：定位到发生契约破坏的具体子任务，重新启动局部 TDD 修复，重试上限同样为 3 次。
 
-### 7.2 3-Tries 熔断上报机制 (STOP - RECORD - RESEARCH - ESCALATE)
-当连续尝试 3 次仍无法解决问题时，强制中断一切自动化执行，向用户提交结构化争议仲裁报告：
+### 7.2 3-Tries 熔断与证据门控重入 (STOP - RECORD - RESEARCH → Gate)
+当连续尝试 3 次仍无法解决问题时，先停止写入、冻结现场并落盘结构化争议仲裁报告。此后 Heavy Track 可在**证据门控**（G1 新假设 / G2 新外部证据 / G3 非措辞改写 / G4 预算未耗尽，四条判据全真）通过后**有限重入**（≤2 轮 × 每轮 ≤2 次，总尝试上限 3 + 2 + 2 = 7 次），其余通道直接升级——即重入是需举证的例外，默认 fail-fast。升级为**非阻塞**：报告落盘、阻塞点置 `parked`、主调度继续推进不依赖该点的独立工作项，不等同于全流程停摆。完整状态机、判据与成本上限（`min(总预算 × 25%, 剩余 ÷ 3)`）见 [failure-recovery-protocol.md](../../../skills/goal-loop/references/failure-recovery-protocol.md)：
 ```markdown
 ## ⚠️ goal-loop 自动化熔断报告 (3-Tries Escalation)
 - **受阻任务**: [子任务名称与文件路径]
@@ -345,7 +345,7 @@ V2.0 是一次破坏性结构重构，依据四项锁定决策（D1–D4）完�
 | 入口文件 | SKILL.md 209 行，含完整状态机图与 SOP（与 references 重复） | **路由层 95 行**：触发条件 + 12 条铁律 + 指针 |
 | 阶段编号 | 状态机 P-1~P5 与计划模板第二套编号并存 | 统一为 P-1~P5 |
 | 审查门禁 | 所有通道一律强制双轮 | Heavy 全量双轮；Fast-Track 定向单轮，触及契约再升级 |
-| 循环上限 | 3-Tries 仅内层，Delta Re-Loop 无上限 | 内层 3 次、Delta Re-Loop 5 次，计数落盘为检查点字段 |
+| 循环上限 | 3-Tries 仅内层，Delta Re-Loop 无上限 | 内层 3 次（Heavy 经证据门控可重入 ≤2 轮 × ≤2 次，总上限 7 次）、Delta Re-Loop 5 次，计数落盘为检查点字段 |
 | 委派契约 | 仅 7 维输入规约 | 追加第 8 节输出契约与 `git status --porcelain` 证据要求 |
 | 验证 | 无测试 | `tests/` 24 项 tracker 单测 + 断链门禁 |
 
