@@ -4,18 +4,18 @@
 > - **文档标识**: BK-INDEX-GOV
 > - **当前版本**: V2.0.0 (动态索引)
 > - **维护模式**: 机器脚本自动化生成 (请勿手写对账日记，运行 `manage-backlog.py sync-index` 自动刷新)
-> - **更新日期**: 2026-10-09
+> - **更新日期**: 2026-10-12
 
 ---
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **23** 项 (进行中: 0, 计划中: 23)
+- **现役活跃待办**: **30** 项 (进行中: 0, 计划中: 30)
 - **历史已归档项**: **9** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 3 | 20 |
+| **活跃数量** | 0 | 0 | 6 | 24 |
 
 ---
 
@@ -32,6 +32,9 @@
 | **BK-0003** | `P2` | `Governance` | 稳定 ID 方向二改为按文件名配对 R1-R2 后施加 | — | [BK-0003](./active/BK-0003-stable-id-pair-by-filename.md) |
 | **BK-0004** | `P2` | `Security` | 新增终审裁决在索引中唯一校验 | — | [BK-0004](./active/BK-0004-unique-verdict-in-review-index.md) |
 | **BK-0020** | `P2` | `TechDebt` | 修订表头定位限定在修订历史章节作用域内 | — | [BK-0020](./active/BK-0020-修订表头定位限定在修订历史章节作用域内.md) |
+| **BK-0033** | `P2` | `TechDebt` | 门禁子进程非 UTF-8 输出导致裸 traceback | 采集器在 LC_ALL=C / PYTHONUTF8=0 或非 UTF-8 门禁输出的环境下运行 | [BK-0033](./active/BK-0033-门禁子进程非-utf-8-输出导致裸-traceback.md) |
+| **BK-0034** | `P2` | `Bug` | baseline.json 损坏静默降级导致 C-10 假阳性与假阴性 | skills/spec-evolution/references/baseline.json 被人工写坏或键被删除 | [BK-0034](./active/BK-0034-baseline-json-损坏静默降级导致-c-10-假阳性与假阴性.md) |
+| **BK-0035** | `P2` | `Governance` | RFC-0004 的 GI-1/GI-3 不变式清单与实现未对齐 | 审阅 RFC-0004 §3.5 门禁不变式表时 | [BK-0035](./active/BK-0035-rfc-0004-的-gi-1-gi-3-不变式清单与实现未对齐.md) |
 | **BK-0005** | `P3` | `Governance` | 豁免判定前执行路径根相对语义归一化 | — | [BK-0005](./active/BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0006** | `P3` | `TechDebt` | 四条审查护栏各补 1 条反证测试用例 | — | [BK-0006](./active/BK-0006-review-gates-negative-test-cases.md) |
 | **BK-0007** | `P3` | `Governance` | GOVERNANCE.md 豁免表文本精确化 | — | [BK-0007](./active/BK-0007-governance-doc-exemption-table-accuracy.md) |
@@ -52,6 +55,10 @@
 | **BK-0028** | `P3` | `TechDebt` | 机器地图判定侧剩余缺口（用例承重与反解契约） | — | [BK-0028](./active/BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md) |
 | **BK-0029** | `P3` | `Security` | 交付凭据写入侧历史残留（硬链接穿透与删除逃逸） | — | [BK-0029](./active/BK-0029-交付凭据写入侧历史残留-硬链接穿透与删除逃逸.md) |
 | **BK-0032** | `P3` | `Security` | 身份写保护闸门的权限与语义细节残余 | — | [BK-0032](./active/BK-0032-身份写保护闸门的权限与语义细节残余.md) |
+| **BK-0036** | `P3` | `Bug` | --skills 传入未知技能名静默产出 CLEAN | 调用 collect-facts.py --skills <拼错的技能名> | [BK-0036](./active/BK-0036-skills-传入未知技能名静默产出-clean.md) |
+| **BK-0037** | `P3` | `Security` | 输出路径可静默覆盖仓库内被跟踪文件 | 操作者把 --out / --json / --report 指向仓库内已存在的被跟踪文件 | [BK-0037](./active/BK-0037-输出路径可静默覆盖仓库内被跟踪文件.md) |
+| **BK-0038** | `P3` | `TechDebt` | 跨技能链接正则存在两份近似实现 | 修改 skills/_shared/tests/test_cross_skill_links.py 的 SKILL_NAMES 或正则时 | [BK-0038](./active/BK-0038-跨技能链接正则存在两份近似实现.md) |
+| **BK-0039** | `P3` | `TechDebt` | 存量技能交付面债务：agy/clarification 缺测试与 README 登记 | 下一轮 spec-evolution 扫描或专门的存量修复任务 | [BK-0039](./active/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md) |
 
 ---
 

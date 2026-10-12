@@ -4,7 +4,7 @@
 > - **标识**: RFC-2026-SPEC-EVOLUTION
 > - **当前状态**: Implemented
 > - **发起人**: 工程师 / AI Agent
-> - **当前版本**: V0.4.0
+> - **当前版本**: V0.5.0
 > - **初次发起日期**: 2026-10-12
 > - **目标里程碑**: spec-evolution V1.0.0（新增技能，不涉及仓库版本号变更）
 > - **定案日期**: 2026-10-12
@@ -22,6 +22,7 @@
 | **V0.2.0** | 2026-10-12 | DSH AI Agent | 王辉 | 四项未决项收口：C-04 降为建议值（MID）、C-05 改按 `description` 口径、C-07 注册面 5→4、F-1~F-9 不进本次交付。依据 Agent Skills 规范原文与生成器源码实证，修正 V0.1.0 中两处契约误设 |
 | **V0.3.0** | 2026-10-12 | DSH AI Agent | 王辉 | **状态流转 In Review → Accepted**（用户裁决准予受理）；批准进入 P1 编写落地计划。契约内容未变更，仅登记受理决定 |
 | **V0.4.0** | 2026-10-12 | DSH AI Agent | 王辉 | **状态流转 Accepted → Implemented**（交付完成）：采集器 `collect-facts.py`、判定器 `judge.py`（C-01~C-10 + 锚点硬门禁 + 退出码 0/1/2）、报告模板、GI-1~GI-6 门禁不变式（50 条测试）、架构设计书与四注册面接入全部落地。判定器对全仓实跑复现 §1.1 的 F-1~F-9 全部九项缺陷（findings 17 条 / HIGH+BLOCKER 8 条），修 F-9 后降至 11 条 / 3 条；**spec-evolution 自身零 finding**。**原位保留未移入 `proposals/archive/`**（仓库尚无该目录、RFC-0001~0003 均未归档，移位会打断技能内相对链接） |
+| **V0.5.0** | 2026-10-12 | DSH AI Agent | 待用户裁定 | **P3.5 双轮审查修正**（基线 `0306f37..fe8da78`，R2 裁定阻断交付）：① §3.4 补登 `[REPO:*]` 锚点形式与行号语义——C-07 的四个注册面与 C-09 的门禁证据均在技能目录之外，原文只登记 `[SKILL:*]`/`[RULE:*]` 属**契约缺口**（R1-7，R2 认定比 R1 所述更严重）；② §3.4 明确 `[RULE:*]` 解析域是**标题树**、加粗条目不可作锚点；③ §3.3 与 G2 的退出码口径按实现收敛为「0 = 无 BLOCKER/HIGH（可含 MID advisory）」（R1-2）；④ GI-3 与术语表同步扩至三类锚点。契约内容变更，实现侧同步见计划《执行偏差记录》D-10~D-15 |
 
 ---
 
@@ -206,11 +207,15 @@ skills/spec-evolution/scripts/judge.py --facts facts.json [--json findings.json]
 ```
 [SKILL:<skill-name>/<relative-path>]       例: [SKILL:clarification-protocol/SKILL.md]
 [SKILL:<skill-name>/<path>:<line>]         例: [SKILL:doc-governance/tests/test_doc_governance_scripts.py:1]
+[REPO:<repo-relative-path>]                例: [REPO:README.md]
+[REPO:<repo-relative-path>:<line>]         例: [REPO:docs/index.md:59]
 [RULE:<§-heading-path>]                    例: [RULE:§3-精准修改与代码卫生]
 ```
 
 - `[SKILL:*]` 锚点由判定器在**运行时**校验路径存在性；路径不存在则**判定器自身报错退出 2**（防锚点幻觉）。
-- `[RULE:*]` 锚点以 `contexts/AGENTS.md` 的 `## / ###` 标题树为解析域，天然抗行号漂移。
+- `[REPO:*]` 锚点用于指向技能目录**之外**的核验位置——C-07 的四个注册面（`README.md` / `docs/index.md` / `skills/_shared/tests/test_cross_skill_links.py` / `tools/skills-manager/collections/cr-agent-arsenal.json`）与 C-09 的门禁证据（如 `[REPO:skills/]`）都在技能目录之外，`[SKILL:*]` 无法表达。同样 **fail-closed**：目标不存在、或解析后越出仓库根（绝对路径逃逸、`../` 穿越）即退出 2。
+- **行号语义**：`:line` 只对**文件**有意义（要求 `1 <= line <= 文件行数`，越界即失败）；**目录锚点不得携带行号**。裸路径锚点允许指向文件或目录。
+- `[RULE:*]` 锚点以 `contexts/AGENTS.md` 的 `## / ###` **标题树**为解析域，天然抗行号漂移。解析域是标题树而非加粗条目——**加粗条目不能作为 `[RULE:*]` 的解析目标**。
 
 ### 3.5 报告模板契约
 
@@ -247,7 +252,7 @@ skills/spec-evolution/scripts/judge.py --facts facts.json [--json findings.json]
 | :--- | :--- | :--- |
 | **GI-1** | 判定器源码不含任何 LLM SDK / 网络库 import | pytest 源码扫描 |
 | **GI-2** | 同一 `facts.json` 两次执行产出逐字节相同的 `findings.json` | pytest 双跑比对 |
-| **GI-3** | 每条 finding 的 `[SKILL:*]` 锚点路径必然存在 | pytest 人造锚点用例 |
+| **GI-3** | 每条 finding 的锚点必然可解析——`[SKILL:*]` / `[REPO:*]` 路径在仓库内存在（含 containment 校验），`[RULE:*]` 在根提示词标题树中存在 | pytest 人造锚点用例 |
 | **GI-4** | 报告生成器输出的「人类裁决」区**为空模板**，不含任何裁决结论 | pytest 字符串断言 |
 | **GI-5** | 判定器退出码语义严格为 0/1/2，无其他取值 | pytest 边界用例 |
 | **GI-6** | 采集器与判定器均不改写任何文件（只读） | pytest 目录快照比对 |
@@ -310,7 +315,7 @@ skills/spec-evolution/scripts/judge.py --facts facts.json [--json findings.json]
 | **判定器 (Judge)** | 把 `facts.json` 映射为 `findings.json` 的确定性程序，不调用任何模型 |
 | **选择端 (Selection End)** | 演进回路中判定「哪条候选更好」的环节。本提案的全部设计目的在于把它从**模型的意见**换成**脚本的退出码** |
 | **变异端 (Mutation End)** | 演进回路中产出新规则候选的环节。本提案**不涉及**（见 N-3） |
-| **锚点 (Anchor)** | finding 中指向可核验位置的稳定引用，形如 `[SKILL:...]` / `[RULE:...]`，由判定器运行时校验存在性 |
+| **锚点 (Anchor)** | finding 中指向可核验位置的稳定引用，形如 `[SKILL:...]` / `[REPO:...]` / `[RULE:...]`，由判定器运行时校验存在性 |
 | **谄媚污染 (Sycophancy Contamination)** | 在无客观依据时，评价者仍收敛到「有问题/可优化」的输出偏差 |
 | **既有三门禁** | `pytest skills/`、`check-doc-links.py`、`audit-doc-health.py`（狭义）；广义含 `test_cross_skill_links.py` |
 
@@ -357,7 +362,7 @@ skills/spec-evolution/scripts/judge.py --facts facts.json [--json findings.json]
 | DK-2 | 判定器零 LLM、零网络、纯标准库 | G3 / N-4；谄媚面消除的**结构性**保证 |
 | DK-3 | 事实与发现分属两个进程（`collect-facts.py` / `judge.py`） | §5.2 术语裁决；便于独立测试与门禁断言 |
 | DK-4 | 退出码语义 0/1/2 | 与 `taste-driven-designer` 既有脚本一致，沿用仓库惯例 |
-| DK-5 | 锚点采用章节路径式 `[SKILL:...]` / `[RULE:...]` | 抗行号漂移；`[RULE:*]` 复用根提示词标题树 |
+| DK-5 | 锚点采用章节路径式 `[SKILL:...]` / `[REPO:...]` / `[RULE:...]` | 抗行号漂移；`[RULE:*]` 复用根提示词标题树；`[REPO:*]` 覆盖技能目录之外的注册面与门禁证据 |
 | DK-6 | 技能名 `spec-evolution` | 用户 m00219 裁定；符合 `<对象>-<名词>` 命名式 |
 | DK-7 | v1 被测对象 = 全量 7 技能 + 根提示词 | 用户 m00219 裁定 |
 | DK-8 | 触发路由 = 独立调用（主）+ goal-loop P5 增量挂载 | §3.6；避免把周期治理成本摊进每个任务，且不触碰根提示词 |
