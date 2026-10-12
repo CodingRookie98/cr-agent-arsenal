@@ -141,10 +141,24 @@ def missing_surfaces(skill: dict) -> list:
     return [d for d in SURFACE_DIRS if not skill.get(f"has_{d}")]
 
 
+def collected_gates(facts: dict) -> dict:
+    """返回**结构合法**的门禁事实；任何其他形态一律视为「未采集」。
+
+    三态判据不能写 `raw is not None`：`[]` / `{}` / `0` / `{"pytest": "junk"}`
+    都是 falsy-but-not-None 或畸形结构，把它们当成「已采集且无失败」会重新打开
+    R1-3 想关闭的 fail-open（Delta R1 DR1-5）。`--facts` 接受外部输入，故该分支
+    在真实仓库之外可达。
+    """
+    raw = facts.get("gates")
+    if isinstance(raw, dict) and raw and all(isinstance(v, dict) for v in raw.values()):
+        return raw
+    return {}
+
+
 def build_findings(facts: dict) -> list:
     out: list = []
 
-    for key, info in sorted((facts.get("gates") or {}).items()):
+    for key, info in sorted(collected_gates(facts).items()):
         if info.get("exit_code") != 0:
             out.append(_mk(
                 "C-09", "BLOCKER", "<repo>",
@@ -243,8 +257,7 @@ def _cell(value) -> str:
 
 
 def render_report(facts: dict, findings: list) -> str:
-    raw_gates = facts.get("gates")
-    gates = raw_gates or {}
+    gates = collected_gates(facts)
     failed = [(k, v) for k, v in sorted(gates.items()) if v.get("exit_code") != 0]
     if failed:
         lines = ["| 门禁 | 证据命令 | 退出码 | 摘要 |", "| :--- | :--- | :--- | :--- |"]
@@ -253,7 +266,7 @@ def render_report(facts: dict, findings: list) -> str:
                 key, _cell(info.get("cmd", "")), info.get("exit_code"),
                 _cell(info.get("summary", ""))))
         blocker_section = "## BLOCKER\n\n" + "\n".join(lines)
-    elif raw_gates is None:
+    elif not gates:
         blocker_section = ("## BLOCKER\n\n（未采集门禁事实 —— C-09 未执行；"
                            "本报告对既有门禁是否失败不作任何结论）")
     else:

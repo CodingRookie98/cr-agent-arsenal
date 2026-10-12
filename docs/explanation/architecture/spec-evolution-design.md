@@ -84,7 +84,7 @@ GI-1~GI-6 门禁不变式 (门禁层)
 - **S2 结构事实**：逐技能记录目录存在性、`SKILL.md` frontmatter / `description` 字符数、最大文件行数、超限文件、跨技能相对链接、架构设计书。
 - **S3 注册事实**：四个注册面（`SKILL_NAMES` / `docs/index.md` / `README.md` / collections）是否登记该技能；根提示词行数、字节数与基线对比、标题树。
 
-**只读不变式 (GI-6)**：采集器与它跑的门禁除显式 `--out` 外不得在仓库内创建、修改或删除任何文件，也不得创建目录。**落实方式**：门禁子进程一律注入 `PYTHONDONTWRITEBYTECODE=1`（`subprocess_env()`）——仅靠命令行 `-B` 不足以覆盖全部路径，`audit-doc-health.py` 内部的 `importlib` 动态加载不受 `-B` 约束、会写出 `__pycache__`；`pytest` 两条命令另带 `-B -p no:cacheprovider`。
+**只读不变式 (GI-6)**：采集器与它跑的门禁除显式 `--out` 外不得在仓库内创建、修改或删除任何文件，也不得创建目录。**落实方式**：门禁子进程一律注入 `subprocess_env()`（`PYTHONDONTWRITEBYTECODE=1` + `PYTHONPYCACHEPREFIX=<仓库外>`），`pytest` 两条命令另带 `-B -p no:cacheprovider`。**三条路径各需不同机制**：直接子进程的导入期写入靠 `-B`；经 `subprocess` 派生的孙进程靠 `PYTHONDONTWRITEBYTECODE`（`-B` 是命令行开关、不随环境传递）；**显式 `py_compile.compile()` 同时无视前两者**（真实出处：`skills/doc-governance/tests/test_doc_index_convention.py:415-421` 在 `-W error::SyntaxWarning` 下编译脚本），只有 `PYTHONPYCACHEPREFIX` 能拦住 —— 它把写入整体改道仓库之外。变异实测：移除 `PYTHONPYCACHEPREFIX` 会令 `test_gi6_gates_run_without_leaving_artifacts` 转红，单独移除 `PYTHONDONTWRITEBYTECODE` 则不会（后者是冗余纵深）。
 
 ### 3.3 判定层：`scripts/judge.py`
 

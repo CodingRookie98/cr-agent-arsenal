@@ -66,16 +66,22 @@ def build_repo(root: Path, *, skill_description: str = "Use when testing.",
     # 门禁桩：让合成仓库能真的跑通四道门禁（GI-6 需要门禁真实执行后才可断言无残留产物）。
     # 这两个桩不放在 skills/<skill>/ 下带 SKILL.md 的目录中，故不会被 discover_skills 识别为技能。
     #
-    # 桩**故意走「门禁进程 → 子进程 → import 兄弟模块」三级链**：真实仓库里
-    # `audit-doc-health.py` 正是靠 subprocess + importlib 加载兄弟脚本留下字节码的。
-    # 只给命令加 `-B` **保护不了子进程**（`-B` 不进环境、不被继承），唯一能覆盖整棵
-    # 进程树的是 `PYTHONDONTWRITEBYTECODE=1`——这正是 GI-6 要钉住的不变式。若桩只写
-    # `import sys; sys.exit(0)`，它在结构上不可能写出 `__pycache__`，GI-6 断言会恒真
-    # （假阴性）。RFC-0004 交付审查 R1-1 / R2-2。
+    # 桩**故意走「门禁进程 → 子进程 → 显式 py_compile」三级链**，且最内层用
+    # `py_compile.compile()`：这是真实门禁树里唯一能同时突破 `-B` 与
+    # `PYTHONDONTWRITEBYTECODE` 的字节码写入路径（真实出处：
+    # `skills/doc-governance/tests/test_doc_index_convention.py:415-421` 在
+    # `-W error::SyntaxWarning` 下编译脚本）。桩必须复刻**最难的**那条向量，否则
+    # GI-6 断言只覆盖到友善路径、对真实逃逸方式失明（假阴性）。
+    # 覆盖整棵进程树的机制：`-B`（仅直接子进程）→ `PYTHONDONTWRITEBYTECODE`
+    # （孙进程）→ `PYTHONPYCACHEPREFIX`（py_compile 的显式写入）。
+    # RFC-0004 交付审查 R1-1 / R2-2 / Delta R1 DR1-1。
     write(root / "skills" / "doc-governance" / "scripts" / "_gate_helper.py",
           "EXIT_OK = 0\n")
     write(root / "skills" / "doc-governance" / "scripts" / "_gate_child.py",
-          "#!/usr/bin/env python3\n\nimport _gate_helper\n\n"
+          "#!/usr/bin/env python3\n\nimport _gate_helper\nimport py_compile\n"
+          "import sys\n\n"
+          "py_compile.compile(\n"
+          "    'skills/doc-governance/scripts/_gate_helper.py', doraise=True)\n\n"
           "raise SystemExit(_gate_helper.EXIT_OK)\n")
     for stub in ("check-doc-links.py", "audit-doc-health.py"):
         write(root / "skills" / "doc-governance" / "scripts" / stub,

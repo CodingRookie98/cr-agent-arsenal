@@ -105,6 +105,19 @@ def test_registration_gap_detected(tmp_path: Path):
     assert collect_json(root)["skills"][0]["registrations"]["collection"] is False
 
 
+def test_readme_registration_requires_exact_skill_path(tmp_path: Path):
+    """C-07 的 README 判据必须是精确形式 `skills/<name>/SKILL.md`。
+
+    裸子串 `skills/<name>` 会被前缀兄弟技能（`skills/<name>-suffix`）命中，造成
+    C-07 **假阴性** —— 未登记的技能被判为已登记，而该判据是 HIGH。此处构造一个
+    只收录同前缀兄弟技能的 README，断言仍判未登记（Delta R1 DR1-6）。
+    """
+    root = build_repo(tmp_path / "repo9")
+    write(root / "README.md",
+          "| **`demo-suffix`** | [`skills/demo-suffix`](./skills/demo-suffix/SKILL.md) |\n")
+    assert collect_json(root)["skills"][0]["registrations"]["readme"] is False
+
+
 def test_root_prompt_facts_and_headings(repo: Path):
     rp = collect_json(repo)["root_prompt"]
     assert rp["path"] == "contexts/AGENTS.md"

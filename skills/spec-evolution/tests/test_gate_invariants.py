@@ -200,22 +200,42 @@ def test_gi6_gates_run_without_leaving_artifacts(tmp_path):
 
 
 def test_gi6_bytecode_suppression_is_structural():
-    """GI-6 的结构性保障：**每一处** `subprocess.run` 都必须注入字节码抑制环境。
+    """GI-6 的结构性保障：`subprocess.run` 必须注入 env，且 env 必须含**两重**抑制。
 
-    只给命令加 `-B` 不够——`audit-doc-health.py` 经 `importlib` 动态加载兄弟脚本，
-    该路径不受 `-B` 约束。此断言把「注入 `PYTHONDONTWRITEBYTECODE`」钉在被测源码上，
-    以免未来新增门禁时只靠夹具的善意兜底（RFC-0004 交付审查 R1-1 / R1-9）。
+    只给命令加 `-B` 不够 —— 它只覆盖直接子进程。完整的抑制链是：
+    `-B`（直接子进程）→ `PYTHONDONTWRITEBYTECODE`（经 `subprocess` 派生的孙进程，
+    `-B` 是命令行开关、不随环境传递）→ `PYTHONPYCACHEPREFIX`（显式
+    `py_compile.compile()` 的写入，它按设计同时无视前两者）。
+
+    本断言把后两者钉死在 `subprocess_env()` 的**返回字典字面量**上（而非仅仅
+    「源码里出现过这个字符串」），并把 `env=None` 这种「形式上有 env、实质放弃
+    抑制」的写法一并拒掉 —— 否则一次合法重构就能让测试全绿而 GI-6 已经失守。
+    （RFC-0004 交付审查 R1-1 / R1-9；Delta R1 DR1-1 补强）
     """
     src = (SPEC_DIR / "scripts" / "collect-facts.py").read_text(encoding="utf-8")
-    assert "PYTHONDONTWRITEBYTECODE" in src, "采集器未注入字节码抑制环境变量（GI-6）"
-    runs = [n for n in ast.walk(ast.parse(src))
+    tree = ast.parse(src)
+
+    env_fn = next((n for n in ast.walk(tree)
+                   if isinstance(n, ast.FunctionDef) and n.name == "subprocess_env"), None)
+    assert env_fn is not None, "采集器缺少 subprocess_env()（GI-6）"
+    injected: set[str] = set()
+    for node in ast.walk(env_fn):
+        if isinstance(node, ast.Dict):
+            injected |= {k.value for k in node.keys
+                         if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+    for var in ("PYTHONDONTWRITEBYTECODE", "PYTHONPYCACHEPREFIX"):
+        assert var in injected, f"subprocess_env() 未注入 {var}（GI-6：字节码抑制链不完整）"
+
+    runs = [n for n in ast.walk(tree)
             if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
             and n.func.attr == "run" and isinstance(n.func.value, ast.Name)
             and n.func.value.id == "subprocess"]
     assert runs, "采集器应当至少有一处 subprocess.run（git_head 或门禁）"
     for call in runs:
-        assert "env" in {k.arg for k in call.keywords}, (
-            f"collect-facts.py:{call.lineno} 的 subprocess.run 未注入 env（GI-6）")
+        kw = {k.arg: k.value for k in call.keywords}
+        assert "env" in kw, f"collect-facts.py:{call.lineno} 的 subprocess.run 未注入 env（GI-6）"
+        assert not (isinstance(kw["env"], ast.Constant) and kw["env"].value is None), (
+            f"collect-facts.py:{call.lineno} 的 env=None 会放任孙进程写字节码（GI-6）")
 
 
 def test_gates_recorded_when_enabled(tmp_path):

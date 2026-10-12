@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 SCHEMA_VERSION = "1.0"
@@ -38,6 +39,9 @@ BASELINE_REL = Path("skills/spec-evolution/references/baseline.json")
 LINE_LIMIT = 1000
 GATE_TIMEOUT = 300
 SCANNED_SUFFIXES = {".py", ".sh", ".md", ".json", ".yaml", ".yml", ".txt", ".cfg", ".toml"}
+# 字节码重定向目标：**仓库之外**（GI-6 只约束仓库内不留产物）。固定名而非
+# mkdtemp，避免每次采集都在 /tmp 累积目录；缓存本身按源文件路径寻址，可复用。
+PYCACHE_PREFIX = os.path.join(tempfile.gettempdir(), "spec-evolution-pycache")
 
 FRONTMATTER_RX = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
 DESC_RX = re.compile(r"^description:[ \t]*(.*)$", re.MULTILINE)
@@ -251,13 +255,30 @@ def collect_root_prompt(repo: Path) -> dict:
 
 
 def subprocess_env() -> dict:
-    """子进程环境：强制 `PYTHONDONTWRITEBYTECODE=1`，保住只读不变式（GI-6）。
+    """子进程环境：把字节码写入**整体**重定向出仓库，保住只读不变式（GI-6）。
 
-    仅靠命令行 `-B` 不足以覆盖全部门禁：`audit-doc-health.py` 内部用
-    `importlib` 动态加载兄弟脚本，该路径不受 `-B` 影响，会写出 `__pycache__`。
-    在此统一注入环境变量，使**任意**新增门禁也结构性免疫。
+    门禁树里有三条互不重叠的字节码写入路径，各自需要的机制不同：
+
+    1. **直接子进程的导入期写入** ← 命令行 `-B` 即可压制；
+    2. **经 `subprocess` 派生的孙进程的导入期写入** ← `-B` 是命令行开关、
+       **不随环境传递**，故需 `PYTHONDONTWRITEBYTECODE=1`；
+    3. **显式调用 `py_compile.compile()`** ← 它按设计写字节码，**同时无视**
+       `-B` 与 `PYTHONDONTWRITEBYTECODE`（真实出处：
+       `skills/doc-governance/tests/test_doc_index_convention.py:415-421`
+       在 `-W error::SyntaxWarning` 下编译脚本），只有改**写入位置**才能拦住。
+
+    `PYTHONPYCACHEPREFIX` 是覆盖三条路径的**唯一充分机制**（它设置
+    `sys.pycache_prefix`，导入期写入与 `py_compile` 都改道仓库之外）。变异实测：
+    移除它会令 `test_gi6_gates_run_without_leaving_artifacts` 转红；单独移除
+    `PYTHONDONTWRITEBYTECODE` 则不会 —— 后者是保留的**冗余纵深**，不是充分的那一环。
+    该前缀按 `sys.pycache_prefix` 语义保留源文件绝对路径结构，故只是把写入搬出仓库，
+    不改变仓库内容（Delta R1 DR1-1）。
     """
-    return {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+    return {
+        **os.environ,
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONPYCACHEPREFIX": PYCACHE_PREFIX,
+    }
 
 
 def collect_gates(repo: Path) -> dict:

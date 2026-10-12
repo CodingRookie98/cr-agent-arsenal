@@ -252,9 +252,27 @@ def test_report_head_contains_verdict_and_metadata(tmp_path):
 
 
 def test_report_says_clean_only_when_gates_were_collected(tmp_path):
+    """三态判据必须要求**结构合法且有内容**的门禁事实。
+
+    只有「≥1 条 well-formed 的 `{cmd, exit_code, summary}`」才构成「已采集」的
+    证据。`None` / `[]` / `{}` / `0` / 畸形值一律归「未采集」—— 用 `is not None`
+    会把 falsy-but-not-None 与畸形结构误判为「已采集且无失败」，重新打开 R1-3 想
+    关闭的 fail-open（Delta R1 DR1-5；`--facts` 接受外部输入，故该分支可达）。
+    """
     root = build_repo(tmp_path / "repo")
+    for bad in (None, [], {}, 0, "", "junk", {"pytest": "junk"}):
+        facts = _facts(root)
+        facts["gates"] = bad
+        report = tmp_path / "report.md"
+        proc, _ = _run(root, facts, tmp_path, "--report", str(report))
+        assert proc.returncode == 0, bad
+        text = report.read_text(encoding="utf-8")
+        assert "未采集门禁事实" in text, f"{bad!r} 未按未采集处理"
+        assert "已采集门禁事实，无失败" not in text, f"{bad!r} 被误判为已采集且无失败"
+
     facts = _facts(root)
-    facts["gates"] = {}          # 已采集且无失败（空表）≠ 未采集（null）
+    facts["gates"] = {"pytest": {"cmd": "python3 -m pytest skills/ -q",
+                                 "exit_code": 0, "summary": "376 passed"}}
     report = tmp_path / "report.md"
     proc, _ = _run(root, facts, tmp_path, "--report", str(report))
     assert proc.returncode == 0
