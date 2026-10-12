@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **30** 项 (进行中: 0, 计划中: 30)
+- **现役活跃待办**: **31** 项 (进行中: 0, 计划中: 31)
 - **历史已归档项**: **9** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 6 | 24 |
+| **活跃数量** | 0 | 0 | 7 | 24 |
 
 ---
 
@@ -32,9 +32,10 @@
 | **BK-0003** | `P2` | `Governance` | 稳定 ID 方向二改为按文件名配对 R1-R2 后施加 | — | [BK-0003](./active/BK-0003-stable-id-pair-by-filename.md) |
 | **BK-0004** | `P2` | `Security` | 新增终审裁决在索引中唯一校验 | — | [BK-0004](./active/BK-0004-unique-verdict-in-review-index.md) |
 | **BK-0020** | `P2` | `TechDebt` | 修订表头定位限定在修订历史章节作用域内 | — | [BK-0020](./active/BK-0020-修订表头定位限定在修订历史章节作用域内.md) |
-| **BK-0033** | `P2` | `TechDebt` | 门禁子进程非 UTF-8 输出导致裸 traceback | 采集器在 LC_ALL=C / PYTHONUTF8=0 或非 UTF-8 门禁输出的环境下运行 | [BK-0033](./active/BK-0033-门禁子进程非-utf-8-输出导致裸-traceback.md) |
+| **BK-0033** | `P2` | `TechDebt` | 门禁输出非 UTF-8 环境下的 print 硬化与异常退出码收敛 | 采集器或判定器在 LC_ALL=C / PYTHONUTF8=0 等非 UTF-8 环境下运行 | [BK-0033](./active/BK-0033-门禁子进程非-utf-8-输出导致裸-traceback.md) |
 | **BK-0034** | `P2` | `Bug` | baseline.json 损坏静默降级导致 C-10 假阳性与假阴性 | skills/spec-evolution/references/baseline.json 被人工写坏或键被删除 | [BK-0034](./active/BK-0034-baseline-json-损坏静默降级导致-c-10-假阳性与假阴性.md) |
 | **BK-0035** | `P2` | `Governance` | RFC-0004 的 GI-1/GI-3 不变式清单与实现未对齐 | 审阅 RFC-0004 §3.5 门禁不变式表时 | [BK-0035](./active/BK-0035-rfc-0004-的-gi-1-gi-3-不变式清单与实现未对齐.md) |
+| **BK-0040** | `P2` | `Bug` | spec-evolution judge.py 嵌套类型逃逸使退出码 1 与「存在 BLOCKER/HIGH」同码 | `--facts` 输入被截断、被手工修改，或上游 `collect-facts.py` schema 漂移时可达（`--facts` 接受任意外部输入）。 | [BK-0040](./active/BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存.md) |
 | **BK-0005** | `P3` | `Governance` | 豁免判定前执行路径根相对语义归一化 | — | [BK-0005](./active/BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0006** | `P3` | `TechDebt` | 四条审查护栏各补 1 条反证测试用例 | — | [BK-0006](./active/BK-0006-review-gates-negative-test-cases.md) |
 | **BK-0007** | `P3` | `Governance` | GOVERNANCE.md 豁免表文本精确化 | — | [BK-0007](./active/BK-0007-governance-doc-exemption-table-accuracy.md) |

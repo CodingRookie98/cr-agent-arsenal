@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-SPEC-EVOLUTION-2026
-> - **当前版本**: V1.5.0
+> - **当前版本**: V1.6.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-10-12
 
@@ -27,11 +27,11 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3.5（**重派** Delta R1 裁决 **Zero Blockers**：P0 = 0 / P1 = 0，前轮 DR1-1~DR1-3 复核全部根治；本轮 4 条 P2~P3 建议已落地，基线推进至 `fe8da78..7bb09c5`，待重跑 delta-r2 终审）
-- **当前活跃子任务**: P3.5 Delta 闭环（D-17~D-27 全部落地：GI-6 三重机制根治 + 两条新信任边界收口（`mkdtemp` 独占缓存、越界 fail-closed）、根因叙述修正、`checks-spec.md` §4 退出码权威补登与四处指针同步、`collected_gates()` 三态收紧、`load_facts` 键类型校验、README 精确匹配登记、`BK-0033` 状态修正）
-- **当前子任务重试计数**: 0/3+R2-0/2
-- **外层循环迭代**: 3/5
-- **最后一次验证状态**: D-24~D-27 落盘后实测——`python3 -m pytest skills/ -q` → **380 passed**；`check-doc-links.py --root docs` → **75 文件断链 0**；`audit-doc-health.py` → **PASS**；归档门禁 `check-review-report.sh` → **索引齐备 · 报告 4 份 · 指纹一致 · 区块齐备 · 稳定 ID 对齐**；变异对照两条（退回固定名 → per-run 测试转红；删越界判定 → containment 测试转红），两次均**恰好 1 failed / 14 deselected**
+- **当前活跃阶段**: P4（P3.5 双轮对抗**已取得 ✅ 准予交付终审裁决**：delta-r2 裁决 Blockers = 0（🔴 0 / 🟡 19 / ⚪ 0），基线 `fe8da78..2100136`；进入文档治理与归档收口。**交付前待用户裁定是否合入 `master`**，见 D-9）
+- **当前活跃子任务**: P4 归档收口与交付呈报（delta-r2 报告归档登记、`BK-0040` 建卡、D-28 登记、计划 V1.6.0）；P3.5 闭环内容 D-17~D-27 全部落地：GI-6 三重机制根治 + 两条新信任边界收口（`mkdtemp` 独占缓存、越界 fail-closed）、根因叙述修正、`checks-spec.md` §4 退出码权威补登与四处指针同步、`collected_gates()` 三态收紧、`load_facts` 键类型校验、README 精确匹配登记、`BK-0033` 状态修正）
+- **当前子任务重试计数**: 0/3+R2-0/2（Delta 轮已收敛，无新增重入）
+- **外层循环迭代**: 3/5（末轮）
+- **最后一次验证状态**: delta-r2 终审后实测——报告 `delta-r2-fe8da78..2100136.md` 独立复算 **30500 字节 / SHA256 `9aeaf27a7f4e…`**，与子智能体回报**逐字一致**；三区块标题逐字在场；§2 含 `R1-1`…`R1-15` 共 15 行 + `DeltaR1-1`…`DeltaR1-4` 共 4 行；归档门禁 → **索引齐备 · 报告 5 份 · 指纹一致 · 区块齐备 · 稳定 ID 对齐**；`pytest skills/ -q` → **380 passed**；断链 **75 文件 0**；`audit-doc-health.py` → **PASS**；工作区除该报告外零改动
 - **最新有效提交**: `7bb09c5`（本轮**最后一次行为变更**提交；其后 `186f648` / `037eca3` / 本次提交均为纯计划文档提交，不改变可执行面，故门禁复验结论继续有效 —— 本字段语义固定为「最后一次行为变更提交」，避免纯文档提交造成无终止的自我追赶）
 - **阻断原因**: 无
 
@@ -2308,6 +2308,7 @@ git push origin master
 > | D-26 | **重定向根可被环境/回落重新指回仓库**（delta-r1 R1-3，P3）：重定向根在模块级由 `tempfile.gettempdir()` 推导，采集器不校验它位于 `repo_root` 之外。`TMPDIR` 指向仓库内、或候选临时目录全不可写导致 `gettempdir()` 回落 `os.getcwd()` 时，镜像整体落入仓库，GI-6 静默失守（审查方实测新增 3 个镜像文件） | 求值从模块级移入 `pycache_prefix(repo)`：**先**校验临时根在仓库之外（**在创建任何目录之前**，避免校验失败却已落盘），不成立即 `CollectError` → 退出码 2，绝不退化成「悄悄写进仓库」 | 新增 `test_gi6_rejects_pycache_prefix_inside_repo`（`TMPDIR=<repo>` 运行采集器，断言 rc == 2 + stderr 含「仓库内」+ 仓库零写入）。**变异 B**（删去 `if base == repo or repo in base.parents` 判定）→ 该测试转红、其余 14 条不动 |
 > | D-27 | **章节重编号引入的引用断裂**（delta-r1 R1-4，P2）：D-19 为补登退出码权威新增 `checks-spec.md` §4 并把原 §4/§5 顺延为 §5/§6，但三处 `§4` 指针未同步（`SKILL.md:24`、`spec-evolution-design.md:161`、计划 `:2115` 及其代码副本 `:194`），改动后指向「退出码语义」而实际内容已顺延为 §5「已知表达上限」；D-19 自述的验证方法「章节编号全文件复核」**未落实**（宣称宽于取证） | 四处指针改为 `§5`（`SKILL.md` / 设计书 / 计划正文两处），并全仓复核确认剩余 `§4` 引用均正确指向「退出码语义」 | `grep -rn "checks-spec.md.*§4"` 只剩计划 `:31`（D-19 记述）与 `:2300`（D-19 行本身），二者语义正确 |
 
+> | D-28 | **嵌套类型逃逸**（delta-r2 R2 残余发现，主智能体独立复现）：D-24 只给 `load_facts` 加了**顶层**键类型校验，未下探 `skills[]` 成员字段。`description_chars="abc"` / `registrations="x"` / `oversized_files=[123]` / `cross_skill_links=5` 会令 `build_findings` 抛 `TypeError`/`AttributeError`，解释器以状态码 **1** 退出 —— 与「存在 BLOCKER/HIGH」同码。**两处复核澄清**：R2 举例的 `skills[].path=123` 与 `skills[].files="x"` 实测 **rc=0**（判定器不消费这两个键）；且上述崩溃路径**均不写出报告**，故不存在「写出伪造报告」。R2 的 🟡 非阻断定级**维持不变**（退出码仍非 0，编排方不会误采信为 CLEAN）。另：`atexit` 在信号终止（SIGTERM/SIGKILL）下不执行，`mkdtemp` 目录会在 `/tmp` 残留 —— 属资源整洁度问题，非正确性问题 | **不在本次交付内修复**（R2 已裁定非阻断；且任何修复都必须重跑完整双轮闭环，不得在 Zero Blockers 后单方面改码）。登记 `BK-0040`（Bug / P2），修法建议：在 `main()` 中包一层兜底，把 `FactsError` 以外的异常转译为 `FactsError`（→ 退出码 2 + `❌` 诊断）—— 一次关闭**整类**逃逸，优于逐键白名单的「打地鼠」 | 独立复现（干净基线夹具：仅 `spec-evolution` 自身，正常 rc=0 / findings=0）：上表五例 rc 均为 **1** 且**不写报告**；对照 `path=123` / `files="x"` / `name=123` 三例 rc 均为 **0** |
 ---
 
 ### §5 验收判据总表（Definition of Done）
@@ -2352,8 +2353,8 @@ git push origin master
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| V1.1.0 | 2026-10-12 | DSH AI Agent | 王辉 | P3 执行收口：Task 1~7 全部交付（`1418e2b` / `629c6b1` / `dfc301b` / `3f58d00` / `5775c6c` / `95af3f1` / `fe8da78`）；新增《执行偏差记录》D-1~D-8（设计稿缺陷与 Task 3 段 5 处 + Task 4 段 1 处 + Task 5/6 各 1 处顺序/版本问题）；Active Checkpoint 推进至 P3.5 |
 | V1.2.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 首轮双轮闭环收口：R1 红队 / R2 元审判归档（`ac13058`），R2 裁定**阻断交付**（3×P1）；按 R2 裁定的最小充分修法落地 D-10~D-14（GI-6 只读不变式、退出码口径四文档收敛、`--no-gates` 报告三态、锚点目录语义、R2 元裁定）（`d8aa611`）；验收 `pytest skills/` → 376 passed、断链 0、健康 PASS、判定器自证 `spec-evolution` 自身 0 finding |
 | V1.3.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 Delta 修复批次收口：三项 P1（GI-6 只读不变式 / 退出码口径 / `--no-gates` 报告三态）与 R2 的 P2 批次全部落地，新增《执行偏差记录》D-15（RFC-0004 §3.4 补登 `[REPO:*]` 锚点契约，V0.5.0）与 D-16（R1/R2 七项非阻断项落为 `BK-0033`~`BK-0039`）；Active Checkpoint 基线推进至 `fe8da78..97aefeb`，待重跑 Delta 双轮闭环 |
 | V1.4.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 Delta 轮修正收口（`7449aae`）：Delta R1 的 1×P1 + 5×P2~P3 全部落地，新增《执行偏差记录》D-17~D-22 —— D-17 指出上一轮 GI-6 修法**未根治**且根因叙述有误（真实泄漏路径是显式 `py_compile.compile()`，同时无视 `-B` 与 `PYTHONDONTWRITEBYTECODE`），改以 `PYTHONPYCACHEPREFIX` 改道仓库外；端到端干净副本差分由「残留 1 个 `.pyc`」转为 **0 残留**。验收 `pytest skills/` → 377 passed、断链 0、健康 PASS |
 | V1.5.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 **重派 Delta R1** 收口（`2100973` 修复批次 / `7bb09c5` 报告归档）：重派轮次裁决 **Zero Blockers**（P0 = 0 / P1 = 0），前轮 DR1-1~DR1-3 复核**全部根治**；落地其 4 条 P2~P3 建议，新增《执行偏差记录》D-24~D-27（退出码类型伪装 / 共享缓存投毒 / 重定向根越界回落 / 章节重编号指针断裂）—— 其中 D-25 是审查方实测确认「**具备代码执行后果**」的缓存投毒通道，改以 `mkdtemp` 独占随机名 + `atexit` 清理关闭；D-27 同时修正 D-19 自述「章节编号全文件复核」的过宽宣称。验收 `pytest skills/` → 380 passed、断链 0、健康 PASS、归档门禁通过 |
+| V1.6.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 双轮对抗收口并取得 **✅ 准予交付** 终审裁决：delta-r2 裁决 Blockers = 0（🔴 0 / 🟡 19 / ⚪ 0），首轮 3 个 P1 与 Delta 轮 4 条逐条实测根治，变异 A/B 独立复现判别力，`baseline.json` 与 `contexts/AGENTS.md` 逐值一致，判定器真实仓库自证 `spec-evolution` 自身 0 finding；报告归档并登记台账（V1.3.0）。R2 独立发现的嵌套类型逃逸经主智能体复现后登记 **D-28** + `BK-0040`（非阻断，`atexit` 信号下不执行一并记录），按「检测与修复分离」不随本次交付；Active Checkpoint 推进至 P4，待用户裁定合入 `master`（D-9） |
