@@ -29,7 +29,7 @@ DEFAULT_AGENTS_MD = (
     "\n"
     "### 精准修改与代码卫生\n"
     "\n"
-    "### 禁止占位符与规模控制 (No Placeholders / Size Limits)\n"
+    "### 工具链与环境防御 (Read-Modify-Verify)\n"
     "\n"
     "### 质量门槛 (Definition of Done)\n"
     "\n"
@@ -45,8 +45,10 @@ def build_repo(root: Path, *, skill_description: str = "Use when testing.",
                agents_md: str = DEFAULT_AGENTS_MD) -> Path:
     """合成一个含 1 个技能（demo）的最小仓库，且 demo 满足全部判据。
 
-    `agents_md` 默认含 `### 禁止占位符与规模控制` 与 `### 质量门槛 (Definition of Done)`，
-    以便 C-06/C-01/C-02 的 `[RULE:*]` 锚点可解析；传入精简版本可用于断言锚点校验失败路径。
+    `agents_md` 默认镜像真实 `contexts/AGENTS.md` §3 的 `###` 标题层级
+    （精准修改与代码卫生 / 工具链与环境防御 / 质量门槛），以便 C-01/C-02 的
+    `[RULE:§3-质量门槛]` 与 C-06 的 `[RULE:§3-精准修改与代码卫生]` 锚点可解析；
+    传入精简版本可用于断言锚点校验失败路径。
     """
     write(root / "contexts" / "AGENTS.md", agents_md)
     write(root / "skills" / "demo" / "SKILL.md", make_skill_md("demo", skill_description))
@@ -106,3 +108,11 @@ def run_judge(facts: Path, *args: str) -> subprocess.CompletedProcess:
 @pytest.fixture()
 def repo(tmp_path: Path) -> Path:
     return build_repo(tmp_path / "repo")
+
+
+def base_facts(root: Path) -> dict:
+    """在合成仓库上跑一次 `--no-gates` 采集，返回可被测试点状修改的 facts 字典。"""
+    out = root / "_facts.json"
+    proc = run_collect(root, "--no-gates", "--out", str(out))
+    assert proc.returncode == 0, proc.stderr
+    return json.loads(out.read_text(encoding="utf-8"))

@@ -308,7 +308,7 @@ PY
 | :--- | :--- | :--- | :--- |
 | **1024** | [Agent Skills 规范](https://agentskills.io/specification)：`description` Max 1024 characters | **规范硬限** | 技能在 Claude API / CLI 侧被**静默丢弃** |
 | **500** | `writing-skills` 技能：Keep under 500 characters **if possible** | **软性建议** | 无——仅增加每会话元数据开销 |
-| **1000 行** | `contexts/AGENTS.md` §3「禁止占位符与规模控制」 | 仓库成文规范 | 违反工程规范 |
+| **1000 行** | `contexts/AGENTS.md` §3「精准修改与代码卫生」下的「禁止占位符与规模控制」条目 | 仓库成文规范 | 违反工程规范 |
 
 **「500 字符」不构成违规**：V0.1.0 曾以「仓库既有规范」为依据，该链经查为**循环引用**
 （frontend-qa-gate 计划称「与仓库既有规范一致」，其唯一先例 taste-driven-designer 计划自己写的是
@@ -510,7 +510,7 @@ DEFAULT_AGENTS_MD = (
     "\n"
     "### 精准修改与代码卫生\n"
     "\n"
-    "### 禁止占位符与规模控制 (No Placeholders / Size Limits)\n"
+    "### 工具链与环境防御 (Read-Modify-Verify)\n"
     "\n"
     "### 质量门槛 (Definition of Done)\n"
     "\n"
@@ -526,8 +526,10 @@ def build_repo(root: Path, *, skill_description: str = "Use when testing.",
                agents_md: str = DEFAULT_AGENTS_MD) -> Path:
     """合成一个含 1 个技能（demo）的最小仓库，且 demo 满足全部判据。
 
-    `agents_md` 默认含 `### 禁止占位符与规模控制` 与 `### 质量门槛 (Definition of Done)`，
-    以便 C-06/C-01/C-02 的 `[RULE:*]` 锚点可解析；传入精简版本可用于断言锚点校验失败路径。
+    `agents_md` 默认镜像真实 `contexts/AGENTS.md` §3 的 `###` 标题层级
+    （精准修改与代码卫生 / 工具链与环境防御 / 质量门槛），以便 C-01/C-02 的
+    `[RULE:§3-质量门槛]` 与 C-06 的 `[RULE:§3-精准修改与代码卫生]` 锚点可解析；
+    传入精简版本可用于断言锚点校验失败路径。
     """
     write(root / "contexts" / "AGENTS.md", agents_md)
     write(root / "skills" / "demo" / "SKILL.md", make_skill_md("demo", skill_description))
@@ -711,7 +713,8 @@ def test_root_prompt_facts_and_headings(repo: Path):
     assert rp["baseline"]["lines"] == 11
     assert rp["headings"][0] == "# SYSTEM RULES"
     assert "## 3. 基础工程规范与防御底线 (Engineering Invariants)" in rp["headings"]
-    assert "### 禁止占位符与规模控制 (No Placeholders / Size Limits)" in rp["headings"]
+    assert "### 精准修改与代码卫生" in rp["headings"]
+    assert "### 工具链与环境防御 (Read-Modify-Verify)" in rp["headings"]
     assert "### 质量门槛 (Definition of Done)" in rp["headings"]
 
 
@@ -1126,6 +1129,20 @@ Task 2/7：只读采集 S1 门禁事实 / S2 结构事实 / S3 注册事实 → 
 
 **Goal**：把 `facts.json` 确定性映射为 finding 列表与演进报告；实现三锚点存在性硬门禁（GI-3）与人类裁决区留白（GI-4）。
 
+> **执行偏差记录 (Deviation Log) —— 2026-10-12 P3 执行期实测修正**
+>
+> 本任务块下方内嵌的代码为设计稿；实际实现以 `skills/spec-evolution/scripts/judge.py` 为准。执行期实测发现 5 处设计稿缺陷，已按下表修正（修正同时回写本计划与 `references/checks-spec.md`）：
+>
+> | # | 缺陷 | 修正 | 依据 |
+> | :--- | :--- | :--- | :--- |
+> | D-1 | 夹具 `DEFAULT_AGENTS_MD` 使用了 `### 禁止占位符与规模控制 (No Placeholders / Size Limits)` 标题，该标题在真实 `contexts/AGENTS.md` 中**不存在**（真实 §3 的 H3 只有 精准修改与代码卫生 / 工具链与环境防御 / 质量门槛；「禁止占位符与规模控制」是前者下的**加粗条目**） | 夹具标题改为 `### 工具链与环境防御 (Read-Modify-Verify)`，镜像真实层级（行数仍为 11，故 `test_root_prompt_facts_and_headings` 的 `lines == 11` 断言不变） | 实测 `grep -n '^###' contexts/AGENTS.md` |
+> | D-2 | `RULE_SIZE = "[RULE:§3-禁止占位符与规模控制]"` 在真实仓库**无法解析**，导致 `judge.py` 恒以退出码 2 拒绝产出（工具不可用） | 改为 `"[RULE:§3-精准修改与代码卫生]"` | `references/anchor-contract.md:13` 早已声明该锚点示例；RFC-0004 §3.4 的锚点契约是**标题树**，不含加粗条目 |
+> | D-3 | 设计稿按**嵌套** schema 消费 facts（`sk["paths"]["has_tests"]`、`sk["missing_surfaces"]`、`sk["registration"][s]["registered"]`），与 Task 2 已冻结的**扁平** schema 不一致 | `judge.py` 改按扁平 schema 消费（`sk["has_tests"]`；缺失面由 `has_references/has_scripts/has_templates` 推导；`sk["registrations"][s]` 为布尔），并新增 `REGISTRATION_SURFACES` 常量把 4 个注册面映射到 `[REPO:*]` 锚点路径 | Task 2 Interfaces 明示「`facts.json` schema 键名不得改动」 |
+> | D-4 | `--no-gates` 时 `facts["gates"] is None`，设计稿的 `sorted(facts["gates"].items())` 抛 `AttributeError` | `build_findings` 与 `render_report` 均改用 `facts.get("gates") or {}` | 实测 `test_clean_repo_yields_no_findings` 路径 |
+> | D-5 | `load_facts` 用 `raise SystemExit("❌ …")` 表达输入错误，但 `SystemExit` 携带非空字符串时退出码为 **1**，与契约「2 = 用法或输入错误」冲突 | 新增 `FactsError` 异常，`main()` 捕获后 `return 2` | RFC-0004 §3.3 退出码契约 |
+>
+> 另：`test_report_and_json_written_to_requested_paths` 的旧注记已过时（`_run` 恒传 `--json`，该断言实际检查的是**未被请求**的路径不存在），实现时按新注记执行。
+
 - [ ] **Step 1: 写入 `skills/spec-evolution/scripts/judge.py`**
 
 ```python
@@ -1154,7 +1171,7 @@ DESC_HARD_LIMIT = 1024
 REQUIRED_TOP_KEYS = ("repo_root", "skills", "gates", "root_prompt")
 
 RULE_DOD = "[RULE:§3-质量门槛]"
-RULE_SIZE = "[RULE:§3-禁止占位符与规模控制]"
+RULE_SIZE = "[RULE:§3-精准修改与代码卫生]"
 
 GATE_ANCHORS = {
     "pytest": "skills/",
@@ -1590,7 +1607,7 @@ def test_c06_oversized_file_is_mid(tmp_path):
     f = _only(data, "C-06")
     assert f["severity"] == "MID"
     assert f["anchor"] == "[SKILL:demo/references/big.md]"
-    assert f["rule"] == "[RULE:§3-禁止占位符与规模控制]"
+    assert f["rule"] == "[RULE:§3-精准修改与代码卫生]"
 
 
 def test_c07_registration_gap_is_high(tmp_path):

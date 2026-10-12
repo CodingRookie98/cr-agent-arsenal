@@ -33,7 +33,7 @@
 | :--- | :--- | :--- | :--- |
 | **1024** | [Agent Skills 规范](https://agentskills.io/specification)：`description` Max 1024 characters | **规范硬限** | 技能在 Claude API / CLI 侧被**静默丢弃** |
 | **500** | `writing-skills` 技能：Keep under 500 characters **if possible** | **软性建议** | 无——仅增加每会话元数据开销 |
-| **1000 行** | `contexts/AGENTS.md` §3「禁止占位符与规模控制」 | 仓库成文规范 | 违反工程规范 |
+| **1000 行** | `contexts/AGENTS.md` §3「精准修改与代码卫生」下的「禁止占位符与规模控制」条目 | 仓库成文规范 | 违反工程规范 |
 
 **「500 字符」不构成违规**：V0.1.0 曾以「仓库既有规范」为依据，该链经查为**循环引用**
 （frontend-qa-gate 计划称「与仓库既有规范一致」，其唯一先例 taste-driven-designer 计划自己写的是

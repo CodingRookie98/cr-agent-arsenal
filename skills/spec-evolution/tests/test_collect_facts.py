@@ -112,7 +112,8 @@ def test_root_prompt_facts_and_headings(repo: Path):
     assert rp["baseline"]["lines"] == 11
     assert rp["headings"][0] == "# SYSTEM RULES"
     assert "## 3. 基础工程规范与防御底线 (Engineering Invariants)" in rp["headings"]
-    assert "### 禁止占位符与规模控制 (No Placeholders / Size Limits)" in rp["headings"]
+    assert "### 精准修改与代码卫生" in rp["headings"]
+    assert "### 工具链与环境防御 (Read-Modify-Verify)" in rp["headings"]
     assert "### 质量门槛 (Definition of Done)" in rp["headings"]
 
 
