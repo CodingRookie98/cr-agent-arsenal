@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-SPEC-EVOLUTION-2026
-> - **当前版本**: V1.3.0
+> - **当前版本**: V1.4.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-10-12
 
@@ -27,12 +27,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3.5（首轮 R1/R2 裁决「阻断交付」；R1-1/R1-2/R1-3 三项 P1 与 R2 的 P2 批次均已修复，基线推进至 `fe8da78..97aefeb`，待重跑 Delta 双轮闭环）
-- **当前活跃子任务**: P3.5 Delta 闭环（D-10~D-16 全部落地：GI-6 只读不变式、退出码口径、`--no-gates` 报告三态、锚点目录语义、R2 元裁定落实、RFC `[REPO:*]` 补登、七项非阻断项落为 `BK-0033`~`BK-0039`）
-- **当前子任务重试计数**: 0/3+R1-1/2
-- **外层循环迭代**: 1/5
-- **最后一次验证状态**: Delta 修复与 D-15/D-16 落盘后实测——`python3 -m pytest skills/ -q` → **376 passed**；`check-doc-links.py --root docs` → 69 文件断链 **0**；`audit-doc-health.py` → **PASS**（`generate-llms-txt.py --name=System` 收录 73 篇）；判定器自证全仓 **11 findings / HIGH+BLOCKER 3 条**（均为既有技能历史缺口，`spec-evolution` 自身 **0 finding**）
-- **最新有效提交**: `97aefeb`
+- **当前活跃阶段**: P3.5（Delta R1 裁决「阻断交付」；DR1-1 的 P1 与 DR1-2~DR1-6 全部修复，基线推进至 `fe8da78..7449aae`，待重跑 delta-r2 复评）
+- **当前活跃子任务**: P3.5 Delta 闭环（D-17~D-22 全部落地：GI-6 三重机制根治、根因叙述修正、`checks-spec.md` §4 退出码权威补登、`collected_gates()` 三态收紧、README 精确匹配登记、`BK-0033` 状态修正）
+- **当前子任务重试计数**: 0/3+R1-2/2
+- **外层循环迭代**: 2/5
+- **最后一次验证状态**: Delta 修正与 D-17~D-22 落盘后实测——`python3 -m pytest skills/ -q` → **377 passed**；`check-doc-links.py --root docs` → 75 文件断链 **0**；`audit-doc-health.py` → **PASS**；**GI-6 端到端复验**（`git archive 7449aae` 干净副本上带门禁运行采集器，前后差分）→ **0 残留**（修复前同法残留 `skills/doc-governance/scripts/__pycache__/manage-doc-index.cpython-312.pyc`）
+- **最新有效提交**: `7449aae`
 - **阻断原因**: 无
 
 ---
@@ -2289,6 +2289,21 @@ git push origin master
 > | D-15 | **RFC-0004 §3.4 锚点契约漏登 `[REPO:*]`**（R1-7，R2 认定「比 R1 所述更严重」）：实现已使用 `[REPO:*]` 表达 C-07 的四个注册面与 C-09 的门禁证据，但 RFC 原文只登记 `[SKILL:*]` / `[RULE:*]` —— 契约缺口 | 补登 `[REPO:<repo-relative-path>[:<line>]]` 形式与行号语义（`:line` 只对文件有意义、目录锚点不得带行号、裸路径允许文件或目录），并明确 `[RULE:*]` 解析域是**标题树**而非加粗条目；GI-3、术语表、DK-5 同步扩至三类锚点 | RFC-0004 V0.5.0 |
 > | D-16 | **R1/R2 的非阻断项须登记为可追踪待办**，否则「登记待办」的裁决无落点 | 按 R2「待办登记（不阻断）」裁定，把 R1-4 / R1-5 / R1-8 / R1-10 / R1-11 / R1-13 / R1-15 七项落为 Backlog 卡片 `BK-0033`~`BK-0039`（`manage-backlog.py create` + `sync-index`），含来源追溯、触发条件与验收准则 | `docs/project/backlog/active/BK-0033..0039` |
 
+> **执行偏差记录 (Deviation Log) —— 2026-10-12 P3.5 Delta 轮修正 (D-17~D-21)**
+>
+> 触发：`dual-round-review` Delta 模式，基线 `fe8da78..9e66a5d`。Delta R1 裁决 **1×P1 阻断 / 5×P2~P3**，其中 P1 直指 D-10 的修法**未根治**（Lead 已独立复现）。下表为落实后的实际改动。
+>
+> | # | 缺陷（DR1 编号） | 修法 | 变异对照 / 取证 |
+> | :--- | :--- | :--- | :--- |
+> | D-17 | **GI-6 仍未根治**（DR1-1，P1）：上一轮认定 `-B` 不足的**根因叙述有误** —— 真实泄漏路径是显式 `py_compile.compile()`，它**同时无视** `-B` 与 `PYTHONDONTWRITEBYTECODE`（出处：`skills/doc-governance/tests/test_doc_index_convention.py:415-421` 在 `-W error::SyntaxWarning` 下编译脚本） | `subprocess_env()` 增 `PYTHONPYCACHEPREFIX`（把字节码写入整体改道仓库外）+ 修正常量注释；夹具桩由「三级 import 链」升级为**真实触发该路径**（`py_compile.compile(...)`）；`test_gi6_bytecode_suppression_is_structural` 改为 `ast` 钉住 `subprocess_env()` 内两个环境键的赋值 | 变异实测：移除 `PYTHONPYCACHEPREFIX` → **2 条转红**（结构 + 功能）；单独移除 `PYTHONDONTWRITEBYTECODE` → 仅结构测试转红（其为冗余纵深）。端到端干净副本差分：修复前残留 `skills/doc-governance/scripts/__pycache__/manage-doc-index.cpython-312.pyc`，修复后 **0 残留** |
+> | D-18 | **根因叙述失实**（DR1-2）：四处把「`-B` 覆盖不足」归因于 `importlib` 动态加载，实为显式 `py_compile` | `collect-facts.py`、`conftest.py` 桩、`test_gate_invariants.py`、`docs/explanation/architecture/spec-evolution-design.md:87` 全部改写为「三条路径各需不同机制」（直接子进程靠 `-B`；经 `subprocess` 派生的孙进程靠 `PYTHONDONTWRITEBYTECODE`；显式 `py_compile` 只有 `PYTHONPYCACHEPREFIX` 能拦） | 与 D-17 的变异结果一致 |
+> | D-19 | **权威断链**（DR1-3）：`SKILL.md:81` 把 `references/checks-spec.md` 指为退出码权威出处，但该文件**无退出码章节** | `checks-spec.md` 新增 §4「退出码语义」（三态表 + 「MID 不阻断」理由 + 「`2` 不写产物」理由），原 §4/§5 顺延为 §5/§6，修订记录加 V1.1.0 | 章节编号全文件复核 |
+> | D-20 | **三态判据的 falsy 漏洞**（DR1-5）：`judge.py` 以 `raw_gates is None` 判「未采集」，而 `--facts` 接受外部输入，`[]`/`{}`/`0`/`""`/畸形结构均可达并被当作「已采集且无失败」 | 抽出 `collected_gates()`，要求**≥1 条 well-formed 的 `{cmd, exit_code, summary}`** 才构成「已采集」证据；`build_findings` 与 `render_report` 共用 | 原测试以 `gates = {}` 断言「已采集且无失败」，该期望**本身即 fail-open**；已改写为对 `(None, [], {}, 0, "", "junk", {"pytest": "junk"})` 逐项断言「未采集」，另加一条 well-formed 清洁表断言「已采集」。此为**收紧**语义，非弱化断言 |
+> | D-21 | **未登记的行为变更**（DR1-6）：README 登记判据由裸子串 `skills/<name>` 收紧为精确串 `skills/<name>/SKILL.md`（前缀兄弟技能可致 C-07 **HIGH 假阴性**），但既未写入判据表、也无测试 | `checks-spec.md` §1 的 C-07 行注明精确形式；新增 `test_readme_registration_requires_exact_skill_path`（构造只含 `skills/demo-suffix` 的 README，断言仍判未登记） | 该测试在收紧前的实现上会转红 |
+
+> | D-22 | **BK-0033 状态陈旧**（DR1-4）：卡片文案仍写「两处 `subprocess.run` 加 encoding」未做，实际已在 `d8aa611` 落地 | 卡片标题与 DoD 收窄为「print 硬化 + 异常退出码收敛」两项，§4 补记「部分落地（`d8aa611`）」 | `docs/project/backlog/active/BK-0033-*.md` |
+> | D-23 | **Delta R1 报告区块标题不符门禁 schema**（本轮自查）：该报告五区块写作 `## §1 第一性原理与本质溯源` 等简写，而 `round-1-red-team.md` 模板与 `check-review-report.sh` 要求 `## 1. 第一性原理与本质溯源分析` 等**逐字标题**，归档后门禁报 5 条「缺少必需区块」。**根因是 Lead 派发提示词的简写，非子智能体偏离**（首轮 r1 逐字沿用模板即通过） | 报告是 SHA256 已登记的 Write-Once 审计凭据，**零改动**；台账该行由 `delta-r1` 降级为 `retired`（声明为非 R1 凭据，仍受文件存在 / 指纹 / 写入形态三项校验），全部事实写入台账、待办与修订历史。后续 delta 轮次的派发提示词改为**逐字粘贴模板标题** | 降级后 `check-review-report.sh` → **通过**（索引齐备 · 报告 3 份 · 指纹一致 · 区块齐备 · 稳定 ID 对齐） |
+
 ---
 
 ### §5 验收判据总表（Definition of Done）
@@ -2337,3 +2352,4 @@ git push origin master
 | V1.1.0 | 2026-10-12 | DSH AI Agent | 王辉 | P3 执行收口：Task 1~7 全部交付（`1418e2b` / `629c6b1` / `dfc301b` / `3f58d00` / `5775c6c` / `95af3f1` / `fe8da78`）；新增《执行偏差记录》D-1~D-8（设计稿缺陷与 Task 3 段 5 处 + Task 4 段 1 处 + Task 5/6 各 1 处顺序/版本问题）；Active Checkpoint 推进至 P3.5 |
 | V1.2.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 首轮双轮闭环收口：R1 红队 / R2 元审判归档（`ac13058`），R2 裁定**阻断交付**（3×P1）；按 R2 裁定的最小充分修法落地 D-10~D-14（GI-6 只读不变式、退出码口径四文档收敛、`--no-gates` 报告三态、锚点目录语义、R2 元裁定）（`d8aa611`）；验收 `pytest skills/` → 376 passed、断链 0、健康 PASS、判定器自证 `spec-evolution` 自身 0 finding |
 | V1.3.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 Delta 修复批次收口：三项 P1（GI-6 只读不变式 / 退出码口径 / `--no-gates` 报告三态）与 R2 的 P2 批次全部落地，新增《执行偏差记录》D-15（RFC-0004 §3.4 补登 `[REPO:*]` 锚点契约，V0.5.0）与 D-16（R1/R2 七项非阻断项落为 `BK-0033`~`BK-0039`）；Active Checkpoint 基线推进至 `fe8da78..97aefeb`，待重跑 Delta 双轮闭环 |
+| V1.4.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 Delta 轮修正收口（`7449aae`）：Delta R1 的 1×P1 + 5×P2~P3 全部落地，新增《执行偏差记录》D-17~D-22 —— D-17 指出上一轮 GI-6 修法**未根治**且根因叙述有误（真实泄漏路径是显式 `py_compile.compile()`，同时无视 `-B` 与 `PYTHONDONTWRITEBYTECODE`），改以 `PYTHONPYCACHEPREFIX` 改道仓库外；端到端干净副本差分由「残留 1 个 `.pyc`」转为 **0 残留**。验收 `pytest skills/` → 377 passed、断链 0、健康 PASS |
