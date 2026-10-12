@@ -65,10 +65,25 @@ def build_repo(root: Path, *, skill_description: str = "Use when testing.",
           'SKILL_NAMES = [\n    "demo",\n]\n\n\ndef test_ok():\n    assert True\n')
     # 门禁桩：让合成仓库能真的跑通四道门禁（GI-6 需要门禁真实执行后才可断言无残留产物）。
     # 这两个桩不放在 skills/<skill>/ 下带 SKILL.md 的目录中，故不会被 discover_skills 识别为技能。
-    write(root / "skills" / "doc-governance" / "scripts" / "check-doc-links.py",
-          "#!/usr/bin/env python3\nimport sys\n\nsys.exit(0)\n")
-    write(root / "skills" / "doc-governance" / "scripts" / "audit-doc-health.py",
-          "#!/usr/bin/env python3\nimport sys\n\nsys.exit(0)\n")
+    #
+    # 桩**故意走「门禁进程 → 子进程 → import 兄弟模块」三级链**：真实仓库里
+    # `audit-doc-health.py` 正是靠 subprocess + importlib 加载兄弟脚本留下字节码的。
+    # 只给命令加 `-B` **保护不了子进程**（`-B` 不进环境、不被继承），唯一能覆盖整棵
+    # 进程树的是 `PYTHONDONTWRITEBYTECODE=1`——这正是 GI-6 要钉住的不变式。若桩只写
+    # `import sys; sys.exit(0)`，它在结构上不可能写出 `__pycache__`，GI-6 断言会恒真
+    # （假阴性）。RFC-0004 交付审查 R1-1 / R2-2。
+    write(root / "skills" / "doc-governance" / "scripts" / "_gate_helper.py",
+          "EXIT_OK = 0\n")
+    write(root / "skills" / "doc-governance" / "scripts" / "_gate_child.py",
+          "#!/usr/bin/env python3\n\nimport _gate_helper\n\n"
+          "raise SystemExit(_gate_helper.EXIT_OK)\n")
+    for stub in ("check-doc-links.py", "audit-doc-health.py"):
+        write(root / "skills" / "doc-governance" / "scripts" / stub,
+              "#!/usr/bin/env python3\nimport subprocess\nimport sys\n\n"
+              "proc = subprocess.run(\n"
+              "    [sys.executable, 'skills/doc-governance/scripts/_gate_child.py'],\n"
+              "    check=False)\n"
+              "sys.exit(proc.returncode)\n")
     write(root / "skills" / "spec-evolution" / "references" / "baseline.json",
           json.dumps({"root_prompt": {"path": "contexts/AGENTS.md",
                                       "lines": len(agents_md.splitlines()),
@@ -77,14 +92,18 @@ def build_repo(root: Path, *, skill_description: str = "Use when testing.",
 
 
 def snapshot(root: Path, skip: set[str] | None = None) -> dict[str, tuple[int, int]]:
-    """目录清单：{仓库相对路径: (字节数, mtime_ns)}，用于只读断言。"""
+    """目录清单：{仓库相对路径: (字节数, mtime_ns)}，用于只读断言。
+
+    **刻意不过滤 `__pycache__`**：字节码残留正是 GI-6 要抓的主要形态，
+    过滤掉它会让只读断言对最真实的越界方式失明。
+    """
     skip = skip or set()
     out: dict[str, tuple[int, int]] = {}
     for p in sorted(root.rglob("*")):
         rel = p.relative_to(root).as_posix()
         if any(rel == s or rel.startswith(s + "/") for s in skip):
             continue
-        if "__pycache__" in p.parts or ".git" in p.parts:
+        if ".git" in p.parts:
             continue
         st = p.stat()
         out[rel] = (st.st_size, st.st_mtime_ns)

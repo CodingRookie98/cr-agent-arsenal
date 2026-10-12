@@ -3,6 +3,7 @@
 对象是 spec-evolution 自身：确定性、留白、锚点一致、退出码语义、只读。
 """
 
+import ast
 import hashlib
 import importlib.util
 import json
@@ -196,6 +197,25 @@ def test_gi6_gates_run_without_leaving_artifacts(tmp_path):
     after = _files(root)
     assert after == before, f"GI-6：门禁留下产物 {sorted(set(after) - set(before))}"
     assert not (root / ".pytest_cache").exists(), "GI-6：-p no:cacheprovider 未生效"
+
+
+def test_gi6_bytecode_suppression_is_structural():
+    """GI-6 的结构性保障：**每一处** `subprocess.run` 都必须注入字节码抑制环境。
+
+    只给命令加 `-B` 不够——`audit-doc-health.py` 经 `importlib` 动态加载兄弟脚本，
+    该路径不受 `-B` 约束。此断言把「注入 `PYTHONDONTWRITEBYTECODE`」钉在被测源码上，
+    以免未来新增门禁时只靠夹具的善意兜底（RFC-0004 交付审查 R1-1 / R1-9）。
+    """
+    src = (SPEC_DIR / "scripts" / "collect-facts.py").read_text(encoding="utf-8")
+    assert "PYTHONDONTWRITEBYTECODE" in src, "采集器未注入字节码抑制环境变量（GI-6）"
+    runs = [n for n in ast.walk(ast.parse(src))
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+            and n.func.attr == "run" and isinstance(n.func.value, ast.Name)
+            and n.func.value.id == "subprocess"]
+    assert runs, "采集器应当至少有一处 subprocess.run（git_head 或门禁）"
+    for call in runs:
+        assert "env" in {k.arg for k in call.keywords}, (
+            f"collect-facts.py:{call.lineno} 的 subprocess.run 未注入 env（GI-6）")
 
 
 def test_gates_recorded_when_enabled(tmp_path):

@@ -80,11 +80,11 @@ GI-1~GI-6 门禁不变式 (门禁层)
 
 只读、零第三方依赖。产出 `facts.json`，三个事实域：
 
-- **S1 门禁事实**：跑四道既有门禁（`pytest` / `check-doc-links` / `audit-doc-health` / `cross_skill_links`）并记录 `{cmd, exit_code, summary}`；`--no-gates` 时 `gates = null`。
+- **S1 门禁事实**：跑四道既有门禁（`pytest` / `check-doc-links` / `audit-doc-health` / `cross_skill_links`）并记录 `{cmd, exit_code, summary}`；`--no-gates` 时 `gates = null`，此时 **C-09 不执行**，报告对该项输出「未采集门禁事实」而非「无失败」。
 - **S2 结构事实**：逐技能记录目录存在性、`SKILL.md` frontmatter / `description` 字符数、最大文件行数、超限文件、跨技能相对链接、架构设计书。
 - **S3 注册事实**：四个注册面（`SKILL_NAMES` / `docs/index.md` / `README.md` / collections）是否登记该技能；根提示词行数、字节数与基线对比、标题树。
 
-**只读不变式 (GI-6)**：采集器与它跑的门禁除显式 `--out` 外不得在仓库内创建、修改或删除任何文件，也不得创建目录。门禁子进程统一带 `-B` 与 `-p no:cacheprovider`。
+**只读不变式 (GI-6)**：采集器与它跑的门禁除显式 `--out` 外不得在仓库内创建、修改或删除任何文件，也不得创建目录。**落实方式**：门禁子进程一律注入 `PYTHONDONTWRITEBYTECODE=1`（`subprocess_env()`）——仅靠命令行 `-B` 不足以覆盖全部路径，`audit-doc-health.py` 内部的 `importlib` 动态加载不受 `-B` 约束、会写出 `__pycache__`；`pytest` 两条命令另带 `-B -p no:cacheprovider`。
 
 ### 3.3 判定层：`scripts/judge.py`
 
@@ -92,8 +92,8 @@ GI-1~GI-6 门禁不变式 (门禁层)
 
 | 退出码 | 含义 |
 | :--- | :--- |
-| `0` | 无 finding，或仅有 MID 级 finding |
-| `1` | 存在 HIGH 或 BLOCKER 级 finding |
+| `0` | 无 BLOCKER/HIGH（可含 MID 级 advisory finding） |
+| `1` | 存在 BLOCKER 或 HIGH 级 finding |
 | `2` | 用法/输入错误，或**锚点校验失败**（fail-closed，拒绝写出任何产物） |
 
 排序 `(严重度, 技能名, 判据 ID, 锚点, 证据命令, 观测值)` —— 与输入字典顺序无关，保证 `findings.json` 双跑逐字节相同。

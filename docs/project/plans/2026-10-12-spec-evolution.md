@@ -15,7 +15,7 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-10-12（「准予 Accepted，进入 P1」）
 > - **批准基线**: `master` @ `0306f37`（RFC-0004 受理流转提交）
-> - **状态**: 已交付（Task 1~7 全部完成，待 P3.5 独立终审）
+> - **状态**: P3.5 首轮阻断 → Delta 修复已完成，待以新基线重跑完整双轮闭环
 > - **隔离分支**: `feature/spec-evolution`（P3 起用，基点 `0306f37`）
 > - **需求确认文档**: [RFC-0004 spec-evolution 演进回路](../../proposals/RFC-0004-spec-evolution.md)（状态 **Accepted** · V0.3.0 · 已定案）
 > - **技术调研备忘录**: 豁免（P0.5 未触发——`N-4` 明令零第三方依赖、纯 `python3` 标准库 + 既有 `pytest` 约定，无选型空间；宿主能力边界已在 RFC-0004 §3 随方案拷问完成）
@@ -27,12 +27,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3.5（7 个 Task 全部交付完毕，待派发 `dual-round-review` 独立终审；通过后进入 P5 交付）
-- **当前活跃子任务**: 无（Task 1~7 已全部完成并提交，含执行期 8 处设计稿缺陷修正 D-1~D-8）
-- **当前子任务重试计数**: 0/3
+- **当前活跃阶段**: P3.5（首轮 R1/R2 裁决「阻断交付」；R1-1/R1-2/R1-3 三项 P1 的 Delta 修复已完成，待以新基线重跑完整双轮闭环）
+- **当前活跃子任务**: P3.5 Delta 修复（D-10~D-14：GI-6 只读不变式、退出码口径、`--no-gates` 报告三态、锚点目录语义、R2 元裁定落实）
+- **当前子任务重试计数**: 0/3+R1-1/2
 - **外层循环迭代**: 1/5
-- **最后一次验证状态**: Task 6 终局门禁实测——`python3 -m pytest skills/ -q` → **374 passed**；`check-doc-links.py --root docs` → 68 文件断链 **0**；`audit-doc-health.py` → **PASS**；判定器自证 `spec-evolution` **零 finding**（全仓 findings 11 条 / HIGH+BLOCKER 3 条，均属既有技能的历史缺口）
-- **最新有效提交**: `95af3f1`
+- **最后一次验证状态**: Delta 修复后实测——`python3 -m pytest skills/ -q` → **376 passed**；`check-doc-links.py --root docs` → 68 文件断链 **0**；`audit-doc-health.py` → **PASS**；`check-review-report.sh` 归档门禁 → **结构校验通过**；判定器自证全仓 **11 findings / HIGH+BLOCKER 3 条**（均为既有技能历史缺口，`spec-evolution` 自身 **0 finding**）
+- **最新有效提交**: `fe8da78`
 - **阻断原因**: 无
 
 ---
@@ -102,7 +102,7 @@ collect-facts.py --out facts.json          judge.py --facts facts.json --report 
 2. **零 LLM、零网络**：`collect-facts.py` 与 `judge.py` **不得** import 任何网络或模型 SDK（`urllib` / `requests` / `httpx` / `socket` / `http` / `openai` / `anthropic` 一律禁止）。GI-1 由测试断言。
 3. **只读**：两个脚本除 `--out` / `--json` / `--report` 显式指定的路径外，**不得**创建、修改或删除仓库内任何文件；不得创建目录。GI-6 由测试断言。
 4. **确定性**：`judge.py` 对同一份 `facts.json` 必须产出**逐字节相同**的 `findings.json`（不得含时间戳、`set` 迭代序、随机值）。GI-2 由测试断言。
-5. **退出码语义**：`0` = 无 finding（CLEAN）；`1` = 有 finding；`2` = 用法或输入错误。**无第四种取值。**（依据：Python `argparse` 的 `parser.error()` 即 `sys.exit(2)` 的既有惯例，叠加本仓库 `manage-doc-index.py` 文档化的 0/1 二值语义。**说明**：RFC-0004 `DK-4` 称此语义「与 `taste-driven-designer` 既有脚本一致」，但该技能 `scripts/` 下**仅有一个 `generate-seed.sh`**，无 `.py` 脚本可援引——本计划改以 `argparse` 惯例与仓库 0/1 语义为据，DK-4 的引用出处属误记，P4 回写修正。）
+5. **退出码语义**：`0` = 无 **BLOCKER/HIGH**（可含 MID advisory）；`1` = 存在 **BLOCKER/HIGH**；`2` = 用法或输入错误。**无第四种取值。**（依据：Python `argparse` 的 `parser.error()` 即 `sys.exit(2)` 的既有惯例，叠加本仓库 `manage-doc-index.py` 文档化的 0/1 二值语义。**说明**：RFC-0004 `DK-4` 称此语义「与 `taste-driven-designer` 既有脚本一致」，但该技能 `scripts/` 下**仅有一个 `generate-seed.sh`**，无 `.py` 脚本可援引——本计划改以 `argparse` 惯例与仓库 0/1 语义为据，DK-4 的引用出处属误记，P4 回写修正。**2026-10-12 P3.5 修正**：原文写「无 finding」，与 `judge.py` 的 `MID→0` 实现不一致，经交付审查 R1-2 指出后按实现口径收敛。）
 6. **文件规模**：任一文件 ≤ **1000** 行（`contexts/AGENTS.md` §3 硬约束，C-06 判据）。
 7. **`SKILL.md` frontmatter**：必须是**合法 YAML** 且**不得**出现 `": "`（冒号+空格）序列；`description` ≤ **500** 字符（C-04 建议值，本技能须自身达标）。
 8. **跨技能相对链接禁令**：技能文档中**禁止**出现指向其它技能的相对路径（独立分发会断链，C-08）。技能内部相对链接必须可达。
@@ -208,7 +208,7 @@ license: MIT
 python3 skills/spec-evolution/scripts/collect-facts.py --out /tmp/facts.json
 python3 skills/spec-evolution/scripts/judge.py --facts /tmp/facts.json \
         --json /tmp/findings.json --report /tmp/report.md
-echo "exit=$?"        # 0 = 无 finding (CLEAN)；1 = 有 finding；2 = 用法/输入错误
+echo "exit=$?"        # 0 = 无 BLOCKER/HIGH；1 = 存在 BLOCKER/HIGH；2 = 用法或输入错误
 ```
 
 缩窄范围（推荐用于 P5 增量复查）：
@@ -242,8 +242,8 @@ python3 skills/spec-evolution/scripts/collect-facts.py --no-gates --skills goal-
 
 | 码 | 含义 |
 | :--- | :--- |
-| `0` | 无 finding（CLEAN） |
-| `1` | 有 finding |
+| `0` | 无 **BLOCKER/HIGH**（可含 MID advisory） |
+| `1` | 存在 **BLOCKER/HIGH** |
 | `2` | 用法或输入错误（含锚点路径不存在 = 锚点幻觉） |
 
 ## 红线 (Red Lines)
@@ -1348,7 +1348,8 @@ def _cell(value) -> str:
 
 
 def render_report(facts: dict, findings: list) -> str:
-    gates = facts["gates"]
+    raw_gates = facts.get("gates")
+    gates = raw_gates or {}
     failed = [(k, v) for k, v in sorted(gates.items()) if v.get("exit_code") != 0]
     if failed:
         lines = ["| 门禁 | 证据命令 | 退出码 | 摘要 |", "| :--- | :--- | :--- | :--- |"]
@@ -1357,8 +1358,11 @@ def render_report(facts: dict, findings: list) -> str:
                 key, _cell(info.get("cmd", "")), info.get("exit_code"),
                 _cell(info.get("summary", ""))))
         blocker_section = "## BLOCKER\n\n" + "\n".join(lines)
+    elif raw_gates is None:
+        blocker_section = ("## BLOCKER\n\n（未采集门禁事实 —— C-09 未执行；"
+                           "本报告对既有门禁是否失败不作任何结论）")
     else:
-        blocker_section = "## BLOCKER\n\n（无既有门禁失败）"
+        blocker_section = "## BLOCKER\n\n（已采集门禁事实，无失败）"
 
     rest = [f for f in findings if f["severity"] != "BLOCKER"]
     if rest:
@@ -1756,7 +1760,10 @@ def test_report_head_contains_verdict_and_metadata(tmp_path):
     assert "判定结论: **MID**" in text
     assert "扫描技能数: 1" in text
     assert "C-04" in text
-    assert "（无既有门禁失败）" in text
+    # facts 由 --no-gates 采集 → gates 为 null，报告必须如实说「未采集」，
+    # 不得对既有门禁状态作肯定陈述（RFC-0004 交付审查 R1-3）。
+    assert "未采集门禁事实" in text
+    assert "无既有门禁失败" not in text
 
 
 def test_report_blocker_section_lists_failed_gate(tmp_path):
@@ -2266,6 +2273,19 @@ git push origin master
 **Acceptance（Task 7）**：㉒ `git status --porcelain` 干净；㉓ 远端 `master` 含本次全部提交。
 
 > **D-9（2026-10-12 P3 执行期修正）**：Step 4 的 `git push origin master` 与铁律⑦（分支隔离：严禁在 `master` 直接写代码）及铁律⑧（交付前必须有独立子智能体 Zero Blockers 裁决）**冲突** —— 本次全部提交位于 `feature/spec-evolution`，且 P3.5 独立终审尚未派发。故本次**只推送功能分支** `feature/spec-evolution`；合入 `master` 待 P3.5 取得 Zero Blockers 裁决后再由用户裁定。㉓ 的口径相应改为「远端 `feature/spec-evolution` 含本次全部提交」。
+
+> **执行偏差记录 (Deviation Log) —— 2026-10-12 P3.5 双轮对抗审查修正 (D-10~D-14)**
+>
+> 触发：`dual-round-review` Full 模式，基线 `0306f37..fe8da78`。R1 红队裁决 3×P1 / 5×P2 / 7×P3；R2 元审判裁决**阻断交付**（3×🔴 / 12×🟡），并对 R1 的三处误报与本轮修法范围作出裁定。下表为落实后的实际改动。
+>
+> | # | 缺陷（R1/R2 编号） | 修法 | 变异对照 / 取证 |
+> | :--- | :--- | :--- | :--- |
+> | D-10 | **GI-6 只读不变式实质失效**（R1-1）：`GATES` 中 `check_doc_links`/`audit_doc_health` **无 `-B`**，且真实 `audit-doc-health.py` 级联调用兄弟脚本（`importlib` + `subprocess`）——命令行 `-B` **不进入子进程环境**，`__pycache__` 仍会落盘；**夹具还是「三无桩」**（`import sys; sys.exit(0)`），结构上不可能写字节码，使该断言恒真 | ① 采集器**每一处** `subprocess.run` 注入 `env=subprocess_env()`（`PYTHONDONTWRITEBYTECODE=1`）——唯一覆盖整棵进程树的机制；② 两条命令补 `-B` 作纵深防御；③ 夹具桩改为「门禁进程 → 子进程 → `import` 兄弟模块」三级链；④ 新增 `test_gi6_bytecode_suppression_is_structural`，以 `ast` 钉住「所有 `subprocess.run` 均带 `env`」 | 移除 `env=subprocess_env()` 后**两条测试同时失败**（功能 + 结构）；恢复后 52 passed |
+> | D-11 | **退出码口径与实现漂移**（R1-2）：RFC §3.3、`SKILL.md`、本计划均写「0 = 无 finding」，但 `judge.py` 实测 **MID → 0** | 以**实现为准**收敛措辞为「`0` = 无 BLOCKER/HIGH（可含 MID advisory）；`1` = 存在 BLOCKER/HIGH」，四份文档同步（RFC-0004 / 本计划 / `SKILL.md` / 架构设计书）。**未**改 `judge.py` —— MID 不阻断是 RFC §3.2 严重度语义的既定设计，且被 23 条契约测试锁定 | 全仓 `grep` 复核无残留旧口径 |
+> | D-12 | **`--no-gates` 时对既有门禁作肯定陈述**（R1-3）：`gates = null` ⇒ C-09 静默不执行，报告却输出「（无既有门禁失败）」——**未取证而宣称取证** | `render_report` 区分三态：有失败 / 已采集且无失败 / **未采集**，后者输出「未采集门禁事实 —— C-09 未执行；本报告对既有门禁是否失败不作任何结论」。`SKILL.md` 加警示「放行前最终复查必须不带 `--no-gates`」 | 新增 `test_report_says_clean_only_when_gates_were_collected` 锁死「空表 ≠ null」 |
+> | D-13 | **锚点 containment 收紧误伤目录锚点**（本轮自查）：按 R1 建议把解析改为「必须是普通文件」后，`GATE_ANCHORS["pytest"] = "skills/"` 这一**目录锚点**被判失效，含未失败门禁的报告恒以退出码 2 拒绝产出（5 条测试转红） | 区分语义：**路径存在性**允许文件或目录（`[REPO:skills/]` 指向套件根是合法证据）；**行号校验**只对文件有意义，目录带行号判失败。绝对路径逃逸的 containment 校验保留 | 52 passed |
+> | D-14 | **R2 对 R1 的元裁定**：R1 三处不成立 —— ① R1-7「`grep -c "CI\|pytest"` 恒真」无法复现（该串在 1787 行中命中 0 次，R1 所报数字仅覆盖单段）；② R1-13「两处 `description` 计数不同源」属**过度表述**，实为同一 `len()` 计数的两处调用；③ R1-6 由 P2 **下调** P3 | 三项均**不成立即不修**，如实登记以保持「宣称与取证同宽」。R2 另**否决**三项扩大化改法（YAGNI）：不把夹具桩替换为真实门禁、不为 C-09 增设 `INCOMPLETE` 第四态、不把 MID 升格为阻断 | R2 报告 `r2-0306f37..fe8da78.md` |
+
 
 ---
 

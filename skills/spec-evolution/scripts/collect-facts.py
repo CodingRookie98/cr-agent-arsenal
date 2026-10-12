@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import subprocess
 import sys
@@ -55,9 +56,10 @@ CROSS_RX_TEMPLATE = r"(?:^|[\s(=/\"'>、，（])(?:[^)\s\"'<>]*?[\\/])*(?<![.])(
 GATES = (
     ("pytest", ["python3", "-B", "-m", "pytest", "skills/", "-q", "-p", "no:cacheprovider"]),
     ("check_doc_links",
-     ["python3", "skills/doc-governance/scripts/check-doc-links.py", "--root", "docs"]),
+     ["python3", "-B", "skills/doc-governance/scripts/check-doc-links.py",
+      "--root", "docs"]),
     ("audit_doc_health",
-     ["python3", "skills/doc-governance/scripts/audit-doc-health.py"]),
+     ["python3", "-B", "skills/doc-governance/scripts/audit-doc-health.py"]),
     ("cross_skill_links",
      ["python3", "-B", "-m", "pytest", "skills/_shared/tests/test_cross_skill_links.py",
       "-q", "-p", "no:cacheprovider"]),
@@ -220,7 +222,9 @@ def collect_skill(repo: Path, name: str, all_names: list[str],
         "registrations": {
             "cross_skill_names": name in registered["cross_skill_names"],
             "docs_index": f"skills/{name}/SKILL.md" in idx_text,
-            "readme": f"skills/{name}" in readme_text,
+            # 与 docs_index 同一严格形式：裸子串 `skills/{name}` 会被
+            # `skills/{name}-suffix` 之类的前缀命中，造成 C-07 假阴性。
+            "readme": f"skills/{name}/SKILL.md" in readme_text,
             "collection": name in registered["collection"],
         },
     }
@@ -246,12 +250,23 @@ def collect_root_prompt(repo: Path) -> dict:
     }
 
 
+def subprocess_env() -> dict:
+    """子进程环境：强制 `PYTHONDONTWRITEBYTECODE=1`，保住只读不变式（GI-6）。
+
+    仅靠命令行 `-B` 不足以覆盖全部门禁：`audit-doc-health.py` 内部用
+    `importlib` 动态加载兄弟脚本，该路径不受 `-B` 影响，会写出 `__pycache__`。
+    在此统一注入环境变量，使**任意**新增门禁也结构性免疫。
+    """
+    return {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
+
+
 def collect_gates(repo: Path) -> dict:
     gates = {}
     for key, cmd in GATES:
         try:
-            proc = subprocess.run(cmd, cwd=str(repo), capture_output=True,
-                                  text=True, timeout=GATE_TIMEOUT)
+            proc = subprocess.run(cmd, cwd=str(repo), capture_output=True, env=subprocess_env(),
+                                  text=True, encoding="utf-8", errors="replace",
+                                  timeout=GATE_TIMEOUT)
             exit_code, stdout = proc.returncode, proc.stdout
         except subprocess.TimeoutExpired:
             exit_code, stdout = 124, f"TIMEOUT after {GATE_TIMEOUT}s"
@@ -269,7 +284,8 @@ def collect_gates(repo: Path) -> dict:
 def git_head(repo: Path) -> str | None:
     try:
         proc = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
-                              cwd=str(repo), capture_output=True, text=True, timeout=30)
+                              cwd=str(repo), capture_output=True, env=subprocess_env(),
+                              text=True, encoding="utf-8", errors="replace", timeout=30)
         return proc.stdout.strip() if proc.returncode == 0 else None
     except (OSError, subprocess.TimeoutExpired):
         return None

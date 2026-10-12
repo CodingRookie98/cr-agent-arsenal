@@ -38,14 +38,16 @@ license: MIT
 python3 skills/spec-evolution/scripts/collect-facts.py --out /tmp/facts.json
 python3 skills/spec-evolution/scripts/judge.py --facts /tmp/facts.json \
         --json /tmp/findings.json --report /tmp/report.md
-echo "exit=$?"        # 0 = 无 finding (CLEAN)；1 = 有 finding；2 = 用法/输入错误
+echo "exit=$?"        # 0 = 无 BLOCKER/HIGH；1 = 存在 BLOCKER/HIGH；2 = 用法或输入错误
 ```
 
-缩窄范围（推荐用于 P5 增量复查）：
+缩窄范围（P5 增量复查时用于缩短耗时）：
 
 ```bash
 python3 skills/spec-evolution/scripts/collect-facts.py --no-gates --skills goal-loop,doc-governance --out /tmp/facts.json
 ```
+
+> ⚠️ `--no-gates` 会**跳过 S1 门禁事实采集**，因而 **C-09 在本轮不执行**：报告对该项输出「未采集门禁事实 —— C-09 未执行」而非「无失败」，退出码也不再反映既有门禁状态。**放行前的最终复查必须不带 `--no-gates`。**
 
 ## 判据表 (Criteria)
 
@@ -72,9 +74,11 @@ python3 skills/spec-evolution/scripts/collect-facts.py --no-gates --skills goal-
 
 | 码 | 含义 |
 | :--- | :--- |
-| `0` | 无 finding（CLEAN） |
-| `1` | 有 finding |
+| `0` | 无 **BLOCKER/HIGH**（可含 MID advisory；C-09 未采集时该项不参与判定） |
+| `1` | 存在 **BLOCKER/HIGH** |
 | `2` | 用法或输入错误（含锚点路径不存在 = 锚点幻觉） |
+
+> 权威定义在 `scripts/judge.py` 与 [references/checks-spec.md](references/checks-spec.md)；本表与之一致。
 
 ## 红线 (Red Lines)
 

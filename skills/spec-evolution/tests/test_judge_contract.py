@@ -245,7 +245,22 @@ def test_report_head_contains_verdict_and_metadata(tmp_path):
     assert "判定结论: **MID**" in text
     assert "扫描技能数: 1" in text
     assert "C-04" in text
-    assert "（无既有门禁失败）" in text
+    # facts 由 --no-gates 采集而来 → gates 为 null，报告必须如实说「未采集」，
+    # 不得对既有门禁状态作肯定陈述（RFC-0004 交付审查 R1-3）。
+    assert "未采集门禁事实" in text
+    assert "无既有门禁失败" not in text
+
+
+def test_report_says_clean_only_when_gates_were_collected(tmp_path):
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["gates"] = {}          # 已采集且无失败（空表）≠ 未采集（null）
+    report = tmp_path / "report.md"
+    proc, _ = _run(root, facts, tmp_path, "--report", str(report))
+    assert proc.returncode == 0
+    text = report.read_text(encoding="utf-8")
+    assert "已采集门禁事实，无失败" in text
+    assert "未采集门禁事实" not in text
 
 
 def test_report_blocker_section_lists_failed_gate(tmp_path):

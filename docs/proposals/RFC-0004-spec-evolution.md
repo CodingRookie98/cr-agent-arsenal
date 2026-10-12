@@ -94,7 +94,7 @@ V0.1.0 曾以「仓库既有规范」作为 500 的依据，该链是**循环引
 ### 2.1 核心目标 (Goals)
 
 - **G1 事实层**：产出**纯事实**采集器——不判断、不评价，只把「技能与提示词的客观状态」导出为结构化 `facts.json`。
-- **G2 判定层**：以纯 Python 标准库实现**确定性判定器** `judge.py`，输入 `facts.json`，输出 `findings.json` 与人类可读报告；以 **Exit Code 0/1** 表达「有无 finding」。
+- **G2 判定层**：以纯 Python 标准库实现**确定性判定器** `judge.py`，输入 `facts.json`，输出 `findings.json` 与人类可读报告；以 **Exit Code 0/1** 表达「有无 BLOCKER/HIGH」。
 - **G3 零谄媚**：判定器**不得调用任何 LLM**、不得访问网络、不得读取会话上下文。同一份输入必须永远得到同一份输出。
 - **G4 全量覆盖**：v1 对 `skills/` 下全部 7 个技能执行 §3.2 判据表，并对根提示词 `contexts/AGENTS.md` 执行 C-10。
 - **G5 可回归**：判定器自身由 `pytest` 门禁覆盖——喂人造 `facts.json` 断言判定结果，使「判定器退化」可被捕获。
@@ -193,7 +193,7 @@ skills/spec-evolution/scripts/judge.py --facts facts.json [--json findings.json]
 
 | 契约项 | 约束 |
 | :--- | :--- |
-| 退出码 | `judge.py`：**0 = 无 finding**；**1 = 有 finding**；**2 = 用法/输入错误**（与 `taste-driven-designer` 既有脚本一致） |
+| 退出码 | `judge.py`：**0 = 无 BLOCKER/HIGH**（可含 MID advisory）；**1 = 存在 BLOCKER/HIGH**；**2 = 用法/输入错误**（与 `taste-driven-designer` 既有脚本一致） |
 | 依赖 | 仅 Python 3 标准库（`json`/`pathlib`/`re`/`subprocess`/`argparse`） |
 | 网络/LLM | **禁止**。判定器不得 import 任何网络库或 SDK |
 | 确定性 | 同一 `facts.json` 输入必须产出逐字节相同的 `findings.json`（不含时间戳等易变字段） |

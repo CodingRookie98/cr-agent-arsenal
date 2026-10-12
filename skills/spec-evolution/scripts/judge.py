@@ -61,26 +61,50 @@ def _count_lines(path: Path) -> int:
         return sum(1 for _ in fh)
 
 
+def _resolve_within(target: Path, repo_root: Path) -> Path | None:
+    """把锚点目标解析到仓库内的**既有路径**；越界（含绝对路径逃逸）返回 None。
+
+    绝对路径会让 `repo_root / rel` 直接丢弃 `repo_root`（`Path.__truediv__` 语义），
+    故必须显式做 containment 校验。目录是合法的锚点目标（如 `[REPO:skills/]`
+    指向测试套件根），但**不得带行号**——行号只对文件有意义。
+    """
+    try:
+        resolved = target.resolve()
+        resolved.relative_to(repo_root.resolve())
+    except (OSError, ValueError):
+        return None
+    return resolved if resolved.exists() else None
+
+
+def _check_line(line: str | None, target: Path, label: str) -> str | None:
+    if line is None:
+        return None
+    if not target.is_file():
+        return f"锚点行号只能指向文件，但目标是目录: {label}:{line}"
+    n = int(line)
+    total = _count_lines(target)
+    if n < 1 or n > total:
+        return f"锚点行号越界: {label}:{line}（共 {total} 行，行号从 1 起）"
+    return None
+
+
 def validate_anchor(anchor: str, repo_root: Path, headings: list) -> str | None:
     """锚点可解析返回 None，否则返回人可读的失败原因。"""
     m = SKILL_ANCHOR_RX.match(anchor)
     if m:
         name, rel, line = m.group(1), m.group(2), m.group(3)
-        target = repo_root / "skills" / name / rel
-        if not target.exists():
-            return f"技能锚点文件不存在: skills/{name}/{rel}"
-        if line is not None and int(line) > _count_lines(target):
-            return f"技能锚点行号越界: skills/{name}/{rel}:{line}（共 {_count_lines(target)} 行）"
-        return None
+        label = f"skills/{name}/{rel}"
+        target = _resolve_within(repo_root / "skills" / name / rel, repo_root)
+        if target is None:
+            return f"技能锚点不存在或越出仓库: {label}"
+        return _check_line(line, target, label)
     m = REPO_ANCHOR_RX.match(anchor)
     if m:
         rel, line = m.group(1), m.group(2)
-        target = repo_root / rel
-        if not target.exists():
-            return f"仓库锚点路径不存在: {rel}"
-        if line is not None and int(line) > _count_lines(target):
-            return f"仓库锚点行号越界: {rel}:{line}（共 {_count_lines(target)} 行）"
-        return None
+        target = _resolve_within(repo_root / rel, repo_root)
+        if target is None:
+            return f"仓库锚点路径不存在或越出仓库: {rel}"
+        return _check_line(line, target, rel)
     m = RULE_ANCHOR_RX.match(anchor)
     if m:
         section, title = m.group(1), _norm(m.group(2))
@@ -219,7 +243,8 @@ def _cell(value) -> str:
 
 
 def render_report(facts: dict, findings: list) -> str:
-    gates = facts.get("gates") or {}
+    raw_gates = facts.get("gates")
+    gates = raw_gates or {}
     failed = [(k, v) for k, v in sorted(gates.items()) if v.get("exit_code") != 0]
     if failed:
         lines = ["| 门禁 | 证据命令 | 退出码 | 摘要 |", "| :--- | :--- | :--- | :--- |"]
@@ -228,8 +253,11 @@ def render_report(facts: dict, findings: list) -> str:
                 key, _cell(info.get("cmd", "")), info.get("exit_code"),
                 _cell(info.get("summary", ""))))
         blocker_section = "## BLOCKER\n\n" + "\n".join(lines)
+    elif raw_gates is None:
+        blocker_section = ("## BLOCKER\n\n（未采集门禁事实 —— C-09 未执行；"
+                           "本报告对既有门禁是否失败不作任何结论）")
     else:
-        blocker_section = "## BLOCKER\n\n（无既有门禁失败）"
+        blocker_section = "## BLOCKER\n\n（已采集门禁事实，无失败）"
 
     rest = [f for f in findings if f["severity"] != "BLOCKER"]
     if rest:
