@@ -1839,6 +1839,8 @@ Task 3/7：facts.json → finding 列表 + 演进报告；三锚点存在性硬�
 
 **Goal**：把 RFC-0004 §3.7 的 GI-1~GI-6 变成可回归断言。**这些断言的对象是 spec-evolution 自身**（判定器确定性、模板留白、锚点一致、退出码语义、采集只读），不是被测技能 —— 这是本技能「有真实选择端」的落点。
 
+> **D-6（2026-10-12 P3 执行期修正）**：`test_gi5_exit_code_semantics` 原以 `description_chars = 600` 构造「存在 HIGH」用例，但 600 落在 `DESC_SOFT_LIMIT < n < DESC_HARD_LIMIT` 区间，判定为 **C-04 MID**，`main()` 按 MID 不计阻断 → 退出码为 `0`，断言必失败。已改为 `description_chars = 1100`（触发 **C-05 HIGH**，`>= DESC_HARD_LIMIT`），断言本身保持不变。
+
 - [ ] **Step 1: 写 `test_gate_invariants.py`（第一部分：GI-1 确定性 / GI-2 排列稳定）**
 
 ```python
@@ -2009,7 +2011,7 @@ def test_gi5_exit_code_semantics(tmp_path):
     assert clean.returncode == 0, "无 HIGH/BLOCKER 必须退出 0"
 
     facts = _facts(root)
-    facts["skills"][0]["description_chars"] = 600
+    facts["skills"][0]["description_chars"] = 1100  # C-05 HIGH
     blocking, _ = _run(root, facts, tmp_path)
     assert blocking.returncode == 1, "存在 HIGH 必须退出 1"
 
