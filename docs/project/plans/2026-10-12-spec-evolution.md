@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-SPEC-EVOLUTION-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.1.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-10-12
 
@@ -15,7 +15,7 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-10-12（「准予 Accepted，进入 P1」）
 > - **批准基线**: `master` @ `0306f37`（RFC-0004 受理流转提交）
-> - **状态**: 进行中（P1 计划制定完成，待 P3 执行）
+> - **状态**: 已交付（Task 1~7 全部完成，待 P3.5 独立终审）
 > - **隔离分支**: `feature/spec-evolution`（P3 起用，基点 `0306f37`）
 > - **需求确认文档**: [RFC-0004 spec-evolution 演进回路](../../proposals/RFC-0004-spec-evolution.md)（状态 **Accepted** · V0.3.0 · 已定案）
 > - **技术调研备忘录**: 豁免（P0.5 未触发——`N-4` 明令零第三方依赖、纯 `python3` 标准库 + 既有 `pytest` 约定，无选型空间；宿主能力边界已在 RFC-0004 §3 随方案拷问完成）
@@ -27,12 +27,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P1（计划制定完成，待 P3 开工）
-- **当前活跃子任务**: 无（P1 出口待 USER NOD 确认后进入 P3 Task 1）
+- **当前活跃阶段**: P3.5（7 个 Task 全部交付完毕，待派发 `dual-round-review` 独立终审；通过后进入 P5 交付）
+- **当前活跃子任务**: 无（Task 1~7 已全部完成并提交，含执行期 8 处设计稿缺陷修正 D-1~D-8）
 - **当前子任务重试计数**: 0/3
-- **外层循环迭代**: 0/5
-- **最后一次验证状态**: 计划基线实测——`python3 -m pytest skills/ -q` → **324 passed**；`check-doc-links.py --root docs` → 66 文件断链 **0**；`audit-doc-health.py` → **PASS**（100.0/100）
-- **最新有效提交**: `0306f37`
+- **外层循环迭代**: 1/5
+- **最后一次验证状态**: Task 6 终局门禁实测——`python3 -m pytest skills/ -q` → **374 passed**；`check-doc-links.py --root docs` → 68 文件断链 **0**；`audit-doc-health.py` → **PASS**；判定器自证 `spec-evolution` **零 finding**（全仓 findings 11 条 / HIGH+BLOCKER 3 条，均属既有技能的历史缺口）
+- **最新有效提交**: `95af3f1`
 - **阻断原因**: 无
 
 ---
@@ -2265,6 +2265,8 @@ git push origin master
 
 **Acceptance（Task 7）**：㉒ `git status --porcelain` 干净；㉓ 远端 `master` 含本次全部提交。
 
+> **D-9（2026-10-12 P3 执行期修正）**：Step 4 的 `git push origin master` 与铁律⑦（分支隔离：严禁在 `master` 直接写代码）及铁律⑧（交付前必须有独立子智能体 Zero Blockers 裁决）**冲突** —— 本次全部提交位于 `feature/spec-evolution`，且 P3.5 独立终审尚未派发。故本次**只推送功能分支** `feature/spec-evolution`；合入 `master` 待 P3.5 取得 Zero Blockers 裁决后再由用户裁定。㉓ 的口径相应改为「远端 `feature/spec-evolution` 含本次全部提交」。
+
 ---
 
 ### §5 验收判据总表（Definition of Done）
@@ -2310,3 +2312,4 @@ git push origin master
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
 | V1.0.0 | 2026-10-12 | 主智能体 | 待用户裁定 | P1 落地计划首发：7 个原子任务、12 条验收判据、6 类风险与 4 条显式默认假设 |
+| V1.1.0 | 2026-10-12 | DSH AI Agent | 王辉 | P3 执行收口：Task 1~7 全部交付（`1418e2b` / `629c6b1` / `dfc301b` / `3f58d00` / `5775c6c` / `95af3f1`）；新增《执行偏差记录》D-1~D-8（设计稿缺陷与 Task 3 段 5 处 + Task 4 段 1 处 + Task 5/6 各 1 处顺序/版本问题）；Active Checkpoint 推进至 P3.5 |

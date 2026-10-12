@@ -2,12 +2,14 @@
 
 > **提案元数据**
 > - **标识**: RFC-2026-SPEC-EVOLUTION
-> - **当前状态**: Accepted
+> - **当前状态**: Implemented
 > - **发起人**: 工程师 / AI Agent
-> - **当前版本**: V0.3.0
+> - **当前版本**: V0.4.0
 > - **初次发起日期**: 2026-10-12
 > - **目标里程碑**: spec-evolution V1.0.0（新增技能，不涉及仓库版本号变更）
 > - **定案日期**: 2026-10-12
+> - **交付日期**: 2026-10-12
+> - **落地计划**: [2026-10-12-spec-evolution.md](../project/plans/2026-10-12-spec-evolution.md)
 > - **关联前置**: [RFC-0001](./RFC-0001-review-report-archive.md)（交付凭据归档契约）、[goal-loop 架构设计书](../explanation/architecture/goal-loop-design.md)、[docs/GOVERNANCE.md](../GOVERNANCE.md)
 
 ---
@@ -19,6 +21,7 @@
 | **V0.1.0** | 2026-10-12 | DSH AI Agent | 王辉 | 初次发起：确立「只做机械可复现信号、v1 明确排除无客观信号的设计质量评价」的范围红线；判据表 C-01~C-10 由真实试跑数据支撑 |
 | **V0.2.0** | 2026-10-12 | DSH AI Agent | 王辉 | 四项未决项收口：C-04 降为建议值（MID）、C-05 改按 `description` 口径、C-07 注册面 5→4、F-1~F-9 不进本次交付。依据 Agent Skills 规范原文与生成器源码实证，修正 V0.1.0 中两处契约误设 |
 | **V0.3.0** | 2026-10-12 | DSH AI Agent | 王辉 | **状态流转 In Review → Accepted**（用户裁决准予受理）；批准进入 P1 编写落地计划。契约内容未变更，仅登记受理决定 |
+| **V0.4.0** | 2026-10-12 | DSH AI Agent | 王辉 | **状态流转 Accepted → Implemented**（交付完成）：采集器 `collect-facts.py`、判定器 `judge.py`（C-01~C-10 + 锚点硬门禁 + 退出码 0/1/2）、报告模板、GI-1~GI-6 门禁不变式（50 条测试）、架构设计书与四注册面接入全部落地。判定器对全仓实跑复现 §1.1 的 F-1~F-9 全部九项缺陷（findings 17 条 / HIGH+BLOCKER 8 条），修 F-9 后降至 11 条 / 3 条；**spec-evolution 自身零 finding**。**原位保留未移入 `proposals/archive/`**（仓库尚无该目录、RFC-0001~0003 均未归档，移位会打断技能内相对链接） |
 
 ---
 
