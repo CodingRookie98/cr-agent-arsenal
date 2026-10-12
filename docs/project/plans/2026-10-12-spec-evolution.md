@@ -191,7 +191,7 @@ license: MIT
 | **独立调用**（主路径） | 用户或智能体显式执行全量审计（7 技能 + 根提示词）；`--skills` 可缩窄范围 |
 | **`goal-loop` P5 增量挂载** | 交付归档阶段复查**本次交付触及**的 `skills/<n>/`；不做全量扫描 |
 
-**不适用**（结构性排除，详见 [references/checks-spec.md](references/checks-spec.md) §4）：
+**不适用**（结构性排除，详见 [references/checks-spec.md](references/checks-spec.md) §5）：
 - 评价「这个技能该不该存在」「职责是否重叠」「设计是否过重」——无客观信号，是谄媚高发区；
 - 评价判据阈值本身是否合理（如「1000 行是否应为 800 行」）。
 
@@ -2112,7 +2112,7 @@ head -40 docs/explanation/architecture/goal-loop-design.md
    - 为什么**默认 fail-closed**（锚点不可解析即退出 2、拒绝写产物）。
    - 为什么**人类裁决区永久留白**（Reviewer ≠ Author）。
 4. **与 `doc-governance` / `dual-round-review` / `goal-loop` 的边界**（RFC-0004 §3.8 职责边界表）。
-5. **已知表达上限**（与 `references/checks-spec.md` §4 一致，不得夸大）。
+5. **已知表达上限**（与 `references/checks-spec.md` §5 一致，不得夸大）。
 6. **演进方向**：v1 覆盖 `skills/`；v2 才考虑根提示词与 `docs/` 制品。
 
 - [ ] **Step 3: 门禁复验**
@@ -2298,11 +2298,15 @@ git push origin master
 > | D-17 | **GI-6 仍未根治**（DR1-1，P1）：上一轮认定 `-B` 不足的**根因叙述有误** —— 真实泄漏路径是显式 `py_compile.compile()`，它**同时无视** `-B` 与 `PYTHONDONTWRITEBYTECODE`（出处：`skills/doc-governance/tests/test_doc_index_convention.py:415-421` 在 `-W error::SyntaxWarning` 下编译脚本） | `subprocess_env()` 增 `PYTHONPYCACHEPREFIX`（把字节码写入整体改道仓库外）+ 修正常量注释；夹具桩由「三级 import 链」升级为**真实触发该路径**（`py_compile.compile(...)`）；`test_gi6_bytecode_suppression_is_structural` 改为 `ast` 钉住 `subprocess_env()` 内两个环境键的赋值 | 变异实测：移除 `PYTHONPYCACHEPREFIX` → **2 条转红**（结构 + 功能）；单独移除 `PYTHONDONTWRITEBYTECODE` → 仅结构测试转红（其为冗余纵深）。端到端干净副本差分：修复前残留 `skills/doc-governance/scripts/__pycache__/manage-doc-index.cpython-312.pyc`，修复后 **0 残留** |
 > | D-18 | **根因叙述失实**（DR1-2）：四处把「`-B` 覆盖不足」归因于 `importlib` 动态加载，实为显式 `py_compile` | `collect-facts.py`、`conftest.py` 桩、`test_gate_invariants.py`、`docs/explanation/architecture/spec-evolution-design.md:87` 全部改写为「三条路径各需不同机制」（直接子进程靠 `-B`；经 `subprocess` 派生的孙进程靠 `PYTHONDONTWRITEBYTECODE`；显式 `py_compile` 只有 `PYTHONPYCACHEPREFIX` 能拦） | 与 D-17 的变异结果一致 |
 > | D-19 | **权威断链**（DR1-3）：`SKILL.md:81` 把 `references/checks-spec.md` 指为退出码权威出处，但该文件**无退出码章节** | `checks-spec.md` 新增 §4「退出码语义」（三态表 + 「MID 不阻断」理由 + 「`2` 不写产物」理由），原 §4/§5 顺延为 §5/§6，修订记录加 V1.1.0 | 章节编号全文件复核 |
-> | D-20 | **三态判据的 falsy 漏洞**（DR1-5）：`judge.py` 以 `raw_gates is None` 判「未采集」，而 `--facts` 接受外部输入，`[]`/`{}`/`0`/`""`/畸形结构均可达并被当作「已采集且无失败」 | 抽出 `collected_gates()`，要求**≥1 条 well-formed 的 `{cmd, exit_code, summary}`** 才构成「已采集」证据；`build_findings` 与 `render_report` 共用 | 原测试以 `gates = {}` 断言「已采集且无失败」，该期望**本身即 fail-open**；已改写为对 `(None, [], {}, 0, "", "junk", {"pytest": "junk"})` 逐项断言「未采集」，另加一条 well-formed 清洁表断言「已采集」。此为**收紧**语义，非弱化断言 |
+> | D-20 | **三态判据的 falsy 漏洞**（DR1-5）：`judge.py` 以 `raw_gates is None` 判「未采集」，而 `--facts` 接受外部输入，`[]`/`{}`/`0`/`""`/畸形结构均可达并被当作「已采集且无失败」 | 抽出 `collected_gates()`，要求**≥1 条 well-formed 的 `{cmd, exit_code, summary}`** 才构成「已采集」证据；`build_findings` 与 `render_report` 共用 | 原测试以 `gates = {}` 断言「已采集且无失败」，该期望**本身即 fail-open**；已改写为对 `(None, [], {}, 0, "", "junk", {"pytest": "junk"})` 逐项断言「未采集」，另加一条 well-formed 清洁表断言「已采集」。此为**收紧**语义，非弱化断言。**本轮 R1-1 进一步收紧**：顶层**类型**畸形（`skills=5` / `root_prompt="junk"`）改判退出码 2，见 D-24 |
 > | D-21 | **未登记的行为变更**（DR1-6）：README 登记判据由裸子串 `skills/<name>` 收紧为精确串 `skills/<name>/SKILL.md`（前缀兄弟技能可致 C-07 **HIGH 假阴性**），但既未写入判据表、也无测试 | `checks-spec.md` §1 的 C-07 行注明精确形式；新增 `test_readme_registration_requires_exact_skill_path`（构造只含 `skills/demo-suffix` 的 README，断言仍判未登记） | 该测试在收紧前的实现上会转红 |
 
 > | D-22 | **BK-0033 状态陈旧**（DR1-4）：卡片文案仍写「两处 `subprocess.run` 加 encoding」未做，实际已在 `d8aa611` 落地 | 卡片标题与 DoD 收窄为「print 硬化 + 异常退出码收敛」两项，§4 补记「部分落地（`d8aa611`）」 | `docs/project/backlog/active/BK-0033-*.md` |
 > | D-23 | **Delta R1 报告区块标题不符门禁 schema**（本轮自查）：该报告五区块写作 `## §1 第一性原理与本质溯源` 等简写，而 `round-1-red-team.md` 模板与 `check-review-report.sh` 要求 `## 1. 第一性原理与本质溯源分析` 等**逐字标题**，归档后门禁报 5 条「缺少必需区块」。**根因是 Lead 派发提示词的简写，非子智能体偏离**（首轮 r1 逐字沿用模板即通过） | 报告是 SHA256 已登记的 Write-Once 审计凭据，**零改动**；台账该行由 `delta-r1` 降级为 `retired`（声明为非 R1 凭据，仍受文件存在 / 指纹 / 写入形态三项校验），全部事实写入台账、待办与修订历史。后续 delta 轮次的派发提示词改为**逐字粘贴模板标题** | 降级后 `check-review-report.sh` → **通过**（索引齐备 · 报告 3 份 · 指纹一致 · 区块齐备 · 稳定 ID 对齐） |
+> | D-24 | **退出码伪装**（delta-r1 R1-1，P2）：`load_facts` 只校验顶层键**在场**，不校验**类型**。`skills=5` / `root_prompt="junk"` / `repo_root=123` 会让 `build_findings` 抛 `TypeError`，解释器以状态码 **1** 退出 —— 恰与「存在 BLOCKER/HIGH」同码，诊断也从 `❌` 降级为裸 traceback。编排方若只读退出码，会把「输入坏了」采信为「存在高危结论」 | `load_facts` 增键类型校验（`repo_root:str` / `skills:list` / `gates:dict|list|None` / `root_prompt:dict`，且 `skills[]` 每项须为含 `name` 的对象），不符即 `FactsError` → 退出码 2；原「falsy 值归未采集」用例拆分：结构性缺失（`None`/`[]`/`{}`/畸形成员）仍归「未采集」，**类型**畸形归退出码 2 | 新增 `test_malformed_top_level_types_exit_2`（6 组 patch 逐项断言 rc == 2）；`test_report_says_clean_only_when_gates_were_collected` 的负例收窄为结构性缺失 |
+> | D-25 | **共享缓存投毒 → 门禁进程内任意代码执行**（delta-r1 R1-2，P2）：重定向根固定为 `/tmp/spec-evolution-pycache`（可预测、共享、跨运行持久）且不校验属主/独占性。`/tmp` 为 `drwxrwxrwt`，本地用户可抢先创建该目录并植入与门禁模块同尺寸同 mtime 的畸形成员字节码，被门禁进程当作真实模块读取执行（审查方**实测已执行注入代码**） | 弃用固定名，改 `tempfile.mkdtemp(prefix="spec-evolution-pycache-", dir=base)` 独占创建随机名目录（`mkdtemp` 保证不存在才创建、权限 0700），并 `atexit` 注册 `shutil.rmtree` 清理以免 /tmp 累积。代价是放弃「固定名复用」的既有取舍 —— 该取舍本身即漏洞来源 | 新增 `test_gi6_pycache_prefix_is_per_run_and_private`（两次独立进程取前缀，断言路径不同 + 权限 0700 + 不在仓库内）。**变异 A**（退回固定名 + `makedirs`）→ 该测试转红、其余 14 条不动 |
+> | D-26 | **重定向根可被环境/回落重新指回仓库**（delta-r1 R1-3，P3）：重定向根在模块级由 `tempfile.gettempdir()` 推导，采集器不校验它位于 `repo_root` 之外。`TMPDIR` 指向仓库内、或候选临时目录全不可写导致 `gettempdir()` 回落 `os.getcwd()` 时，镜像整体落入仓库，GI-6 静默失守（审查方实测新增 3 个镜像文件） | 求值从模块级移入 `pycache_prefix(repo)`：**先**校验临时根在仓库之外（**在创建任何目录之前**，避免校验失败却已落盘），不成立即 `CollectError` → 退出码 2，绝不退化成「悄悄写进仓库」 | 新增 `test_gi6_rejects_pycache_prefix_inside_repo`（`TMPDIR=<repo>` 运行采集器，断言 rc == 2 + stderr 含「仓库内」+ 仓库零写入）。**变异 B**（删去 `if base == repo or repo in base.parents` 判定）→ 该测试转红、其余 14 条不动 |
+> | D-27 | **章节重编号引入的引用断裂**（delta-r1 R1-4，P2）：D-19 为补登退出码权威新增 `checks-spec.md` §4 并把原 §4/§5 顺延为 §5/§6，但三处 `§4` 指针未同步（`SKILL.md:24`、`spec-evolution-design.md:161`、计划 `:2115` 及其代码副本 `:194`），改动后指向「退出码语义」而实际内容已顺延为 §5「已知表达上限」；D-19 自述的验证方法「章节编号全文件复核」**未落实**（宣称宽于取证） | 四处指针改为 `§5`（`SKILL.md` / 设计书 / 计划正文两处），并全仓复核确认剩余 `§4` 引用均正确指向「退出码语义」 | `grep -rn "checks-spec.md.*§4"` 只剩计划 `:31`（D-19 记述）与 `:2300`（D-19 行本身），二者语义正确 |
 
 ---
 

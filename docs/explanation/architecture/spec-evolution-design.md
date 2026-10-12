@@ -158,7 +158,7 @@ Reviewer ≠ Author。判定器负责**列出**候选，人类负责**裁决**�
 
 ## 6. 已知表达上限 (Known Limits)
 
-与 [`references/checks-spec.md`](../../../skills/spec-evolution/references/checks-spec.md) §4 保持一致，显式登记、不在 v1 掩饰：
+与 [`references/checks-spec.md`](../../../skills/spec-evolution/references/checks-spec.md) §5 保持一致，显式登记、不在 v1 掩饰：
 
 1. **C-10 无法判定「理由是否成立」**：准入判据允许根提示词净增长（前提是同一提交给出等量删减或不可压缩的理由）。判定器只能观测「是否净增长」，**无法**判定理由是否成立。故 C-10 报告文案固定为中性提示，而非指控。
 2. **C-03 存在误报面**：`scripts/` 与 `templates/` 对纯规程型技能可豁免。C-03 采「有则须完整、无则记 MID 提示」，命中项须人工确认是否属豁免场景。

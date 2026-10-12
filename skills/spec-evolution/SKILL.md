@@ -21,7 +21,7 @@ license: MIT
 | **独立调用**（主路径） | 用户或智能体显式执行全量审计（7 技能 + 根提示词）；`--skills` 可缩窄范围 |
 | **`goal-loop` P5 增量挂载** | 交付归档阶段复查**本次交付触及**的 `skills/<n>/`；不做全量扫描 |
 
-**不适用**（结构性排除，详见 [references/checks-spec.md](references/checks-spec.md) §4）：
+**不适用**（结构性排除，详见 [references/checks-spec.md](references/checks-spec.md) §5）：
 - 评价「这个技能该不该存在」「职责是否重叠」「设计是否过重」——无客观信号，是谄媚高发区；
 - 评价判据阈值本身是否合理（如「1000 行是否应为 800 行」）。
 

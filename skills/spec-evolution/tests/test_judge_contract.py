@@ -255,12 +255,15 @@ def test_report_says_clean_only_when_gates_were_collected(tmp_path):
     """三态判据必须要求**结构合法且有内容**的门禁事实。
 
     只有「≥1 条 well-formed 的 `{cmd, exit_code, summary}`」才构成「已采集」的
-    证据。`None` / `[]` / `{}` / `0` / 畸形值一律归「未采集」—— 用 `is not None`
+    证据。`None` / `[]` / `{}` / 畸形成员一律归「未采集」—— 用 `is not None`
     会把 falsy-but-not-None 与畸形结构误判为「已采集且无失败」，重新打开 R1-3 想
     关闭的 fail-open（Delta R1 DR1-5；`--facts` 接受外部输入，故该分支可达）。
+
+    顶层**类型**畸形（如 `gates=0`）不走本表：它在 `load_facts` 就被判为输入错误
+    → 退出码 2（见 `test_malformed_top_level_types_exit_2`）。
     """
     root = build_repo(tmp_path / "repo")
-    for bad in (None, [], {}, 0, "", "junk", {"pytest": "junk"}):
+    for bad in (None, [], {}, {"pytest": "junk"}, [{"cmd": "x"}]):
         facts = _facts(root)
         facts["gates"] = bad
         report = tmp_path / "report.md"
@@ -279,6 +282,23 @@ def test_report_says_clean_only_when_gates_were_collected(tmp_path):
     text = report.read_text(encoding="utf-8")
     assert "已采集门禁事实，无失败" in text
     assert "未采集门禁事实" not in text
+
+
+def test_malformed_top_level_types_exit_2(tmp_path):
+    """键**在场**但**类型**畸形 → 输入错误（2），不得伪装成阻断裁决（1）。
+
+    `skills` / `root_prompt` / `repo_root` 类型不符会让 `build_findings` 抛
+    `TypeError`，解释器默认以状态码 **1** 退出 —— 与「存在 BLOCKER/HIGH」同码。
+    编排方若只读退出码，会把「输入坏了」采信为「存在高危结论」；诊断也从 `❌`
+    降级为裸 traceback（Delta R1 R1-1）。
+    """
+    root = build_repo(tmp_path / "repo")
+    for patch in ({"skills": 5}, {"root_prompt": "junk"}, {"repo_root": 123},
+                  {"skills": [{}]}, {"gates": 0}, {"gates": "junk"}):
+        facts = _facts(root)
+        facts.update(patch)
+        proc, _ = _run(root, facts, tmp_path)
+        assert proc.returncode == 2, f"{patch!r} → rc={proc.returncode}（应为 2）"
 
 
 def test_report_blocker_section_lists_failed_gate(tmp_path):

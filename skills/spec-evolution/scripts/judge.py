@@ -330,6 +330,17 @@ def load_facts(path: Path) -> dict:
     missing = [k for k in REQUIRED_TOP_KEYS if k not in data]
     if missing:
         raise FactsError("❌ facts 缺少必需键: " + ", ".join(missing))
+    # 键**在场**不等于键**可用**：`skills=5` / `root_prompt="junk"` / `repo_root=123`
+    # 会让 build_findings 抛 TypeError，解释器以状态码 1 退出 —— 恰与「存在
+    # BLOCKER/HIGH」同码，把「输入错误」伪装成「阻断裁决」（Delta R1 R1-1）。
+    # 故在此 fail-closed：类型不符即 FactsError → main() 收口为 2。
+    expected = {"repo_root": str, "skills": list, "gates": (dict, list, type(None)),
+                "root_prompt": dict}
+    bad = [k for k in REQUIRED_TOP_KEYS if not isinstance(data[k], expected[k])]
+    if bad:
+        raise FactsError("❌ facts 键类型非法: " + ", ".join(bad))
+    if any(not isinstance(sk, dict) or "name" not in sk for sk in data["skills"]):
+        raise FactsError("❌ facts.skills 每项必须是含 name 的对象")
     return data
 
 

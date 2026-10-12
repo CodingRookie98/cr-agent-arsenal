@@ -7,10 +7,13 @@ import ast
 import hashlib
 import importlib.util
 import json
+import os
 import re
+import subprocess
+import sys
 from pathlib import Path
 
-from conftest import build_repo, run_collect, run_judge
+from conftest import COLLECT, build_repo, run_collect, run_judge
 
 SPEC_DIR = Path(__file__).resolve().parents[1]
 ANCHOR_RX = re.compile(r"\[(?:SKILL|REPO|RULE):[^\]]+\]")
@@ -197,6 +200,58 @@ def test_gi6_gates_run_without_leaving_artifacts(tmp_path):
     after = _files(root)
     assert after == before, f"GI-6：门禁留下产物 {sorted(set(after) - set(before))}"
     assert not (root / ".pytest_cache").exists(), "GI-6：-p no:cacheprovider 未生效"
+
+
+def test_gi6_rejects_pycache_prefix_inside_repo(tmp_path):
+    """重定向根落在仓库内时必须 fail-closed（退出码 2），不得静默写进仓库。
+
+    `PYTHONPYCACHEPREFIX` 是压制字节码的唯一充分机制（见 `subprocess_env`），但它的
+    取值来自 `tempfile.gettempdir()`：受 `TMPDIR` 影响，且候选临时目录全不可写时
+    回落 `os.getcwd()`。两条路都能把它指回**仓库内**，使 GI-6 静默失守
+    （Delta R1 实测：`TMPDIR=<repo>` 的副本内新增 3 个镜像文件）。
+
+    本用例把「仓库之外」从注释承诺钉成可执行契约：越界即退出码 2 + 仓库零写入。
+    """
+    root = build_repo(tmp_path / "repo")
+    before = _files(root)
+    proc = subprocess.run(
+        [sys.executable, "-B", str(COLLECT), "--repo-root", str(root),
+         "--out", str(tmp_path / "facts.json")],
+        capture_output=True, text=True, env={**os.environ, "TMPDIR": str(root)},
+    )
+    assert proc.returncode == 2, f"rc={proc.returncode}\n{proc.stdout}\n{proc.stderr}"
+    assert "仓库内" in proc.stderr, proc.stderr
+    assert _files(root) == before, "GI-6：越界路径下仍写入了仓库"
+
+
+def test_gi6_pycache_prefix_is_per_run_and_private(tmp_path):
+    """重定向根必须**每次运行独占、随机、0700** —— 否则 /tmp 缓存投毒成立。
+
+    `/tmp` 是 `drwxrwxrwt`：固定目录名可被本地用户抢先创建并植入与门禁模块同尺寸
+    同 mtime 的畸形成员字节码，被门禁进程当作真实模块读取执行
+    （Delta R1 R1-2 实测：注入代码已执行）。`mkdtemp` 的随机名 + 独占创建 + 0700
+    是关闭该通道的最小充分形态。
+    """
+    root = build_repo(tmp_path / "repo")
+    collect = SPEC_DIR / "scripts" / "collect-facts.py"
+    script = (
+        "import importlib.util, os, pathlib, stat\n"
+        f"spec = importlib.util.spec_from_file_location('cf', {str(collect)!r})\n"
+        "mod = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(mod)\n"
+        f"p = mod.pycache_prefix(pathlib.Path({str(root)!r}).resolve())\n"
+        "print(p, oct(stat.S_IMODE(os.stat(p).st_mode)))\n"
+    )
+    seen = set()
+    for _ in range(2):
+        proc = subprocess.run([sys.executable, "-B", "-c", script],
+                              capture_output=True, text=True)
+        assert proc.returncode == 0, proc.stderr
+        path, mode = proc.stdout.split()
+        assert mode == "0o700", f"重定向根权限 {mode}，非独占私有"
+        assert str(root) not in path, f"重定向根落在仓库内: {path}"
+        seen.add(path)
+    assert len(seen) == 2, f"重定向根可预测（两次同路径 {seen}）——缓存投毒通道未关闭"
 
 
 def test_gi6_bytecode_suppression_is_structural():

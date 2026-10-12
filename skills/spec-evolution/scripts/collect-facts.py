@@ -14,10 +14,12 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 import datetime as dt
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -39,9 +41,16 @@ BASELINE_REL = Path("skills/spec-evolution/references/baseline.json")
 LINE_LIMIT = 1000
 GATE_TIMEOUT = 300
 SCANNED_SUFFIXES = {".py", ".sh", ".md", ".json", ".yaml", ".yml", ".txt", ".cfg", ".toml"}
-# 字节码重定向目标：**仓库之外**（GI-6 只约束仓库内不留产物）。固定名而非
-# mkdtemp，避免每次采集都在 /tmp 累积目录；缓存本身按源文件路径寻址，可复用。
-PYCACHE_PREFIX = os.path.join(tempfile.gettempdir(), "spec-evolution-pycache")
+# 字节码重定向目标：**仓库之外**（GI-6 只约束仓库内不留产物）。目录名随机、由
+# 本进程独占创建、退出即清理 —— 固定名（如 /tmp/spec-evolution-pycache）在
+# `drwxrwxrwt` 的 /tmp 里可被本地用户抢先创建并植入畸形成员字节码，门禁进程会把
+# 它当作真实模块读取执行（Delta R1 R1-2 实测已执行注入代码）。
+_pycache_dir: str | None = None
+CACHE_PREFIX_NAME = "spec-evolution-pycache-"
+
+
+class CollectError(Exception):
+    """采集前置条件不满足（如重定向根越界）。`main()` 统一以退出码 2 收口。"""
 
 FRONTMATTER_RX = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
 DESC_RX = re.compile(r"^description:[ \t]*(.*)$", re.MULTILINE)
@@ -254,7 +263,35 @@ def collect_root_prompt(repo: Path) -> dict:
     }
 
 
-def subprocess_env() -> dict:
+def pycache_prefix(repo: Path) -> str:
+    """返回一个**本进程独占、且保证位于仓库之外**的字节码重定向根。
+
+    `PYTHONPYCACHEPREFIX` 是保住 GI-6 的唯一充分机制（机制分析见 `subprocess_env`），
+    但它的取值有两个失败面，都必须 fail-closed 而非静默退化：
+
+    1. **越界**：`tempfile.gettempdir()` 受 `TMPDIR` 影响，候选临时目录全不可写时还会
+       回落 `os.getcwd()` —— 两条路都可能把它指回**仓库内**，使只读不变式静默失守
+       （Delta R1 R1-3 实测：`TMPDIR=<仓库>` 时副本内新增 3 个镜像文件）。
+    2. **可预测**：`/tmp` 是 `drwxrwxrwt`，固定目录名可被本地用户抢先创建并植入与门禁
+       模块同尺寸同 mtime 的畸形成员字节码，被门禁进程当作真实模块读取执行
+       （Delta R1 R1-2 实测已执行注入代码）。
+
+    故：先校验临时根在仓库之外（**在创建任何目录之前**，避免校验失败却已落盘），
+    再用 `mkdtemp` 独占创建随机名目录，并注册退出清理以免 /tmp 累积。
+    """
+    global _pycache_dir
+    if _pycache_dir is None:
+        base = Path(tempfile.gettempdir()).resolve()
+        if base == repo or repo in base.parents:
+            raise CollectError(
+                f"❌ 字节码重定向根落在仓库内: {base}（repo={repo}）——"
+                "请修正 TMPDIR / 临时目录配置后重试")
+        _pycache_dir = tempfile.mkdtemp(prefix=CACHE_PREFIX_NAME, dir=str(base))
+        atexit.register(shutil.rmtree, _pycache_dir, ignore_errors=True)
+    return _pycache_dir
+
+
+def subprocess_env(repo: Path) -> dict:
     """子进程环境：把字节码写入**整体**重定向出仓库，保住只读不变式（GI-6）。
 
     门禁树里有三条互不重叠的字节码写入路径，各自需要的机制不同：
@@ -277,7 +314,7 @@ def subprocess_env() -> dict:
     return {
         **os.environ,
         "PYTHONDONTWRITEBYTECODE": "1",
-        "PYTHONPYCACHEPREFIX": PYCACHE_PREFIX,
+        "PYTHONPYCACHEPREFIX": pycache_prefix(repo),
     }
 
 
@@ -285,7 +322,7 @@ def collect_gates(repo: Path) -> dict:
     gates = {}
     for key, cmd in GATES:
         try:
-            proc = subprocess.run(cmd, cwd=str(repo), capture_output=True, env=subprocess_env(),
+            proc = subprocess.run(cmd, cwd=str(repo), capture_output=True, env=subprocess_env(repo),
                                   text=True, encoding="utf-8", errors="replace",
                                   timeout=GATE_TIMEOUT)
             exit_code, stdout = proc.returncode, proc.stdout
@@ -305,7 +342,7 @@ def collect_gates(repo: Path) -> dict:
 def git_head(repo: Path) -> str | None:
     try:
         proc = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
-                              cwd=str(repo), capture_output=True, env=subprocess_env(),
+                              cwd=str(repo), capture_output=True, env=subprocess_env(repo),
                               text=True, encoding="utf-8", errors="replace", timeout=30)
         return proc.stdout.strip() if proc.returncode == 0 else None
     except (OSError, subprocess.TimeoutExpired):
@@ -350,7 +387,11 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     only = [s.strip() for s in args.skills.split(",") if s.strip()] if args.skills else None
-    facts = build_facts(repo, with_gates=not args.no_gates, only=only)
+    try:
+        facts = build_facts(repo, with_gates=not args.no_gates, only=only)
+    except CollectError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     payload = json.dumps(facts, ensure_ascii=False, indent=2, sort_keys=False)
 
     if args.out:
