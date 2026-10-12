@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.28.0 (RFC-0004 spec-evolution 立项：面向提示词与技能的机械化演进回路，状态 In Review；v1 只采信可复现退出码，结构性排除无客观信号的设计质量评价)
+> - **当前版本**: V1.29.0 (RFC-0004 spec-evolution 已受理：状态 Accepted · V0.3.0 定案，批准进入 P1；v1 只采信可复现退出码，结构性排除无客观信号的设计质量评价)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.29.0** | 2026-10-12 | DSH AI Agent | 王辉 | **RFC-0004 受理**（状态 In Review → **Accepted**，V0.3.0 定案，批准进入 P1）：四项未决项裁决一并落定——C-04 的 500 字符**降为建议值**（权威出处措辞为 "if possible"，非成文规范；V0.1.0 所依「仓库既有规范」经查为循环引用）、C-05 口径改按规范原文的 `description` ≥1024（原「frontmatter 总长」口径系转述走样）、C-07 注册面 5→4（剔除结构上不可能收录技能的 `docs/llms.txt`）、F-1~F-9 不随本次交付（唯一例外 F-9） |
 | **V1.28.0** | 2026-10-12 | DSH AI Agent | 王辉 | **RFC-0004 `spec-evolution` 立项**（状态 In Review）：面向规范资产（7 个技能 + 根提示词）的机械化演进回路；确立「选择端 = 脚本退出码而非模型意见」立论，判据表 C-01~C-10 全部由 2026-10-12 真实试跑数据支撑（既有三门禁全绿的同时实测出 F-1~F-9 九项零覆盖缺陷）；v1 明确排除无客观信号的设计质量评价 |
 | **V1.27.0** | 2026-10-09 | DSH AI Agent | 王辉 | **批次 D 交付完成**（五轮审查全部无 P0/P1，5 份归档报告）：BK-0030/BK-0031 关闭归档 2026-Q4；落地 `--name` 缺省沿用身份、round-trip 断言、全面 fail-closed（含审计读闸门与原子落盘）；GOVERNANCE §4.1 身份写保护契约；新增 BK-0032 |
 | **V1.26.0** | 2026-10-09 | DSH AI Agent | 王辉 | 批次 D（BK-0030/BK-0031）：`--name` 缺省改 `None` 并**沿用既有地图身份**（正常重生成不再被拒或改名）、不可读/非 UTF-8/不可反解一律 fail-closed；GOVERNANCE §4.1 登记**身份写保护契约** |
 | **V1.25.0** | 2026-10-09 | DSH AI Agent | 王辉 | **批次 C 交付完成**（四轮审查：前三轮各指 1×P1 且均为实质缺陷，第四轮后果级复核根治，4 份归档报告）：BK-0026/BK-0027 关闭归档 2026-Q4；落地**生成器侧身份写保护闸门**与 fail-closed 提示；新增 BK-0030/BK-0031 |
-| **V1.24.0** | 2026-10-09 | DSH AI Agent | 王辉 | 批次 C（BK-0026/BK-0027）：提示文案项目名新增**可打印字符校验 + 长度上限**（消除终端控制序列注入与畸形名死巷）、改用 `--name=<value>` 赋值形式；GOVERNANCE §4.1 显式登记**零覆盖态无门禁兜底**的口径与代价 |
 
 ---
 
@@ -75,7 +75,7 @@
 | **RFC-0001 审查报告归档契约** | 为 `dual-round-review` 引入交付凭据归档：报告全文逐字落盘至版本库归档根 + SHA256 指纹 + 机械门禁（需求确认，状态 In Review） | [RFC-0001-review-report-archive.md](./proposals/RFC-0001-review-report-archive.md) |
 | **RFC-0003 目录级索引约定** | 象限索引托管化与 scaffold 索引自愈：根级人类入口唯一、象限索引按需托管（`<!-- doc-index:managed -->` 位置契约）、登记防 404 与 README 入口跳过（**已实现**，状态 Implemented；三轮双轮对抗审查 Zero Blockers 准予交付） | [RFC-0003-quadrant-index-convention.md](./proposals/RFC-0003-quadrant-index-convention.md) |
 | **RFC-0002 子智能体直写契约** | 执行 RFC-0001 §7.3 A1 预留路径：子智能体直写报告至预授权路径（Write-Scope 单路径例外）+ 主智能体独立复算指纹 + 写入形态登记；含诚实边界（预授权是提示词契约而非沙箱强制）（需求确认，状态 In Review） | [RFC-0002-subagent-direct-write.md](./proposals/RFC-0002-subagent-direct-write.md) |
-| **RFC-0004 spec-evolution 演进回路** | 新建 `spec-evolution` 技能：把演进回路的「选择端」从**模型意见**换成**脚本退出码**——事实采集器（`collect-facts.py`）→ 确定性判定器（`judge.py`，零 LLM/零网络/纯标准库）→ Exit 0/1；判据表 C-01~C-10 覆盖技能交付面完整性、frontmatter 上限、文件规模、注册面漂移与根提示词净增长；v1 结构性地不做无客观信号的设计质量评价（需求确认，状态 In Review） | [RFC-0004-spec-evolution.md](./proposals/RFC-0004-spec-evolution.md) |
+| **RFC-0004 spec-evolution 演进回路** | 新建 `spec-evolution` 技能：把演进回路的「选择端」从**模型意见**换成**脚本退出码**——事实采集器（`collect-facts.py`）→ 确定性判定器（`judge.py`，零 LLM/零网络/纯标准库）→ Exit 0/1；判据表 C-01~C-10 覆盖技能交付面完整性、frontmatter 上限、文件规模、注册面漂移与根提示词净增长；v1 结构性地不做无客观信号的设计质量评价（**已受理**，状态 Accepted · V0.3.0 定案，批准进入 P1） | [RFC-0004-spec-evolution.md](./proposals/RFC-0004-spec-evolution.md) |
 | **`dual-round-review` V2.1.0** | 审查报告持久化归档：三层职责分离（运行时状态/交付凭据/机械门禁）、`check-review-report.sh`、R2 双通道输入、模板↔门禁标题漂移防护（**已终审放行 ✅**，审查归档见 `docs/project/reviews/2026-10-04-review-report-archive/`） | [2026-10-04-review-report-archive.md](./project/plans/2026-10-04-review-report-archive.md) |
 | **`dual-round-review` V2.2.0** | 子智能体直写通道：Write-Scope 单路径例外 + 路径预授权六条 + 主智能体独立复算指纹 + 转录降级显式登记（台账第 7 列）+ `--round` 预授权路径 + 门禁第 8 项 + 旧归档补列迁移 | [2026-10-08-subagent-direct-write.md](./project/plans/2026-10-08-subagent-direct-write.md) |
 | **批次 D 机器地图身份写保护契约** | BK-0030/BK-0031 交付（**已完成**，Maintenance-Patch 通道：五轮审查全部无 P0/P1 准予交付） | [2026-10-09-backlog-batch-d-identity-contract.md](./project/plans/2026-10-09-backlog-batch-d-identity-contract.md) |
