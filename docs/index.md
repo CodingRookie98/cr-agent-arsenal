@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.29.0 (RFC-0004 spec-evolution 已受理：状态 Accepted · V0.3.0 定案，批准进入 P1；v1 只采信可复现退出码，结构性排除无客观信号的设计质量评价)
+> - **当前版本**: V1.30.0 (spec-evolution 技能落地：机械化演进回路交付 —— 只读采集器 + 确定性判定器 + C-01~C-10 判据表 + GI-1~GI-6 回归门禁；v1 只采信可复现退出码，结构性排除无客观信号的设计质量评价)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.30.0** | 2026-10-12 | DSH AI Agent | 王辉 | **`spec-evolution` 技能落地**：新建技能全量交付（`SKILL.md` + `references/{checks-spec,anchor-contract,baseline.json}` + `scripts/{collect-facts,judge}.py` + `templates/evolution-report.md` + `tests/` 四件套 + 架构设计书）；判定器实测复现 RFC-0004 §1.1 的 F-1~F-9 全部九项缺陷（退出码 1），并新发现 2 项不在 F 清单内的缺口；修 F-9（collections 补 `clarification-protocol` 与 `spec-evolution`）；四个注册面同步接入 |
 | **V1.29.0** | 2026-10-12 | DSH AI Agent | 王辉 | **RFC-0004 受理**（状态 In Review → **Accepted**，V0.3.0 定案，批准进入 P1）：四项未决项裁决一并落定——C-04 的 500 字符**降为建议值**（权威出处措辞为 "if possible"，非成文规范；V0.1.0 所依「仓库既有规范」经查为循环引用）、C-05 口径改按规范原文的 `description` ≥1024（原「frontmatter 总长」口径系转述走样）、C-07 注册面 5→4（剔除结构上不可能收录技能的 `docs/llms.txt`）、F-1~F-9 不随本次交付（唯一例外 F-9） |
 | **V1.28.0** | 2026-10-12 | DSH AI Agent | 王辉 | **RFC-0004 `spec-evolution` 立项**（状态 In Review）：面向规范资产（7 个技能 + 根提示词）的机械化演进回路；确立「选择端 = 脚本退出码而非模型意见」立论，判据表 C-01~C-10 全部由 2026-10-12 真实试跑数据支撑（既有三门禁全绿的同时实测出 F-1~F-9 九项零覆盖缺陷）；v1 明确排除无客观信号的设计质量评价 |
 | **V1.27.0** | 2026-10-09 | DSH AI Agent | 王辉 | **批次 D 交付完成**（五轮审查全部无 P0/P1，5 份归档报告）：BK-0030/BK-0031 关闭归档 2026-Q4；落地 `--name` 缺省沿用身份、round-trip 断言、全面 fail-closed（含审计读闸门与原子落盘）；GOVERNANCE §4.1 身份写保护契约；新增 BK-0032 |
 | **V1.26.0** | 2026-10-09 | DSH AI Agent | 王辉 | 批次 D（BK-0030/BK-0031）：`--name` 缺省改 `None` 并**沿用既有地图身份**（正常重生成不再被拒或改名）、不可读/非 UTF-8/不可反解一律 fail-closed；GOVERNANCE §4.1 登记**身份写保护契约** |
-| **V1.25.0** | 2026-10-09 | DSH AI Agent | 王辉 | **批次 C 交付完成**（四轮审查：前三轮各指 1×P1 且均为实质缺陷，第四轮后果级复核根治，4 份归档报告）：BK-0026/BK-0027 关闭归档 2026-Q4；落地**生成器侧身份写保护闸门**与 fail-closed 提示；新增 BK-0030/BK-0031 |
 
 ---
 
@@ -40,6 +40,7 @@
 | **`dual-round-review`** | 红队第一性原理穿透 + 元架构师审判校准；支持 Full / Light / Delta 三模式、审查记录锚点与交付凭据归档（报告全文进版本库 + 结构机械门禁） | [dual-round-review-design.md](./explanation/architecture/dual-round-review-design.md) |
 | **`taste-driven-designer`** | 源于 Anshu Chimala AI 双钻模型：外部随机种子 + 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 多模态增强 + 残酷减法 | [taste-driven-designer-design.md](./explanation/architecture/taste-driven-designer-design.md) |
 | **`frontend-qa-gate`** | 源于 kejun《前端开发转向 AI Coding 的常见问题全景》：五域产物断言（响应式 / 状态矩阵 / 无障碍 / 浏览器 / 性能）+ 证据三态 + 回流路由；不做分数判据、不替代人工签收、不侵入代码级审查 | [frontend-qa-gate-design.md](./explanation/architecture/frontend-qa-gate-design.md) |
+| **`spec-evolution`** | 机械化演进回路：把演进回路的「选择端」从模型意见换成脚本退出码（只读采集器 → 确定性判定器 → Exit 0/1/2）+ 锚点硬门禁（不可解析即 fail-closed）+ 人类裁决区永久留白；只判「产物存在性」，不做设计质量评价 | [spec-evolution-design.md](./explanation/architecture/spec-evolution-design.md) |
 | **Backlog 治理最佳实践** | 结合软件工程史（精益/看板/Shape Up）与 AI 上下文工程的 14 项待办治理法则 | [backlog-governance-best-practices.md](./explanation/analysis/backlog-governance-best-practices.md) |
 
 ---
@@ -57,6 +58,7 @@
 | **`taste-driven-designer`** | [taste-driven-designer 规程](../skills/taste-driven-designer/SKILL.md) | 品味驱动设计三阶段流程（D1 种子发散 / D2 三信号门禁 / D3 AI Tells 审计与减法）；能力门控、宿主无关、可降级 |
 | **`frontend-qa-gate`** | [frontend-qa-gate 规程](../skills/frontend-qa-gate/SKILL.md) | 前端产物验收（五域断言 + 报告结构机械门禁 + 缺陷回流路由）；能力门控，缺能力记未验证不降级通过 |
 | **`clarification-protocol`** | [clarification-protocol 规程](../skills/clarification-protocol/SKILL.md) | 需求澄清与收敛规程（术语先行前置项、提问分级排序、决策台账去重、三项收敛自检、熔断预算与人类升级）；由全局提示词 §4 的一行指针按需唤起 |
+| **`spec-evolution`** | [spec-evolution 规程](../skills/spec-evolution/SKILL.md) | 机械化演进回路（技能交付面完整性、`description` 上限、文件规模、四注册面漂移、根提示词净增长）；判定只采信脚本退出码与可核验锚点，人类裁决区永久留白 |
 
 ---
 

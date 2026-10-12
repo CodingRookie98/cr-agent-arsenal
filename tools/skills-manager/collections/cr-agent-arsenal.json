@@ -5,10 +5,12 @@
       "mode": "all",
       "names": [
         "agy-delegation-workflow",
+        "clarification-protocol",
         "doc-governance",
         "dual-round-review",
         "frontend-qa-gate",
         "goal-loop",
+        "spec-evolution",
         "taste-driven-designer"
       ]
     }

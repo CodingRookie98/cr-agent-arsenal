@@ -57,6 +57,7 @@ cr-agent-arsenal/
 | **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance/SKILL.md) | **工业级文档工程与知识库治理体系**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转模型与 Docs-as-Code 自动化门禁，彻底杜绝文档与代码漂移。 | Claude Code / Antigravity / 全局 Shell |
 | **`taste-driven-designer`** | [`skills/taste-driven-designer`](./skills/taste-driven-designer/SKILL.md) | **品味驱动设计三阶段流程**（源于 Anshu Chimala AI 双钻模型）。<br/>D1 种子字符串发散（外部随机性）→ D2 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 每轮内嵌产物自检→ D3 AI Tells 审计与残酷减法；图像/视频增强能力门控，宿主无关、可降级。 | 具备子智能体派发能力的智能体 / CLI |
 | **`frontend-qa-gate`** | [`skills/frontend-qa-gate`](./skills/frontend-qa-gate/SKILL.md) | **前端产物验收硬门禁**（源于 kejun《前端开发转向 AI Coding 的常见问题全景》）。<br/>五域断言：响应式视口 / 交互状态矩阵 / 无障碍键盘与读屏 / 浏览器覆盖 / 性能预算；证据三态（已实现 / 已运行验证 / 未验证）、结论仅 PASS / FAIL / BLOCKED，不做分数判据；审产物不审代码（代码级判据路由 `dual-round-review`），回流缺陷按路由表分流。 | 具备浏览器驱动能力的智能体 / CLI |
+| **`spec-evolution`** | [`skills/spec-evolution`](./skills/spec-evolution/SKILL.md) | **机械化演进回路**（源于 RFC-0004）。<br/>把演进回路的「选择端」从**模型意见**换成**脚本退出码**：只读事实采集器（`collect-facts.py`）→ 确定性判定器（`judge.py`，零 LLM / 零网络 / 纯标准库）→ Exit 0/1/2；判据表 C-01~C-10 覆盖技能交付面完整性、`description` 上限、文件规模、注册面漂移与根提示词净增长。结论一律锚定在可核验的章节路径/仓库路径锚点上（锚点不可解析即 fail-closed 退出 2），**人类裁决区永久留白**，模型代填即门禁违规。 | Claude Code / Antigravity / DSH / 全局 Shell |
 
 > ⚠️ **新增技能须知**：`SKILL.md` 的 frontmatter 必须是**合法 YAML**。`description` 若含 `": "`（冒号+空格，如 `evidence: xxx`）必须整体加引号，否则 `npx skills` 解析失败会**静默跳过该技能**（命令仍 exit 0，`Found N skills` 少一个）。规范细节见 [agentskills.io specification](https://agentskills.io/specification)。
 
@@ -125,6 +126,7 @@ python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a an
   * `dual-round-review`: [dual-round-review-design.md](./docs/explanation/architecture/dual-round-review-design.md)
   * `taste-driven-designer`: [taste-driven-designer-design.md](./docs/explanation/architecture/taste-driven-designer-design.md)
   * `frontend-qa-gate`: [frontend-qa-gate-design.md](./docs/explanation/architecture/frontend-qa-gate-design.md)
+  * `spec-evolution`: [spec-evolution-design.md](./docs/explanation/architecture/spec-evolution-design.md)
 * 🧩 **`goal-loop` 宿主执行后端适配规程**: [skills/goal-loop/references/host-adapters.md](./skills/goal-loop/references/host-adapters.md)
 * 🚀 **实施计划与结项记录**: 计划索引见 [docs/index.md](./docs/index.md) §4 工程演进与管理（计划文件归档于 `docs/project/plans/`）
 * 📖 **外部前沿文献与理论基准 (`docs/reference/articles/`)**
