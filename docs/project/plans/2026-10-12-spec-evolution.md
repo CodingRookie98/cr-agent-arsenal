@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-SPEC-EVOLUTION-2026
-> - **当前版本**: V1.2.0
+> - **当前版本**: V1.3.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-10-12
 
@@ -27,12 +27,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3.5（首轮 R1/R2 裁决「阻断交付」；R1-1/R1-2/R1-3 三项 P1 的 Delta 修复已完成，待以新基线重跑完整双轮闭环）
-- **当前活跃子任务**: P3.5 Delta 修复（D-10~D-14：GI-6 只读不变式、退出码口径、`--no-gates` 报告三态、锚点目录语义、R2 元裁定落实）
+- **当前活跃阶段**: P3.5（首轮 R1/R2 裁决「阻断交付」；R1-1/R1-2/R1-3 三项 P1 与 R2 的 P2 批次均已修复，基线推进至 `fe8da78..97aefeb`，待重跑 Delta 双轮闭环）
+- **当前活跃子任务**: P3.5 Delta 闭环（D-10~D-16 全部落地：GI-6 只读不变式、退出码口径、`--no-gates` 报告三态、锚点目录语义、R2 元裁定落实、RFC `[REPO:*]` 补登、七项非阻断项落为 `BK-0033`~`BK-0039`）
 - **当前子任务重试计数**: 0/3+R1-1/2
 - **外层循环迭代**: 1/5
-- **最后一次验证状态**: Delta 修复后实测——`python3 -m pytest skills/ -q` → **376 passed**；`check-doc-links.py --root docs` → 68 文件断链 **0**；`audit-doc-health.py` → **PASS**；`check-review-report.sh` 归档门禁 → **结构校验通过**；判定器自证全仓 **11 findings / HIGH+BLOCKER 3 条**（均为既有技能历史缺口，`spec-evolution` 自身 **0 finding**）
-- **最新有效提交**: `d8aa611`
+- **最后一次验证状态**: Delta 修复与 D-15/D-16 落盘后实测——`python3 -m pytest skills/ -q` → **376 passed**；`check-doc-links.py --root docs` → 69 文件断链 **0**；`audit-doc-health.py` → **PASS**（`generate-llms-txt.py --name=System` 收录 73 篇）；判定器自证全仓 **11 findings / HIGH+BLOCKER 3 条**（均为既有技能历史缺口，`spec-evolution` 自身 **0 finding**）
+- **最新有效提交**: `97aefeb`
 - **阻断原因**: 无
 
 ---
@@ -2336,3 +2336,4 @@ git push origin master
 | V1.0.0 | 2026-10-12 | 主智能体 | 待用户裁定 | P1 落地计划首发：7 个原子任务、12 条验收判据、6 类风险与 4 条显式默认假设 |
 | V1.1.0 | 2026-10-12 | DSH AI Agent | 王辉 | P3 执行收口：Task 1~7 全部交付（`1418e2b` / `629c6b1` / `dfc301b` / `3f58d00` / `5775c6c` / `95af3f1` / `fe8da78`）；新增《执行偏差记录》D-1~D-8（设计稿缺陷与 Task 3 段 5 处 + Task 4 段 1 处 + Task 5/6 各 1 处顺序/版本问题）；Active Checkpoint 推进至 P3.5 |
 | V1.2.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 首轮双轮闭环收口：R1 红队 / R2 元审判归档（`ac13058`），R2 裁定**阻断交付**（3×P1）；按 R2 裁定的最小充分修法落地 D-10~D-14（GI-6 只读不变式、退出码口径四文档收敛、`--no-gates` 报告三态、锚点目录语义、R2 元裁定）（`d8aa611`）；验收 `pytest skills/` → 376 passed、断链 0、健康 PASS、判定器自证 `spec-evolution` 自身 0 finding |
+| V1.3.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 Delta 修复批次收口：三项 P1（GI-6 只读不变式 / 退出码口径 / `--no-gates` 报告三态）与 R2 的 P2 批次全部落地，新增《执行偏差记录》D-15（RFC-0004 §3.4 补登 `[REPO:*]` 锚点契约，V0.5.0）与 D-16（R1/R2 七项非阻断项落为 `BK-0033`~`BK-0039`）；Active Checkpoint 基线推进至 `fe8da78..97aefeb`，待重跑 Delta 双轮闭环 |
