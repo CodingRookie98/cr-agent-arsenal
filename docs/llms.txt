@@ -64,6 +64,7 @@
 - [BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存](project/backlog/active/BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存.md): id: BK-0040
 - [BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议](project/backlog/active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md): id: BK-0041
 - [BK-0042-manage-backlog-py-close-未收敛卡片-3-dod-勾选与-](project/backlog/active/BK-0042-manage-backlog-py-close-未收敛卡片-3-dod-勾选与-.md): id: BK-0042
+- [BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约](project/backlog/active/BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约.md): id: BK-0043
 - [BK-0001-trim-revision-py-archive-exemption](project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0021-generate-llms-txt-py-的-root-与-output-落点解](project/backlog/archive/2026-Q4/BK-0021-generate-llms-txt-py-的-root-与-output-落点解.md): id: BK-0021

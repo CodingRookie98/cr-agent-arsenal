@@ -20,7 +20,7 @@ acceptance_criteria:
 ---
 
 ## 1. 背景与问题陈述
-`manage-backlog.py create` 在 skills/doc-governance/scripts/manage-backlog.py:329 写入 `*(未开工)*` 占位语，:325-327 写入未勾选的 §3 DoD 复选框；`cmd_close`（:340-394）只追加「### 结项记录」，既不替换占位语也不收敛复选框。实测证据：BK-0039 归档卡同一 §4 内同时存在 `*(未开工)*` 与结项记录，§3 DoD 在验收准则全部达成后仍为未勾选。属工具缺陷而非作者疏漏：结项动作缺少对卡片自身状态的收口一致性保证。
+`manage-backlog.py create` 在 skills/doc-governance/scripts/manage-backlog.py:329 写入 `*(未开工)*` 占位语，:323-327 写入未勾选的 §3 DoD 复选框（含 :327 else 缺省分支）；`cmd_close`（:340-394）只追加「### 结项记录」，既不替换占位语也不收敛复选框。实测证据：BK-0039 归档卡同一 §4 内同时存在 `*(未开工)*` 与结项记录，§3 DoD 在验收准则全部达成后仍为未勾选。属工具缺陷而非作者疏漏：结项动作缺少对卡片自身状态的收口一致性保证。
 
 ## 2. 影响面与技术考量
 - 涉及模块: skills/doc-governance/scripts/manage-backlog.py（cmd_create 占位写入、cmd_close 归档收口），skills/doc-governance/tests/

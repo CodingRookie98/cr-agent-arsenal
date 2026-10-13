@@ -46,8 +46,11 @@ acceptance_criteria:
 
 本卡及其关联提交的对外宣称经独立红队复核（reviewer V8，subagentId `019e463d-cb16-41b0-8316-dd5eb367fb37`）后，按「宣称与取证同宽」原则显式更正。已推送的提交信息不可改写（仓库红线：禁止重写已推送历史），更正以本条记录为准。
 
-- **E-1 提交信息测量时点错位**：提交 `8facf12` 信息中的「judge 复跑：两技能 C-01 消失，clarification-protocol 仅余 C-04 MID 建议项」系按**同批末态**（含 `cdedd38` 新增的 clarification-protocol 设计书）测量，不适用于 `8facf12` 自身树。复现：`git archive 8facf12 | tar -x -C /tmp/c8` 后运行 `collect-facts.py --no-gates` + `judge.py` → **findings=7 / 0 HIGH**，其中含 clarification-protocol 的 C-02「设计书文件不存在」；末态 `cdedd38` / `f037116` 实测 4 条 MID。
+- **E-1 提交信息测量时点错位**：提交 `8facf12` 信息中的「judge 复跑：两技能 C-01 消失，clarification-protocol 仅余 C-04 MID 建议项」与同批末态 `cdedd38` / `f037116` 的实测（4 MID / 0 HIGH）一致，但在 `8facf12` 自身树上不成立——clarification-protocol 的设计书由紧随的 `cdedd38` 才新增。复现：`git archive 8facf12 | tar -x -C /tmp/c8` 后运行 `collect-facts.py --no-gates` + `judge.py` → **findings=7 / 0 HIGH**，其中含 clarification-protocol 的 C-02「设计书文件不存在」；末态 `cdedd38` / `f037116` 实测 4 条 MID。
 - **E-2 交付面基线数字的测量时点**：本卡 §1 与 §4 所载「11 findings / 3 HIGH」（含 §4 复核段）为 **`c13b1e2` 修复 C-07 之前**的测量值。复核实测：`3abacf7` = **10 findings / 2 HIGH**（C-07 已消除），末态 `f037116` = **4 findings / 0 HIGH / 0 BLOCKER**。
 - **E-3 destination 范围限定**：frontmatter `destination` 与本卡 §4 结项记录中的「C-01/C-02/C-03 转绿」，其 **C-02 仅指 `clarification-protocol` 设计书入册**；`agy-delegation-workflow` 的 C-02（设计书缺失）当时未修复，已按「检测与修复分离」移交 BK-0041。
 - **E-4 模板占位残留**：§3 DoD 复选框与 §4「*(未开工)*」占位语在结项时未被 `manage-backlog.py close` 收敛（见 `skills/doc-governance/scripts/manage-backlog.py:329` 与 `:340-394`）。本次按实况补勾并替换占位；工具缺陷登记为 BK-0042。
+- **E-5 工作区副作用不可由提交复核**：提交 `3b12d1e` 信息中的「设计书权限 0600→0644」属工作区操作——git index mode 仅表达 `100644` / `100755`，该差异既不在该提交 diff 内，也无法由任何提交取证（当前磁盘态为 644，可直接验证）。此类工作区副作用今后不进入提交信息的完成度宣称。
+
+以上 E-1~E-5 经独立复核 V9（subagentId `e0210a3d-178d-4b72-ada2-c8035d6b0569`）逐项复现：`8facf12` = 7 findings / 0 HIGH（含 clarification-protocol C-02）、`cdedd38` 与 `f037116` = 4 MID、`3abacf7` = 10 / 2 HIGH、`6eacc31` = 11 / 3 HIGH；全部列名 SHA 均为 `3b12d1e` 祖先，已推送历史未被改写。
 
