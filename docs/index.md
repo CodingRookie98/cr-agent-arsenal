@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.30.0 (spec-evolution 技能落地：机械化演进回路交付 —— 只读采集器 + 确定性判定器 + C-01~C-10 判据表 + GI-1~GI-6 回归门禁；v1 只采信可复现退出码，结构性排除无客观信号的设计质量评价)
+> - **当前版本**: V1.31.0 (平台规则象限启用：来源组收录判据迁入 `docs/reference/rules/` 并确立为唯一事实来源；工具 README 与根 README 改为指针)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.31.0** | 2026-10-13 | DSH AI Agent | 王辉 | **来源组收录判据迁入 `docs/reference/rules/`**：新增 REF-SOURCE-GROUP-INCLUSION-2026（V1.0.0）为判据唯一事实来源，启用 `reference/rules/` 象限托管索引；工具 README 的判据段与根 README §3 注释改为指向该文档；判据约束此后新增或变更的来源组，既有 `common` 条目按登记基准 2026-10-13 维持现状 |
 | **V1.30.0** | 2026-10-12 | DSH AI Agent | 王辉 | **`spec-evolution` 技能落地**：新建技能全量交付（`SKILL.md` + `references/{checks-spec,anchor-contract,baseline.json}` + `scripts/{collect-facts,judge}.py` + `templates/evolution-report.md` + `tests/` 四件套 + 架构设计书）；判定器实测复现 RFC-0004 §1.1 的 F-1~F-9 全部九项缺陷（退出码 1），并新发现 2 项不在 F 清单内的缺口；修 F-9（collections 补 `clarification-protocol` 与 `spec-evolution`）；四个注册面同步接入 |
 | **V1.29.0** | 2026-10-12 | DSH AI Agent | 王辉 | **RFC-0004 受理**（状态 In Review → **Accepted**，V0.3.0 定案，批准进入 P1）：四项未决项裁决一并落定——C-04 的 500 字符**降为建议值**（权威出处措辞为 "if possible"，非成文规范；V0.1.0 所依「仓库既有规范」经查为循环引用）、C-05 口径改按规范原文的 `description` ≥1024（原「frontmatter 总长」口径系转述走样）、C-07 注册面 5→4（剔除结构上不可能收录技能的 `docs/llms.txt`）、F-1~F-9 不随本次交付（唯一例外 F-9） |
 | **V1.28.0** | 2026-10-12 | DSH AI Agent | 王辉 | **RFC-0004 `spec-evolution` 立项**（状态 In Review）：面向规范资产（7 个技能 + 根提示词）的机械化演进回路；确立「选择端 = 脚本退出码而非模型意见」立论，判据表 C-01~C-10 全部由 2026-10-12 真实试跑数据支撑（既有三门禁全绿的同时实测出 F-1~F-9 九项零覆盖缺陷）；v1 明确排除无客观信号的设计质量评价 |
 | **V1.27.0** | 2026-10-09 | DSH AI Agent | 王辉 | **批次 D 交付完成**（五轮审查全部无 P0/P1，5 份归档报告）：BK-0030/BK-0031 关闭归档 2026-Q4；落地 `--name` 缺省沿用身份、round-trip 断言、全面 fail-closed（含审计读闸门与原子落盘）；GOVERNANCE §4.1 身份写保护契约；新增 BK-0032 |
-| **V1.26.0** | 2026-10-09 | DSH AI Agent | 王辉 | 批次 D（BK-0030/BK-0031）：`--name` 缺省改 `None` 并**沿用既有地图身份**（正常重生成不再被拒或改名）、不可读/非 UTF-8/不可反解一律 fail-closed；GOVERNANCE §4.1 登记**身份写保护契约** |
 
 ---
 
@@ -99,3 +99,13 @@
 | **`ai-world-class-designer`** | Anshu Chimala (前 Apple AI 原型负责人): AI 设计双钻模型、独立 Critic 审稿闭环与 8 大反平庸工程技术 | [how-to-turn-your-ai-into-a-world-class-designer.md](./reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md) |
 | **`ai-coding-frontend-common-problems`** | kejun: AI Coding 前端常见问题全景 —— 研究证据、风险分层与十条可执行防御清单（本文献为本技能需求源） | [ai-coding-frontend-common-problems.md](./reference/articles/ai-coding-frontend-common-problems.md) |
 | **`backlog-capacity-governance`** | 真实实践调研：Linear/Jira/GitHub/actions-stale 的入口收口、自动出清、Close-as-Move 与 index+shard 拓扑 | [2026-10-04-backlog-capacity-governance.md](./research/2026-10-04-backlog-capacity-governance.md) |
+
+---
+
+## 6. 📖 平台规则与不可变约束 (Rules & Invariants)
+
+| 规则标识 | 约束对象与核心内容 | 规则文档 |
+| :--- | :--- | :--- |
+| **`source-group-inclusion`** | 预设来源组收录判据：缺省预设 `common` 的四条准入（即装即用 / 增量能力 / 厂商中立命名 / 粒度克制）、唯一例外边界（第一方唯一入口）、厂商／产品专用套件走独立预设、登记同步口径 | [source-group-inclusion.md](./reference/rules/source-group-inclusion.md) |
+
+> 象限索引：[reference/rules/index.md](./reference/rules/index.md)

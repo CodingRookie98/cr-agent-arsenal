@@ -14,6 +14,8 @@
 
 - [前端开发转向 AI Coding 的常见问题全景：研究证据、风险分层与验收清单](reference/articles/ai-coding-frontend-common-problems.md): title: "前端开发转向 AI Coding 的常见问题全景：研究证据、风险分层与验收清单"
 - [How to Turn Your AI into a World-Class Designer](reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md): 1. [核心架构与技能转化提炼 (Executive Summary & Skill Blueprint)](#1-核心架构与技能转化提炼-executive-summary-skill-blueprint)
+- [Reference / Rules 象限索引 (Quadrant Index)](reference/rules/index.md): <!-- doc-index:managed -->
+- [来源组收录判据 (Source-Group Inclusion Criteria)](reference/rules/source-group-inclusion.md): 来源组进入 `common` 需**同时**满足下列四条：
 
 ## Explanation (深度剖析 / 系统架构与 ADR 决策)
 

@@ -113,7 +113,7 @@ python3 tools/skills-manager/skills_manager.py install -a opencode -f common
 python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a antigravity -y
 ```
 
-> `-f` / `--file` 决定技能来源预设，缺省为 `common`；全部 8 个预设与用法见 [`tools/skills-manager/README.md`](./tools/skills-manager/README.md)，来源组收录判据见该文档「来源组收录判据」段。
+> `-f` / `--file` 决定技能来源预设，缺省为 `common`；全部 8 个预设与用法见 [`tools/skills-manager/README.md`](./tools/skills-manager/README.md)，来源组收录判据见 [`docs/reference/rules/source-group-inclusion.md`](./docs/reference/rules/source-group-inclusion.md)。
 
 ---
 
