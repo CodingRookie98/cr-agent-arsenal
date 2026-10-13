@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **31** 项 (进行中: 0, 计划中: 31)
+- **现役活跃待办**: **32** 项 (进行中: 0, 计划中: 32)
 - **历史已归档项**: **9** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 7 | 24 |
+| **活跃数量** | 0 | 0 | 7 | 25 |
 
 ---
 
@@ -60,6 +60,7 @@
 | **BK-0037** | `P3` | `Security` | 输出路径可静默覆盖仓库内被跟踪文件 | 操作者把 --out / --json / --report 指向仓库内已存在的被跟踪文件 | [BK-0037](./active/BK-0037-输出路径可静默覆盖仓库内被跟踪文件.md) |
 | **BK-0038** | `P3` | `TechDebt` | 跨技能链接正则存在两份近似实现 | 修改 skills/_shared/tests/test_cross_skill_links.py 的 SKILL_NAMES 或正则时 | [BK-0038](./active/BK-0038-跨技能链接正则存在两份近似实现.md) |
 | **BK-0039** | `P3` | `TechDebt` | 存量技能交付面债务：agy/clarification 缺测试与 README 登记 | 下一轮 spec-evolution 扫描或专门的存量修复任务 | [BK-0039](./active/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md) |
+| **BK-0041** | `P3` | `TechDebt` | 存量技能交付面残余债务：agy 设计书缺失 / 两条 description 超建议值 / doc-governance 测试文件超行限 | spec-evolution judge 全量复跑出现 C-02 / C-04 / C-06 类 MID 发现且不阻断交付时登记；无前置条件，随时可做 | [BK-0041](./active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md) |
 
 ---
 

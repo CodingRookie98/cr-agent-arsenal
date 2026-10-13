@@ -172,3 +172,10 @@ docs/
 | [backlog-specification.md](./references/backlog-specification.md) | Backlog V2.0.0 冷热物理隔离、结构化条目契约、自动化门禁与归档 SOP |
 | [adr-specification.md](./references/adr-specification.md) | MADR 3.0 架构决策记录格式规范与 Append-Only 演进流 |
 | [legacy-migration-guide.md](./references/legacy-migration-guide.md) | 瀑布老目录（requirements, design, planning 等）平滑映射指引 |
+
+### 交付面模板 (Templates)
+
+| 模板 | 用途 |
+|:---|:---|
+| [doc-control-header.md](./templates/doc-control-header.md) | 手写／迁移文档的控制头、修订历史与填写规则骨架（`scaffold-doc.sh` 之外的手写文档） |
+| [change-registration.md](./templates/change-registration.md) | 变更联动登记骨架（影响面扫描 → 四类同步 → 门禁证据 → 未同步项） |

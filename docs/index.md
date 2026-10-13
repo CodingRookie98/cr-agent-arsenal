@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.34.3 (第三次增量复核收口：`source-group-inclusion` 升至 V1.2.3，`names` 归并边界限定至「安装整组」路径)
+> - **当前版本**: V1.35.0 (技能交付面补齐：`clarification-protocol` 架构设计书入册，架构设计书 6 → 7 份)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.35.0** | 2026-10-13 | DSH AI Agent | 王辉 | **技能交付面补齐（BK-0039 首批）**：新增 `clarification-protocol` 架构设计书并登记入册（§2 表 + 根 README §4 设计书列表 + 设计书计数 6 → 7）；同批补齐 `clarification-protocol` 的 references/templates/scripts/tests、`dual-round-review` 与 `doc-governance` 的 `templates/`，三家技能的 C-01/C-03 交付面判据由「缺失」转为「齐备待复跑」 |
 | **V1.34.3** | 2026-10-13 | DSH AI Agent | 王辉 | **增量复核（V7）观察①收口**：`source-group-inclusion` V1.2.2 → V1.2.3（同源多组归并边界补「安装整组时」限定，对应 `skills_manager.py:194`/`:196-208`）；象限索引 V1.0.6 |
 | **V1.34.2** | 2026-10-13 | DSH AI Agent | 王辉 | **增量复核（V6）措辞精确化**：`source-group-inclusion` V1.2.1 → V1.2.2（`install -s` 的 `names` 实为反查键、未命中回退 `unknown_source`；补同源多组归并边界）；象限索引 V1.0.5 |
 | **V1.34.1** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V5）措辞订正**：`source-group-inclusion` V1.2.0 → V1.2.1（C-3 范围句改为「判定对象是纳入基线时的 `names` 集合」、`names` 登记数与实际装入集分离、豁免明确不向 C-4 转移）；象限索引 V1.0.4 |
 | **V1.34.0** | 2026-10-13 | DSH AI Agent | 王辉 | **交付面复核修订**：`source-group-inclusion` 升至 V1.2.0（订正 C-3 与安装语义事实错误、显式登记 C-3 实际约束面、补取证边界、§4/§5 口径收敛）；`GOVERNANCE` 升至 V1.6.0（断链扫描域显式纳入 `llms.txt`，零覆盖态豁免代价收敛为仅「条目过期不判定」）；Backlog 行删去「当前最大项为 BK-0039」错误断言 |
-| **V1.33.0** | 2026-10-13 | DSH AI Agent | 王辉 | **注册面与计数对齐实测值**：根 README 技能表补入 `clarification-protocol`（§1，修 C-07 注册面缺失）；`6 个技能`→`8 个`（含布局树补 `clarification-protocol/`、`spec-evolution/`，docs 树补 `explanation/`、`reference/`、`project/`、`proposals/`、`research/` 与设计书 6 份）；500 字符按建议值口径重述并登记超标项；交叉技能链接策略 JSON 覆盖集补 `spec-evolution`；Backlog 行计数改为实测活跃 31 / 归档 9 |
 
 ---
 
@@ -40,6 +40,7 @@
 | **`dual-round-review`** | 红队第一性原理穿透 + 元架构师审判校准；支持 Full / Light / Delta 三模式、审查记录锚点与交付凭据归档（报告全文进版本库 + 结构机械门禁） | [dual-round-review-design.md](./explanation/architecture/dual-round-review-design.md) |
 | **`taste-driven-designer`** | 源于 Anshu Chimala AI 双钻模型：外部随机种子 + 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 多模态增强 + 残酷减法 | [taste-driven-designer-design.md](./explanation/architecture/taste-driven-designer-design.md) |
 | **`frontend-qa-gate`** | 源于 kejun《前端开发转向 AI Coding 的常见问题全景》：五域产物断言（响应式 / 状态矩阵 / 无障碍 / 浏览器 / 性能）+ 证据三态 + 回流路由；不做分数判据、不替代人工签收、不侵入代码级审查 | [frontend-qa-gate-design.md](./explanation/architecture/frontend-qa-gate-design.md) |
+| **`clarification-protocol`** | 以「依赖强度 × 实现影响」排序提问、以三类决策台账（已决项 / 已排除边界 / 默认假设）承载裁决、以三项收敛自检（目标 / 边界 / 矛盾）作终止判据；把「是否收敛」从感觉变成可判定句，台账结构由离线校验器机械把关 | [clarification-protocol-design.md](./explanation/architecture/clarification-protocol-design.md) |
 | **`spec-evolution`** | 机械化演进回路：把演进回路的「选择端」从模型意见换成脚本退出码（只读采集器 → 确定性判定器 → Exit 0/1/2）+ 锚点硬门禁（不可解析即 fail-closed）+ 人类裁决区永久留白；只判「产物存在性」，不做设计质量评价 | [spec-evolution-design.md](./explanation/architecture/spec-evolution-design.md) |
 | **Backlog 治理最佳实践** | 结合软件工程史（精益/看板/Shape Up）与 AI 上下文工程的 14 项待办治理法则 | [backlog-governance-best-practices.md](./explanation/analysis/backlog-governance-best-practices.md) |
 
@@ -85,7 +86,7 @@
 | **批次 B 机器地图写入侧安全与一致性门禁** | 闭环 BK-0023/BK-0025：缺省落点统一 `resolve()`、零覆盖拒绝落盘；`audit-doc-health.py` 将「机器地图 == 注册命令生成物」固化为硬阻断（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-b-llms-integrity.md](./project/plans/2026-10-09-backlog-batch-b-llms-integrity.md) |
 | **批次 A 归档豁免与 llms 落点修复** | 闭环 BK-0001/BK-0002/BK-0021：两个治理消费者补齐交付凭据归档豁免（写入侧 root 无关兜底）、机器地图落点随 `--root` 派生（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-a-archive-exemption.md](./project/plans/2026-10-09-backlog-batch-a-archive-exemption.md) |
 | **`doc-governance` 目录级索引约定** | 象限索引托管化与 scaffold 索引自愈：`manage-doc-index.py`（ensure/register/入参校验）+ 六分支自愈接入 + tutorial 条件渲染（**已完成**，三轮双轮对抗审查 Zero Blockers 准予交付） | [2026-10-09-quadrant-index-convention.md](./project/plans/2026-10-09-quadrant-index-convention.md) |
-| **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；活跃 **31** 项 / 历史归档 **9** 项，编号至 `BK-0040`；存量债务集中登记于 BK-0039「存量技能交付面债务」（agy 与 clarification-protocol 缺 `tests/` 等）） | [index.md](./project/backlog/index.md) |
+| **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；活跃 **31** 项 / 历史归档 **9** 项，编号至 `BK-0041`；存量交付面债务集中于 BK-0039「存量技能交付面债务」（agy 与 clarification-protocol 的 `tests/`、设计书与交付面）与 BK-0041「存量技能交付面残余债务」（agy 设计书 / 两条 description 超建议值 / 测试文件超行限）） | [index.md](./project/backlog/index.md) |
 | **ADR-0001 交付凭据归档层** | 审查凭据按「可否重建」分层：运行时状态留隐藏目录、交付凭据进版本库独立目录并对齐治理豁免语义（MADR 3.0；含四轮对抗审查证据） | [0001-review-evidence-archive-layer.md](./explanation/decisions/0001-review-evidence-archive-layer.md) |
 | **ADR-0002 子智能体直写通道** | 写盘权归还内容作者：消除转录失真、写盘与核验分离；显式登记三项代价（授权面由零扩大为单文件、路径预授权是提示词契约而非沙箱强制、写入形态声明不可机械验证）（MADR 3.0） | [0002-subagent-direct-write-channel.md](./explanation/decisions/0002-subagent-direct-write-channel.md) |
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |

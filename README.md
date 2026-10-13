@@ -38,7 +38,7 @@ cr-agent-arsenal/
 │   ├── index.md                # 知识库全景索引
 │   ├── GOVERNANCE.md           # 知识库治理规程
 │   ├── llms.txt                # 智能体机器可读地图 (由 doc-governance 脚本生成)
-│   ├── explanation/            # 解释象限 (architecture 设计书 6 份 / analysis / decisions)
+│   ├── explanation/            # 解释象限 (architecture 设计书 7 份 / analysis / decisions)
 │   ├── reference/              # 参考象限 (rules 平台规则与不可变约束 / articles 外部文献)
 │   ├── project/                # 工程治理 (plans 计划 / reviews 审查报告 / backlog 待办)
 │   ├── proposals/              # RFC 提案与结晶流转
@@ -132,6 +132,7 @@ python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a an
   * `taste-driven-designer`: [taste-driven-designer-design.md](./docs/explanation/architecture/taste-driven-designer-design.md)
   * `frontend-qa-gate`: [frontend-qa-gate-design.md](./docs/explanation/architecture/frontend-qa-gate-design.md)
   * `spec-evolution`: [spec-evolution-design.md](./docs/explanation/architecture/spec-evolution-design.md)
+  * `clarification-protocol`: [clarification-protocol-design.md](./docs/explanation/architecture/clarification-protocol-design.md)
 * 🧩 **`goal-loop` 宿主执行后端适配规程**: [skills/goal-loop/references/host-adapters.md](./skills/goal-loop/references/host-adapters.md)
 * 🚀 **实施计划与结项记录**: 计划索引见 [docs/index.md](./docs/index.md) §4 工程演进与管理（计划文件归档于 `docs/project/plans/`）
 * 📖 **外部前沿文献与理论基准 (`docs/reference/articles/`)**
@@ -142,5 +143,5 @@ python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a an
 
 ## 📄 规范与许可 (Standards & License)
 
-* **技能规范**：本仓库 8 个技能均遵循 [`agentskills.io` 规范](https://agentskills.io/specification)——`name` 与所在目录同名、`description` 为合法 YAML 且不超过规范上限（1024 字符，现行 8 个技能全部达标；500 字符为建议值，`clarification-protocol` 623 与 `dual-round-review` 738 超出建议值，已登记为存量债务 [BK-0039](./docs/project/backlog/active/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md)）、`SKILL.md` 正文均 < 500 行，可直接被 `npx skills` 拉取。
+* **技能规范**：本仓库 8 个技能均遵循 [`agentskills.io` 规范](https://agentskills.io/specification)——`name` 与所在目录同名、`description` 为合法 YAML 且不超过规范上限（1024 字符，现行 8 个技能全部达标；500 字符为建议值，`clarification-protocol` 623 与 `dual-round-review` 738 超出建议值，已登记为存量债务 [BK-0041](./docs/project/backlog/active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md)）、`SKILL.md` 正文均 < 500 行，可直接被 `npx skills` 拉取。
 * **许可**：本项目采用 [MIT 许可证](./LICENSE)（Copyright © 2026 CodingRookie98），8 个技能 frontmatter 均已声明 `license: MIT`；可自由使用、修改与再分发，但须保留版权与许可声明。

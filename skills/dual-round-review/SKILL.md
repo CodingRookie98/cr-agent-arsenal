@@ -265,6 +265,12 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
 * [check-review-report.sh](scripts/check-review-report.sh) - 《交付凭据归档》结构机械门禁（索引字段 / 指纹一致 / 两轮区块 / 稳定 ID 对齐 / **写入形态合法**；`--require-verdict=PASS` 供交付放行）
 * [prepare-review-context.sh](scripts/prepare-review-context.sh) - 审查上下文提取与归档 scaffold（`--slug` + `--round` 产出**预授权报告目标路径**，供派发提示词内联）
 
+### 交付面模板 (Templates)
+* [review-archive-index.md](templates/review-archive-index.md) - 归档索引骨架（三必需字段 + 轮次台账列与取值 + 指纹登记位 + 门禁清单）
+* [r1-report-code.md](templates/r1-report-code.md) - R1 代码审查报告骨架（五必需区块 + 稳定 ID 缺陷清单）
+* [r1-report-artifact.md](templates/r1-report-artifact.md) - R1 产物审查报告骨架（`> **Review Schema**: artifact` + 产物五区块 + Toulmin 四元组表头）
+* [r2-report.md](templates/r2-report.md) - R2 终审裁决书骨架（三必需区块 + R1 稳定 ID 对齐表）
+
 ### 实战演练案例
 * [case-1-palliative-patch.md](examples/case-1-palliative-patch.md) - 案例 1: 浅层修补（打布丁）识别与阻断
 * [case-2-over-engineering.md](examples/case-2-over-engineering.md) - 案例 2: 过度工程与纸上谈兵甄别（驳回项）

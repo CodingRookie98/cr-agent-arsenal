@@ -20,6 +20,7 @@
 ## Explanation (深度剖析 / 系统架构与 ADR 决策)
 
 - [AI Coding 时代的待办清单（Backlog）治理最佳实践调研](explanation/analysis/backlog-governance-best-practices.md): **核心结论**：backlog 臃肿不是"条目太多"，而是**职责混淆 + 缺乏出口**的必然结果。历史上（精益/看板/Shape Up）与 AI 时代（上下文工程）给出的诊断高度一致——**任何只进不出的队列，最终都会同时摧毁决策效率与...
+- [clarification-protocol 需求澄清与收敛协议技能架构设计书 (Architecture & Design Specification)](explanation/architecture/clarification-protocol-design.md): 多轮澄清是长程任务里最容易被"看起来在推进"掩盖的失控点。三种失败形态反复出现：
 - [doc-governance 文档工程与知识库治理技能架构设计书 (Architecture & Design Specification)](explanation/architecture/doc-governance-design.md): 在以大语言模型（LLM）为核心的 AI 智能体软件研发时代，传统的文档管理模式正在遭遇前所未有的范式危机。文档不再仅仅是给人类工程师偶尔查阅的静态参考书，更是**直接作为 AI 智能体生成代码、规划架构与执行 TDD 的核心上下文（Cont...
 - [dual-round-review 双轮对抗审查技能架构设计书 (Architecture & Design Specification)](explanation/architecture/dual-round-review-design.md): 大模型编程面临三大核心陷阱：**讨好型盲从（Sycophancy）**、**浅层打补丁（Palliative Patching）** 与 **审查幻觉与过度工程（Over-engineering）**。双轮对抗审查以"红队穿透 + 元架构师...
 - [frontend-qa-gate 前端产物验收技能架构设计书 (Architecture & Design Specification)](explanation/architecture/frontend-qa-gate-design.md): AI 生成前端代码的速度不断提升，但文章给出的证据链指出：**生成快不等于交付可用**。三条最相关的证据：
@@ -62,6 +63,7 @@
 - [BK-0038-跨技能链接正则存在两份近似实现](project/backlog/active/BK-0038-跨技能链接正则存在两份近似实现.md): id: BK-0038
 - [BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-](project/backlog/active/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md): id: BK-0039
 - [BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存](project/backlog/active/BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存.md): id: BK-0040
+- [BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议](project/backlog/active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md): id: BK-0041
 - [BK-0001-trim-revision-py-archive-exemption](project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0021-generate-llms-txt-py-的-root-与-output-落点解](project/backlog/archive/2026-Q4/BK-0021-generate-llms-txt-py-的-root-与-output-落点解.md): id: BK-0021
