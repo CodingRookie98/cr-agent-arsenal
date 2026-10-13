@@ -186,18 +186,49 @@ def test_cross_skill_link_scanner_self_check():
         assert not CROSS_SKILL_LINK.search(strip_inline_code(sample)), f"正则误伤技能内路径: {sample}"
 
 
-def test_relative_links_resolve_within_skill():
-    broken = []
-    for path in skill_docs():
+def link_defects(root: Path = SKILL_DIR, docs=None):
+    """返回 (断链, 越界链接)：断链指目标不存在；越界指目标存在但落在技能目录之外。"""
+    skill_root = root.resolve()
+    paths = skill_docs() if docs is None else docs
+    broken, escaped = [], []
+    for path in paths:
         body = strip_fences(read(path))
         for i, line in enumerate(body.splitlines(), 1):
             for target in LINK.findall(strip_inline_code(line)):
                 t = target.strip()
                 if t.startswith(("http", "#", "mailto:")):
                     continue
-                if not (path.parent / t.split("#")[0]).resolve().exists():
-                    broken.append(f"{path.relative_to(SKILL_DIR)}:{i} -> {t}")
+                resolved = (path.parent / t.split("#")[0]).resolve()
+                where = f"{path.relative_to(root)}:{i} -> {t}"
+                if not resolved.exists():
+                    broken.append(where)
+                elif resolved != skill_root and skill_root not in resolved.parents:
+                    escaped.append(where)
+    return broken, escaped
+
+
+def test_relative_links_resolve_within_skill():
+    broken, escaped = link_defects()
     assert not broken, "技能文档断链: " + "; ".join(broken)
+    assert not escaped, "相对链接不得越出技能目录（单技能安装会断链）: " + "; ".join(escaped)
+
+
+def test_link_containment_scanner_self_check(tmp_path):
+    skill_root = tmp_path / "skills" / "demo"
+    (skill_root / "references").mkdir(parents=True)
+    (skill_root / "references" / "inside.md").write_text("y", encoding="utf-8")
+    outside = tmp_path / "docs" / "index.md"
+    outside.parent.mkdir(parents=True)
+    outside.write_text("z", encoding="utf-8")
+    doc = skill_root / "SKILL.md"
+    doc.write_text(
+        "见 [技能内](references/inside.md)、[越界](../../docs/index.md)、[幽灵](references/ghost.md)\n",
+        encoding="utf-8",
+    )
+    broken, escaped = link_defects(root=skill_root, docs=[doc])
+    assert any("ghost.md" in b for b in broken), broken
+    assert any("index.md" in e for e in escaped), escaped
+    assert not any("inside.md" in x for x in broken + escaped), (broken, escaped)
 
 
 def test_link_scanner_self_check():
