@@ -81,6 +81,7 @@ class ManageBacklogCloseContractTest(unittest.TestCase):
         self.assertIn("### 结项记录", text)
         self.assertIn("§3 DoD 仍有 2 项未勾选", text)
         self.assertIn("不代勾验收准则", text)
+        self.assertNotIn("- [x] ", text, "close 不得代勾任何复选框")
 
     def test_close_after_manual_tick_has_no_hint_and_keeps_ticks(self):
         """作者已手工勾选 DoD 时，close 不得改写复选框、也不得输出未勾选提示"""
@@ -147,6 +148,76 @@ class ManageBacklogCloseContractTest(unittest.TestCase):
         idx_after = (self.test_dir / BACKLOG_REL / "index.md").read_text(encoding="utf-8")
         self.assertIn("BK-0001", idx_after)
         self.assertIn("现役活跃待办", idx_after)
+
+    # ---------- 提示项数统计口径 ----------
+
+    def test_hint_counts_only_section_three_checkboxes(self):
+        """§3 之外的复选框不计入提示项数（提示文案限定 §3 DoD）"""
+        card = self.create_card()
+        text = card.read_text(encoding="utf-8")
+        marker = "## 4. 实施去向与结项记录"
+        self.assertIn(marker, text, "建卡模板应包含 §4 小节标题")
+        card.write_text(text.replace(marker, marker + "\n- [ ] 归档后补录验证证据"), encoding="utf-8")
+        self.close_card()
+        archived = self.archived_card().read_text(encoding="utf-8")
+        self.assertIn("§3 DoD 仍有 2 项未勾选", archived)
+        self.assertIn("- [ ] 归档后补录验证证据", archived)
+
+
+SCAFFOLD_SCRIPT = SCRIPTS_DIR / "scaffold-doc.sh"
+
+
+def duty_note_line(text: str) -> str:
+    """取出卡片中的 DoD 人工核验职责说明行（无则返回空串）"""
+    for line in text.splitlines():
+        if line.startswith("*（§3 DoD 复选框由作者"):
+            return line
+    return ""
+
+
+class ScaffoldBacklogTemplateConsistencyTest(unittest.TestCase):
+    """scaffold-doc.sh 生成的 backlog 骨架必须与 create 模板逐字一致
+
+    回归目标：该脚本用未加引号的 heredoc 生成卡片，正文里的反引号必须转义，
+    否则会被 shell 当作命令替换执行（反引号包裹的 close 被吞掉并报 command not found）。
+    """
+
+    def setUp(self):
+        self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_scaffold_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir, ignore_errors=True)
+
+    def test_scaffold_backlog_card_keeps_duty_note_verbatim(self):
+        docs_root = self.test_dir / "scaf" / "docs"
+        docs_root.mkdir(parents=True)
+        res = subprocess.run(
+            ["bash", str(SCAFFOLD_SCRIPT), "backlog", "骨架一致性用例", "--root", str(docs_root)],
+            capture_output=True, text=True, cwd=str(self.test_dir),
+        )
+        self.assertEqual(res.returncode, 0, f"scaffold 失败: {res.stderr}")
+        self.assertNotIn("command not found", res.stderr)
+        cards = sorted((docs_root / "project" / "backlog" / "active").glob("BK-*.md"))
+        self.assertEqual(len(cards), 1, f"应生成 1 张骨架卡片: {cards}")
+        scaffold_text = cards[0].read_text(encoding="utf-8")
+
+        create_root = self.test_dir / "create"
+        create_root.mkdir()
+        res_create = subprocess.run(
+            [sys.executable, str(MANAGE_SCRIPT), "--root", str(create_root),
+             "create", "对照用例", "--type", "TechDebt", "--priority", "P2"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(res_create.returncode, 0, f"create 失败: {res_create.stderr}")
+        created = sorted((create_root / BACKLOG_REL / "active").glob("BK-*.md"))
+        self.assertEqual(len(created), 1, f"应生成 1 张 create 卡片: {created}")
+
+        scaffold_note = duty_note_line(scaffold_text)
+        self.assertIn("`close` 只收敛本卡占位语", scaffold_note,
+                      "scaffold 骨架的职责说明必须保留反引号包裹的 close（heredoc 需转义反引号）")
+        self.assertEqual(scaffold_note, duty_note_line(created[0].read_text(encoding="utf-8")),
+                         "scaffold 骨架与 create 模板的 DoD 职责说明必须逐字一致")
+        self.assertIn("*(未开工)*", scaffold_text)
 
 
 if __name__ == "__main__":

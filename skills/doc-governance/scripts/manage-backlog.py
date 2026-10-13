@@ -40,6 +40,17 @@ DOD_DUTY_NOTE = (
     "`close` 只收敛本卡占位语并提示未勾选项数，不代勾验收准则。）*\n"
 )
 
+# §3 (DoD) 小节：提示项数只统计该小节内的复选框，避免把其他小节的复选框算进 DoD
+DOD_SECTION_PATTERN = re.compile(r"^##\s*3\..*?(?=^##\s|\Z)", re.MULTILINE | re.DOTALL)
+
+
+def count_unchecked_dod(body: str) -> int:
+    """统计 §3 (DoD) 小节内未勾选的复选框数；卡片无 §3 小节时返回 0"""
+    section = DOD_SECTION_PATTERN.search(body)
+    if not section:
+        return 0
+    return len(re.findall(r"^- \[ \] ", section.group(0), flags=re.MULTILINE))
+
 
 def slugify(text: str) -> str:
     """将标题转换为合法的 URL/文件名 slug (保留英文、数字、汉字，以连字符分隔)"""
@@ -380,7 +391,7 @@ def cmd_close(args):
 
     # 追加结项说明到正文；同时机械收敛建卡期占位语（不代表对验收结论的判断）
     body = PLACEHOLDER_PATTERN.sub("", target["body"]).rstrip()
-    unchecked_dod = len(re.findall(r"^- \[ \] ", body, flags=re.MULTILINE))
+    unchecked_dod = count_unchecked_dod(body)
     close_log = (
         f"\n\n### 结项记录 ({today_str})\n"
         f"- **结论**: {args.resolution}\n"

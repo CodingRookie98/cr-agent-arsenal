@@ -158,7 +158,7 @@ acceptance_criteria:
 *(未开工)*
 ```
 
-> **占位语与 DoD 收敛**：建卡写入的 `*(未开工)*` 由 `close` 归档时机械删除，归档卡不再同时出现占位与结项记录；§3 DoD 复选框由作者在结项前人工核验勾选，`close` 不代勾，仅在结项记录中以「提示」行给出未勾选项数。
+> **占位语与 DoD 收敛**：建卡写入的 `*(未开工)*` 由 `close` 归档时机械删除，归档卡不再同时出现占位与结项记录；§3 DoD 复选框由作者在结项前人工核验勾选，`close` 不代勾，仅在结项记录中以「提示」行给出未勾选项数（统计范围限 §3 小节内）。
 
 #### 2.3.4 脚本化提取与可编程运维工具 (`manage-backlog.py`)
 为方便人类与 AI 智能体程序化读取、过滤和流转待办，提供配套脚本 `scripts/manage-backlog.py`：
@@ -182,7 +182,7 @@ python3 skills/doc-governance/scripts/manage-backlog.py close BK-0157 \
 python3 skills/doc-governance/scripts/manage-backlog.py sync-index
 ```
 
-> **`close` 的收口行为**：除更新元数据（`status`、`closed_at`、`resolution`、`destination`）与物理归档外，还会机械删除 §4 的 `*(未开工)*` 占位语；若 §3 DoD 仍有未勾选项，在结项记录中追加一行提示（仅项数统计，不改变卡片语义）。`reopen` 保留历史结项记录并追加 `### 重启记录`，当前状态以元数据 `status: active` 为准。
+> **`close` 的收口行为**：除更新元数据（`status`、`closed_at`、`resolution`、`destination`）与物理归档外，还会机械删除 §4 的 `*(未开工)*` 占位语；若 §3 小节内仍有未勾选项，在结项记录中追加一行提示（仅项数统计，不改变卡片语义）。`reopen` 保留历史结项记录并追加 `### 重启记录`，当前状态以元数据 `status: active` 为准。
 
 ---
 
