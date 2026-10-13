@@ -5,7 +5,7 @@
 
 > **文档控制信息**
 > - **文档标识**: DOCIDX-REFERENCE-RULES-2026
-> - **当前版本**: V1.0.5
+> - **当前版本**: V1.0.6
 > - **文档状态**: Active
 > - **生效日期**: 2026-10-13
 > - **文档所有者**: AI Agent / 工程师
@@ -16,11 +16,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.6** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.3（归并边界限定至整组安装路径） |
 | **V1.0.5** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.2（反查键语义与同源多组归并边界精确化） |
 | **V1.0.4** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.1（安装语义范围句与豁免表述措辞订正） |
 | **V1.0.3** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.0（C-3 与安装语义事实订正、取证边界与豁免范围收敛） |
 | **V1.0.2** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.1.0（判据作用域与例外判定式补全） |
-| **V1.0.1** | 2026-10-13 | AI Agent | 架构师 | 登记 source-group-inclusion.md |
 
 ---
 
