@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-SPEC-EVOLUTION-2026
-> - **当前版本**: V1.6.0
+> - **当前版本**: V1.7.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-10-12
 
@@ -15,7 +15,7 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-10-12（「准予 Accepted，进入 P1」）
 > - **批准基线**: `master` @ `0306f37`（RFC-0004 受理流转提交）
-> - **状态**: P3.5 首轮阻断 → Delta 修复已完成，待以新基线重跑完整双轮闭环
+> - **状态**: 已交付（Task 1~7 全部完成，P3.5 双轮对抗取得 ✅ 准予交付；已快进合入 `master` 并推送 `origin/master`）
 > - **隔离分支**: `feature/spec-evolution`（P3 起用，基点 `0306f37`）
 > - **需求确认文档**: [RFC-0004 spec-evolution 演进回路](../../proposals/RFC-0004-spec-evolution.md)（状态 **Accepted** · V0.3.0 · 已定案）
 > - **技术调研备忘录**: 豁免（P0.5 未触发——`N-4` 明令零第三方依赖、纯 `python3` 标准库 + 既有 `pytest` 约定，无选型空间；宿主能力边界已在 RFC-0004 §3 随方案拷问完成）
@@ -27,12 +27,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P4（P3.5 双轮对抗**已取得 ✅ 准予交付终审裁决**：delta-r2 裁决 Blockers = 0（🔴 0 / 🟡 19 / ⚪ 0），基线 `fe8da78..2100136`；进入文档治理与归档收口。**交付前待用户裁定是否合入 `master`**，见 D-9）
-- **当前活跃子任务**: P4 归档收口与交付呈报（delta-r2 报告归档登记、`BK-0040` 建卡、D-28 登记、计划 V1.6.0）；P3.5 闭环内容 D-17~D-27 全部落地：GI-6 三重机制根治 + 两条新信任边界收口（`mkdtemp` 独占缓存、越界 fail-closed）、根因叙述修正、`checks-spec.md` §4 退出码权威补登与四处指针同步、`collected_gates()` 三态收紧、`load_facts` 键类型校验、README 精确匹配登记、`BK-0033` 状态修正）
-- **当前子任务重试计数**: 0/3+R2-0/2（Delta 轮已收敛，无新增重入）
-- **外层循环迭代**: 3/5（末轮）
-- **最后一次验证状态**: delta-r2 终审后实测——报告 `delta-r2-fe8da78..2100136.md` 独立复算 **30500 字节 / SHA256 `9aeaf27a7f4e…`**，与子智能体回报**逐字一致**；三区块标题逐字在场；§2 含 `R1-1`…`R1-15` 共 15 行 + `DeltaR1-1`…`DeltaR1-4` 共 4 行；归档门禁 → **索引齐备 · 报告 5 份 · 指纹一致 · 区块齐备 · 稳定 ID 对齐**；`pytest skills/ -q` → **380 passed**；断链 **75 文件 0**；`audit-doc-health.py` → **PASS**；工作区除该报告外零改动
-- **最新有效提交**: `7bb09c5`（本轮**最后一次行为变更**提交；其后 `186f648` / `037eca3` / 本次提交均为纯计划文档提交，不改变可执行面，故门禁复验结论继续有效 —— 本字段语义固定为「最后一次行为变更提交」，避免纯文档提交造成无终止的自我追赶）
+- **当前活跃阶段**: **DONE / P5 已交付**（P3.5 裁决 ✅ 准予交付，Blockers = 0；`feature/spec-evolution` 已快进合入 `master`：`63de31b..5992a7a`，并推送 `origin/master`：`206d14b..5992a7a`。D-9 的分支/合入口径冲突已由用户裁定解决）
+- **当前活跃子任务**: **交付完成**（P4 归档收口 + P5 交付收口均已落盘；非阻断残余 `BK-0040` 按用户裁定留待下一轮）
+- **当前子任务重试计数**: 0/3（全流程收敛，无未决重入）
+- **外层循环迭代**: 3/5（末轮，已收敛）
+- **最后一次验证状态**: P5 交付终局实测（`5992a7a`）——`pytest skills/ -q` → **380 passed**；`check-doc-links.py --root docs` → **断链 0**；`audit-doc-health.py` → **PASS**；归档门禁 `check-review-report.sh` → **索引齐备 · 报告 5 份 · 指纹一致 · 区块齐备 · 稳定 ID 对齐**；§5 十二条验收判据全部实测通过（见 §5 表「实测」列）
+- **最新有效提交**: `2100973`（本轮**最后一次行为变更**提交）。其后的提交均为**审查归档与文档收口**：`7bb09c5` / `186f648` / `037eca3` / `2100136` / `74ca674` / `5992a7a`。交付合并点 = `5992a7a`，`master` 与 `origin/master` 均已同步至此
 - **阻断原因**: 无
 
 ---
@@ -2313,20 +2313,20 @@ git push origin master
 
 ### §5 验收判据总表（Definition of Done）
 
-| # | 判据 | 命令 | 期望 |
-| :--- | :--- | :--- | :--- |
-| ① | 技能可被宿主发现 | `ls .agents/skills/spec-evolution/SKILL.md` | 存在 |
-| ② | description ≤ 500 字符 | `python3 skills/spec-evolution/scripts/collect-facts.py --no-gates --skills spec-evolution` | `description_chars ≤ 500` |
-| ③ | 采集器契约 | `python3 -m pytest skills/spec-evolution/tests/test_collect_facts.py -q` | 全绿 |
-| ④ | 判定器契约 | `python3 -m pytest skills/spec-evolution/tests/test_judge_contract.py -q` | 全绿 |
-| ⑤ | 门禁不变式 | `python3 -m pytest skills/spec-evolution/tests/test_gate_invariants.py -q` | 全绿 |
-| ⑥ | 全仓回归 | `python3 -m pytest skills/ -q` | 全绿（≥ 324 + 新增） |
-| ⑦ | 文档断链 | `python3 skills/doc-governance/scripts/check-doc-links.py --root docs` | 0 断链 |
-| ⑧ | 文档健康 | `python3 skills/doc-governance/scripts/audit-doc-health.py` | PASS |
-| ⑨ | 自我判定 | 判定器扫描全仓 | `spec-evolution` 零 finding |
-| ⑩ | 只读不变式 | `git status --porcelain` 在采集后 | 除显式产物外无变化 |
-| ⑪ | 人类裁决留白 | 报告 `## 人类裁决` 之后 | 无 `[x]`、无判定器内容 |
-| ⑫ | 独立终审 | `dual-round-review` R1+R2 | Zero Blockers |
+| # | 判据 | 命令 | 期望 | 实测（2026-10-13，交付点 `5992a7a`） |
+| :--- | :--- | :--- | :--- | :--- |
+| ① | 技能可被宿主发现 | `ls .agents/skills/spec-evolution/SKILL.md` | 存在 | ✅ 软链已建（`contexts/install.py` 输出确认） |
+| ② | description ≤ 500 字符 | `python3 skills/spec-evolution/scripts/collect-facts.py --no-gates --skills spec-evolution` | `description_chars` ≤ 500 | ✅ **427** |
+| ③ | 采集器契约 | `python3 -m pytest skills/spec-evolution/tests/test_collect_facts.py -q` | 全绿 | ✅ **16 passed** |
+| ④ | 判定器契约 | `python3 -m pytest skills/spec-evolution/tests/test_judge_contract.py -q` | 全绿 | ✅ **25 passed** |
+| ⑤ | 门禁不变式 | `python3 -m pytest skills/spec-evolution/tests/test_gate_invariants.py -q` | 全绿 | ✅ **15 passed** |
+| ⑥ | 全仓回归 | `python3 -m pytest skills/ -q` | 全绿（≥ 324 + 新增） | ✅ **380 passed** |
+| ⑦ | 文档断链 | `python3 skills/doc-governance/scripts/check-doc-links.py --root docs` | 0 断链 | ✅ **75 文件 0 断链** |
+| ⑧ | 文档健康 | `python3 skills/doc-governance/scripts/audit-doc-health.py` | PASS | ✅ **PASS** |
+| ⑨ | 自我判定 | 判定器扫描全仓 | `spec-evolution` 零 finding | ✅ **零 finding**（全仓 11 findings 中无一条指向本技能） |
+| ⑩ | 只读不变式 | `git status --porcelain` 在采集后 | 除显式产物外无变化 | ✅ `git archive` 干净副本采集前后 **diff 为空** |
+| ⑪ | 人类裁决留白 | 报告 `## 人类裁决` 之后 | 无 `[x]`、无判定器内容 | ✅ 裁决区 11 行**全留白** |
+| ⑫ | 独立终审 | `dual-round-review` R1+R2 | Zero Blockers | ✅ delta-r2 **🔴 0 / 🟡 19 / ⚪ 0** → 准予交付 |
 
 ---
 
@@ -2353,8 +2353,8 @@ git push origin master
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| V1.2.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 首轮双轮闭环收口：R1 红队 / R2 元审判归档（`ac13058`），R2 裁定**阻断交付**（3×P1）；按 R2 裁定的最小充分修法落地 D-10~D-14（GI-6 只读不变式、退出码口径四文档收敛、`--no-gates` 报告三态、锚点目录语义、R2 元裁定）（`d8aa611`）；验收 `pytest skills/` → 376 passed、断链 0、健康 PASS、判定器自证 `spec-evolution` 自身 0 finding |
 | V1.3.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 Delta 修复批次收口：三项 P1（GI-6 只读不变式 / 退出码口径 / `--no-gates` 报告三态）与 R2 的 P2 批次全部落地，新增《执行偏差记录》D-15（RFC-0004 §3.4 补登 `[REPO:*]` 锚点契约，V0.5.0）与 D-16（R1/R2 七项非阻断项落为 `BK-0033`~`BK-0039`）；Active Checkpoint 基线推进至 `fe8da78..97aefeb`，待重跑 Delta 双轮闭环 |
 | V1.4.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 Delta 轮修正收口（`7449aae`）：Delta R1 的 1×P1 + 5×P2~P3 全部落地，新增《执行偏差记录》D-17~D-22 —— D-17 指出上一轮 GI-6 修法**未根治**且根因叙述有误（真实泄漏路径是显式 `py_compile.compile()`，同时无视 `-B` 与 `PYTHONDONTWRITEBYTECODE`），改以 `PYTHONPYCACHEPREFIX` 改道仓库外；端到端干净副本差分由「残留 1 个 `.pyc`」转为 **0 残留**。验收 `pytest skills/` → 377 passed、断链 0、健康 PASS |
 | V1.5.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 **重派 Delta R1** 收口（`2100973` 修复批次 / `7bb09c5` 报告归档）：重派轮次裁决 **Zero Blockers**（P0 = 0 / P1 = 0），前轮 DR1-1~DR1-3 复核**全部根治**；落地其 4 条 P2~P3 建议，新增《执行偏差记录》D-24~D-27（退出码类型伪装 / 共享缓存投毒 / 重定向根越界回落 / 章节重编号指针断裂）—— 其中 D-25 是审查方实测确认「**具备代码执行后果**」的缓存投毒通道，改以 `mkdtemp` 独占随机名 + `atexit` 清理关闭；D-27 同时修正 D-19 自述「章节编号全文件复核」的过宽宣称。验收 `pytest skills/` → 380 passed、断链 0、健康 PASS、归档门禁通过 |
 | V1.6.0 | 2026-10-12 | DSH AI Agent | 待用户裁定 | P3.5 双轮对抗收口并取得 **✅ 准予交付** 终审裁决：delta-r2 裁决 Blockers = 0（🔴 0 / 🟡 19 / ⚪ 0），首轮 3 个 P1 与 Delta 轮 4 条逐条实测根治，变异 A/B 独立复现判别力，`baseline.json` 与 `contexts/AGENTS.md` 逐值一致，判定器真实仓库自证 `spec-evolution` 自身 0 finding；报告归档并登记台账（V1.3.0）。R2 独立发现的嵌套类型逃逸经主智能体复现后登记 **D-28** + `BK-0040`（非阻断，`atexit` 信号下不执行一并记录），按「检测与修复分离」不随本次交付；Active Checkpoint 推进至 P4，待用户裁定合入 `master`（D-9） |
+| V1.7.0 | 2026-10-13 | DSH AI Agent | 王辉 | **交付收口**：用户裁定「快进合并并推送」（D-9）与「R2 非阻断残余留作 `BK-0040`」。`feature/spec-evolution` 以 `--ff-only` 合入 `master`（`63de31b..5992a7a`，35 文件 / +4077−40）并推送 `origin/master`（`206d14b..5992a7a`）；Active Checkpoint 推进至 **DONE / P5 已交付**；§5 验收判据总表新增「实测」列，十二条判据逐条取证（`380 passed` / 断链 0 / 健康 PASS / 归档门禁通过 / `spec-evolution` 自身零 finding / 裁决区留白 / 🔴 0 终审） |
