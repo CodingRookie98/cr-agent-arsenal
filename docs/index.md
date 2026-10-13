@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.36.4 (独立复核 V10 收口：`scaffold-doc.sh` backlog 骨架反引号转义与未勾选项数统计口径两处已修复并补 2 用例，BK-0042 归档卡追加更正记录 E-1~E-3)
+> - **当前版本**: V1.36.5 (独立复核 V11 收口：提交信息中 `skills/doc-governance` 的 passed 数 132 与实测 134 不同宽，已在 BK-0042 归档卡追加更正记录 E-4/E-5；功能面与门禁结论不变)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.36.5** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V11）更正记录**：提交 `8390df8` 的取证行称 `pytest skills/doc-governance -q = 132 passed`，该提交树实测 134（132 为父提交 `ecf5d24` 数值，技能总数 448→450 互证），属凭据数字与实测不同宽，已在 BK-0042 §5 追加 E-4；另登记 E-5 两处口径澄清（「trim 5 行」为修订表滑窗上限、`llms.txt` 重生成为幂等无 diff）。功能面 A–E/G 与全部门禁经 V11 独立复现通过 |
 | **V1.36.4** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V10）收口（提交 8390df8）**：V10 阻断项 B1 —— `scaffold-doc.sh:390` 未加引号的 heredoc 使新增 `:420` 行反引号被命令替换，骨架卡丢失 `close` 词元（rc 仍为 0），已转义并补「与 create 模板逐字一致」回归用例；非阻断 N1 —— 未勾选项数由全正文统计收敛为 §3 小节统计（`count_unchecked_dod()`）并在 spec 注明范围；非阻断 N3 —— 七张历史归档卡占位语残余登记为不追溯项（BK-0042 §5 E-1~E-3） |
 | **V1.36.3** | 2026-10-13 | DSH AI Agent | 王辉 | **BK-0042 结项（提交 afdb4e5）**：`manage-backlog.py` 的 `close` 归档时机械收敛 §4 `*(未开工)*` 占位语（兼容历史措辞）并按项数提示未勾选 DoD（不代勾复选框），`create` 写明 DoD 由作者人工勾选，`reopen` 写明历史结项记录仅作留痕；`scaffold-doc.sh` 与 `references/backlog-specification.md` 同步；新增 8 用例契约测试（变异 4 项逐项被捕获） |
 | **V1.36.2** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V9）收口**：BK-0039 §5 追加 E-5（`0600→0644` 属工作区副作用，git 不追踪、不可由提交复核，今后不进入提交信息宣称）并把 E-1 由动因归因改写为末态实测对照；E-1~E-5 经 V9 逐项复现（8facf12 = 7/0 含 C-02；3abacf7 = 10/2；6eacc31 = 11/3；历史未改写）。新增 BK-0043：Write-Once 审查归档 `2026-10-12-spec-evolution-v1` 的终审裁决字段不满足 `--require-verdict=PASS` 精确匹配契约（9 个归档中唯一失败者，不可就地修复） |
 | **V1.36.1** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V8）更正记录**：BK-0039 归档卡追加「更正记录 (Errata)」——提交 `8facf12` 的 judge 宣称限定为同批末态测量（该提交自身树实测 7 findings / 0 HIGH）、交付面基线数字补测量时点（`3abacf7` = 10 / 2，末态 = 4 / 0）、destination 的 C-02 限定为 `clarification-protocol` 设计书；`manage-backlog.py close` 未收敛卡片 §3/§4 占位的工具缺陷登记为 BK-0042 |
-| **V1.36.0** | 2026-10-13 | DSH AI Agent | 王辉 | **技能交付面补齐（BK-0039 结项）**：`agy-delegation-workflow` 与 `clarification-protocol` 补齐 `tests/`（C-01 转绿），`dual-round-review` 与 `doc-governance` 补齐 `templates/`（C-03 转绿）；BK-0039 按验收准则结项归档至 `archive/2026-Q4/`，残余 MID 债务移交 BK-0041 |
 
 ---
 
@@ -86,7 +86,7 @@
 | **批次 B 机器地图写入侧安全与一致性门禁** | 闭环 BK-0023/BK-0025：缺省落点统一 `resolve()`、零覆盖拒绝落盘；`audit-doc-health.py` 将「机器地图 == 注册命令生成物」固化为硬阻断（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-b-llms-integrity.md](./project/plans/2026-10-09-backlog-batch-b-llms-integrity.md) |
 | **批次 A 归档豁免与 llms 落点修复** | 闭环 BK-0001/BK-0002/BK-0021：两个治理消费者补齐交付凭据归档豁免（写入侧 root 无关兜底）、机器地图落点随 `--root` 派生（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-a-archive-exemption.md](./project/plans/2026-10-09-backlog-batch-a-archive-exemption.md) |
 | **`doc-governance` 目录级索引约定** | 象限索引托管化与 scaffold 索引自愈：`manage-doc-index.py`（ensure/register/入参校验）+ 六分支自愈接入 + tutorial 条件渲染（**已完成**，三轮双轮对抗审查 Zero Blockers 准予交付） | [2026-10-09-quadrant-index-convention.md](./project/plans/2026-10-09-quadrant-index-convention.md) |
-| **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；活跃 **32** 项 / 历史归档 **11** 项，编号至 `BK-0043`；BK-0039「存量技能交付面债务」已按验收准则结项归档，残余 MID 债务登记于 BK-0041「存量技能交付面残余债务」（agy 设计书 / 两条 description 超建议值 / 测试文件超行限），`close` 未收敛卡片占位与 DoD 勾选的工具缺陷 BK-0042 已修复结项（提交 afdb4e5，V10 复核收口 8390df8），Write-Once 审查归档终审裁决契约失配登记于 BK-0043） | [index.md](./project/backlog/index.md) |
+| **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；活跃 **32** 项 / 历史归档 **11** 项，编号至 `BK-0043`；BK-0039「存量技能交付面债务」已按验收准则结项归档，残余 MID 债务登记于 BK-0041「存量技能交付面残余债务」（agy 设计书 / 两条 description 超建议值 / 测试文件超行限），`close` 未收敛卡片占位与 DoD 勾选的工具缺陷 BK-0042 已修复结项（提交 afdb4e5，V10 复核收口 8390df8；V11 更正记录见归档卡 §5 E-4/E-5），Write-Once 审查归档终审裁决契约失配登记于 BK-0043） | [index.md](./project/backlog/index.md) |
 | **ADR-0001 交付凭据归档层** | 审查凭据按「可否重建」分层：运行时状态留隐藏目录、交付凭据进版本库独立目录并对齐治理豁免语义（MADR 3.0；含四轮对抗审查证据） | [0001-review-evidence-archive-layer.md](./explanation/decisions/0001-review-evidence-archive-layer.md) |
 | **ADR-0002 子智能体直写通道** | 写盘权归还内容作者：消除转录失真、写盘与核验分离；显式登记三项代价（授权面由零扩大为单文件、路径预授权是提示词契约而非沙箱强制、写入形态声明不可机械验证）（MADR 3.0） | [0002-subagent-direct-write-channel.md](./explanation/decisions/0002-subagent-direct-write-channel.md) |
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |
