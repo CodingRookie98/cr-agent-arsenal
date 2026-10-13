@@ -32,6 +32,14 @@ VALID_TYPES = ["Feature", "TechDebt", "Bug", "Security", "Governance", "Performa
 VALID_STATUSES = ["active", "in-progress", "completed", "rejected", "deferred"]
 VALID_PRIORITIES = ["P0", "P1", "P2", "P3"]
 
+# 建卡期占位语：close 归档时机械收敛，不代表对验收结论的判断
+PLACEHOLDER_PATTERN = re.compile(r"^\*\(未开工[^\n]*\n?", re.MULTILINE)
+# DoD 勾选属作者人工职责：close 只做机械统计与提示，不代勾验收准则
+DOD_DUTY_NOTE = (
+    "\n*（§3 DoD 复选框由作者在结项前人工核验并逐项勾选；"
+    "`close` 只收敛本卡占位语并提示未勾选项数，不代勾验收准则。）*\n"
+)
+
 
 def slugify(text: str) -> str:
     """将标题转换为合法的 URL/文件名 slug (保留英文、数字、汉字，以连字符分隔)"""
@@ -326,6 +334,8 @@ def cmd_create(args):
     else:
         body += "- [ ] 核心功能通过自动化单元测试验证\n- [ ] 无架构契约回归与漂移\n"
 
+    body += DOD_DUTY_NOTE
+
     body += "\n## 4. 实施去向与结项记录\n*(未开工)*\n"
 
     dump_item_file(file_path, metadata, body)
@@ -368,14 +378,20 @@ def cmd_close(args):
     meta["resolution"] = args.resolution
     meta["destination"] = args.destination or "已交付"
 
-    # 追加结项说明到正文
-    body = target["body"]
+    # 追加结项说明到正文；同时机械收敛建卡期占位语（不代表对验收结论的判断）
+    body = PLACEHOLDER_PATTERN.sub("", target["body"]).rstrip()
+    unchecked_dod = len(re.findall(r"^- \[ \] ", body, flags=re.MULTILINE))
     close_log = (
         f"\n\n### 结项记录 ({today_str})\n"
         f"- **结论**: {args.resolution}\n"
         f"- **去向/凭据**: {args.destination or '无'}\n"
         f"- **归档目录**: archive/{version_folder}/\n"
     )
+    if unchecked_dod:
+        close_log += (
+            f"- **提示**: §3 DoD 仍有 {unchecked_dod} 项未勾选 —— `close` 不代勾验收准则，"
+            f"请作者核验后更新卡片（本项为机械统计）。\n"
+        )
     body += close_log
 
     old_file = Path(target["file_path"])
@@ -429,6 +445,7 @@ def cmd_reopen(args):
     reopen_log = (
         f"\n\n### 重启记录 ({today_str})\n"
         f"- **操作**: 重新激活并移回 active/\n"
+        f"- **说明**: 上文的历史结项记录仅作留痕，当前状态以元数据 `status: active` 为准。\n"
     )
     body += reopen_log
 
