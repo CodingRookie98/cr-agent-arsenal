@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.32.0 (来源组收录判据升至 V1.1.0：闭合 C-3 作用域与「变更」语义、补例外判定式与 `mode: "all"` 审计基准)
+> - **当前版本**: V1.33.0 (技能注册面与计数对齐实测：根 README 技能表补 `clarification-protocol`、技能计数 6→8、Backlog 仪表盘数字同步)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.33.0** | 2026-10-13 | DSH AI Agent | 王辉 | **注册面与计数对齐实测值**：根 README 技能表补入 `clarification-protocol`（§1，修 C-07 注册面缺失）；`6 个技能`→`8 个`（含布局树补 `clarification-protocol/`、`spec-evolution/`，docs 树补 `explanation/`、`reference/`、`project/`、`proposals/`、`research/` 与设计书 6 份）；500 字符按建议值口径重述并登记超标项；交叉技能链接策略 JSON 覆盖集补 `spec-evolution`；Backlog 行计数改为实测活跃 31 / 归档 9 |
 | **V1.32.0** | 2026-10-13 | DSH AI Agent | 王辉 | **来源组收录判据升至 V1.1.0**（REF-SOURCE-GROUP-INCLUSION-2026）：C-3 限定为按本次变更涉及的技能名判定、`mode: "all"` 组的 `names` 属登记元数据不受 C-3 约束；品牌口径扩至个人／组织品牌；§1 补「变更」定义（组内未变更条目不因该次变更受审）；§3 三条例外条件各补判定式并要求新增适用项登记书面依据；§4 补预设 opt-in 边界；§5 补 `mode: "all"` 组的 C-4 审计基准与不回溯条款 |
 | **V1.31.0** | 2026-10-13 | DSH AI Agent | 王辉 | **来源组收录判据迁入 `docs/reference/rules/`**：新增 REF-SOURCE-GROUP-INCLUSION-2026（V1.0.0）为判据唯一事实来源，启用 `reference/rules/` 象限托管索引；工具 README 的判据段与根 README §3 注释改为指向该文档；判据约束此后新增或变更的来源组，既有 `common` 条目按登记基准 2026-10-13 维持现状 |
 | **V1.30.0** | 2026-10-12 | DSH AI Agent | 王辉 | **`spec-evolution` 技能落地**：新建技能全量交付（`SKILL.md` + `references/{checks-spec,anchor-contract,baseline.json}` + `scripts/{collect-facts,judge}.py` + `templates/evolution-report.md` + `tests/` 四件套 + 架构设计书）；判定器实测复现 RFC-0004 §1.1 的 F-1~F-9 全部九项缺陷（退出码 1），并新发现 2 项不在 F 清单内的缺口；修 F-9（collections 补 `clarification-protocol` 与 `spec-evolution`）；四个注册面同步接入 |
 | **V1.29.0** | 2026-10-12 | DSH AI Agent | 王辉 | **RFC-0004 受理**（状态 In Review → **Accepted**，V0.3.0 定案，批准进入 P1）：四项未决项裁决一并落定——C-04 的 500 字符**降为建议值**（权威出处措辞为 "if possible"，非成文规范；V0.1.0 所依「仓库既有规范」经查为循环引用）、C-05 口径改按规范原文的 `description` ≥1024（原「frontmatter 总长」口径系转述走样）、C-07 注册面 5→4（剔除结构上不可能收录技能的 `docs/llms.txt`）、F-1~F-9 不随本次交付（唯一例外 F-9） |
-| **V1.28.0** | 2026-10-12 | DSH AI Agent | 王辉 | **RFC-0004 `spec-evolution` 立项**（状态 In Review）：面向规范资产（7 个技能 + 根提示词）的机械化演进回路；确立「选择端 = 脚本退出码而非模型意见」立论，判据表 C-01~C-10 全部由 2026-10-12 真实试跑数据支撑（既有三门禁全绿的同时实测出 F-1~F-9 九项零覆盖缺陷）；v1 明确排除无客观信号的设计质量评价 |
 
 ---
 
@@ -85,7 +85,7 @@
 | **批次 B 机器地图写入侧安全与一致性门禁** | 闭环 BK-0023/BK-0025：缺省落点统一 `resolve()`、零覆盖拒绝落盘；`audit-doc-health.py` 将「机器地图 == 注册命令生成物」固化为硬阻断（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-b-llms-integrity.md](./project/plans/2026-10-09-backlog-batch-b-llms-integrity.md) |
 | **批次 A 归档豁免与 llms 落点修复** | 闭环 BK-0001/BK-0002/BK-0021：两个治理消费者补齐交付凭据归档豁免（写入侧 root 无关兜底）、机器地图落点随 `--root` 派生（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-a-archive-exemption.md](./project/plans/2026-10-09-backlog-batch-a-archive-exemption.md) |
 | **`doc-governance` 目录级索引约定** | 象限索引托管化与 scaffold 索引自愈：`manage-doc-index.py`（ensure/register/入参校验）+ 六分支自愈接入 + tutorial 条件渲染（**已完成**，三轮双轮对抗审查 Zero Blockers 准予交付） | [2026-10-09-quadrant-index-convention.md](./project/plans/2026-10-09-quadrant-index-convention.md) |
-| **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；当前 21 项：BK-0001~0010 源自 V2.1.0 Delta R2 终审，BK-0011~0015 源自 V2.2.0 Delta R2 终审，BK-0016~0018 源自 RFC-0003 首轮审查 R1-11/R1-14/R1-15，BK-0019~0021 源自 RFC-0003 Delta 审查 DR1-3/DR1-8/DR1-10，BK-0022 源自 RFC-0003 第三轮 Delta R2 终审 DR1-13，BK-0023~0025 源自批次 A Light-Delta 审查；其中 BK-0001/BK-0002/BK-0021 已于 2026-Q4 交付归档） | [index.md](./project/backlog/index.md) |
+| **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；活跃 **31** 项 / 历史归档 **9** 项，编号至 `BK-0040`；当前最大项为 BK-0039「存量技能交付面债务」（agy 与 clarification-protocol 缺 `tests/` 等）） | [index.md](./project/backlog/index.md) |
 | **ADR-0001 交付凭据归档层** | 审查凭据按「可否重建」分层：运行时状态留隐藏目录、交付凭据进版本库独立目录并对齐治理豁免语义（MADR 3.0；含四轮对抗审查证据） | [0001-review-evidence-archive-layer.md](./explanation/decisions/0001-review-evidence-archive-layer.md) |
 | **ADR-0002 子智能体直写通道** | 写盘权归还内容作者：消除转录失真、写盘与核验分离；显式登记三项代价（授权面由零扩大为单文件、路径预授权是提示词契约而非沙箱强制、写入形态声明不可机械验证）（MADR 3.0） | [0002-subagent-direct-write-channel.md](./explanation/decisions/0002-subagent-direct-write-channel.md) |
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |

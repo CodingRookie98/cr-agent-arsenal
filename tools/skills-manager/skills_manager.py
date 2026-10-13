@@ -135,7 +135,7 @@ def do_action(action, config, args):
                     found = True
                     break
             if not found:
-                print(f"Warning: Skill '{args.skill}' not found in skills.json. Continuing anyway.")
+                print(f"Warning: Skill '{args.skill}' not found in the selected preset. Continuing anyway.")
             target_skills.append(args.skill)
         else:
             # 卸载配置中列出的所有 skill names
@@ -173,7 +173,7 @@ def do_action(action, config, args):
                     source = group.get('source')
                     break
             if not source:
-                print(f"Warning: Skill '{args.skill}' not found in skills.json. Continuing anyway.")
+                print(f"Warning: Skill '{args.skill}' not found in the selected preset. Continuing anyway.")
                 source = "unknown_source"
 
             # 全局二次确认 (仅当非 yes 且非干跑模式时)
@@ -244,7 +244,7 @@ def do_action(action, config, args):
     print(f"  Failed (Commands):  {fail_count}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Manage opencode skills based on skills.json")
+    parser = argparse.ArgumentParser(description="Manage agent skills from preset collection files (collections/*.json)")
     subparsers = parser.add_subparsers(dest="action", help="Action to perform", required=True)
 
     # list command
