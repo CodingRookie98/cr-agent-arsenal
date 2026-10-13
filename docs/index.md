@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.34.1 (独立复核措辞订正：`source-group-inclusion` 升至 V1.2.1，安装语义范围句与豁免表述收紧，消除 `install -s` 字面反例)
+> - **当前版本**: V1.34.2 (增量复核措辞精确化：`source-group-inclusion` 升至 V1.2.2，`install -s` 反查键语义与同源多组归并边界补齐)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.34.2** | 2026-10-13 | DSH AI Agent | 王辉 | **增量复核（V6）措辞精确化**：`source-group-inclusion` V1.2.1 → V1.2.2（`install -s` 的 `names` 实为反查键、未命中回退 `unknown_source`；补同源多组归并边界）；象限索引 V1.0.5 |
 | **V1.34.1** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V5）措辞订正**：`source-group-inclusion` V1.2.0 → V1.2.1（C-3 范围句改为「判定对象是纳入基线时的 `names` 集合」、`names` 登记数与实际装入集分离、豁免明确不向 C-4 转移）；象限索引 V1.0.4 |
 | **V1.34.0** | 2026-10-13 | DSH AI Agent | 王辉 | **交付面复核修订**：`source-group-inclusion` 升至 V1.2.0（订正 C-3 与安装语义事实错误、显式登记 C-3 实际约束面、补取证边界、§4/§5 口径收敛）；`GOVERNANCE` 升至 V1.6.0（断链扫描域显式纳入 `llms.txt`，零覆盖态豁免代价收敛为仅「条目过期不判定」）；Backlog 行删去「当前最大项为 BK-0039」错误断言 |
 | **V1.33.0** | 2026-10-13 | DSH AI Agent | 王辉 | **注册面与计数对齐实测值**：根 README 技能表补入 `clarification-protocol`（§1，修 C-07 注册面缺失）；`6 个技能`→`8 个`（含布局树补 `clarification-protocol/`、`spec-evolution/`，docs 树补 `explanation/`、`reference/`、`project/`、`proposals/`、`research/` 与设计书 6 份）；500 字符按建议值口径重述并登记超标项；交叉技能链接策略 JSON 覆盖集补 `spec-evolution`；Backlog 行计数改为实测活跃 31 / 归档 9 |
 | **V1.32.0** | 2026-10-13 | DSH AI Agent | 王辉 | **来源组收录判据升至 V1.1.0**（REF-SOURCE-GROUP-INCLUSION-2026）：C-3 限定为按本次变更涉及的技能名判定、`mode: "all"` 组的 `names` 属登记元数据不受 C-3 约束；品牌口径扩至个人／组织品牌；§1 补「变更」定义（组内未变更条目不因该次变更受审）；§3 三条例外条件各补判定式并要求新增适用项登记书面依据；§4 补预设 opt-in 边界；§5 补 `mode: "all"` 组的 C-4 审计基准与不回溯条款 |
-| **V1.31.0** | 2026-10-13 | DSH AI Agent | 王辉 | **来源组收录判据迁入 `docs/reference/rules/`**：新增 REF-SOURCE-GROUP-INCLUSION-2026（V1.0.0）为判据唯一事实来源，启用 `reference/rules/` 象限托管索引；工具 README 的判据段与根 README §3 注释改为指向该文档；判据约束此后新增或变更的来源组，既有 `common` 条目按登记基准 2026-10-13 维持现状 |
 
 ---
 
