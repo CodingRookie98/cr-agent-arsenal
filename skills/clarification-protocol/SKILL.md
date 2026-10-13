@@ -88,3 +88,15 @@ license: MIT
 **使用**：目标宏观或含糊；存在多种技术路径；多轮问答中；已决项被换一种说法重开；需要在「问用户」与「登记默认假设」之间取舍；澄清轮次有失控迹象。
 
 **不用**：单文件微调、指令明确的直接执行、只读检索类问答——直接干活即可。
+
+---
+
+## 交付物与走查入口 (Surface & Entry Points)
+
+本节是规程正文的机械入口。规程只有本文件一份；下列文件是它的**展开、骨架与校验器**，不引入新政策。
+
+- **展开**：[references/decision-ledger.md](references/decision-ledger.md) 把 §3 的台账纪律细化为三类登记的必填字段、去重判定式与低影响分支转默认假设的判据；[references/convergence-checklist.md](references/convergence-checklist.md) 把 §4 的三项自检细化为逐问判定标准与「不算收敛」的反例对照。
+- **骨架**：[templates/decision-ledger-template.md](templates/decision-ledger-template.md) 可直接落进计划文件；[templates/requirement-confirmation-template.md](templates/requirement-confirmation-template.md) 是需求确认文档骨架（术语表 / 已决项 / 已排除边界 / 默认假设 / 收敛结论 / 待裁决分叉）。
+- **校验**：[scripts/check-decision-ledger.sh](scripts/check-decision-ledger.sh) 机械校验台账结构（离线、只读；退出码 0 合规 / 1 不合规 / 2 用法错误），§4 自检前先跑一次：`bash scripts/check-decision-ledger.sh <台账文件>`。
+- **回归**：[tests/test_clarification_protocol_contract.py](tests/test_clarification_protocol_contract.py) 守护上述交付面与硬约束，运行 `python3 -m pytest skills/clarification-protocol/tests -q`。
+
