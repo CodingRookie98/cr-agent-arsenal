@@ -7,7 +7,8 @@ check-doc-links.py - 全域物理文件链接与锚点断链静态扫描器
   2. 提取所有相对超链接，校验目标文件物理是否存在；
   3. 检查指向 Markdown 文件的相对链接是否严格保留 .md 物理后缀；
   4. 若携带 #anchor 锚点，校验目标文件中是否存在对应的标题 Slug；
-  5. 发现任何断链或格式违规时输出详细位置并以 Exit Code 1 阻断，全部通过返回 Exit Code 0。
+  5. 显式把根级机器地图 llms.txt 纳入同一套断链判定（其相对链接按所在目录解析，D3）；
+  6. 发现任何断链或格式违规时输出详细位置并以 Exit Code 1 阻断，全部通过返回 Exit Code 0。
 """
 
 import argparse
@@ -192,6 +193,12 @@ def check_file_links(
     return errors
 
 
+def _is_root_scan(root_dir: Path, search_roots: List[Path]) -> bool:
+    """判定本次扫描的搜索根是否覆盖文档根本身（--dir 收窄到子目录时为 False）。"""
+    root = root_dir.resolve()
+    return any(s_root.exists() and s_root.resolve() == root for s_root in search_roots)
+
+
 def scan_directory(
     root_dir: Path,
     target_dirs: List[str],
@@ -214,6 +221,14 @@ def scan_directory(
             md_files.append(s_root)
         elif s_root.is_dir():
             md_files.extend(list(s_root.rglob("*.md")))
+
+    # D3：根级机器地图 llms.txt 不是 *.md，既有 rglob("*.md") 永不覆盖它，
+    # 其相对链接（按 llms.txt 所在目录解析）此前完全游离于断链门禁之外。
+    # 仅在「根扫描」时追加，保持 --dir 的选择性契约不变。
+    if _is_root_scan(root_dir, search_roots):
+        llms_map = root_dir / "llms.txt"
+        if llms_map.is_file():
+            md_files.append(llms_map)
 
     # 去重并排序
     md_files = sorted(list(set(md_files)))

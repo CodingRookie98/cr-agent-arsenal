@@ -15,11 +15,19 @@ import os
 import re
 import sys
 import tempfile
+import urllib.parse
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
 EVIDENCE_ARCHIVE_PARTS = ("project", "reviews")
+
+# D1：HTML 注释（含跨行/未闭合形态）——托管标记等机器指令不得泄漏进机器地图描述
+HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->", re.DOTALL)
+# D2：描述内 Markdown 链接/图片：[text](target "title")、![alt](target)
+DESCRIPTION_LINK_PATTERN = re.compile(r"(!?)\[([^\]]*)\]\(\s*([^)\s]+)(\s+\"[^\"]*\")?\s*\)")
+# D2：绝对协议链接（http(s)/mailto/…）保持原样，不参与 docs 根相对重写
+ABSOLUTE_LINK_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
 
 
 def in_evidence_archive(path: Path, root_dir: Path) -> bool:
@@ -40,13 +48,83 @@ def is_archive_path(path: Path) -> bool:
     return any(parts[i:i + 2] == EVIDENCE_ARCHIVE_PARTS for i in range(len(parts) - 1))
 
 
-def extract_doc_info(file_path: Path) -> Tuple[str, str]:
-    """提取文档的标题与摘要描述"""
+def strip_html_comments(content: str) -> str:
+    """剥离 HTML 注释（D1）：含内部换行/缩进的跨行注释与未闭合注释一律消除。
+
+    - 闭合注释整体替换为单个空格而非空串——避免跨行注释被删除后前后文本直接粘连；
+    - 未闭合注释按「延伸至文末」处理，截断/半写文件不得把注释残余留在描述里。
+    """
+    without_comments = HTML_COMMENT_PATTERN.sub(" ", content)
+    open_index = without_comments.find("<!--")
+    if open_index != -1:
+        without_comments = without_comments[:open_index]
+    return without_comments
+
+
+def normalize_description(text: str) -> str:
+    """压缩描述中的连续空白（注释剥离与原文换行/缩进产生的多余空白）并去除首尾空白。"""
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _resolve_link_within_root(source_file: Path, root_dir: Path, path_part: str) -> Optional[str]:
+    """把源文档内的链接路径解析为 docs 根相对路径；逃出根或指向根本身时返回 None（D2）。
+
+    解析基准是**源文档所在目录**（不是 llms.txt 所在目录）；`/` 开头按 docs 根锚定；
+    仅做词法归一（normpath），不做符号链接解析，保证「逃出 docs 根」判定与物理路径一致。
+    """
+    if not path_part:
+        candidate = source_file
+    else:
+        decoded = urllib.parse.unquote(path_part)
+        if decoded.startswith("/"):
+            candidate = Path(os.path.normpath(os.path.join(str(root_dir), decoded.lstrip("/"))))
+        else:
+            candidate = Path(os.path.normpath(os.path.join(str(source_file.parent), decoded)))
+    try:
+        rel = candidate.relative_to(Path(os.path.normpath(str(root_dir))))
+    except ValueError:
+        return None
+    if not rel.parts:
+        return None
+    # 仅转义会截断 Markdown 行内链接语法的字符（空白与括号），中文等路径字符保持可读原样
+    return re.sub(r"[()\s]", lambda m: urllib.parse.quote(m.group(0)), rel.as_posix())
+
+
+def rewrite_description_links(description: str, source_file: Path, root_dir: Path) -> str:
+    """把描述内的相对 Markdown 链接重写为相对 docs 根的可达形态（D2）。
+
+    llms.txt 位于 docs 根，链接解析基准随之改变：源文档里合法的 `../../docs/a.md`
+    搬进 llms.txt 后会解析到 docs 根之外（实测 404）。因此：
+      - 绝对协议链接（http(s)/mailto/…）逐字保留；
+      - 相对 href 先按源文档所在目录解析，再相对 docs 根重写（纯片段链接解析为源文档自身）；
+      - 解析结果逃出 docs 根时退化为纯文本（保留链接文字、去掉链接语法）。
+    """
+    def _replace(match: "re.Match") -> str:
+        bang, text, target, title = match.groups()
+        if ABSOLUTE_LINK_PATTERN.match(target):
+            return match.group(0)
+        path_part, separator, anchor = target.partition("#")
+        rel_path = _resolve_link_within_root(source_file, root_dir, path_part)
+        if rel_path is None:
+            return text
+        anchor_part = separator + anchor if separator else ""
+        return f"{bang}[{text}]({rel_path}{anchor_part}{title or ''})"
+
+    return DESCRIPTION_LINK_PATTERN.sub(_replace, description)
+
+
+def extract_doc_info(file_path: Path, root_dir: Optional[Path] = None) -> Tuple[str, str]:
+    """提取文档的标题与摘要描述。
+
+    root_dir 非空时，描述内的相对 Markdown 链接会被重写为相对该根的形态（D2）；
+    缺省 None 保持「逐字提取」语义，供不产出机器地图的调用方使用。
+    """
     try:
         content = file_path.read_text(encoding="utf-8", errors="replace")
     except Exception:
         return file_path.stem, ""
 
+    content = strip_html_comments(content)  # D1：注释（含跨行）不得进入标题/描述
     lines = content.splitlines()
     title = file_path.stem
     description = ""
@@ -81,6 +159,9 @@ def extract_doc_info(file_path: Path) -> Tuple[str, str]:
             description = trimmed[:120] + "..." if len(trimmed) > 120 else trimmed
             break
 
+    description = normalize_description(description)
+    if root_dir is not None:
+        description = rewrite_description_links(description, file_path, root_dir)
     return title, description
 
 
@@ -112,7 +193,7 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
             continue
 
         top_dir = rel_parts[0]
-        title, desc = extract_doc_info(f)
+        title, desc = extract_doc_info(f, root_dir)
         rel_link = f.relative_to(root_dir).as_posix()
 
         if top_dir in sections:

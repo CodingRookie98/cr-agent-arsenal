@@ -6,15 +6,15 @@
 ## Proposals & RFCs (需求与设计孵化层)
 
 - [RFC-0001: dual-round-review 审查报告持久化归档契约](proposals/RFC-0001-review-report-archive.md): `dual-round-review` 的两轮提示词模板已定义完整的报告输出契约——R1 需产出「第一性原理分析 / 红队攻击路径推演 / 潜在缺陷清单」，R2 需产出「元审查质询 / 终审裁决明细表 / 放行结论」。但**技能全流程没有任...
-- [RFC-0002: dual-round-review 审查报告子智能体直写契约](proposals/RFC-0002-subagent-direct-write.md): RFC-0001 解决了「报告全文从未落盘」，但其选定方案把写盘动作判给了**主智能体**（[RFC-0001 §3.7](../../docs/proposals/RFC-0001-review-report-archive.md)）：
+- [RFC-0002: dual-round-review 审查报告子智能体直写契约](proposals/RFC-0002-subagent-direct-write.md): RFC-0001 解决了「报告全文从未落盘」，但其选定方案把写盘动作判给了**主智能体**（[RFC-0001 §3.7](proposals/RFC-0001-review-report-archive.md)）：
 - [RFC-0003: 目录级索引约定与 scaffold 索引自愈](proposals/RFC-0003-quadrant-index-convention.md): `doc-governance` 的脚手架生成器 `scaffold-doc.sh` 在 `tutorial` 分支的产物模板中硬编码了一条跨象限链接：
 - [RFC-0004: spec-evolution 技能 —— 面向提示词与技能的机械化演进回路](proposals/RFC-0004-spec-evolution.md): 2026-10-12 在 `master`（HEAD `10359c2`）实测既有三道机械门禁，**全部 PASS**：
 
 ## Reference (技术参考 / 机器事实唯一真相源)
 
 - [前端开发转向 AI Coding 的常见问题全景：研究证据、风险分层与验收清单](reference/articles/ai-coding-frontend-common-problems.md): title: "前端开发转向 AI Coding 的常见问题全景：研究证据、风险分层与验收清单"
-- [How to Turn Your AI into a World-Class Designer](reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md): 1. [核心架构与技能转化提炼 (Executive Summary & Skill Blueprint)](#1-核心架构与技能转化提炼-executive-summary-skill-blueprint)
-- [Reference / Rules 象限索引 (Quadrant Index)](reference/rules/index.md): <!-- doc-index:managed -->
+- [How to Turn Your AI into a World-Class Designer](reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md): 1. [核心架构与技能转化提炼 (Executive Summary & Skill Blueprint)](reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md#1-核心架构与技能转化提炼-executive-summary-skill-blueprint)
+- [Reference / Rules 象限索引 (Quadrant Index)](reference/rules/index.md)
 - [来源组收录判据 (Source-Group Inclusion Criteria)](reference/rules/source-group-inclusion.md): 来源组进入 `common` 需**同时**满足下列四条：
 
 ## Explanation (深度剖析 / 系统架构与 ADR 决策)

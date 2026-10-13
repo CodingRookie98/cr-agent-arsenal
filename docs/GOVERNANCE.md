@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.5.0
+> - **当前版本**: V1.6.0
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-09-10
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.6.0** | 2026-10-13 | DSH AI Agent | 王辉 | 断链扫描域扩容：`check-doc-links.py` 根扫描显式纳入 `<docs 根>/llms.txt`（此前 `.txt` 不在 `*.md` 扫描域，其相对链接游离于门禁外）⇒ §4.1 零覆盖态豁免中「死链不受任何门禁覆盖」的代价不再成立，同步收敛该段口径 |
 | **V1.5.0** | 2026-10-09 | DSH AI Agent | 王辉 | 补「目录级索引约定」：根级人类入口唯一、象限索引按需托管（`<!-- doc-index:managed -->` 标记 + 幂等登记 + 人工索引零改写），新增工具 `manage-doc-index.py` 与 `scaffold-doc.sh` 索引自愈 |
 | **V1.4.0** | 2026-10-04 | DSH AI Agent | 王辉 | 目录拓扑补 `docs/project/reviews/`（交付凭据归档：审查报告全文进版本库）与 `docs/project/plans/`；归档根遵循「推荐默认 + 宿主优先」 |
 | **V1.3.0** | 2026-09-16 | DSH AI Agent | 王辉 | 需求确认文档补「验收口径」（验收人/验收场景/不验收项/口径裁决人）；人机契约字段（需求方/批准人/批准基线）进入计划与 RFC 模板 |
 | **V1.2.0** | 2026-09-16 | DSH AI Agent | 王辉 | RFC 标准模板新增「术语表与易歧义对齐」段（术语先行前置条件）与 `docs/reference/rules/glossary.md` SSOT 落位；决策台账顺延为 §7 |
-| **V1.1.0** | 2026-09-16 | DSH AI Agent | 王辉 | RFC 标准模板新增「决策台账与默认假设」段（提案收敛证据链）；明确需求确认文档落位 `docs/proposals/`，继续禁止 `docs/requirements/` 瀑布旧目录 |
 
 ---
 
@@ -81,7 +81,7 @@ docs/
 
 | 工具脚本 | 核心功能 | 触发时机 | 执行命令 |
 | :--- | :--- | :--- | :--- |
-| **`check-doc-links.py`** | 静态扫描物理文件超链接与 `#anchor` 锚点 | 提交前 / CI 门禁 | `python3 skills/doc-governance/scripts/check-doc-links.py --root docs` |
+| **`check-doc-links.py`** | 静态扫描物理文件超链接与 `#anchor` 锚点（根扫描含机器地图 `llms.txt`） | 提交前 / CI 门禁 | `python3 skills/doc-governance/scripts/check-doc-links.py --root docs` |
 | **`trim-revision.py`** | 自动裁剪历史记录至最近 5 条滑动窗口 | 提交前 / 维护 | `python3 skills/doc-governance/scripts/trim-revision.py --root docs --fix --keep 5` |
 | **`audit-doc-health.py`** | 综合健康体检（打分 0-100 分，断链/元数据/孤儿/架构/**机器地图一致性**） | 交付验收 / 定期体检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs` |
 | **`generate-llms-txt.py`** | 自动提取 Frontmatter 并刷新机器地图 `llms.txt` | 文档拓扑变动后 | `python3 skills/doc-governance/scripts/generate-llms-txt.py --root docs --output docs/llms.txt` |
@@ -117,7 +117,7 @@ docs/
 
 **零覆盖态边界（BK-0027 显式登记）**：当 `<docs 根>` 下**没有任何可收录文档**（生成器收录数为 0，例如仅剩根文件与交付凭据归档）时，机器地图一致性检查**不适用**（跳过判定）—— 这是为避免「提示的修复命令必然 rc=1」的不可修复死胡同（BK-0023 / R1-1）。
 
-> **该豁免的已知代价（显式登记，不掩饰）**：此时若仓库仍保留 `llms.txt`，其条目**不受任何既有门禁覆盖** —— `.txt` 不在 `check-doc-links.py` 的 `*.md` 扫描域，一致性检查又不判定，故含死链或过期条目的手写地图可被 `PASS` 接受。**口径选择：采用显式登记豁免，不引入条目可解析性校验**（保持门禁简单性；该状态仅在项目删净全部可收录文档时出现）。此状态下作者须自行确认并**删除**不再成立的 `llms.txt`。
+> **该豁免的已知代价（显式登记，不掩饰；V1.6.0 起收敛）**：此时若仓库仍保留 `llms.txt`，**一致性检查不判定其条目是否过期**（无生成基准可比对）；但**物理断链已不再是盲区** —— `check-doc-links.py` 的根扫描已显式纳入 `<docs 根>/llms.txt`（其相对链接按所在目录解析），死链会被检出并以 rc=1 阻断。**口径选择：仅保留「条目是否过期」的登记豁免，不引入条目与文档树的语义比对**（保持门禁简单性；该状态仅在项目删净全部可收录文档时出现）。此状态下作者须自行确认并**删除**不再成立的 `llms.txt`。
 
 **身份写保护契约（BK-0031 登记）**：`docs/llms.txt` 首行 `# <项目名> Machine-Readable Knowledge Base Map` 中的**项目名即地图身份**，受写保护：
 
