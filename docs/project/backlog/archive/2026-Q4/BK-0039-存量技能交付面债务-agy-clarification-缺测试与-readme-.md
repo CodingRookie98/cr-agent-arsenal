@@ -2,18 +2,20 @@
 id: BK-0039
 title: 存量技能交付面债务：agy/clarification 缺测试与 README 登记
 type: TechDebt
-status: active
+status: completed
 priority: P3
 trigger: 下一轮 spec-evolution 扫描或专门的存量修复任务
 created_at: '2026-10-12'
 updated_at: '2026-10-13'
-closed_at: null
-resolution: null
-destination: null
+closed_at: '2026-10-13'
+resolution: delivered
+destination: 技能交付面补齐：agy 与 clarification-protocol 补 tests/、clarification 交付面与设计书入册、doc-governance
+  与 dual-round-review 补 templates/，C-01/C-02/C-03 转绿；提交 8facf12/cdedd38
 source:
 - dual-round-review Delta R1 R1-15（spec-evolution-v1，历史既有技术债）
 - RFC-0004 §1.1 F-1~F-9（本次交付明确不含修复，仅例外 F-9）
-- spec-evolution judge 2026-10-13 复跑：F-01（agy 无 tests/）、F-02（clarification-protocol 无 tests/）实测仍在；同批 F-03 见 README §1 技能表
+- spec-evolution judge 2026-10-13 复跑：F-01（agy 无 tests/）、F-02（clarification-protocol
+  无 tests/）实测仍在；同批 F-03 见 README §1 技能表
 acceptance_criteria:
 - agy-delegation-workflow 与 clarification-protocol 具备 tests/；clarification-protocol
   补入 README 技能表；dual-round-review 补 templates/；doc-governance 补 templates/；judge.py
@@ -34,3 +36,8 @@ acceptance_criteria:
 *(未开工)*
 
 2026-10-13 复核：judge 复跑仍报 11 findings / 3 HIGH，其中 **F-01**（`agy-delegation-workflow` 无 `tests/`）与 **F-02**（`clarification-protocol` 无 `tests/`）为本卡首批交付项；同日已修复同批 F-03（根 README §1 技能表补 `clarification-protocol`）。
+
+### 结项记录 (2026-10-13)
+- **结论**: delivered
+- **去向/凭据**: 技能交付面补齐：agy 与 clarification-protocol 补 tests/、clarification 交付面与设计书入册、doc-governance 与 dual-round-review 补 templates/，C-01/C-02/C-03 转绿；提交 8facf12/cdedd38
+- **归档目录**: archive/2026-Q4/

@@ -61,7 +61,6 @@
 - [BK-0036-skills-传入未知技能名静默产出-clean](project/backlog/active/BK-0036-skills-传入未知技能名静默产出-clean.md): id: BK-0036
 - [BK-0037-输出路径可静默覆盖仓库内被跟踪文件](project/backlog/active/BK-0037-输出路径可静默覆盖仓库内被跟踪文件.md): id: BK-0037
 - [BK-0038-跨技能链接正则存在两份近似实现](project/backlog/active/BK-0038-跨技能链接正则存在两份近似实现.md): id: BK-0038
-- [BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-](project/backlog/active/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md): id: BK-0039
 - [BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存](project/backlog/active/BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存.md): id: BK-0040
 - [BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议](project/backlog/active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md): id: BK-0041
 - [BK-0001-trim-revision-py-archive-exemption](project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
@@ -73,6 +72,7 @@
 - [BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验](project/backlog/archive/2026-Q4/BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验.md): id: BK-0027
 - [BK-0030-机器地图身份写保护闸门的完备性残余](project/backlog/archive/2026-Q4/BK-0030-机器地图身份写保护闸门的完备性残余.md): id: BK-0030
 - [BK-0031-身份写保护契约登记与历史防护面残留](project/backlog/archive/2026-Q4/BK-0031-身份写保护契约登记与历史防护面残留.md): id: BK-0031
+- [BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-](project/backlog/archive/2026-Q4/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md): id: BK-0039
 - [项目待办与后续演进清单 (Backlog Index)](project/backlog/index.md): *(当前暂无进行中的待办)*
 - [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。
 - [goal-loop 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-goal-loop-v2-refactor.md): 以下四项经用户确认，作为不可回退的实现约束：

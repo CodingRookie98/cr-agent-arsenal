@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **32** 项 (进行中: 0, 计划中: 32)
-- **历史已归档项**: **9** 项 (物理归档于 `archive/` 目录)
+- **现役活跃待办**: **31** 项 (进行中: 0, 计划中: 31)
+- **历史已归档项**: **10** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 7 | 25 |
+| **活跃数量** | 0 | 0 | 7 | 24 |
 
 ---
 
@@ -59,17 +59,17 @@
 | **BK-0036** | `P3` | `Bug` | --skills 传入未知技能名静默产出 CLEAN | 调用 collect-facts.py --skills <拼错的技能名> | [BK-0036](./active/BK-0036-skills-传入未知技能名静默产出-clean.md) |
 | **BK-0037** | `P3` | `Security` | 输出路径可静默覆盖仓库内被跟踪文件 | 操作者把 --out / --json / --report 指向仓库内已存在的被跟踪文件 | [BK-0037](./active/BK-0037-输出路径可静默覆盖仓库内被跟踪文件.md) |
 | **BK-0038** | `P3` | `TechDebt` | 跨技能链接正则存在两份近似实现 | 修改 skills/_shared/tests/test_cross_skill_links.py 的 SKILL_NAMES 或正则时 | [BK-0038](./active/BK-0038-跨技能链接正则存在两份近似实现.md) |
-| **BK-0039** | `P3` | `TechDebt` | 存量技能交付面债务：agy/clarification 缺测试与 README 登记 | 下一轮 spec-evolution 扫描或专门的存量修复任务 | [BK-0039](./active/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md) |
 | **BK-0041** | `P3` | `TechDebt` | 存量技能交付面残余债务：agy 设计书缺失 / 两条 description 超建议值 / doc-governance 测试文件超行限 | spec-evolution judge 全量复跑出现 C-02 / C-04 / C-06 类 MID 发现且不阻断交付时登记；无前置条件，随时可做 | [BK-0041](./active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md) |
 
 ---
 
 ## 4. 🗄️ 历史已结项归档 (Archive Summary)
 
-> 共收录 9 条已关闭历史条目，详情参见 `archive/` 各版本目录。
+> 共收录 10 条已关闭历史条目，详情参见 `archive/` 各版本目录。
 
 | 编号 | 类型 | 标题 | 结项日期 | 结论 | 交付去向 | 归档卡片 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **BK-0039** | `TechDebt` | 存量技能交付面债务：agy/clarification 缺测试与 README 登记 | 2026-10-13 | delivered | 技能交付面补齐：agy 与 clarification-protocol 补 tests/、clarification 交付面与设计书入册、doc-governance 与 dual-round-review 补 templates/，C-01/C-02/C-03 转绿；提交 8facf12/cdedd38 | [BK-0039](./archive/2026-Q4/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md) |
 | **BK-0001** | `TechDebt` | trim-revision.py 复用 project-reviews 归档豁免常量 | 2026-10-09 | delivered | trim-revision.py 追加交付凭据归档豁免（root 无关段扫描兜底 + 库调用 resolve + 空范围不报合规）；提交 45089b9/9108fbe | [BK-0001](./archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md) |
 | **BK-0002** | `TechDebt` | generate-llms-txt.py 复用归档豁免常量 | 2026-10-09 | delivered | generate-llms-txt.py 追加同构归档豁免 + 机器地图纯净重生成（归档条目 17→0）；提交 45089b9/9108fbe | [BK-0002](./archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md) |
 | **BK-0021** | `Bug` | generate-llms-txt.py 的 --root 与 --output 落点解耦缺陷 | 2026-10-09 | delivered | --output 缺省落点随 --root 派生（并拒绝写入归档）；提交 45089b9/9108fbe | [BK-0021](./archive/2026-Q4/BK-0021-generate-llms-txt-py-的-root-与-output-落点解.md) |
