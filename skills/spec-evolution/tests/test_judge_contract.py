@@ -335,6 +335,36 @@ def test_malformed_top_level_types_exit_2(tmp_path):
         assert proc.returncode == 2, f"{patch!r} → rc={proc.returncode}（应为 2）"
 
 
+def test_malformed_nested_types_exit_2_without_artifacts(tmp_path):
+    """嵌套字段**类型**畸形 → 输入错误（2），且**不写出任何产物**（BK-0040）。
+
+    `load_facts` 只校验顶层类型；`skills[]` 成员字段畸变会在消费期抛
+    `TypeError` / `AttributeError` 逃逸，解释器以状态码 **1** 退出 —— 与「存在
+    BLOCKER/HIGH」同码。编排方只读退出码时会把「输入坏了」采信为「存在高危结论」，
+    且诊断从 `❌` 降级为裸 traceback。修复点在 `main()` 的消费期兜底，故必须同时
+    断言「没有产物落地」：崩溃早于报告/JSON 写入是修复后的性质，不是前后皆然的性质。
+    """
+    root = build_repo(tmp_path / "repo")
+    patches = (
+        {"description_chars": "abc"},
+        {"registrations": "x"},
+        {"registrations": 5},
+        {"oversized_files": [123]},
+        {"cross_skill_links": 5},
+    )
+    for i, patch in enumerate(patches):
+        case = tmp_path / f"case{i}"
+        case.mkdir()
+        facts = _facts(root)
+        facts["skills"][0].update(patch)
+        report = case / "report.md"
+        proc, data = _run(root, facts, case, "--report", str(report))
+        assert proc.returncode == 2, f"{patch!r} → rc={proc.returncode}（应为 2）"
+        assert data is None, f"{patch!r} 仍写出了 finding JSON"
+        assert not report.exists(), f"{patch!r} 仍写出了演进报告"
+        assert "Traceback" not in proc.stderr, f"{patch!r} 仍以裸 traceback 收场"
+
+
 def test_report_blocker_section_lists_failed_gate(tmp_path):
     root = build_repo(tmp_path / "repo")
     facts = _facts(root)

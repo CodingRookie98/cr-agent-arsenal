@@ -382,7 +382,18 @@ def main(argv=None) -> int:
     except FactsError as exc:
         sys.stderr.write(str(exc) + "\n")
         return 2
-    findings = build_findings(facts)
+    try:
+        findings = build_findings(facts)
+    except Exception as exc:  # noqa: BLE001 — 见下注释：任意消费期异常都是「输入坏了」
+        # `load_facts` 只校验顶层类型，嵌套字段畸变（`description_chars="abc"`、
+        # `registrations=5`、`oversized_files=[123]` …）会在消费期抛 TypeError /
+        # AttributeError 逃逸，解释器把退出码钉在 1 —— 与「存在 BLOCKER/HIGH」同码，
+        # 「输入坏了」被伪装成「有阻断项」（BK-0040）。此处兜底转译为用法/输入错误 2，
+        # 且此刻尚未写出任何报告或 JSON，天然满足「不写出产物」。
+        # 不用逐键白名单：判据集合会演进，白名单必然滞后于真实消费点。
+        sys.stderr.write(
+            f"❌ 事实文件结构畸形（build_findings 无法消费）：{type(exc).__name__}: {exc}\n")
+        return 2
     repo_root = Path(args.repo_root or facts["repo_root"])
     headings = facts["root_prompt"].get("headings") or []
     problems = []
