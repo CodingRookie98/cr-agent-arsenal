@@ -117,7 +117,9 @@
     {
       "source": "https://github.com/multica-ai/andrej-karpathy-skills",
       "mode": "all",
-      "names": []
+      "names": [
+        "karpathy-guidelines"
+      ]
     },
     {
       "source": "https://github.com/cursor/plugins",

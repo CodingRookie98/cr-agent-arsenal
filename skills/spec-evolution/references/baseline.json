@@ -2,9 +2,9 @@
   "_comment": "根提示词基线常量。基线随合法增删而变；变更本文件须在提交信息中给出等量删减或不可压缩的理由（contexts/AGENTS.md:3 准入判据）。",
   "root_prompt": {
     "path": "contexts/AGENTS.md",
-    "lines": 97,
-    "bytes": 10746,
-    "recorded_at": "2026-10-12",
-    "recorded_head": "10359c2"
+    "lines": 98,
+    "bytes": 11015,
+    "recorded_at": "2026-10-14",
+    "recorded_head": "d03ce22"
   }
 }
