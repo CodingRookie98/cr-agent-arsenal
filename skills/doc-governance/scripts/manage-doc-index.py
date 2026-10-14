@@ -162,17 +162,40 @@ def bump_header_version(text: str):
     return text[: match.start(1)] + new_version + text[match.end(1):], new_version
 
 
-def insert_revision_row(text: str, version: str, today: str, description: str) -> str:
-    """在修订历史表格首行插入记录并裁剪至滑动窗口。表头不可识别时显式报错（R1-5）。"""
-    lines = text.splitlines()
-    header_idx = None
+REVISION_SECTION_HEADING = "修订历史记录"
+
+
+def find_revision_header(lines):
+    """定位**『修订历史记录』章节作用域内**的修订表表头行索引（DR1-8）。
+
+    章节作用域 = 该标题行之后、下一个 Markdown 标题行之前。全文搜索会把章节外的
+    同名表头（如文档前部的『变更摘要』表）当成修订表：修订行被写进无关表格、撑坏
+    其列数，而本脚本仍以 rc=0 报成功并照升控制头版本，随后 `check-doc-control-sync.py`
+    才以版本漂移 rc=1 暴露。章节缺失或表头不识别时返回 None，由调用方 fail-closed。
+    """
+    section_start = None
     for idx, line in enumerate(lines):
-        if line.strip().startswith("| 版本号"):
-            header_idx = idx
-            break
+        stripped = line.strip()
+        if re.match(r"^#{1,6}\s", stripped):
+            if section_start is None:
+                if stripped.lstrip("#").strip().startswith(REVISION_SECTION_HEADING):
+                    section_start = idx
+            else:
+                break  # 进入下一个标题 → 修订历史章节结束
+            continue
+        if section_start is not None and stripped.startswith("| 版本号"):
+            return idx
+    return None
+
+
+def insert_revision_row(text: str, version: str, today: str, description: str) -> str:
+    """在修订历史表格首行插入记录并裁剪至滑动窗口。表头不可识别时显式报错（R1-5/DR1-8）。"""
+    lines = text.splitlines()
+    header_idx = find_revision_header(lines)
     if header_idx is None:
         raise IndexMaintenanceError(
-            "修订历史表结构无法识别（表头须以『| 版本号』开头），已放弃本次登记（保证零版本漂移）"
+            "修订历史表结构无法识别（须存在『修订历史记录』章节且其表格表头以『| 版本号』开头），"
+            "已放弃本次登记（保证零版本漂移）"
         )
 
     insert_at = header_idx + 2
