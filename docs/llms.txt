@@ -94,6 +94,7 @@
 - [doc-governance 目录级索引约定与 scaffold 索引自愈实施方案计划 (Implementation Plan)](project/plans/2026-10-09-quadrant-index-convention.md)
 - [全局提示词渐进披露重构实施计划 (AGENTS.md Progressive Disclosure)](project/plans/2026-10-10-agents-md-progressive-disclosure.md): 2026-10-10，一次 **9 行**的全局提示词改动被挂载了 `dual-round-review` 完整流程：**6 轮**独立子智能体对抗审查、**6 份报告共 216KB**、6 次提交。用户判语：
 - [spec-evolution 机械化演进回路技能实现计划 (Implementation Plan)](project/plans/2026-10-12-spec-evolution.md): Use when auditing delivery-surface completeness of this repository's skills and root prompt, or when a goal-loop P5 delivery re-checks the skills it touched. Runs a read-only fact collector and a deterministic exit-code judge (zero LLM, zero network) mapping facts to findings C-01 through C-10, emitting a report whose human-verdict section stays empty. Triggers on missing tests or design docs, incomplete skill surfaces, registration gaps, frontmatter length limits, oversized files, and root-prompt net growth.
+- [P2 批次六项 backlog 卡片闭环实施计划 (Implementation Plan)](project/plans/2026-10-14-p2-six-backlog-items.md)
 
 ## Other Documentation (其他文档)
 
