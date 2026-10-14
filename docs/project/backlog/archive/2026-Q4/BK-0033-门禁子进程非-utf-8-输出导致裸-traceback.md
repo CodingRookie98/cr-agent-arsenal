@@ -2,18 +2,19 @@
 id: BK-0033
 title: 门禁输出非 UTF-8 环境下的 print 硬化与异常退出码收敛
 type: TechDebt
-status: active
+status: completed
 priority: P2
 trigger: 采集器或判定器在 LC_ALL=C / PYTHONUTF8=0 等非 UTF-8 环境下运行
 created_at: '2026-10-12'
-updated_at: '2026-10-12'
-closed_at: null
-resolution: null
-destination: null
+updated_at: '2026-10-14'
+closed_at: '2026-10-14'
+resolution: delivered
+destination: fix/p2-six-backlog-items @ deb691e（R2 终审 ✅ 准予交付；审查归档 docs/project/reviews/2026-10-14-p2-six-backlog-items/）
 source:
 - dual-round-review Delta R1 R1-4（spec-evolution-v1，R2 复现成立 P2）
 acceptance_criteria:
-- judge.py 与 collect-facts.py 的 print 输出在 LC_ALL=C / PYTHONUTF8=0 下不再抛 UnicodeEncodeError（ASCII 前缀或对 stdout 设 errors=replace）
+- judge.py 与 collect-facts.py 的 print 输出在 LC_ALL=C / PYTHONUTF8=0 下不再抛 UnicodeEncodeError（ASCII
+  前缀或对 stdout 设 errors=replace）
 - 上述编码异常路径的退出码为 2（用法/输入错误）而非 1
 ---
 
@@ -25,8 +26,16 @@ acceptance_criteria:
 - 风险点: 真实风险有限（本仓文档全 UTF-8、技能不接 CI），但裸 traceback 与 fail-closed 取向不符
 
 ## 3. 验收准则与验证设计 (DoD)
-- [ ] judge.py 与 collect-facts.py 的 print 输出在 LC_ALL=C / PYTHONUTF8=0 下不再抛 UnicodeEncodeError
-- [ ] 上述编码异常路径的退出码为 2，而非 1
+- [x] judge.py 与 collect-facts.py 的 print 输出在 LC_ALL=C / PYTHONUTF8=0 下不再抛 UnicodeEncodeError
+- [x] 上述编码异常路径的退出码为 2，而非 1
 
 ## 4. 实施去向与结项记录
 **部分落地（2026-10-12，`d8aa611`）**：第一项验收准则的前半已实现 —— `collect-facts.py:268` 与 `:288` 两处 `subprocess.run` 已加 `encoding="utf-8", errors="replace"`，非 UTF-8 门禁输出不再触发裸 `UnicodeDecodeError`。**剩余**：两处 `print` 的 `UnicodeEncodeError` 硬化与异常退出码收敛仍未做，故卡片保持 `active`（Delta R1 DR1-4 指出原卡片文案未反映这一部分完成状态，本行为修正）。
+
+*(以上为 2026-10-12 时点状态；其中「剩余」两项已于 2026-10-14 @ `deb691e` 落地，见下方结项记录。)*
+
+### 结项记录 (2026-10-14)
+- **结论**: delivered
+- **去向/凭据**: fix/p2-six-backlog-items @ deb691e（R2 终审 ✅ 准予交付；审查归档 docs/project/reviews/2026-10-14-p2-six-backlog-items/）
+- **归档目录**: archive/2026-Q4/
+- **验收核验 (作者)**: §3 DoD 全部项已核验落地（回归用例转红→转绿 + L0/L1/L-Doc 全绿 + R2 终审 Zero Blockers）；上方 `close` 的机械未勾选提示按实况收敛（工具侧缺口见 BK-0042）。

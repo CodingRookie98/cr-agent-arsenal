@@ -32,8 +32,6 @@
 
 ## Project Governance (工程演进 / 发布日志与待办)
 
-- [BK-0003-stable-id-pair-by-filename](project/backlog/active/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
-- [BK-0004-unique-verdict-in-review-index](project/backlog/active/BK-0004-unique-verdict-in-review-index.md): id: BK-0004
 - [BK-0005-relative-to-root-path-normalization](project/backlog/active/BK-0005-relative-to-root-path-normalization.md): id: BK-0005
 - [BK-0006-review-gates-negative-test-cases](project/backlog/active/BK-0006-review-gates-negative-test-cases.md): id: BK-0006
 - [BK-0007-governance-doc-exemption-table-accuracy](project/backlog/active/BK-0007-governance-doc-exemption-table-accuracy.md): id: BK-0007
@@ -46,23 +44,22 @@
 - [BK-0016-象限索引幂等判据精确匹配-剥离锚点与查询串](project/backlog/active/BK-0016-象限索引幂等判据精确匹配-剥离锚点与查询串.md): id: BK-0016
 - [BK-0017-scaffold-adr-模板补控制头版本字段](project/backlog/active/BK-0017-scaffold-adr-模板补控制头版本字段.md): id: BK-0017
 - [BK-0019-readme-入口象限的索引自愈与健康评分语义对齐](project/backlog/active/BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md): id: BK-0019
-- [BK-0020-修订表头定位限定在修订历史章节作用域内](project/backlog/active/BK-0020-修订表头定位限定在修订历史章节作用域内.md): id: BK-0020
 - [BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜](project/backlog/active/BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜.md): id: BK-0022
 - [BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染](project/backlog/active/BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染.md): id: BK-0024
 - [BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约](project/backlog/active/BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md): id: BK-0028
-- [BK-0033-门禁子进程非-utf-8-输出导致裸-traceback](project/backlog/active/BK-0033-门禁子进程非-utf-8-输出导致裸-traceback.md): id: BK-0033
-- [BK-0034-baseline-json-损坏静默降级导致-c-10-假阳性与假阴性](project/backlog/active/BK-0034-baseline-json-损坏静默降级导致-c-10-假阳性与假阴性.md): id: BK-0034
 - [BK-0036-skills-传入未知技能名静默产出-clean](project/backlog/active/BK-0036-skills-传入未知技能名静默产出-clean.md): id: BK-0036
 - [BK-0037-输出路径可静默覆盖仓库内被跟踪文件](project/backlog/active/BK-0037-输出路径可静默覆盖仓库内被跟踪文件.md): id: BK-0037
-- [BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存](project/backlog/active/BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存.md): id: BK-0040
 - [BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议](project/backlog/active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md): id: BK-0041
 - [BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约](project/backlog/active/BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约.md): id: BK-0043
 - [BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断](project/backlog/active/BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断.md): id: BK-0044
 - [BK-0001-trim-revision-py-archive-exemption](project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
+- [BK-0003-stable-id-pair-by-filename](project/backlog/archive/2026-Q4/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
+- [BK-0004-unique-verdict-in-review-index](project/backlog/archive/2026-Q4/BK-0004-unique-verdict-in-review-index.md): id: BK-0004
 - [BK-0013-trailing-pipe-column-misparse](project/backlog/archive/2026-Q4/BK-0013-trailing-pipe-column-misparse.md): id: BK-0013
 - [BK-0015-working-staged-naming-literal](project/backlog/archive/2026-Q4/BK-0015-working-staged-naming-literal.md): id: BK-0015
 - [BK-0018-明确-skills-lock-json-computedhash-权威定义并评估](project/backlog/archive/2026-Q4/BK-0018-明确-skills-lock-json-computedhash-权威定义并评估.md): id: BK-0018
+- [BK-0020-修订表头定位限定在修订历史章节作用域内](project/backlog/archive/2026-Q4/BK-0020-修订表头定位限定在修订历史章节作用域内.md): id: BK-0020
 - [BK-0021-generate-llms-txt-py-的-root-与-output-落点解](project/backlog/archive/2026-Q4/BK-0021-generate-llms-txt-py-的-root-与-output-落点解.md): id: BK-0021
 - [BK-0023-机器地图写入侧安全加固-符号链接穿透与零覆盖守卫](project/backlog/archive/2026-Q4/BK-0023-机器地图写入侧安全加固-符号链接穿透与零覆盖守卫.md): id: BK-0023
 - [BK-0025-机器地图与生成物一致性需要门禁固化](project/backlog/archive/2026-Q4/BK-0025-机器地图与生成物一致性需要门禁固化.md): id: BK-0025
@@ -72,9 +69,12 @@
 - [BK-0030-机器地图身份写保护闸门的完备性残余](project/backlog/archive/2026-Q4/BK-0030-机器地图身份写保护闸门的完备性残余.md): id: BK-0030
 - [BK-0031-身份写保护契约登记与历史防护面残留](project/backlog/archive/2026-Q4/BK-0031-身份写保护契约登记与历史防护面残留.md): id: BK-0031
 - [BK-0032-身份写保护闸门的权限与语义细节残余](project/backlog/archive/2026-Q4/BK-0032-身份写保护闸门的权限与语义细节残余.md): id: BK-0032
+- [BK-0033-门禁子进程非-utf-8-输出导致裸-traceback](project/backlog/archive/2026-Q4/BK-0033-门禁子进程非-utf-8-输出导致裸-traceback.md): id: BK-0033
+- [BK-0034-baseline-json-损坏静默降级导致-c-10-假阳性与假阴性](project/backlog/archive/2026-Q4/BK-0034-baseline-json-损坏静默降级导致-c-10-假阳性与假阴性.md): id: BK-0034
 - [BK-0035-rfc-0004-的-gi-1-gi-3-不变式清单与实现未对齐](project/backlog/archive/2026-Q4/BK-0035-rfc-0004-的-gi-1-gi-3-不变式清单与实现未对齐.md): id: BK-0035
 - [BK-0038-跨技能链接正则存在两份近似实现](project/backlog/archive/2026-Q4/BK-0038-跨技能链接正则存在两份近似实现.md): id: BK-0038
 - [BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-](project/backlog/archive/2026-Q4/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md): id: BK-0039
+- [BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存](project/backlog/archive/2026-Q4/BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存.md): id: BK-0040
 - [BK-0042-manage-backlog-py-close-未收敛卡片-3-dod-勾选与-](project/backlog/archive/2026-Q4/BK-0042-manage-backlog-py-close-未收敛卡片-3-dod-勾选与-.md): id: BK-0042
 - [项目待办与后续演进清单 (Backlog Index)](project/backlog/index.md): *(当前暂无进行中的待办)*
 - [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。

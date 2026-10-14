@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-P2-SIX-2026
-> - **当前版本**: V1.1.0
+> - **当前版本**: V1.2.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-10-14
 
@@ -15,7 +15,7 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-10-14（「那就做P2」）
 > - **批准基线**: `master` @ `1b17965`（backlog 理牌提交）
-> - **状态**: 进行中
+> - **状态**: 已完成（P5 结项归档；`master` 合入待用户裁决）
 > - **隔离分支**: `fix/p2-six-backlog-items`（基点 `1b17965`）
 > - **需求确认文档**: 豁免（需求源为 6 张卡片的既有 DoD 字段，已由历次双轮审查裁定；本轮不新增公共契约，仅收紧既有脚本的失败语义）
 > - **技术调研备忘录**: 豁免（零第三方依赖；纯标准库 + 既有 pytest/shell 约定，无选型空间）
@@ -27,13 +27,13 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P4 双轮对抗终审
-- **当前活跃子任务**: Task P4.1（R1 红队 + R2 元架构师，审查范围 `1b17965..HEAD`）
-- **当前子任务重试计数**: 0/3
-- **外层循环迭代**: 0/5
-- **最后一次验证状态**: P3 六项全部落地——`python3 -m pytest skills/ -q` = **467 passed**；`bash -n` 全绿 + `git diff --check` 净空；`docs/project/reviews/` 9 个归档回放 9/9 rc=0；L-Doc 断链 0（85 份文档）+ 健康体检 PASS（100/100）
-- **最新有效提交**: `b6e65d7`（fix(spec-evolution): 消费期畸形事实兜底转译为退出码 2，BK-0040）
-- **阻断原因**: 无
+- **当前活跃阶段**: P5 文档全向归档（交付待用户裁决合入）
+- **当前活跃子任务**: Task P5.3 完成——审查凭据归档 + 6 卡结项；仅余 `master` 合入（Task P4.3，待用户裁决）
+- **当前子任务重试计数**: 1/3（R1 阻断项一轮修复闭环）
+- **外层循环迭代**: 1/5（Delta Re-Loop 1 次：R1 阻断 → `deb691e` 修复 → R2 复核 Zero Blockers）
+- **最后一次验证状态**: P5 结项实测——`python3 -m pytest skills/ -q` = **472 passed**；`check-review-report.sh <本归档> --require-verdict=PASS` rc=0（r1/r2 双轮按基线 `1b17965` 配对、稳定 ID 双向对齐）；全部 10 个审查归档回放 rc=0；L-Doc 断链 0（85 份文档）+ 健康体检 PASS（100/100）；backlog 活跃 33→20、归档 24
+- **最新有效提交**: `deb691e`（fix(p2-batch): 修复 R1 红队 2×P1 阻断与 R1-3/R1-4/R1-5 残余）
+- **阻断原因**: 无（R2 终审 ✅ 准予交付，Blockers = 0）
 
 ---
 
@@ -46,14 +46,14 @@
 - **口径冲突裁决人**: 王辉
 
 ### 1.1 核心交付物清单
-- [ ] `skills/dual-round-review/scripts/check-review-report.sh`（BK-0003 / BK-0004）
-- [ ] `skills/dual-round-review/tests/test_check_review_report.py`（BK-0003 / BK-0004 回归）
-- [ ] `skills/doc-governance/scripts/manage-doc-index.py`（BK-0020）
-- [ ] `skills/doc-governance/tests/test_doc_index_convention.py`（BK-0020 回归）
-- [ ] `skills/spec-evolution/scripts/collect-facts.py`（BK-0033 / BK-0034）
-- [ ] `skills/spec-evolution/scripts/judge.py`（BK-0033 / BK-0034 / BK-0040）
-- [ ] `skills/spec-evolution/tests/{test_collect_facts.py,test_judge_contract.py}`（BK-0033/0034/0040 回归）
-- [ ] 6 张卡片结项归档：`docs/project/backlog/archive/2026-Q4/` + `docs/project/backlog/index.md`（脚本生成）
+- [x] `skills/dual-round-review/scripts/check-review-report.sh`（BK-0003 / BK-0004）
+- [x] `skills/dual-round-review/tests/test_check_review_report.py`（BK-0003 / BK-0004 回归）
+- [x] `skills/doc-governance/scripts/manage-doc-index.py`（BK-0020）
+- [x] `skills/doc-governance/tests/test_doc_index_convention.py`（BK-0020 回归）
+- [x] `skills/spec-evolution/scripts/collect-facts.py`（BK-0033 / BK-0034）
+- [x] `skills/spec-evolution/scripts/judge.py`（BK-0033 / BK-0034 / BK-0040）
+- [x] `skills/spec-evolution/tests/{test_collect_facts.py,test_judge_contract.py}`（BK-0033/0034/0040 回归）
+- [x] 6 张卡片结项归档：`docs/project/backlog/archive/2026-Q4/` + `docs/project/backlog/index.md`（脚本生成）
 
 ### 1.2 依赖选型与开源调研结论 (Research & Feasibility Spike)
 - **P0.5 备忘录**: 豁免
@@ -135,15 +135,17 @@
 - [x] **Task P3.5.2**: L-Doc 门禁（断链 0 / 健康体检 PASS / 控制头同步 PASS / 机器地图一致）
 
 ### P4: 双轮对抗终审与再循环闭环硬门禁 (Dual-Round Review & Re-Loop Gate)
-- [ ] **Task P4.1**: 按 Heavy Track 派发 R1 红队 + R2 元架构师（独立子智能体，优先 `agy`），审查范围 `1b17965..HEAD`
-- [ ] **Task P4.2**: 阻断项 Delta Re-Loop（上限 5 次）
-- [ ] **Task P4.3**: Zero Blockers 裁决后合入 `master`
+- [x] **Task P4.1**: R1 红队（agy · Gemini 3.8 Flash High）审查 `1b17965..92f749c` → **不准予交付（2×P1 / 2×P2 / 1×P3）**；R2 元架构师复核 `1b17965..deb691e` → **✅ 准予交付（Blockers = 0；0 驳回）**
+  - **报告**: `docs/project/reviews/2026-10-14-p2-six-backlog-items/{r1-1b17965..92f749c.md,r2-1b17965..deb691e.md}`（SHA256 前 12 位 `86b8ad52e118` / `21d5d6f93888`，台账登记 `direct`）
+- [x] **Task P4.2**: Delta Re-Loop 1 次——R1-1（R2 模板表头契约冲突）/ R1-2（消费期兜底浅层）2 个 P1 与 R1-3/R1-4/R1-5 全部修于 `deb691e`，新增 5 条回归用例（旧实现转红→修后转绿）
+  - **备注**: 新增用例覆盖 R1 未发现的同类面，其中 `test_consumption_phase_malformation_exits_2_without_artifacts` 是 R1-2 的直接反证
+- [ ] **Task P4.3**: Zero Blockers 裁决已取得；合入 `master` 待用户裁决（红线：不擅自合入/推送）
 - **备注**: BK-0040 卡片 DoD 明示「修复后必须作为新基线重跑完整双轮闭环（单测全绿不替代外部审查）」，故本轮以整批提交为基线派发一次全量双轮。
 
 ### P5: 文档全向归档与联动升级
-- [ ] **Task P5.1**: 6 张卡片 `close` 结项归档 + `sync-index` 仪表盘 + `docs/index.md`/`docs/llms.txt` 注册
-- [ ] **Task P5.2**: 本计划标记 `已完成` 并记录结项实测
-- [ ] **Task P5.3**: 审查凭据归档（报告全文 + SHA256 指纹 + 轮次台账）
+- [x] **Task P5.1**: 6 张卡片 `manage-backlog.py close --resolution delivered` 结项迁入 `archive/2026-Q4/`，`sync-index` 刷新仪表盘（活跃 33→20，归档 24）；DoD 复选框与 §4 占位语由作者按实况收敛（工具缺口 BK-0042）
+- [x] **Task P5.2**: 本计划置 `已完成`（V1.2.0）并记录结项实测
+- [x] **Task P5.3**: 审查凭据归档——R1/R2 报告全文逐字落盘 + SHA256 独立复算 + 轮次台账登记 + `--require-verdict=PASS` rc=0
 
 ---
 
@@ -163,3 +165,4 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **V1.0.0** | 2026-10-14 | AI Agent | 架构师 | 计划创建：P2 批次六项卡片 TDD 闭环 |
 | **V1.1.0** | 2026-10-14 | AI Agent | 架构师 | P3 六项卡片实现与集成验证收口（467 passed / L-Doc PASS），进入 P4 双轮终审 |
+| **V1.2.0** | 2026-10-14 | AI Agent | 架构师 | P4 双轮闭环（R1 阻断 2×P1 → `deb691e` 修复 → R2 准予交付，Blockers = 0）与 P5 结项归档（6 卡 delivered、472 passed、归档门禁 PASS）；`master` 合入待用户裁决 |
