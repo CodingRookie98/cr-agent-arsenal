@@ -456,6 +456,12 @@ R2_TABLE_HEAD = (
     '|:---|:---|:---:|:---:|:---:|:---|:---|'
 )
 
+# 官方模板（`templates/r2-report.md`）的表头形态；历史归档清一色写成上面那种自拟表头。
+OFFICIAL_R2_TABLE_HEAD = (
+    '| R1 稳定 ID | 最终定性 | 复核依据与反证据 | 残余风险 |\n'
+    '| :--- | :--- | :--- | :--- |'
+)
+
 
 def _body_with_ids(template, table_head, ids, tail):
     """用给定稳定 ID 列表重建报告表格；``ids=[]`` 表示「表头在位、明细为空」。"""
@@ -467,23 +473,27 @@ def _body_with_ids(template, table_head, ids, tail):
     return head + sep + '\n' + rows + tail
 
 
-def _build_two_round(tmp_path, *, round2_ids=('R1-1', 'R1-2'), with_round2_r2=True):
+def _build_two_round(tmp_path, *, round2_ids=('R1-1', 'R1-2'), with_round2_r2=True,
+                     r2_table_head=R2_TABLE_HEAD, round2_r2_ids=()):
     """共享归档：第 1 轮已闭环；第 2 轮（delta）的 R1 清单与 R2 明细表按参数给出。
 
     两轮的稳定 ID **故意重名**（都从 ``R1-1`` 起编）——这正是跨轮次并集碰撞的现场：
     第 1 轮的 R2 行足以让第 2 轮的空明细表「看起来对齐」。
+    ``r2_table_head`` 用于切换 R2 表头形态（历史自拟表头 / 官方模板表头）。
     """
     d = tmp_path / 'archive'
     d.mkdir()
+    r2_body = (R2_BODY if r2_table_head == R2_TABLE_HEAD
+               else R2_BODY.replace(R2_TABLE_HEAD, r2_table_head))
     names = {
         'r1-aaa1111..bbb2222.md': R1_BODY,
-        'r2-aaa1111..bbb2222.md': R2_BODY,
+        'r2-aaa1111..bbb2222.md': r2_body,
         'delta-r1-bbb2222..ccc3333.md': _body_with_ids(
             R1_BODY, R1_TABLE_HEAD, round2_ids, '\n## 5. 第一轮结论概要\n移交第二轮。\n'),
     }
     if with_round2_r2:
         names['delta-r2-bbb2222..ccc3333.md'] = _body_with_ids(
-            R2_BODY, R2_TABLE_HEAD, [],
+            r2_body, r2_table_head, round2_r2_ids,
             '\n## 3. 终审放行结论\n- **交付判定**: ✅ 准予交付\n')
     for fname, body in names.items():
         (d / fname).write_text(body, encoding='utf-8')
@@ -534,6 +544,28 @@ def test_two_round_archive_with_paired_ids_passes(tmp_path):
     (d / 'README.md').write_text(index, encoding='utf-8')
     r = _run(d)
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_official_template_r2_header_is_aligned(tmp_path):
+    """R1-1（R1 轮发现）：R2 表头以官方模板 `| R1 稳定 ID |` 为准，抽取器须兼容。
+
+    `templates/r2-report.md` 的表头首列写作 `R1 稳定 ID`，而历史归档自拟为
+    `稳定 ID (沿用 R1)`。首列抽取若只认 `稳定 ID` 字面前缀，模板产出的合规 R2
+    报告会被判成「明细表为空」——合法交付被确定性误阻断（且 R1 清单为空时防捏造的
+    方向一也会静默失效）。
+    """
+    d = _build_two_round(tmp_path, r2_table_head=OFFICIAL_R2_TABLE_HEAD,
+                         round2_r2_ids=('R1-1', 'R1-2'))
+    r = _run(d)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_official_template_r2_empty_detail_table_still_fails(tmp_path):
+    """R1-1 反向保护：换表头形态不得把「空明细表放行」一起放掉。"""
+    d = _build_two_round(tmp_path, r2_table_head=OFFICIAL_R2_TABLE_HEAD)
+    r = _run(d)
+    assert r.returncode == 1, r.stdout
+    assert '明细表' in r.stdout
 
 
 # --- BK-0004 回归：`**终审裁决**` 在索引中必须唯一 -------------------------------

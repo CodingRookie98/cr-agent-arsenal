@@ -365,6 +365,54 @@ def test_malformed_nested_types_exit_2_without_artifacts(tmp_path):
         assert "Traceback" not in proc.stderr, f"{patch!r} 仍以裸 traceback 收场"
 
 
+def test_consumption_phase_malformation_exits_2_without_artifacts(tmp_path):
+    """消费期兜底必须覆盖**整个消费生命周期**，而非仅 `build_findings`（R1-2）。
+
+    仅包裹 `build_findings` 时，`root_prompt.headings` 在**锚点校验**期、`generated_at`
+    在**报告渲染**期才被消费，类型畸形照样抛裸 `TypeError` 逃逸 → 退出码 1（与「存在
+    BLOCKER/HIGH」同码），BK-0040 只被治到一半。
+    """
+    root = build_repo(tmp_path / "repo")
+    cases = []
+
+    facts = _facts(root)
+    facts["skills"][0]["oversized_files"] = ["SKILL.md:5"]  # 造出需校验锚点的 finding
+    facts["root_prompt"]["headings"] = 5                    # 锚点校验期消费
+    cases.append(("headings=5（锚点校验期）", facts))
+
+    facts = _facts(root)
+    facts["generated_at"] = 1728900000                      # 报告渲染期消费
+    cases.append(("generated_at=int（渲染期）", facts))
+
+    for i, (label, facts) in enumerate(cases):
+        case = tmp_path / f"case{i}"
+        case.mkdir()
+        report = case / "report.md"
+        proc, data = _run(root, facts, case, "--report", str(report))
+        assert proc.returncode == 2, f"{label} → rc={proc.returncode}（应为 2）"
+        assert data is None, f"{label} 仍写出了 finding JSON"
+        assert not report.exists(), f"{label} 仍写出了演进报告"
+        assert "Traceback" not in proc.stderr, f"{label} 仍以裸 traceback 收场"
+
+
+def test_report_records_skipped_c10_in_criteria_count(tmp_path):
+    """基线不可用而跳过 C-10 时，报告不得仍自述「判据数: 10」（R1-4）。
+
+    stderr 提示（BK-0034）只在会话里可见；报告是离线审计凭据，若它仍宣称 10 条判据
+    全部执行，离线复核者会把「未执行」读成「执行且无发现」——假阴性。
+    """
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    del facts["root_prompt"]["baseline"]
+    report = tmp_path / "report.md"
+    proc, _ = _run(root, facts, tmp_path, "--report", str(report))
+    assert proc.returncode == 0, proc.stderr
+    assert "C-10" in proc.stderr, "基线不可用必须显式提示（BK-0034）"
+    text = report.read_text(encoding="utf-8")
+    assert "判据数: 9" in text, "报告须登记实际执行的判据数（C-10 未执行）"
+    assert "判据数: 10" not in text
+
+
 def test_report_blocker_section_lists_failed_gate(tmp_path):
     root = build_repo(tmp_path / "repo")
     facts = _facts(root)

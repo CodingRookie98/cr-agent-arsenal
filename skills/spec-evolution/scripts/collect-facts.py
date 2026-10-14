@@ -389,6 +389,9 @@ def build_facts(repo: Path, *, with_gates: bool, only: list[str] | None) -> dict
 
 
 def main(argv: list[str] | None = None) -> int:
+    # 编码硬化放在入口内（而非 `__main__`）：以模块方式导入并调用 `main()` 的
+    # 调用方同样受保护（R1-5）；`run_entry` 兜住 reconfigure 失败的残余形态。
+    harden_stdio()
     ap = argparse.ArgumentParser(
         prog="collect-facts.py",
         description="spec-evolution 事实采集器（只读）：导出技能与根提示词的客观状态。",
@@ -459,5 +462,4 @@ def run_entry(entry) -> int:
 
 
 if __name__ == "__main__":
-    harden_stdio()
     sys.exit(run_entry(main))

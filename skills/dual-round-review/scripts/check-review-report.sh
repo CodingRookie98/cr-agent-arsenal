@@ -304,7 +304,10 @@ section_ids() {
     /^## / { sec = 0 }
     !sec { next }
     !tbl {
-      if ($0 ~ /^\|[[:space:]]*稳定 ID/) tbl = 1
+      # 表头契约有**两种**合法形态：官方模板 `| R1 稳定 ID | …`（templates/r2-report.md）
+      # 与历史归档自拟的 `| 稳定 ID (沿用 R1) | …`。只认「稳定 ID」字面前缀会让
+      # 模板产出的合规 R2 报告被判成空明细表（合法交付误阻断、R1 为空时防捏造失效）。
+      if ($0 ~ /^\|[[:space:]]*(R1[[:space:]]+)?稳定 ID/) tbl = 1
       next
     }
     !/^\|/ { tbl = 0; next }
