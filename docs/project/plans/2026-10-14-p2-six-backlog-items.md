@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-P2-SIX-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.1.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-10-14
 
@@ -27,12 +27,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3 TDD 循环
-- **当前活跃子任务**: Task P3.3（BK-0020）
+- **当前活跃阶段**: P4 双轮对抗终审
+- **当前活跃子任务**: Task P4.1（R1 红队 + R2 元架构师，审查范围 `1b17965..HEAD`）
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 0/5
-- **最后一次验证状态**: Task P3.1+P3.2 收口实测——`python3 -m pytest skills/ -q` 全绿；`bash -n` 通过；`docs/project/reviews/` 下全部归档回放 rc=0
-- **最新有效提交**: `eb6e9a2`（fix(dual-round-review): 稳定 ID 按基线逐轮配对 + 终审裁决唯一性，BK-0003/BK-0004）
+- **最后一次验证状态**: P3 六项全部落地——`python3 -m pytest skills/ -q` = **467 passed**；`bash -n` 全绿 + `git diff --check` 净空；`docs/project/reviews/` 9 个归档回放 9/9 rc=0；L-Doc 断链 0（85 份文档）+ 健康体检 PASS（100/100）
+- **最新有效提交**: `b6e65d7`（fix(spec-evolution): 消费期畸形事实兜底转译为退出码 2，BK-0040）
 - **阻断原因**: 无
 
 ---
@@ -113,26 +113,26 @@
   - **TDD 步骤**: 🔴 索引含两处命中（围栏示例抢答）用例转红 ➔ 🟢 `grep -cF` 计数校验 ➔ ✅ 全部归档（各 1 处命中）不回归 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/dual-round-review/tests/test_check_review_report.py -q`
   - **收口**: BK-0003 与 BK-0004 改动同一脚本同一文件的两个区块、且共享同一份门禁契约，故合并为一个原子提交 `eb6e9a2`（拆成两个提交需手工构造分部补丁，无审查收益）。
-- [ ] **Task P3.3（BK-0020）**: `insert_revision_row` 表头定位限定在『修订历史记录』章节作用域内
+- [x] **Task P3.3（BK-0020）**: `insert_revision_row` 表头定位限定在『修订历史记录』章节作用域内
   - **涉及文件**: `skills/doc-governance/scripts/manage-doc-index.py`, `skills/doc-governance/tests/test_doc_index_convention.py`
   - **TDD 步骤**: 🔴 无关同名表头（位于修订历史之前）用例转红 ➔ 🟢 章节作用域定位 + 章节边界 ➔ ✅ 既有 R1-5/DR1-8 用例不回归 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/doc-governance/tests/ -q`
-- [ ] **Task P3.4（BK-0034）**: `baseline.json` 损坏显式失败；judge 对 baseline 缺失/为 0 给出显式提示
+- [x] **Task P3.4（BK-0034）**: `baseline.json` 损坏显式失败；judge 对 baseline 缺失/为 0 给出显式提示
   - **涉及文件**: `skills/spec-evolution/scripts/collect-facts.py`, `skills/spec-evolution/scripts/judge.py`, `skills/spec-evolution/tests/test_collect_facts.py`, `skills/spec-evolution/tests/test_judge_contract.py`
   - **TDD 步骤**: 🔴 假阳性（损坏基线静默降级为 0 基线）与假阴性（baseline 键缺失静默跳过 C-10）两用例转红 ➔ 🟢 采集侧 fail-closed（rc=2）+ 判定侧显式提示 ➔ ✅ 既有 C-10 用例不回归 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/spec-evolution/tests/ -q`
-- [ ] **Task P3.5（BK-0033）**: 两脚本 print 在非 UTF-8 环境下硬化；编码异常路径退出码收敛为 2
+- [x] **Task P3.5（BK-0033）**: 两脚本 print 在非 UTF-8 环境下硬化；编码异常路径退出码收敛为 2
   - **涉及文件**: `skills/spec-evolution/scripts/collect-facts.py`, `skills/spec-evolution/scripts/judge.py`, `skills/spec-evolution/tests/test_gate_invariants.py`
   - **TDD 步骤**: 🔴 `LC_ALL=C PYTHONUTF8=0 PYTHONIOENCODING=ascii` 下 `UnicodeEncodeError` 裸 traceback（rc=1）用例转红 ➔ 🟢 流降级 `errors="replace"` + 入口兜底 rc=2 ➔ ✅ 正常环境输出不回归 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/spec-evolution/tests/ -q`
-- [ ] **Task P3.6（BK-0040）**: `build_findings` 嵌套类型逃逸兜底转译为退出码 2 且不写出产物
+- [x] **Task P3.6（BK-0040）**: `build_findings` 嵌套类型逃逸兜底转译为退出码 2 且不写出产物
   - **涉及文件**: `skills/spec-evolution/scripts/judge.py`, `skills/spec-evolution/tests/test_judge_contract.py`
   - **TDD 步骤**: 🔴 5 类嵌套畸形（`description_chars` / `registrations`×2 / `oversized_files` / `cross_skill_links`）rc=1 用例转红 ➔ 🟢 `main()` 兜底 ➔ ✅ 5 例全 rc=2 且零产物 ➔ 💾 原子提交
   - **验收命令**: `python3 -m pytest skills/spec-evolution/tests/ -q`
 
 ### P3.5: 集成验证与端到端贯通
-- [ ] **Task P3.5.1**: 全库 L1 + 真实数据 L2 回放（9 个归档 + 真实仓库 collect/judge）
-- [ ] **Task P3.5.2**: L-Doc 门禁（断链 0 / 健康体检 PASS / 控制头同步 PASS / 机器地图一致）
+- [x] **Task P3.5.1**: 全库 L1 + 真实数据 L2 回放（9 个归档 + 真实仓库 collect/judge）
+- [x] **Task P3.5.2**: L-Doc 门禁（断链 0 / 健康体检 PASS / 控制头同步 PASS / 机器地图一致）
 
 ### P4: 双轮对抗终审与再循环闭环硬门禁 (Dual-Round Review & Re-Loop Gate)
 - [ ] **Task P4.1**: 按 Heavy Track 派发 R1 红队 + R2 元架构师（独立子智能体，优先 `agy`），审查范围 `1b17965..HEAD`
@@ -162,3 +162,4 @@
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
 | **V1.0.0** | 2026-10-14 | AI Agent | 架构师 | 计划创建：P2 批次六项卡片 TDD 闭环 |
+| **V1.1.0** | 2026-10-14 | AI Agent | 架构师 | P3 六项卡片实现与集成验证收口（467 passed / L-Doc PASS），进入 P4 双轮终审 |
