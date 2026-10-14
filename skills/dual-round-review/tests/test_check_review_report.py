@@ -441,3 +441,128 @@ def test_legacy_six_column_ledger_fails(tmp_path):
     assert r.returncode != 0
     assert '写入形态' in r.stdout + r.stderr
 
+
+# --- BK-0003 回归：稳定 ID 方向二必须按文件名基线配对施加 ------------------------
+
+R1_TABLE_HEAD = (
+    '| 稳定 ID | 严重级别推断 (P0/P1/P2/P3) | 是否由当前 Diff 引入 | 涉及文件与行号 | '
+    '缺陷描述 | 攻击或破坏机理 |\n'
+    '|:---|:---|:---:|:---|:---|:---|'
+)
+
+R2_TABLE_HEAD = (
+    '| 稳定 ID (沿用 R1) | 检查点 / 文件位置 | 原始 R1 评级 | 变更归属 (本次引入/历史既有) | '
+    '终审裁决 | 最终定性分析与裁决理由 | 处置要求 |\n'
+    '|:---|:---|:---:|:---:|:---:|:---|:---|'
+)
+
+
+def _body_with_ids(template, table_head, ids, tail):
+    """用给定稳定 ID 列表重建报告表格；``ids=[]`` 表示「表头在位、明细为空」。"""
+    head, sep, _ = template.partition(table_head)
+    assert sep, '夹具表头漂移，须同步更新本测试'
+    rows = ''.join(
+        '| %s | P2 (Suggestion) | 历史既有 | `src/a.ts:1` | 缺陷 | 机理 |\n' % i
+        for i in ids)
+    return head + sep + '\n' + rows + tail
+
+
+def _build_two_round(tmp_path, *, round2_ids=('R1-1', 'R1-2'), with_round2_r2=True):
+    """共享归档：第 1 轮已闭环；第 2 轮（delta）的 R1 清单与 R2 明细表按参数给出。
+
+    两轮的稳定 ID **故意重名**（都从 ``R1-1`` 起编）——这正是跨轮次并集碰撞的现场：
+    第 1 轮的 R2 行足以让第 2 轮的空明细表「看起来对齐」。
+    """
+    d = tmp_path / 'archive'
+    d.mkdir()
+    names = {
+        'r1-aaa1111..bbb2222.md': R1_BODY,
+        'r2-aaa1111..bbb2222.md': R2_BODY,
+        'delta-r1-bbb2222..ccc3333.md': _body_with_ids(
+            R1_BODY, R1_TABLE_HEAD, round2_ids, '\n## 5. 第一轮结论概要\n移交第二轮。\n'),
+    }
+    if with_round2_r2:
+        names['delta-r2-bbb2222..ccc3333.md'] = _body_with_ids(
+            R2_BODY, R2_TABLE_HEAD, [],
+            '\n## 3. 终审放行结论\n- **交付判定**: ✅ 准予交付\n')
+    for fname, body in names.items():
+        (d / fname).write_text(body, encoding='utf-8')
+    rows = [_row(rank, fname, _sha12(names[fname]), '🔴 1 / 🟡 1 / ⚪ 0')
+            for rank, fname in (('R1', 'r1-aaa1111..bbb2222.md'),
+                                ('R2', 'r2-aaa1111..bbb2222.md'),
+                                ('delta-r1', 'delta-r1-bbb2222..ccc3333.md'),
+                                ('delta-r2', 'delta-r2-bbb2222..ccc3333.md'))
+            if fname in names]
+    (d / 'README.md').write_text(
+        INDEX_TMPL.format(mode='full', verdict='✅ 准予交付', rows='\n'.join(rows)),
+        encoding='utf-8')
+    return d
+
+
+def test_cross_round_id_union_collision_fails(tmp_path):
+    """BK-0003：旧轮 R2 行不得替新一轮顶包——空明细表仍须判失败。
+
+    全局并集下 ``R2_IDS`` 含第 1 轮的 R1-1/R1-2，新一轮（delta-r1 有清单、
+    delta-r2 明细为空）因此被判「稳定 ID 对齐」并 rc=0，门禁静默放行。
+    """
+    d = _build_two_round(tmp_path)
+    r = _run(d)
+    assert r.returncode == 1, r.stdout
+    assert 'delta-r1' in r.stdout or '明细表' in r.stdout
+
+
+def test_paired_r1_without_r2_fails(tmp_path):
+    """BK-0003：登记了 R1 却无同基线 R2 的轮次属未闭环，不得靠他轮 R2 顶包放行。"""
+    d = _build_two_round(tmp_path, with_round2_r2=False)
+    r = _run(d)
+    assert r.returncode == 1, r.stdout
+    assert 'R2' in r.stdout
+
+
+def test_two_round_archive_with_paired_ids_passes(tmp_path):
+    """BK-0003 反向保护：两轮各自闭环时必须放行（配对不得误伤多轮归档）。"""
+    d = _build_two_round(tmp_path)
+    r2_round2 = _body_with_ids(
+        R2_BODY, R2_TABLE_HEAD, ['R1-1', 'R1-2'],
+        '\n## 3. 终审放行结论\n- **交付判定**: ✅ 准予交付\n')
+    (d / 'delta-r2-bbb2222..ccc3333.md').write_text(r2_round2, encoding='utf-8')
+    index = (d / 'README.md').read_text(encoding='utf-8')
+    # 台账指纹随内容同步（门禁按登记的 SHA256 前 12 位比对）
+    index = re.sub(
+        r'(\| `delta-r2-bbb2222\.\.ccc3333\.md` \| `)[0-9a-f]{12}(`)',
+        lambda m: m.group(1) + _sha12(r2_round2) + m.group(2), index)
+    (d / 'README.md').write_text(index, encoding='utf-8')
+    r = _run(d)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+# --- BK-0004 回归：`**终审裁决**` 在索引中必须唯一 -------------------------------
+
+
+def test_fenced_example_verdict_cannot_preempt_real_field(tmp_path):
+    """BK-0004：围栏示例行位于真实字段之前时不得抢答——首匹配制会产生**假 PASS**。
+
+    真实字段为「阻断交付」，但索引顶部围栏示例里的「准予交付」被 ``head -n 1``
+    先命中，``--require-verdict=PASS`` 于是放行了一份被阻断的归档。
+    """
+    d, _, _ = _build(tmp_path, verdict='🔴 阻断交付')
+    index = (d / 'README.md').read_text(encoding='utf-8')
+    example = '```markdown\n- **终审裁决**: ✅ 准予交付\n```\n\n'
+    (d / 'README.md').write_text(
+        index.replace('# 审查归档 · 示例交付\n', '# 审查归档 · 示例交付\n\n' + example, 1),
+        encoding='utf-8')
+    r = _run(d, '--require-verdict=PASS')
+    assert r.returncode == 1, '围栏示例行不得抢答真实裁决字段'
+    assert '终审裁决' in r.stdout
+
+
+def test_duplicate_verdict_field_fails_without_require_verdict(tmp_path):
+    """BK-0004：命中数 ≠ 1 属结构缺陷，与 ``--require-verdict`` 是否传入无关。"""
+    d, _, _ = _build(tmp_path)
+    index = (d / 'README.md').read_text(encoding='utf-8')
+    (d / 'README.md').write_text(
+        index + '\n> 备注：上文 **终审裁决** 字段亦见于派发提示词模板。\n', encoding='utf-8')
+    r = _run(d)
+    assert r.returncode == 1
+    assert '终审裁决' in r.stdout
+
