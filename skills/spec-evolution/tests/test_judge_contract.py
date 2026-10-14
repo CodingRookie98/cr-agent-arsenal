@@ -148,6 +148,40 @@ def test_c10_root_prompt_growth_is_mid(tmp_path):
     assert "lines:" in f["observed"] and "bytes:" in f["observed"]
 
 
+def test_missing_baseline_reports_c10_not_executed(tmp_path):
+    """BK-0034：baseline 键缺失时 C-10 必须显式声明未执行，禁止静默跳过（假阴性）"""
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["root_prompt"].pop("baseline")
+    proc, data = _run(root, facts, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert data == [], "BK-0034: 基线缺失时不得产出 C-10 判定"
+    assert "C-10 未执行" in proc.stderr, proc.stderr
+
+
+def test_zero_baseline_reports_c10_not_executed_instead_of_false_positive(tmp_path):
+    """BK-0034：基线退化为 0 时必须提示未执行，禁止把未改动的根提示词判成净增长（假阳性）"""
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["root_prompt"]["baseline"] = {"lines": 0, "bytes": 0}
+    proc, data = _run(root, facts, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert data == [], "BK-0034: 零基线不得被当作净增长"
+    assert "C-10 未执行" in proc.stderr, proc.stderr
+
+
+def test_invalid_baseline_type_reports_c10_not_executed(tmp_path):
+    """BK-0034：基线形态非法（非对象/非整数）时提示未执行，不得逃逸为退出码 1"""
+    root = build_repo(tmp_path / "repo")
+    for bad in ("x", 5, {"lines": "11", "bytes": 900}):
+        facts = _facts(root)
+        facts["root_prompt"]["baseline"] = bad
+        proc, data = _run(root, facts, tmp_path)
+        assert proc.returncode == 0, (bad, proc.stderr)
+        assert data == [], (bad, data)
+        assert "C-10 未执行" in proc.stderr, (bad, proc.stderr)
+
+
 def test_finding_order_is_severity_then_skill_then_criterion(tmp_path):
     root = build_repo(tmp_path / "repo")
     _rm(root / "skills" / "demo" / "tests")

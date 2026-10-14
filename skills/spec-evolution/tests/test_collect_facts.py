@@ -130,6 +130,33 @@ def test_root_prompt_facts_and_headings(repo: Path):
     assert "### 质量门槛 (Definition of Done)" in rp["headings"]
 
 
+def test_missing_baseline_file_yields_null(repo: Path):
+    """BK-0034：基线文件缺失时输出 null（交由判定器显式提示），禁止伪造零基线"""
+    (repo / "skills" / "spec-evolution" / "references" / "baseline.json").unlink()
+    assert collect_json(repo)["root_prompt"]["baseline"] is None
+
+
+def test_corrupt_baseline_fails_fast(repo: Path):
+    """BK-0034：基线常量不可解析时必须显式失败，不得静默退化为 0 基线（C-10 假阳性来源）"""
+    write(repo / "skills" / "spec-evolution" / "references" / "baseline.json", "{ 这不是 JSON\n")
+    out = repo / "_facts_corrupt.json"
+    r = run_collect(repo, "--no-gates", "--out", str(out))
+    assert r.returncode == 2, r.stderr
+    assert "baseline" in r.stderr, r.stderr
+    assert not out.exists(), "BK-0034: 采集失败时不得写出事实文件"
+
+
+def test_non_positive_baseline_fails_fast(repo: Path):
+    """BK-0034：基线退化为 0 或非整数时必须显式失败（禁止把『没基线』当『零基线』）"""
+    write(repo / "skills" / "spec-evolution" / "references" / "baseline.json",
+          json.dumps({"root_prompt": {"lines": 0, "bytes": 0}}) + "\n")
+    out = repo / "_facts_zero.json"
+    r = run_collect(repo, "--no-gates", "--out", str(out))
+    assert r.returncode == 2, r.stderr
+    assert "baseline" in r.stderr, r.stderr
+    assert not out.exists(), "BK-0034: 采集失败时不得写出事实文件"
+
+
 def test_skill_filter_narrows_scope(tmp_path: Path):
     root = build_repo(tmp_path / "repo9")
     write(root / "skills" / "other" / "SKILL.md", "---\nname: other\ndescription: x\n---\n\n# other\n")

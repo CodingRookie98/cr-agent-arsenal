@@ -155,6 +155,22 @@ def collected_gates(facts: dict) -> dict:
     return {}
 
 
+def _usable_baseline(root_prompt: dict) -> dict | None:
+    """返回可用于 C-10 的基线（`lines`/`bytes` 均为正整数的对象）；否则返回 None。
+
+    基线不可用（键缺失、整体非对象、字段非正整数）时**不得静默跳过** C-10
+    （BK-0034 假阴性），也不得退化为零基线参与比较（BK-0034 假阳性）——
+    两种情况均由调用方向 stderr 给出「C-10 未执行」的显式提示。
+    """
+    baseline = root_prompt.get("baseline")
+    if not isinstance(baseline, dict):
+        return None
+    lines, nbytes = baseline.get("lines"), baseline.get("bytes")
+    if any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in (lines, nbytes)):
+        return None
+    return {"lines": lines, "bytes": nbytes}
+
+
 def build_findings(facts: dict) -> list:
     out: list = []
 
@@ -232,17 +248,25 @@ def build_findings(facts: dict) -> list:
                 link, "无跨技能相对链接", "跨技能相对链接在单技能安装后断链。"))
 
     rp = facts["root_prompt"]
-    baseline = rp.get("baseline") or {}
-    grew = [
-        f"{key}: {baseline[key]} -> {rp[key]}"
-        for key in ("lines", "bytes")
-        if key in baseline and rp[key] > baseline[key]
-    ]
-    if grew:
-        out.append(_mk(
-            "C-10", "MID", "<repo>", f"[REPO:{rp['path']}]", None,
-            f"wc -l {rp['path']}", "；".join(grew), "不超过 baseline",
-            "根提示词净增长，须同提交给出等量删减或不可压缩理由。"))
+    baseline = _usable_baseline(rp)
+    if baseline is not None:
+        grew = [
+            f"{key}: {baseline[key]} -> {rp[key]}"
+            for key in ("lines", "bytes")
+            if rp[key] > baseline[key]
+        ]
+        if grew:
+            out.append(_mk(
+                "C-10", "MID", "<repo>", f"[REPO:{rp['path']}]", None,
+                f"wc -l {rp['path']}", "；".join(grew), "不超过 baseline",
+                "根提示词净增长，须同提交给出等量删减或不可压缩理由。"))
+    else:
+        print(
+            "⚠️  C-10 未执行：根提示词基线不可用（root_prompt.baseline 缺失或非正整数）——"
+            "无基线时无法判定净增长，请重新生成 "
+            "skills/spec-evolution/references/baseline.json",
+            file=sys.stderr,
+        )
 
     out.sort(key=lambda f: (
         SEVERITY_ORDER[f["severity"]], f["skill"], f["criterion"],
