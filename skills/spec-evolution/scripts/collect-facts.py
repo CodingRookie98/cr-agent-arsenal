@@ -427,5 +427,37 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def harden_stdio() -> None:
+    """把 stdout/stderr 的编码错误策略降级为 `replace`（BK-0033）。
+
+    `LC_ALL=C` / `PYTHONUTF8=0` 下 stdout 退化为 ascii，本脚本的 ✅ 等富符号会抛
+    `UnicodeEncodeError` 并以裸 traceback 逃逸，把一次环境问题伪装成退出码 1。
+    这里只改变不可编码字符的落盘表现（替换为 `?`），不影响判定结果与退出码语义。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass  # 非文本流/不可重配置（如测试捕获）时保持原状
+
+
+def run_entry(entry) -> int:
+    """执行入口，并把残余输出编码异常归位为退出码 2（BK-0033）。
+
+    正常路径下 `harden_stdio()` 已消除该异常；此处兜住 reconfigure 失败（自定义流）
+    等残余形态——它属于「环境/用法错误」（2），绝不能与「存在阻断项」（1）共用退出码。
+    诊断信息此处刻意只用 ASCII：该分支的可信前提正是 stderr 可能仍是 ascii 流。
+    """
+    try:
+        return entry()
+    except UnicodeEncodeError as exc:
+        try:
+            sys.stderr.write(f"output encoding error: {exc!a}\n")
+        except Exception:
+            pass
+        return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    harden_stdio()
+    sys.exit(run_entry(main))
