@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-P2-SIX-2026
-> - **当前版本**: V1.2.0
+> - **当前版本**: V1.3.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-10-14
 
@@ -15,7 +15,7 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-10-14（「那就做P2」）
 > - **批准基线**: `master` @ `1b17965`（backlog 理牌提交）
-> - **状态**: 已完成（P5 结项归档；`master` 合入待用户裁决）
+> - **状态**: 已完成（P5 结项归档 + 已合入 `master` @ `892fc14`，交付分支已删除）
 > - **隔离分支**: `fix/p2-six-backlog-items`（基点 `1b17965`）
 > - **需求确认文档**: 豁免（需求源为 6 张卡片的既有 DoD 字段，已由历次双轮审查裁定；本轮不新增公共契约，仅收紧既有脚本的失败语义）
 > - **技术调研备忘录**: 豁免（零第三方依赖；纯标准库 + 既有 pytest/shell 约定，无选型空间）
@@ -27,12 +27,12 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P5 文档全向归档（交付待用户裁决合入）
-- **当前活跃子任务**: Task P5.3 完成——审查凭据归档 + 6 卡结项；仅余 `master` 合入（Task P4.3，待用户裁决）
+- **当前活跃阶段**: 交付完成（P0~P5 全阶段闭环，分支已合入并删除）
+- **当前活跃子任务**: Task P4.3 完成——经用户裁决合入 `master`（`892fc14`），交付分支 `fix/p2-six-backlog-items` 已用 `git branch -d` 删除
 - **当前子任务重试计数**: 1/3（R1 阻断项一轮修复闭环）
 - **外层循环迭代**: 1/5（Delta Re-Loop 1 次：R1 阻断 → `deb691e` 修复 → R2 复核 Zero Blockers）
 - **最后一次验证状态**: P5 结项实测——`python3 -m pytest skills/ -q` = **472 passed**；`check-review-report.sh <本归档> --require-verdict=PASS` rc=0（r1/r2 双轮按基线 `1b17965` 配对、稳定 ID 双向对齐）；全部 10 个审查归档回放 rc=0；L-Doc 断链 0（85 份文档）+ 健康体检 PASS（100/100）；backlog 活跃 33→20、归档 24
-- **最新有效提交**: `deb691e`（fix(p2-batch): 修复 R1 红队 2×P1 阻断与 R1-3/R1-4/R1-5 残余）
+- **最新有效提交**: `892fc14`（merge: P2 批次六项卡片 TDD 闭环；被合并基线 `a79eabc`，合并后树与 `a79eabc` 逐字节一致）
 - **阻断原因**: 无（R2 终审 ✅ 准予交付，Blockers = 0）
 
 ---
@@ -139,7 +139,8 @@
   - **报告**: `docs/project/reviews/2026-10-14-p2-six-backlog-items/{r1-1b17965..92f749c.md,r2-1b17965..deb691e.md}`（SHA256 前 12 位 `86b8ad52e118` / `21d5d6f93888`，台账登记 `direct`）
 - [x] **Task P4.2**: Delta Re-Loop 1 次——R1-1（R2 模板表头契约冲突）/ R1-2（消费期兜底浅层）2 个 P1 与 R1-3/R1-4/R1-5 全部修于 `deb691e`，新增 5 条回归用例（旧实现转红→修后转绿）
   - **备注**: 新增用例覆盖 R1 未发现的同类面，其中 `test_consumption_phase_malformation_exits_2_without_artifacts` 是 R1-2 的直接反证
-- [ ] **Task P4.3**: Zero Blockers 裁决已取得；合入 `master` 待用户裁决（红线：不擅自合入/推送）
+- [x] **Task P4.3**: 用户裁决「合并然后删除分支」→ `git checkout master` + `git merge --no-ff fix/p2-six-backlog-items` = `892fc14`（merge 提交，沿用仓库既有 `merge:` 前缀惯例）；`git diff a79eabc HEAD` 为空（树逐字节一致）；`git branch -d fix/p2-six-backlog-items` 完成删除
+  - **备注**: `origin/master` 尚未推送（推送需用户单独确认，仓库红线）
 - **备注**: BK-0040 卡片 DoD 明示「修复后必须作为新基线重跑完整双轮闭环（单测全绿不替代外部审查）」，故本轮以整批提交为基线派发一次全量双轮。
 
 ### P5: 文档全向归档与联动升级
@@ -166,3 +167,4 @@
 | **V1.0.0** | 2026-10-14 | AI Agent | 架构师 | 计划创建：P2 批次六项卡片 TDD 闭环 |
 | **V1.1.0** | 2026-10-14 | AI Agent | 架构师 | P3 六项卡片实现与集成验证收口（467 passed / L-Doc PASS），进入 P4 双轮终审 |
 | **V1.2.0** | 2026-10-14 | AI Agent | 架构师 | P4 双轮闭环（R1 阻断 2×P1 → `deb691e` 修复 → R2 准予交付，Blockers = 0）与 P5 结项归档（6 卡 delivered、472 passed、归档门禁 PASS）；`master` 合入待用户裁决 |
+| **V1.3.0** | 2026-10-15 | AI Agent | 架构师 | 交付闭环：经用户裁决以 `--no-ff` 合并入 `master`（`892fc14`，合并后树与 `a79eabc` 一致）并删除交付分支；`origin/master` 推送待用户确认 |
