@@ -404,6 +404,95 @@ class TestDeltaHardening(IndexConventionTestBase):
         self.assertNotEqual(res.returncode, 0, "R1-5: 修订表不可识别时必须报错非 0")
         self.assertEqual(original, self.read("how-to/index.md"), "R1-5: 失败时不得留下半成品改写")
 
+    def test_register_targets_table_inside_history_section(self):
+        """DR1-8：修订行必须落在『修订历史记录』章节内的表格，不得被章节外同名表头劫持"""
+        index_dir = self.test_dir / "how-to"
+        index_dir.mkdir(parents=True)
+        (index_dir / "index.md").write_text(
+            "# How To 象限索引\n\n<!-- doc-index:managed -->\n\n"
+            "> **文档控制信息**\n> - **当前版本**: V1.0.0\n\n"
+            "---\n\n## 变更摘要 (Change Summary)\n\n"
+            "| 版本号 | 影响面 | 备注 |\n"
+            "| :--- | :--- | :--- |\n"
+            "| **V0.9.0** | 全量 | 章节外同名表头 |\n\n"
+            "---\n\n### 修订历史记录 (Revision History)\n\n"
+            "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+            "| :--- | :--- | :--- | :--- | :--- |\n"
+            "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n",
+            encoding="utf-8",
+        )
+        self.prepare_doc("how-to", "deployment.md")
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        content = self.read("how-to/index.md")
+        outside, _, inside = content.partition("### 修订历史记录 (Revision History)")
+        self.assertNotIn("| **V1.0.1** |", outside, "DR1-8: 修订行不得写入章节外的同名表头")
+        self.assertIn("| **V1.0.1** |", inside, "DR1-8: 修订行必须写入修订历史表")
+        self.assertIn(
+            "| **V0.9.0** | 全量 | 章节外同名表头 |", outside,
+            "DR1-8: 章节外表格必须保持原样（不得被撑坏列数）",
+        )
+        sync = self.run_control_sync()
+        self.assertEqual(sync.returncode, 0, "DR1-8: 升版后不得出现版本漂移\n" + sync.stdout)
+
+    def test_register_tolerates_subheading_inside_history_section(self):
+        """R1-3（R1 轮发现）：章节内的更深子标题（`#### …`）不得提前终止作用域
+
+        `find_revision_header` 若对**任意** `#{1,6}` 标题都 `break`，则修订历史章节里
+        先出现的四级子标题（补充说明段）会让紧随其后的修订表无法被识别，登记以
+        `IndexMaintenanceError` 失败——章节作用域只应被**同级或更高级**标题终结。
+        """
+        index_dir = self.test_dir / "how-to"
+        index_dir.mkdir(parents=True)
+        (index_dir / "index.md").write_text(
+            "# How To 象限索引\n\n<!-- doc-index:managed -->\n\n"
+            "> **文档控制信息**\n> - **当前版本**: V1.0.0\n\n"
+            "---\n\n### 修订历史记录 (Revision History)\n\n"
+            "#### 历史维护规则\n\n"
+            "> 每季度复核一次。\n\n"
+            "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+            "| :--- | :--- | :--- | :--- | :--- |\n"
+            "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n",
+            encoding="utf-8",
+        )
+        self.prepare_doc("how-to", "deployment.md")
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertEqual(res.returncode, 0, "R1-3: #### 子标题不得终止修订历史作用域\n" + res.stderr)
+        content = self.read("how-to/index.md")
+        self.assertIn("| **V1.0.1** |", content, "R1-3: 修订行必须写入子标题之后的修订表")
+        sync = self.run_control_sync()
+        self.assertEqual(sync.returncode, 0, "R1-3: 升版后不得出现版本漂移\n" + sync.stdout)
+
+    def test_register_aborts_when_history_section_missing(self):
+        """DR1-8：『修订历史记录』章节缺失时禁止退化为全文搜索（fail-closed，零漂移）"""
+        index_dir = self.test_dir / "how-to"
+        index_dir.mkdir(parents=True)
+        original = (
+            "# How To 象限索引\n\n<!-- doc-index:managed -->\n\n"
+            "> **文档控制信息**\n> - **当前版本**: V1.0.0\n\n"
+            "---\n\n## 变更摘要 (Change Summary)\n\n"
+            "| 版本号 | 影响面 | 备注 |\n"
+            "| :--- | :--- | :--- |\n"
+            "| **V0.9.0** | 全量 | 无修订历史章节 |\n"
+        )
+        (index_dir / "index.md").write_text(original, encoding="utf-8")
+        self.prepare_doc("how-to", "deployment.md")
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "SOP", "--kind", "HowTo",
+        )
+        self.assertNotEqual(res.returncode, 0, "DR1-8: 章节缺失时必须报错非 0")
+        self.assertEqual(original, self.read("how-to/index.md"), "DR1-8: 失败时不得留下半成品改写")
+
 
     def test_generated_skeleton_has_no_stray_backslash_before_backtick(self):
         """DR1-1：ensure 生成物不得含「反斜杠+反引号」无效转义残留"""

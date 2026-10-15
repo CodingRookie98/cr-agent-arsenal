@@ -20,6 +20,7 @@ SCHEMA_VERSION = "1.0"
 SEVERITY_ORDER = {"BLOCKER": 0, "HIGH": 1, "MID": 2}
 DESC_SOFT_LIMIT = 500
 DESC_HARD_LIMIT = 1024
+TOTAL_CRITERIA = 10
 REQUIRED_TOP_KEYS = ("repo_root", "skills", "gates", "root_prompt")
 
 RULE_DOD = "[RULE:§3-质量门槛]"
@@ -155,6 +156,34 @@ def collected_gates(facts: dict) -> dict:
     return {}
 
 
+def _usable_baseline(root_prompt: dict) -> dict | None:
+    """返回可用于 C-10 的基线（`lines`/`bytes` 均为正整数的对象）；否则返回 None。
+
+    基线不可用（键缺失、整体非对象、字段非正整数）时**不得静默跳过** C-10
+    （BK-0034 假阴性），也不得退化为零基线参与比较（BK-0034 假阳性）——
+    两种情况均由调用方向 stderr 给出「C-10 未执行」的显式提示。
+    """
+    baseline = root_prompt.get("baseline")
+    if not isinstance(baseline, dict):
+        return None
+    lines, nbytes = baseline.get("lines"), baseline.get("bytes")
+    if any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in (lines, nbytes)):
+        return None
+    return {"lines": lines, "bytes": nbytes}
+
+
+def criteria_count(facts: dict) -> int:
+    """本轮**实际执行**的判据数：基线不可用时 C-10 被跳过（BK-0034）。
+
+    报告是离线审计凭据；stderr 的「C-10 未执行」提示只在会话里可见，报告若照旧宣称
+    10 条判据全量执行，离线复核者会把「未执行」读成「执行且无发现」——假阴性（R1-4）。
+    """
+    rp = facts.get("root_prompt")
+    if isinstance(rp, dict) and _usable_baseline(rp) is not None:
+        return TOTAL_CRITERIA
+    return TOTAL_CRITERIA - 1
+
+
 def build_findings(facts: dict) -> list:
     out: list = []
 
@@ -232,17 +261,25 @@ def build_findings(facts: dict) -> list:
                 link, "无跨技能相对链接", "跨技能相对链接在单技能安装后断链。"))
 
     rp = facts["root_prompt"]
-    baseline = rp.get("baseline") or {}
-    grew = [
-        f"{key}: {baseline[key]} -> {rp[key]}"
-        for key in ("lines", "bytes")
-        if key in baseline and rp[key] > baseline[key]
-    ]
-    if grew:
-        out.append(_mk(
-            "C-10", "MID", "<repo>", f"[REPO:{rp['path']}]", None,
-            f"wc -l {rp['path']}", "；".join(grew), "不超过 baseline",
-            "根提示词净增长，须同提交给出等量删减或不可压缩理由。"))
+    baseline = _usable_baseline(rp)
+    if baseline is not None:
+        grew = [
+            f"{key}: {baseline[key]} -> {rp[key]}"
+            for key in ("lines", "bytes")
+            if rp[key] > baseline[key]
+        ]
+        if grew:
+            out.append(_mk(
+                "C-10", "MID", "<repo>", f"[REPO:{rp['path']}]", None,
+                f"wc -l {rp['path']}", "；".join(grew), "不超过 baseline",
+                "根提示词净增长，须同提交给出等量删减或不可压缩理由。"))
+    else:
+        print(
+            "⚠️  C-10 未执行：根提示词基线不可用（root_prompt.baseline 缺失或非正整数）——"
+            "无基线时无法判定净增长，请重新生成 "
+            "skills/spec-evolution/references/baseline.json",
+            file=sys.stderr,
+        )
 
     out.sort(key=lambda f: (
         SEVERITY_ORDER[f["severity"]], f["skill"], f["criterion"],
@@ -307,7 +344,7 @@ def render_report(facts: dict, findings: list) -> str:
             .replace("{{DATE}}", (facts.get("generated_at") or "")[:10])
             .replace("{{REPO_HEAD}}", str(facts.get("repo_head") or "unknown"))
             .replace("{{SKILL_COUNT}}", str(len(facts["skills"])))
-            .replace("{{CRITERIA_COUNT}}", "10")
+            .replace("{{CRITERIA_COUNT}}", str(criteria_count(facts)))
             .replace("{{VERDICT}}", verdict)
             .replace("{{BLOCKER_SECTION}}", blocker_section)
             .replace("{{FINDINGS_TABLE}}", findings_table)
@@ -345,6 +382,9 @@ def load_facts(path: Path) -> dict:
 
 
 def main(argv=None) -> int:
+    # 编码硬化放在入口内（而非 `__main__`）：以模块方式导入并调用 `main()` 的
+    # 调用方同样受保护（R1-5）；`run_entry` 兜住 reconfigure 失败的残余形态。
+    harden_stdio()
     ap = argparse.ArgumentParser(description="spec-evolution 判定器（确定性、零 LLM）")
     ap.add_argument("--facts", required=True)
     ap.add_argument("--repo-root", default=None,
@@ -358,28 +398,44 @@ def main(argv=None) -> int:
     except FactsError as exc:
         sys.stderr.write(str(exc) + "\n")
         return 2
-    findings = build_findings(facts)
-    repo_root = Path(args.repo_root or facts["repo_root"])
-    headings = facts["root_prompt"].get("headings") or []
-    problems = []
-    for f in findings:
-        for key in ("anchor", "rule"):
-            anchor = f.get(key)
-            if anchor is None:
-                continue
-            reason = validate_anchor(anchor, repo_root, headings)
-            if reason:
-                problems.append(f"{f['id']} {f['criterion']} {key}: {reason}")
-    if problems:
-        sys.stderr.write("❌ 锚点存在性校验失败（GI-3），拒绝写出任何产物：\n")
-        for p in problems:
-            sys.stderr.write(f"  - {p}\n")
+    try:
+        findings = build_findings(facts)
+        repo_root = Path(args.repo_root or facts["repo_root"])
+        headings = facts["root_prompt"].get("headings")
+        if headings is None:
+            headings = []
+        problems = []
+        for f in findings:
+            for key in ("anchor", "rule"):
+                anchor = f.get(key)
+                if anchor is None:
+                    continue
+                reason = validate_anchor(anchor, repo_root, headings)
+                if reason:
+                    problems.append(f"{f['id']} {f['criterion']} {key}: {reason}")
+        if problems:
+            sys.stderr.write("❌ 锚点存在性校验失败（GI-3），拒绝写出任何产物：\n")
+            for p in problems:
+                sys.stderr.write(f"  - {p}\n")
+            return 2
+        report_text = render_report(facts, findings) if args.report else None
+    except Exception as exc:  # noqa: BLE001 — 见下注释：消费期任意异常都是「输入坏了」
+        # `load_facts` 只校验顶层类型，嵌套字段畸变（`description_chars="abc"`、
+        # `registrations=5`、`oversized_files=[123]` …）会在**整个消费生命周期**抛
+        # TypeError / AttributeError：`build_findings`、`validate_anchor`
+        # （`root_prompt.headings`）、`render_report`（`generated_at`）都消费 facts。
+        # 只包 `build_findings` 是浅层兜底——逃逸异常让解释器把退出码钉在 1，与
+        # 「存在 BLOCKER/HIGH」同码，「输入坏了」被伪装成「有阻断项」（BK-0040/R1-2）。
+        # 此处兜底转译为用法/输入错误 2；报告与 JSON 的写盘全部在保护区之外，
+        # 天然满足「不写出任何产物」。不用逐键白名单：判据集合会演进，白名单必然滞后。
+        sys.stderr.write(
+            f"❌ 事实文件结构畸形（判定器消费期异常，未写出任何产物）：{type(exc).__name__}: {exc}\n")
         return 2
 
     if args.report:
         path = Path(args.report)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(render_report(facts, findings), encoding="utf-8")
+        path.write_text(report_text, encoding="utf-8")
         print(f"✅ 演进报告已写出: {path}")
     if args.json_out:
         path = Path(args.json_out)
@@ -395,5 +451,37 @@ def main(argv=None) -> int:
     return 1 if blocking else 0
 
 
+def harden_stdio() -> None:
+    """把 stdout/stderr 的编码错误策略降级为 `replace`（BK-0033）。
+
+    `LC_ALL=C` / `PYTHONUTF8=0` 下 stdout 退化为 ascii，本脚本的 📊 等富符号会抛
+    `UnicodeEncodeError` 并以裸 traceback 逃逸，把一次环境问题伪装成退出码 1
+    （与「存在 BLOCKER/HIGH」同码）。这里只改变不可编码字符的落盘表现（替换为 `?`），
+    不影响判定结果与退出码语义。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass  # 非文本流/不可重配置（如测试捕获）时保持原状
+
+
+def run_entry(entry) -> int:
+    """执行入口，并把残余输出编码异常归位为退出码 2（BK-0033）。
+
+    正常路径下 `harden_stdio()` 已消除该异常；此处兜住 reconfigure 失败（自定义流）
+    等残余形态——它属于「环境/用法错误」（2），绝不能与「存在 BLOCKER/HIGH」（1）
+    共用退出码。诊断信息此处刻意只用 ASCII：该分支的可信前提正是 stderr 可能仍是 ascii 流。
+    """
+    try:
+        return entry()
+    except UnicodeEncodeError as exc:
+        try:
+            sys.stderr.write(f"output encoding error: {exc!a}\n")
+        except Exception:
+            pass
+        return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_entry(main))

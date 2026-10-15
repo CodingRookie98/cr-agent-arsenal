@@ -148,6 +148,40 @@ def test_c10_root_prompt_growth_is_mid(tmp_path):
     assert "lines:" in f["observed"] and "bytes:" in f["observed"]
 
 
+def test_missing_baseline_reports_c10_not_executed(tmp_path):
+    """BK-0034：baseline 键缺失时 C-10 必须显式声明未执行，禁止静默跳过（假阴性）"""
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["root_prompt"].pop("baseline")
+    proc, data = _run(root, facts, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert data == [], "BK-0034: 基线缺失时不得产出 C-10 判定"
+    assert "C-10 未执行" in proc.stderr, proc.stderr
+
+
+def test_zero_baseline_reports_c10_not_executed_instead_of_false_positive(tmp_path):
+    """BK-0034：基线退化为 0 时必须提示未执行，禁止把未改动的根提示词判成净增长（假阳性）"""
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["root_prompt"]["baseline"] = {"lines": 0, "bytes": 0}
+    proc, data = _run(root, facts, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert data == [], "BK-0034: 零基线不得被当作净增长"
+    assert "C-10 未执行" in proc.stderr, proc.stderr
+
+
+def test_invalid_baseline_type_reports_c10_not_executed(tmp_path):
+    """BK-0034：基线形态非法（非对象/非整数）时提示未执行，不得逃逸为退出码 1"""
+    root = build_repo(tmp_path / "repo")
+    for bad in ("x", 5, {"lines": "11", "bytes": 900}):
+        facts = _facts(root)
+        facts["root_prompt"]["baseline"] = bad
+        proc, data = _run(root, facts, tmp_path)
+        assert proc.returncode == 0, (bad, proc.stderr)
+        assert data == [], (bad, data)
+        assert "C-10 未执行" in proc.stderr, (bad, proc.stderr)
+
+
 def test_finding_order_is_severity_then_skill_then_criterion(tmp_path):
     root = build_repo(tmp_path / "repo")
     _rm(root / "skills" / "demo" / "tests")
@@ -299,6 +333,84 @@ def test_malformed_top_level_types_exit_2(tmp_path):
         facts.update(patch)
         proc, _ = _run(root, facts, tmp_path)
         assert proc.returncode == 2, f"{patch!r} → rc={proc.returncode}（应为 2）"
+
+
+def test_malformed_nested_types_exit_2_without_artifacts(tmp_path):
+    """嵌套字段**类型**畸形 → 输入错误（2），且**不写出任何产物**（BK-0040）。
+
+    `load_facts` 只校验顶层类型；`skills[]` 成员字段畸变会在消费期抛
+    `TypeError` / `AttributeError` 逃逸，解释器以状态码 **1** 退出 —— 与「存在
+    BLOCKER/HIGH」同码。编排方只读退出码时会把「输入坏了」采信为「存在高危结论」，
+    且诊断从 `❌` 降级为裸 traceback。修复点在 `main()` 的消费期兜底，故必须同时
+    断言「没有产物落地」：崩溃早于报告/JSON 写入是修复后的性质，不是前后皆然的性质。
+    """
+    root = build_repo(tmp_path / "repo")
+    patches = (
+        {"description_chars": "abc"},
+        {"registrations": "x"},
+        {"registrations": 5},
+        {"oversized_files": [123]},
+        {"cross_skill_links": 5},
+    )
+    for i, patch in enumerate(patches):
+        case = tmp_path / f"case{i}"
+        case.mkdir()
+        facts = _facts(root)
+        facts["skills"][0].update(patch)
+        report = case / "report.md"
+        proc, data = _run(root, facts, case, "--report", str(report))
+        assert proc.returncode == 2, f"{patch!r} → rc={proc.returncode}（应为 2）"
+        assert data is None, f"{patch!r} 仍写出了 finding JSON"
+        assert not report.exists(), f"{patch!r} 仍写出了演进报告"
+        assert "Traceback" not in proc.stderr, f"{patch!r} 仍以裸 traceback 收场"
+
+
+def test_consumption_phase_malformation_exits_2_without_artifacts(tmp_path):
+    """消费期兜底必须覆盖**整个消费生命周期**，而非仅 `build_findings`（R1-2）。
+
+    仅包裹 `build_findings` 时，`root_prompt.headings` 在**锚点校验**期、`generated_at`
+    在**报告渲染**期才被消费，类型畸形照样抛裸 `TypeError` 逃逸 → 退出码 1（与「存在
+    BLOCKER/HIGH」同码），BK-0040 只被治到一半。
+    """
+    root = build_repo(tmp_path / "repo")
+    cases = []
+
+    facts = _facts(root)
+    facts["skills"][0]["oversized_files"] = ["SKILL.md:5"]  # 造出需校验锚点的 finding
+    facts["root_prompt"]["headings"] = 5                    # 锚点校验期消费
+    cases.append(("headings=5（锚点校验期）", facts))
+
+    facts = _facts(root)
+    facts["generated_at"] = 1728900000                      # 报告渲染期消费
+    cases.append(("generated_at=int（渲染期）", facts))
+
+    for i, (label, facts) in enumerate(cases):
+        case = tmp_path / f"case{i}"
+        case.mkdir()
+        report = case / "report.md"
+        proc, data = _run(root, facts, case, "--report", str(report))
+        assert proc.returncode == 2, f"{label} → rc={proc.returncode}（应为 2）"
+        assert data is None, f"{label} 仍写出了 finding JSON"
+        assert not report.exists(), f"{label} 仍写出了演进报告"
+        assert "Traceback" not in proc.stderr, f"{label} 仍以裸 traceback 收场"
+
+
+def test_report_records_skipped_c10_in_criteria_count(tmp_path):
+    """基线不可用而跳过 C-10 时，报告不得仍自述「判据数: 10」（R1-4）。
+
+    stderr 提示（BK-0034）只在会话里可见；报告是离线审计凭据，若它仍宣称 10 条判据
+    全部执行，离线复核者会把「未执行」读成「执行且无发现」——假阴性。
+    """
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    del facts["root_prompt"]["baseline"]
+    report = tmp_path / "report.md"
+    proc, _ = _run(root, facts, tmp_path, "--report", str(report))
+    assert proc.returncode == 0, proc.stderr
+    assert "C-10" in proc.stderr, "基线不可用必须显式提示（BK-0034）"
+    text = report.read_text(encoding="utf-8")
+    assert "判据数: 9" in text, "报告须登记实际执行的判据数（C-10 未执行）"
+    assert "判据数: 10" not in text
 
 
 def test_report_blocker_section_lists_failed_gate(tmp_path):

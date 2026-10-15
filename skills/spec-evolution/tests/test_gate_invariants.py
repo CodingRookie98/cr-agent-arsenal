@@ -13,7 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from conftest import COLLECT, build_repo, run_collect, run_judge
+from conftest import COLLECT, JUDGE, build_repo, run_collect, run_judge
 
 SPEC_DIR = Path(__file__).resolve().parents[1]
 ANCHOR_RX = re.compile(r"\[(?:SKILL|REPO|RULE):[^\]]+\]")
@@ -301,3 +301,67 @@ def test_gates_recorded_when_enabled(tmp_path):
     gates = json.loads(out.read_text(encoding="utf-8"))["gates"]
     assert set(gates) == {"pytest", "check_doc_links", "audit_doc_health", "cross_skill_links"}
     assert all(g["exit_code"] == 0 for g in gates.values()), gates
+
+
+# --- BK-0033 输出编码硬化 ------------------------------------------------------
+
+def _script_module(name: str):
+    spec = importlib.util.spec_from_file_location(
+        f"spec_evo_{name.replace('-', '_')}", SPEC_DIR / "scripts" / f"{name}.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _ascii_stdio_env() -> dict:
+    """复现「门禁子进程输出非 UTF-8」：`LC_ALL=C` + `PYTHONUTF8=0` 使 stdout 退化为 ascii。
+
+    再固定 `PYTHONIOENCODING=ascii` 以消除 PEP 538 locale coercion 带来的平台差异，
+    并移除 `PYTHONCOERCECLOCALE`，保证本用例在任何机器上都落到 ascii 分支。
+    """
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONCOERCECLOCALE"}
+    env.update({"LC_ALL": "C", "PYTHONUTF8": "0", "PYTHONIOENCODING": "ascii"})
+    return env
+
+
+def _run_ascii(cmd: list, **kw):
+    return subprocess.run(cmd, capture_output=True, env=_ascii_stdio_env(),
+                          text=True, encoding="utf-8", errors="replace", **kw)
+
+
+def test_bk0033_collector_survives_ascii_stdout(tmp_path):
+    """BK-0033：ascii stdout 下采集器不得抛 UnicodeEncodeError，退出码须为 0。
+
+    旧实现里 `print("✅ 事实已导出: …")` 直接抛裸 traceback，解释器把退出码钉在 1——
+    与「存在阻断项」同码，一次环境问题就被伪装成门禁结论。
+    """
+    root = build_repo(tmp_path / "repo")
+    out = tmp_path / "facts.json"
+    proc = _run_ascii([sys.executable, "-B", str(COLLECT), "--repo-root", str(root),
+                       "--no-gates", "--out", str(out)], timeout=120)
+    assert proc.returncode == 0, f"rc={proc.returncode}\n{proc.stdout}\n{proc.stderr}"
+    assert "UnicodeEncodeError" not in proc.stderr, proc.stderr
+    assert out.is_file(), "采集结果必须照常落盘"
+
+
+def test_bk0033_judge_survives_ascii_stdout(tmp_path):
+    """BK-0033：ascii stdout 下判定器不得抛 UnicodeEncodeError，退出码语义保持不变。"""
+    root = build_repo(tmp_path / "repo")
+    src = root / "_in.json"
+    src.write_text(json.dumps(_facts(root), ensure_ascii=False), encoding="utf-8")
+    proc = _run_ascii([sys.executable, "-B", str(JUDGE), "--facts", str(src),
+                       "--repo-root", str(root)], timeout=120)
+    assert proc.returncode == 0, f"rc={proc.returncode}\n{proc.stdout}\n{proc.stderr}"
+    assert "UnicodeEncodeError" not in proc.stderr, proc.stderr
+
+
+def test_bk0033_residual_encoding_error_exits_2():
+    """BK-0033：残余输出编码异常（如流不可 reconfigure）须归位退出码 2，而非裸 traceback 的 1。"""
+    def boom():
+        raise UnicodeEncodeError("ascii", "✅", 0, 1, "ordinal not in range(128)")
+
+    for name in ("judge", "collect-facts"):
+        mod = _script_module(name)
+        assert hasattr(mod, "run_entry"), f"{name}.py 缺少 run_entry()（BK-0033）"
+        assert hasattr(mod, "harden_stdio"), f"{name}.py 缺少 harden_stdio()（BK-0033）"
+        assert mod.run_entry(boom) == 2, f"{name}.py 的残余编码异常未归位为 2"

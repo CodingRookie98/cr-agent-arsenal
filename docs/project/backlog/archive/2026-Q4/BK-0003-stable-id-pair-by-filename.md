@@ -2,18 +2,19 @@
 id: BK-0003
 title: 稳定 ID 方向二改为按文件名配对 R1-R2 后施加
 type: Governance
-status: active
+status: completed
 priority: P2
 trigger: null
 created_at: '2026-10-04'
-closed_at: null
-resolution: null
-destination: null
+closed_at: '2026-10-14'
+resolution: delivered
+destination: fix/p2-six-backlog-items @ deb691e（R2 终审 ✅ 准予交付；审查归档 docs/project/reviews/2026-10-14-p2-six-backlog-items/）
 source:
 - Delta R2 R1-3
 acceptance_criteria:
 - 稳定 ID 方向二改为按文件名 <base7>..<head7> 配对 R1/R2 后施加
 - 加「R1 清单非空 ⇒ R2 明细表非空」判定断言
+updated_at: '2026-10-14'
 ---
 
 ## 1. 背景与问题描述
@@ -31,9 +32,13 @@ acceptance_criteria:
 
 ## 3. 验收条件 (Definition of Done)
 
-- [ ] 稳定 ID 方向二改为按文件名 <base7>..<head7> 配对 R1/R2 后施加
-- [ ] 加「R1 清单非空 ⇒ R2 明细表非空」判定断言
+- [x] 稳定 ID 方向二改为按文件名 <base7>..<head7> 配对 R1/R2 后施加
+- [x] 加「R1 清单非空 ⇒ R2 明细表非空」判定断言
 
 ## 4. 结项与闭环记录
 
-*(当前处于活跃计划中，结项后由 `manage-backlog.py close` 自动迁入 archive/)*
+### 结项记录 (2026-10-14)
+- **结论**: delivered
+- **去向/凭据**: fix/p2-six-backlog-items @ deb691e（R2 终审 ✅ 准予交付；审查归档 docs/project/reviews/2026-10-14-p2-six-backlog-items/）
+- **归档目录**: archive/2026-Q4/
+- **验收核验 (作者)**: §3 DoD 全部项已核验落地（回归用例转红→转绿 + L0/L1/L-Doc 全绿 + R2 终审 Zero Blockers）；上方 `close` 的机械未勾选提示按实况收敛（工具侧缺口见 BK-0042）。

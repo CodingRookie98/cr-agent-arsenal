@@ -243,17 +243,38 @@ def collect_skill(repo: Path, name: str, all_names: list[str],
     }
 
 
+def load_baseline(repo: Path) -> dict | None:
+    """读取根提示词基线常量（`references/baseline.json`）。
+
+    三种形态必须可区分（BK-0034）：文件不存在 → 返回 None，由判定器显式提示
+    「C-10 未执行」；文件存在但不可解析或缺字段、`lines`/`bytes` 非正整数 →
+    `CollectError`（退出码 2，fail-closed）。旧实现把二者一律静默降级为
+    `{"lines": 0, "bytes": 0}`，使「没有基线」在判定侧等价于「基线为零」：
+    未改动的根提示词被判 C-10 净增长（假阳性），而删掉 `root_prompt` 键则
+    C-10 静默消失（假阴性）。
+    """
+    baseline_path = repo / BASELINE_REL
+    if not baseline_path.is_file():
+        return None
+    try:
+        baseline = json.loads(read_text(baseline_path))["root_prompt"]
+        lines, nbytes = baseline["lines"], baseline["bytes"]
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise CollectError(
+            f"基线常量 {BASELINE_REL.as_posix()} 不可解析或缺少 root_prompt.lines/bytes：{exc}"
+        ) from exc
+    if any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in (lines, nbytes)):
+        raise CollectError(
+            f"基线常量 {BASELINE_REL.as_posix()} 的 root_prompt.lines/bytes 必须为正整数，"
+            f"实测 lines={lines!r}、bytes={nbytes!r}（零基线会把未改动的根提示词判成净增长）"
+        )
+    return {"lines": lines, "bytes": nbytes}
+
+
 def collect_root_prompt(repo: Path) -> dict:
     path = repo / ROOT_PROMPT_REL
     text = read_text(path)
-    baseline = {"lines": 0, "bytes": 0}
-    baseline_path = repo / BASELINE_REL
-    if baseline_path.is_file():
-        try:
-            baseline = json.loads(read_text(baseline_path))["root_prompt"]
-            baseline = {"lines": baseline["lines"], "bytes": baseline["bytes"]}
-        except (json.JSONDecodeError, KeyError, TypeError):
-            pass
+    baseline = load_baseline(repo)
     return {
         "path": ROOT_PROMPT_REL.as_posix(),
         "lines": len(text.splitlines()),
@@ -368,6 +389,9 @@ def build_facts(repo: Path, *, with_gates: bool, only: list[str] | None) -> dict
 
 
 def main(argv: list[str] | None = None) -> int:
+    # 编码硬化放在入口内（而非 `__main__`）：以模块方式导入并调用 `main()` 的
+    # 调用方同样受保护（R1-5）；`run_entry` 兜住 reconfigure 失败的残余形态。
+    harden_stdio()
     ap = argparse.ArgumentParser(
         prog="collect-facts.py",
         description="spec-evolution 事实采集器（只读）：导出技能与根提示词的客观状态。",
@@ -406,5 +430,36 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def harden_stdio() -> None:
+    """把 stdout/stderr 的编码错误策略降级为 `replace`（BK-0033）。
+
+    `LC_ALL=C` / `PYTHONUTF8=0` 下 stdout 退化为 ascii，本脚本的 ✅ 等富符号会抛
+    `UnicodeEncodeError` 并以裸 traceback 逃逸，把一次环境问题伪装成退出码 1。
+    这里只改变不可编码字符的落盘表现（替换为 `?`），不影响判定结果与退出码语义。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass  # 非文本流/不可重配置（如测试捕获）时保持原状
+
+
+def run_entry(entry) -> int:
+    """执行入口，并把残余输出编码异常归位为退出码 2（BK-0033）。
+
+    正常路径下 `harden_stdio()` 已消除该异常；此处兜住 reconfigure 失败（自定义流）
+    等残余形态——它属于「环境/用法错误」（2），绝不能与「存在阻断项」（1）共用退出码。
+    诊断信息此处刻意只用 ASCII：该分支的可信前提正是 stderr 可能仍是 ascii 流。
+    """
+    try:
+        return entry()
+    except UnicodeEncodeError as exc:
+        try:
+            sys.stderr.write(f"output encoding error: {exc!a}\n")
+        except Exception:
+            pass
+        return 2
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_entry(main))
