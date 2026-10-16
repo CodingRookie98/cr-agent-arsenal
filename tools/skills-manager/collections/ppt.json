@@ -6,6 +6,13 @@
       "names": [
         "frontend-slides"
       ]
+    },
+    {
+      "source": "https://github.com/hugohe3/ppt-master",
+      "mode": "all",
+      "names": [
+        "ppt-master"
+      ]
     }
   ]
 }
