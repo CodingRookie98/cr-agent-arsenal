@@ -122,6 +122,19 @@ def test_untracked_block_absent_without_untracked_files(tmp_path):
     assert '未跟踪的新增文件' not in r.stdout
 
 
+def test_untracked_block_preserves_unicode_and_space_paths(tmp_path):
+    """R1-7：未跟踪清单须原样呈现中文/空格路径（-z 输出，无八进制转义与引号）。"""
+    repo = _repo(tmp_path)
+    tricky = '文档 名.md'
+    (repo / tricky).write_text('x\n', encoding='utf-8', newline='\n')
+    r = _run(repo, '--no-record', '--working')
+    assert r.returncode == 0, r.stderr
+    block = r.stdout.split('未跟踪的新增文件', 1)[1].split('💡', 1)[0]
+    assert tricky in block
+    assert '\\346' not in block
+    assert '"文档' not in block
+
+
 def test_empty_archive_root_is_rejected(tmp_path):
     """BK-0010：--archive-root= 空值须在写盘前终结性拒绝（rc≠0 且给出修复提示）。"""
     repo = _repo(tmp_path)

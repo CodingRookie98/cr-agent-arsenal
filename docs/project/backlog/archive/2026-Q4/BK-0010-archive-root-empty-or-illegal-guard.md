@@ -39,3 +39,7 @@ updated_at: 2026-10-20
 - **结论**: delivered
 - **去向/凭据**: docs/project/plans/2026-10-20-p3-six-backlog-batch.md
 - **归档目录**: archive/2026-Q4/
+
+### 范围备注 (R2 终审登记, 2026-10-20)
+- 守卫范围**仅限**：空值 + 文件系统根目录（先 `realpath` 解析符号链接再判定）。**不做**路径归属校验（不判断是否位于仓库内），依据 `docs/explanation/decisions/0002-subagent-direct-write-channel.md`「归档根由授权方命令行自持」；R1-3 / R2 均未要求收紧。
+- 其余形态（相对 `../..`、指向非根目录的符号链接、仓库外绝对路径）由调用方自行负责；`skills/dual-round-review/SKILL.md` 的声明已同步收窄为「空值或文件系统根会被拒绝」，不再宣称「不得散落到仓库外任意位置」。

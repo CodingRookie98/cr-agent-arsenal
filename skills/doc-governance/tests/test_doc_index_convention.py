@@ -59,13 +59,19 @@ class TestDocLinkDetection(unittest.TestCase):
         self.assertFalse(
             self.manage.has_doc_link("- 登记 deployment.md", "deployment.md"))
 
-    def test_spaced_filename_link_is_detected(self):
-        """R1-2 回归：validate_file_arg 放行的含空格文件名必须可被识别。"""
+    def test_link_target_grammar_stops_at_unsafe_characters(self):
+        """R2 §3.3/R1-2：非法文件名（空白/#/? 等）不得被链接识别（fail-closed 同源）。
+
+        修复方向是收紧 ``validate_file_arg`` 而不是放宽正则；识别侧对这类目标
+        只截取到首个不安全字符为止，因此与非法文件名永不相等。
+        """
         for variant in ("./my doc.md", "./my doc.md#install", "./my doc.md?tab=1"):
-            self.assertTrue(
+            self.assertFalse(
                 self.manage.has_doc_link(f"[x]({variant})", "my doc.md"), variant)
         self.assertFalse(
-            self.manage.has_doc_link("[x](./my-doc.md)", "my doc.md"))
+            self.manage.has_doc_link("[x](./a(b).md)", "a(b).md"))
+        self.assertTrue(
+            self.manage.has_doc_link("[x](./my-doc.md)", "my-doc.md"))
 
 
 class IndexConventionTestBase(unittest.TestCase):
@@ -222,24 +228,21 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
 
         self.assertIn("**当前版本**: V1.0.1", before, "锚点变体不得触发版本递增")
 
-    @unittest.skipIf(
-        os.name == "nt",
-        "manage-doc-index.py 存量 cp936 emoji 债务（口径 B：Windows 失败集 ⊆ 基线，非本次引入）；"
-        "跨平台逻辑已由 TestDocLinkDetection 覆盖",
-    )
-    def test_register_is_idempotent_for_spaced_filename(self):
-        """R1-2 回归：含空格文件名连续登记不得重复追加清单行或重复升版本。"""
+    def test_register_rejects_non_compliant_filename(self):
+        """R2 §3.3/R1-2：非法文件名必须在写盘前 fail-closed（不幂等、不误拒合规名）。"""
         self.prepare_doc("how-to", "my doc.md")
-        args = (
+        index_file = self.test_dir / "how-to" / "index.md"
+        before = index_file.read_text(encoding="utf-8") if index_file.exists() else None
+
+        res = self.run_manage(
             "register", "--root", str(self.test_dir), "--dir", "how-to",
             "--file", "my doc.md", "--title", "带空格文档", "--kind", "HowTo",
         )
-        for _ in range(3):
-            res = self.run_manage(*args)
-            self.assertEqual(res.returncode, 0, res.stderr)
-        content = self.read("how-to/index.md")
-        self.assertEqual(content.count("](./my doc.md)"), 1, "清单不得出现重复行")
-        self.assertIn("**当前版本**: V1.0.1", content, "连续登记只应升一次补丁版本")
+        self.assertEqual(res.returncode, 1, "非法文件名应被拒绝")
+        self.assertIn("不允许的字符", res.stderr)
+        self.assertIn("kebab-case", res.stderr)
+        after = index_file.read_text(encoding="utf-8") if index_file.exists() else None
+        self.assertEqual(before, after, "拒绝时必须零写入（不得产生清单行或版本漂移）")
 
     def test_register_skips_manual_index(self):
         self.prepare_doc("how-to", "deployment.md")

@@ -208,24 +208,24 @@ def _resolve_mode(opts: dict[str, object]) -> tuple[str, str, str]:
     return mode, base_ref, head_ref
 
 
-def _untracked_paths(status_output: str) -> str:
-    """提取 `git status -s` 输出中的未跟踪文件路径（BK-0045）。
+def _untracked_paths(status_z: str) -> str:
+    """提取未跟踪文件路径（BK-0045；R1-7 改用 NUL 分隔输出）。
 
     历史实现复刻了 `git status -s | grep '^\\?\\?' | awk '{print $2}'` 在 GNU BRE 下的
     缺陷：`\\?` 是「前一项出现 0 或 1 次」的重复算子而非字面问号，过滤恒匹配全部行，
-    导致「未跟踪新增文件」清单实际列出所有变更条目。此处改为平台无关的显式判定：
-    仅保留以 `?? ` 开头的状态行并取其路径列（git 对特殊字符路径加的双引号做去引号处理）。
+    导致「未跟踪新增文件」清单实际列出所有变更条目。此处改为平台无关的显式判定。
+
+    输出解析使用 `git status --porcelain -z`（NUL 分隔）：git 在该模式下不对路径加
+    引号，也不做 C 风格八进制转义，因此中文/空格路径按原样呈现（R1-7）。
     """
-    lines = []
-    for line in status_output.split("\n"):
-        if not line.startswith("?? "):
+    paths = []
+    for entry in status_z.split("\0"):
+        if not entry.startswith("?? "):
             continue
-        path = line[3:]
-        if len(path) >= 2 and path.startswith('"') and path.endswith('"'):
-            path = path[1:-1]
+        path = entry[3:]
         if path:
-            lines.append(path)
-    return "\n".join(lines)
+            paths.append(path)
+    return "\n".join(paths)
 
 
 def _emit_working(record: dict[str, str]) -> int:
@@ -240,8 +240,8 @@ def _emit_working(record: dict[str, str]) -> int:
     if rc != 0:
         return rc
     _emit("\n")
-    _, status_short = _run_git(["status", "-s"], capture=True)
-    untracked_text = _untracked_paths(status_short)
+    _, status_z = _run_git(["status", "--porcelain", "-z"], capture=True)
+    untracked_text = _untracked_paths(status_z)
     if untracked_text:
         _emit("⚠️ 发现未跟踪的新增文件 (Untracked Files):\n")
         _emit(untracked_text + "\n")

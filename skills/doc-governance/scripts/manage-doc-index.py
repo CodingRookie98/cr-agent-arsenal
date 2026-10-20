@@ -124,10 +124,22 @@ def validate_dir_arg(dir_rel: str) -> str:
 
 
 def validate_file_arg(file_name: str) -> str:
-    """校验 --file：必须是纯文件名（禁止路径分隔符与相对路径片段，R1-6 / SH-1）。"""
+    """校验 --file：必须是纯文件名（禁止路径分隔符与相对路径片段，R1-6 / SH-1）。
+
+    R1-2/R2-§3.3（fail-closed）：文件名还必须是链接目标可机械解析的安全形态——
+    不得含空白、``#``、``?``、``(``、``)``。这些字符会让 ````](./name)```` 形式的
+    清单链接无法可靠识别（空格需引号、``#``/``?`` 会被读作锚点/查询串），
+    历史上正是它们造成幂等判据漏判。``docs/GOVERNANCE.md`` 亦明令文档名使用
+    kebab-case。
+    """
     name = file_name or ""
     if not name or "/" in name or "\\" in name or name in (".", ".."):
         raise IndexMaintenanceError(f"--file 必须是纯文件名（不含路径分隔符）: {file_name}")
+    if any(ch.isspace() or ch in "#?()" for ch in name):
+        raise IndexMaintenanceError(
+            f"--file 含不允许的字符（空白 / # / ? / ( / )）: {file_name}；"
+            "链接目标需可被机械解析，请改用 kebab-case 文件名（如 my-doc.md）"
+        )
     return name
 
 
@@ -257,15 +269,15 @@ def has_doc_link(text: str, filename: str) -> bool:
 
     历史实现用 ``f"](./{filename})"`` 精确子串比对，链接带锚点或查询串
     （如 ``](./a.md#install)``）时会被判为未登记，重复追加清单行并误升版本。
-    此处剥离锚点与查询串后精确比对文件名；目标捕获使用「到右括号为止」的
-    保守文法（``[^()\\n]*``），因此 ``validate_file_arg`` 放行的含空格文件名
-    同样可被识别（R1-2 回归修复）。
+    此处剥离锚点与查询串后精确比对文件名。
+
+    捕获文法与 ``validate_file_arg`` 的 fail-closed 白名单同源：文件名不得含
+    空白、``#``、``?``、``(``、``)``，因此链接目标在首个此类字符处结束
+    （R2 §3.3/R1-2 裁决：不得为兼容非法文件名而放宽正则）。
     """
-    pattern = re.compile(r"\]\(\s*\./([^()\n]*)\)")
+    pattern = re.compile(r"\]\(\s*\./([^)\s?#]+)")
     for match in pattern.finditer(text):
-        target = match.group(1).strip()
-        target = target.split("#", 1)[0].split("?", 1)[0].strip()
-        if target == filename:
+        if match.group(1) == filename:
             return True
     return False
 
