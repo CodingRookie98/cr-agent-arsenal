@@ -47,6 +47,7 @@
 - [BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议](project/backlog/active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md): id: BK-0041
 - [BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约](project/backlog/active/BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约.md): id: BK-0043
 - [BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断](project/backlog/active/BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断.md): id: BK-0044
+- [BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo](project/backlog/active/BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo.md): id: BK-0046
 - [BK-0001-trim-revision-py-archive-exemption](project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0003-stable-id-pair-by-filename](project/backlog/archive/2026-Q4/BK-0003-stable-id-pair-by-filename.md): id: BK-0003

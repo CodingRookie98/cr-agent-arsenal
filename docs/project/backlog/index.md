@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **15** 项 (进行中: 0, 计划中: 15)
+- **现役活跃待办**: **16** 项 (进行中: 0, 计划中: 16)
 - **历史已归档项**: **30** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 0 | 15 |
+| **活跃数量** | 0 | 0 | 1 | 15 |
 
 ---
 
@@ -29,6 +29,7 @@
 
 | 编号 | 优先级 | 类型 | 标题 | 触发条件 | 卡片入口 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **BK-0046** | `P2` | `Bug` | spec-evolution 门禁 pytest 超时阈值（GATE_TIMEOUT=300s）与实际套件时长临界导致 C-09 假 BLOCKER | 执行 spec-evolution 的 collect-facts.py 采集全量门禁时（尤其在 /mnt/d 9p 文件系统、PYTHONPYCACHEPREFIX 冷导入或机器负载较高时），pytest 门禁超时记为 exit 124，judge.py 的 C-09 随即判 F-01 BLOCKER | [BK-0046](./active/BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo.md) |
 | **BK-0005** | `P3` | `Governance` | 豁免判定前执行路径根相对语义归一化 | — | [BK-0005](./active/BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0006** | `P3` | `TechDebt` | 四条审查护栏各补 1 条反证测试用例 | — | [BK-0006](./active/BK-0006-review-gates-negative-test-cases.md) |
 | **BK-0009** | `P3` | `Bug` | resolve_archive_dir 增加交付单元与请求 slug 一致性校验 | — | [BK-0009](./active/BK-0009-resolve-archive-dir-slug-consistency.md) |
