@@ -97,6 +97,7 @@
 - [spec-evolution 机械化演进回路技能实现计划 (Implementation Plan)](project/plans/2026-10-12-spec-evolution.md): Use when auditing delivery-surface completeness of this repository's skills and root prompt, or when a goal-loop P5 delivery re-checks the skills it touched. Runs a read-only fact collector and a deterministic exit-code judge (zero LLM, zero network) mapping facts to findings C-01 through C-10, emitting a report whose human-verdict section stays empty. Triggers on missing tests or design docs, incomplete skill surfaces, registration gaps, frontmatter length limits, oversized files, and root-prompt net growth.
 - [P2 批次六项 backlog 卡片闭环实施计划 (Implementation Plan)](project/plans/2026-10-14-p2-six-backlog-items.md)
 - [自建技能脚本 Python 统一化实施计划 (Implementation Plan)](project/plans/2026-10-19-skill-scripts-python-unification.md): 1. 8 个技能各自拥有 `<name>.py` 实现，在 **Windows 原生 Python** 与 **WSL/Linux Python** 上均可直接执行，行为与改造前 Bash 实现**逐字节一致**（stdout/stderr...
+- [P3 六项 Backlog 批次实施计划 (Implementation Plan)](project/plans/2026-10-20-p3-six-backlog-batch.md): 1. **六张卡片 DoD 逐项达成**：BK-0045 / BK-0010 / BK-0008 / BK-0016 / BK-0007 / BK-0014 卡片 §3 所列验收条件全部满足。
 
 ## Other Documentation (其他文档)
 

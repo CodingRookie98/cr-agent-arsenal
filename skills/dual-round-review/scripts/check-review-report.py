@@ -290,7 +290,10 @@ def _check_sections(path: str, label: str, sections: tuple[str, ...], messages: 
     errors = 0
     fence_count = sum(1 for line in lines if _FENCE_RE.match(line))
     if fence_count % 2 != 0:
-        messages.append(f"错误: 围栏代码块未闭合（{label} 围栏标记 {fence_count} 个，应为偶数）")
+        messages.append(
+            f"错误: 围栏代码块未闭合（{label} 围栏标记 {fence_count} 个，应为偶数；"
+            "嵌套围栏演示请避免行首标记）"
+        )
         errors += 1
     body = _strip_fences(lines)
     for section in sections:

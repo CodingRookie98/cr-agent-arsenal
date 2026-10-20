@@ -252,6 +252,17 @@ def ensure_index(root: Path, dir_rel: str, title=None):
     return "created", index_file
 
 
+def has_doc_link(text: str, filename: str) -> bool:
+    """幂等判据：识别清单中指向目标文件的相对链接（BK-0016）。
+
+    历史实现用 ``f"](./{filename})"`` 精确子串比对，链接带锚点或查询串
+    （如 ``](./a.md#install)``）时会被判为未登记，重复追加清单行并误升版本。
+    此处剥离锚点与查询串后精确比对文件名。
+    """
+    pattern = re.compile(r"\]\(\s*\./([^)\s?#]+)(?:[?#][^)\s]*)?\s*\)")
+    return any(match.group(1) == filename for match in pattern.finditer(text))
+
+
 def register_doc(root: Path, dir_rel: str, filename: str, title: str, kind: str):
     """登记文档至象限索引（幂等）。返回 (status, entry_file)。"""
     filename = validate_file_arg(filename)
@@ -270,7 +281,7 @@ def register_doc(root: Path, dir_rel: str, filename: str, title: str, kind: str)
     if text is None or not is_managed(text):
         return "skipped-manual", index_file
 
-    if f"](./{filename})" in text:
+    if has_doc_link(text, filename):
         return "already", index_file
 
     today = date.today().isoformat()

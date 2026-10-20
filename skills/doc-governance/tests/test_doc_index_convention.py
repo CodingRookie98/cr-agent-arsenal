@@ -9,6 +9,7 @@ test_doc_index_convention.py - RFC-0003 目录级索引约定与 scaffold 索引
   3. 技能规范补登记断言 (G1): SKILL.md / 设计书 / GOVERNANCE.md 的象限索引契约。
 """
 
+import os
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,42 @@ SKILL_DIR = SCRIPTS_DIR.parent
 REPO_ROOT = SKILL_DIR.parent.parent
 
 MANAGED_MARKER = "<!-- doc-index:managed -->"
+
+
+def _load_manage_module():
+    """以模块方式加载 manage-doc-index.py：纯逻辑用例跨平台可跑，不依赖子进程编码。"""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "manage_doc_index_under_test", SCRIPTS_DIR / "manage-doc-index.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestDocLinkDetection(unittest.TestCase):
+    """BK-0016：登记判据须剥离锚点/查询串后再比对文件名（跨平台纯逻辑用例）。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.manage = _load_manage_module()
+
+    def test_plain_relative_link_is_detected(self):
+        self.assertTrue(
+            self.manage.has_doc_link("[deploy](./deployment.md)", "deployment.md"))
+
+    def test_anchor_and_query_variants_are_detected(self):
+        for variant in ("./deployment.md#install", "./deployment.md?tab=1"):
+            text = f"[deploy]({variant})"
+            self.assertTrue(self.manage.has_doc_link(text, "deployment.md"), variant)
+
+    def test_other_files_and_bare_mentions_are_not_confused(self):
+        self.assertFalse(
+            self.manage.has_doc_link("[x](./deployment-notes.md#a)", "deployment.md"))
+        self.assertTrue(
+            self.manage.has_doc_link("[x](./deployment-notes.md#a)", "deployment-notes.md"))
+        self.assertFalse(
+            self.manage.has_doc_link("- 登记 deployment.md", "deployment.md"))
 
 
 class IndexConventionTestBase(unittest.TestCase):
@@ -147,6 +184,35 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
         self.assertEqual(first, content, "重复登记不得改写索引")
         self.assertEqual(content.count("](./deployment.md)"), 1, "清单不得出现重复行")
         self.assertIn("**当前版本**: V1.0.1", content, "重复登记不得重复升版本")
+
+    @unittest.skipIf(
+        os.name == "nt",
+        "manage-doc-index.py 存量 cp936 emoji 债务（口径 B：Windows 失败集 ⊆ 基线，非本次引入）；"
+        "跨平台逻辑已由 TestDocLinkDetection 覆盖",
+    )
+    def test_register_is_idempotent_with_anchor_variant(self):
+        """BK-0016：既有链接带锚点/查询串时不得判为未登记（禁止重复行与误升版本）。"""
+        self.prepare_doc("how-to", "deployment.md")
+        args = (
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "生产部署 SOP", "--kind", "HowTo",
+        )
+        self.run_manage(*args)
+        index_file = self.test_dir / "how-to" / "index.md"
+
+        for variant in ("./deployment.md#install", "./deployment.md?tab=1"):
+            text = index_file.read_text(encoding="utf-8").replace(
+                "](./deployment.md)", f"]({variant})")
+            index_file.write_text(text, encoding="utf-8", newline="\n")
+            before = index_file.read_text(encoding="utf-8")
+
+            res = self.run_manage(*args)
+            self.assertEqual(res.returncode, 0, res.stderr)
+            self.assertEqual(before, index_file.read_text(encoding="utf-8"),
+                             f"链接变体 {variant} 已登记时不得改写索引")
+            self.assertEqual(before.count("](./deployment.md"), 1, "清单不得出现重复行")
+
+        self.assertIn("**当前版本**: V1.0.1", before, "锚点变体不得触发版本递增")
 
     def test_register_skips_manual_index(self):
         self.prepare_doc("how-to", "deployment.md")
