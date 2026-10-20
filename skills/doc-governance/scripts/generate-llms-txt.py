@@ -246,7 +246,12 @@ def generate_llms_txt(root_dir: Path, output_file: Path, project_name: str = "Pr
         # R1-27：mkstemp 默认 0600，且 os.replace 会把模式位带到产物上 ⇒ 显式按 umask 放开
         # （必须走 fchmod(fd)：按名 chmod 会重新引入影子路径）
         os.fchmod(handle_fd, 0o666 & ~_current_umask())
-        with os.fdopen(handle_fd, "w", encoding="utf-8") as handle:
+        # 跨平台确定性（技能脚本 Python 统一化配套）：显式 newline="\n"，使产物在 Windows /
+        #   POSIX 下同为 LF 字节流。否则 Windows 文本模式会把 \n 翻译为 CRLF，而
+        #   audit-doc-health.py 的机器地图门禁是 read_bytes() 逐字节比对，两种平台各自自洽却
+        #   与版本库里的 LF blob（`.gitattributes: * text=auto eol=lf`）不一致 —— 新克隆在 Windows
+        #   上会因工作区得到 LF 而误判「机器地图与生成物不一致」。固定 LF 即让门禁跨平台同判。
+        with os.fdopen(handle_fd, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(content)
         os.replace(tmp_name, output_file)
     except BaseException:
