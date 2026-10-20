@@ -32,7 +32,7 @@
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 3/5
 - **最后一次验证状态**: 闭包态 WSL 全量 `503 passed / 0 failed`；闭包态 Windows UTF-8 模式 `12 failed / 475 passed / 16 skipped`（BASE `7a2a3a0` 为 12 failed / 464 passed / 14 skipped，失败集逐条相同、新增失败 0）；文档四件套全绿
-- **最新有效提交**: 闭包提交（承载 delta-r2 归档、门禁 `--require-verdict=PASS` 通过与本文件收口；其后的书签提交仅把提交号回填入本行）
+- **最新有效提交**: `4d4eed8`（闭包提交：delta-r2 归档 + 门禁 `--require-verdict=PASS` 通过 + 计划/docs 收口；其后的书签提交仅回填本行提交号）
 - **阻断原因**: 无（R2 唯一阻断 R1-1 已由 `f1f2189` 结项，Delta 复核中）
 
 ---
@@ -139,3 +139,4 @@
 | 2026-10-20 | **Delta-r1 阻断与建议处置**：DR-1 → `docs/index.md` 恢复「进行中（Delta 复核中）」口径、修订历史去掉未兑现的「已完成 / Zero Blockers」；DR-7 → `prepare-review-context.py` 输出侧 `errors="surrogateescape"` 与 git 解码口径对齐 + POSIX 专用非 UTF-8 文件名用例；DR-8 → 计划 Windows 数字更正为 475 passed / 16 skipped（`:34` / `:45` / `:134` 三处同步）；DR-5 → `has_doc_link` 要求「可选锚点/查询串 + 右括号」收尾并补 4 条负例断言；DR-6（原始状态块 C-quote，历史既有 P3）登记为后续项不修。 | 修复提交 diff |
 | 2026-10-20 | **Delta-r2 归档与裁决**：句柄 `c8f54bab`，报告 35774 B / SHA256 `9d4ff312e9aa…`；终审 **✅ 准予交付（Blockers=0）**：DR-1/DR-5/DR-7 关闭、DR-6 维持后续项、DR-8 要求闭包口径统一；同时指出 🔴 闭包结构阻断（delta-r1 已归档而 delta-r2 默认命名 `8de971e..1f6a826` 与配对键不兼容，门禁 rc=1）→ 本提交处置。 | `docs/project/reviews/2026-10-20-p3-six-backlog-batch/README.md` |
 | 2026-10-20 | **闭包处置（delta-r2 §3.3 逐条）**：① delta-r2 报告改名为 `delta-r2-7f35a33..1f6a826.md`（与 delta-r1 同基线键；字节与 SHA256 不变，README 加 `[!NOTE]` 留痕）；② README 台账/链接/指纹补登，终审裁决置为 `✅ 准予交付`（V1.0.4）；③ 计划 `:34/:45/:134` 数字与 `:35/:36` 口径统一为闭包态；④ `docs/index.md` 恢复「已完成」并注明四轮审查闭环（仅在门禁 PASS 后书写）；⑤ llms.txt 重生成与文档四件套复跑。 | `docs/index.md`、本计划、归档 README |
+| 2026-10-20 | **闭包提交号回填（书签提交）**：闭包提交 `4d4eed8`（4 files, +304/−11：归档 README V1.0.4、delta-r2 报告改名入库、计划闭包态、docs/index.md 完成态）；本行由随后书签提交写入，避免计划文档自指。 | 本计划 :35、§5 |
