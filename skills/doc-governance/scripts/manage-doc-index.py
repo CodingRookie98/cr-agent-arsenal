@@ -272,10 +272,12 @@ def has_doc_link(text: str, filename: str) -> bool:
     此处剥离锚点与查询串后精确比对文件名。
 
     捕获文法与 ``validate_file_arg`` 的 fail-closed 白名单同源：文件名不得含
-    空白、``#``、``?``、``(``、``)``，因此链接目标在首个此类字符处结束
-    （R2 §3.3/R1-2 裁决：不得为兼容非法文件名而放宽正则）。
+    空白、``#``、``?``、``(``、``)``，因此链接目标在首个此类字符处结束，且
+    其后必须紧跟可选的锚点/查询串与右括号——不允许 ``](./a.md garbage)``、
+    ``[x](./a.md`` 这类半截或带尾巴的目标被误判为已登记（DR-5）。
+    （R2 §3.3/R1-2 裁决：不得为兼容非法文件名而放宽正则。）
     """
-    pattern = re.compile(r"\]\(\s*\./([^)\s?#]+)")
+    pattern = re.compile(r"\]\(\s*\./([^)\s?#]+)(?:[?#][^)\s]*)?\)")
     for match in pattern.finditer(text):
         if match.group(1) == filename:
             return True

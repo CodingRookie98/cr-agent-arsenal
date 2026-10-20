@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.36.9 (P3 批次六项 backlog 卡片闭环交付：计划行标注已完成，双轮审查 + Delta 闭环归档见 `docs/project/reviews/2026-10-20-p3-six-backlog-batch/`)
+> - **当前版本**: V1.36.9 (P3 批次六项 backlog 卡片交付**进行中**：R1 红队 + R2 元审判已完成（R2 判阻断），Delta 定向复核进行中，终审裁决未定；归档见 `docs/project/reviews/2026-10-20-p3-six-backlog-batch/`)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,7 +12,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **V1.36.9** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 闭环交付登记**：§4 计划行由「进行中」改为「已完成」并链接审查归档（R1 红队 + R2 元审判 + Delta 闭环 Zero Blockers）；同步计划文档最终取证（六卡 `close` 迁档、index 活跃 21→15、Windows UTF-8 模式失败集 ⊆ 基线且新增失败 0） |
+| **V1.36.9** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 交付进展登记（未定稿）**：§4 计划行标注为「进行中（Delta 复核中）」；同步计划文档与审查归档（R1 红队 2 P1、R2 元审判 1 阻断后已修复，Delta 复核进行中，`--require-verdict=PASS` 尚未通过）；六卡已 `close` 迁入 `archive/2026-Q4/`，index 活跃 21→15、归档 24→30 |
 | **V1.36.8** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 闭环登记**：§4 新增计划行（BK-0045 未跟踪清单平台无关化 / BK-0010 `--archive-root` 防御 / BK-0008 围栏告警补嵌套提示 / BK-0016 象限索引幂等判据剥离锚点与查询串 / BK-0007 GOVERNANCE §4.1 豁免口径精确化 / BK-0014 作废轮次留痕）；同步 `GOVERNANCE.md` V1.6.2 与 `dual-round-review` SKILL.md 口径 |
 | **V1.36.7** | 2026-10-19 | DSH AI Agent | 王辉 | **技能脚本 Python 统一化注册**：§4 新增计划行（8 个自建技能脚本改为单一 Python 实现 + `.sh` POSIX 兼容壳；9 套契约测试运行时无关化；Windows 侧以 uv 隔离环境取证）；同步 `GOVERNANCE.md` V1.6.1 与 `docs/reference/rules/index.md` V1.0.7 的脚本主路径口径（`scaffold-doc.py` / `prepare-review-context.py`） |
 | **V1.36.6** | 2026-10-13 | DSH AI Agent | 王辉 | **复核循环治理登记**：新增 BK-0044（提交信息取证据口径 —— 易失数字/一次测量值与工作区属性不得作为完成度宣称；V8/V9/V11/V12 四次同根因触发，两次判阻断）；BK-0042 §5 更正 E-4 的耗时标注为「本机一次测量、非可复现常数」、E-5 归因更正为提交 `c24f27c`（提交 `64283f6`）；docs/index.md V1.36.5 行的凭据改为「本地只读门禁可复跑」，并注明 V11/V12 报告均未入库 |
@@ -92,7 +92,7 @@
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |
 | **P2 批次六项 backlog 卡片闭环** | 闭环 BK-0003/BK-0004/BK-0020/BK-0033/BK-0034/BK-0040：稳定 ID 按基线逐轮配对与终审裁决唯一性、修订表头章节作用域、非 UTF-8 输出硬化、baseline 损坏显式失败、嵌套类型逃逸收口（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-14-p2-six-backlog-items.md](./project/plans/2026-10-14-p2-six-backlog-items.md) |
 | **技能脚本 Python 统一化** | 8 个自建技能脚本改为**单一 Python 实现** + 同目录 `.sh` POSIX 兼容壳（形态 B，旧调用面零破坏）；9 套契约测试改为运行时无关（Windows 默认 `sys.executable`，POSIX 另验壳转发）；四注册面与技能内文档口径同步为 Python 主路径；Windows 侧以 uv 隔离环境取证（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-19-skill-scripts-python-unification.md](./project/plans/2026-10-19-skill-scripts-python-unification.md) |
-| **P3 批次六项 backlog 卡片闭环** | 闭环 BK-0045/BK-0010/BK-0008/BK-0016/BK-0007/BK-0014：未跟踪文件清单平台无关化（GNU BRE `\?` 缺陷 + `-z` 原样路径）、`--archive-root` 空值/根路径防御、围栏未闭合告警补嵌套演示提示、象限索引幂等判据剥离锚点与查询串（非法文件名 fail-closed）、GOVERNANCE §4.1 豁免口径精确化与可读性约定守卫边界、作废轮次版本库留痕口径（**已完成**，Heavy Track；六卡迁入 `archive/2026-Q4/`，审查归档见 [2026-10-20-p3-six-backlog-batch](./project/reviews/2026-10-20-p3-six-backlog-batch/README.md)） | [2026-10-20-p3-six-backlog-batch.md](./project/plans/2026-10-20-p3-six-backlog-batch.md) |
+| **P3 批次六项 backlog 卡片闭环** | 闭环 BK-0045/BK-0010/BK-0008/BK-0016/BK-0007/BK-0014：未跟踪文件清单平台无关化（GNU BRE `\?` 缺陷 + `-z` 原样路径）、`--archive-root` 空值/根路径防御、围栏未闭合告警补嵌套演示提示、象限索引幂等判据剥离锚点与查询串（非法文件名 fail-closed）、GOVERNANCE §4.1 豁免口径精确化与可读性约定守卫边界、作废轮次版本库留痕口径（**进行中**：R1/R2 双轮审查已完成、Delta 定向复核中，终审裁决未定；Heavy Track；六卡已迁入 `archive/2026-Q4/`，审查归档见 [2026-10-20-p3-six-backlog-batch](./project/reviews/2026-10-20-p3-six-backlog-batch/README.md)） | [2026-10-20-p3-six-backlog-batch.md](./project/plans/2026-10-20-p3-six-backlog-batch.md) |
 
 ---
 

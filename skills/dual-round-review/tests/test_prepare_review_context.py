@@ -135,6 +135,24 @@ def test_untracked_block_preserves_unicode_and_space_paths(tmp_path):
     assert '"文档' not in block
 
 
+def test_untracked_block_preserves_non_utf8_path_without_crash(tmp_path):
+    """DR-7：非 UTF-8 文件名字节解码为 surrogate 后，输出侧须以 surrogateescape 回写，
+    不得在 `--working` 分支抛 UnicodeEncodeError（Bash 原实现按原始字节透传）。"""
+    if os.name == 'nt':
+        pytest.skip('Windows 无法创建非 UTF-8 字节文件名')
+    repo = _repo(tmp_path)
+    raw_name = b'bad\xff.md'
+    os.close(os.open(os.path.join(os.fsencode(str(repo)), raw_name), os.O_CREAT | os.O_WRONLY))
+    # 输出含原始 0xff 字节，解码侧同样用 surrogateescape（与脚本内部口径一致）
+    r = subprocess.run([sys.executable, str(SCRIPT), '--no-record', '--working'], cwd=repo,
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='surrogateescape')
+    assert r.returncode == 0, r.stderr
+    assert 'UnicodeEncodeError' not in r.stderr
+    assert '未跟踪的新增文件' in r.stdout
+    assert 'bad\udcff.md' in r.stdout
+
+
 def test_empty_archive_root_is_rejected(tmp_path):
     """BK-0010：--archive-root= 空值须在写盘前终结性拒绝（rc≠0 且给出修复提示）。"""
     repo = _repo(tmp_path)

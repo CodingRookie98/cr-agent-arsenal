@@ -241,7 +241,10 @@ def _section_ids(path: str, header: str) -> str:
             continue
         cell = re.sub(r"^\|\s*", "", line)
         cell = re.sub(r"\s*\|.*$", "", cell)
-        if _ID_CELL_RE.match(cell):
+        # 稳定 ID 单元格可能被 markdown 强调记号包裹（`**DR-1**` / `` `R1-1` ``），
+        # 剥掉强调记号后再匹配；否则合规报告会被误判为「空明细表」而 fail-closed。
+        cell = cell.strip(SPACE).strip("*`_").strip()
+        if _ID_CELL_RE.fullmatch(cell):
             found.add(cell)
     return _sort_u("\n".join(found))
 

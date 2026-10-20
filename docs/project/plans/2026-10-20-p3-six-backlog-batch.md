@@ -28,10 +28,10 @@
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
 - **当前活跃阶段**: P4（双轮独立审查与阻断修复闭环）
-- **当前活跃子任务**: R2 终审已完成（不予交付，Blockers=1）→ R1 阻断修复已提交 → delta-r1 派发 → delta-r2 终审 → 归档定稿
+- **当前活跃子任务**: delta-r1 已完成（不放行，1 阻断 DR-1 + 2 P2）→ DR-1/5/7/8 修复已落盘 → delta-r2 终审 → 归档定稿
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 3/5
-- **最后一次验证状态**: WSL 全量 `502 passed / 0 failed`（修复后工作树，基线 490）；Windows UTF-8 模式 HEAD 12 failed / 473 passed / 16 skipped，BASE `7a2a3a0` 12 failed / 464 passed / 14 skipped（失败集逐条相同、新增失败 0）；文档四件套全绿
+- **最后一次验证状态**: WSL 全量 `502 passed / 0 failed`（修复后工作树，基线 490）；Windows UTF-8 模式 HEAD 12 failed / 475 passed / 16 skipped，BASE `7a2a3a0` 12 failed / 464 passed / 14 skipped（失败集逐条相同、新增失败 0）；文档四件套全绿
 - **最新有效提交**: `f1f2189`（R1-1/R1-2 首轮修复）；本轮 R2 后续修复提交待归档提交号
 - **阻断原因**: 无（R2 唯一阻断 R1-1 已由 `f1f2189` 结项，Delta 复核中）
 
@@ -131,8 +131,9 @@
 | 2026-10-20 | **R1-4 变异取证**：`test_unclosed_fence_message_identifies_report_and_parity` 对 BASE 脚本（`7a2a3a0` 的 `check-review-report.py`）运行 → **1 failed**（空转已消除；脚本恢复后零差异）。 | `.goal-loop` 本地运行输出 |
 | 2026-10-20 | **R1-7 修复**：`_untracked_paths` 改解析 `git status --porcelain -z`（NUL 分隔，无引号/八进制转义）；新增用例 `test_untracked_block_preserves_unicode_and_space_paths`（`文档 名.md` 原样、无 `\346`、无引号）。 | `skills/dual-round-review/scripts/prepare-review-context.py`、`test_prepare_review_context.py` |
 | 2026-10-20 | **R2 归档**：句柄 `bd273adc`，报告 37922 B / SHA256 `efdaf03adcd3…`；裁决 **🔴 不予交付（Blockers=1，R1-1）**，R1-2 由 P1 降 P2（真实回归、本轮必修），🟡 10（P2×4 + P3×6）、⚪ 0；README 升 V1.0.2、台账 r2 行 `direct`、门禁 rc=0（报告 2 份）。 | `docs/project/reviews/2026-10-20-p3-six-backlog-batch/` |
-| 2026-10-20 | **Windows umbrella 取证环境更正**：plain Windows（cp936 控制台）下 HEAD 因测试端 `encoding="utf-8"` 解码子进程 cp936 输出而出现 18 条新增 `UnicodeDecodeError` 失败，不能作为判定环境；改以 **UTF-8 模式**（`PYTHONUTF8=1` + `PYTHONIOENCODING=utf-8`）同口径对照两棵树：BASE `7a2a3a0` = 12 failed / 464 passed / 14 skipped；HEAD（修复后）= 12 failed / 473 passed / 16 skipped，**失败集逐条相同（新增失败 0）**。DRR 两测试文件 0 failed、doc-index 文件 0 failed（≤20 门槛）。 | `.goal-loop/win-base7a-utf8.txt`、`win-head-utf8-final.txt` |
+| 2026-10-20 | **Windows umbrella 取证环境更正**：plain Windows（cp936 控制台）下 HEAD 因测试端 `encoding="utf-8"` 解码子进程 cp936 输出而出现 18 条新增 `UnicodeDecodeError` 失败，不能作为判定环境；改以 **UTF-8 模式**（`PYTHONUTF8=1` + `PYTHONIOENCODING=utf-8`）同口径对照两棵树：BASE `7a2a3a0` = 12 failed / 464 passed / 14 skipped；HEAD（修复后）= 12 failed / 475 passed / 16 skipped，**失败集逐条相同（新增失败 0）**。DRR 两测试文件 0 failed、doc-index 文件 0 failed（≤20 门槛）。 | `.goal-loop/win-base7a-utf8.txt`、`win-head-utf8-final.txt` |
 | 2026-10-20 | **R1-1 收口**：`docs/index.md` V1.36.8 → V1.36.9（修订历史滑窗），§4 本计划行由「进行中」改「已完成」并链接审查归档；六卡状态 `delivered`/迁入 `archive/2026-Q4/`、index 活跃 21→15、归档 24→30。 | `docs/index.md`、`docs/project/backlog/index.md` |
 | 2026-10-20 | **R2 §3.3 前置条件逐条落实**：R1-1（六卡结项 + DoD 勾选 + index + docs/index.md + 计划检查点/§5）、R1-4（补断言 + 变异）、R1-11（同构声明，前提交）、R1-2（fail-closed）、R1-5/R1-10（口径更正与计划行）、R1-3（SKILL:118 收窄，前提交）、R1-7（`-z`）。 | 本计划 §5 |
 | 2026-10-20 | 修复提交落盘后派发 **delta-r1**（基线 `7f35a33..<修复提交>`，聚焦阻断修复证据与次生退化）→ delta-r2 终审 → `--require-verdict=PASS`。 | `git log`；`.goal-loop/dispatch-ledger.md` |
-
+| 2026-10-20 | **Delta-r1 归档与裁决**：句柄 `eeb36673`，报告 30332 B / SHA256 `13db2d6d5baba…`；判 **不放行**（1 阻断 DR-1：`docs/index.md` 提前宣称「已完成 / Delta 闭环 Zero Blockers」，与计划「进行中」、README 终审「未定」、门禁 rc=1 冲突 → 宣称宽于取证）。独立复核确认 **R1-2/R1-4/R1-7 已根治**，新增 🟡 2（DR-7 非 UTF-8 文件名崩溃、DR-8 计划数字取自 `f1f2189` 树）。 | `docs/project/reviews/2026-10-20-p3-six-backlog-batch/README.md` |
+| 2026-10-20 | **Delta-r1 阻断与建议处置**：DR-1 → `docs/index.md` 恢复「进行中（Delta 复核中）」口径、修订历史去掉未兑现的「已完成 / Zero Blockers」；DR-7 → `prepare-review-context.py` 输出侧 `errors="surrogateescape"` 与 git 解码口径对齐 + POSIX 专用非 UTF-8 文件名用例；DR-8 → 计划 Windows 数字更正为 475 passed / 16 skipped；DR-5 → `has_doc_link` 要求「可选锚点/查询串 + 右括号」收尾并补 4 条负例断言；DR-6（原始状态块 C-quote，历史既有 P3）登记为后续项不修。 | 修复提交 diff |

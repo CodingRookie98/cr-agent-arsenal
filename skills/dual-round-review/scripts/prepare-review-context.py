@@ -500,8 +500,10 @@ def _scaffold_archive(
 
 
 def main(argv: list[str] | None = None) -> int:
-    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
-    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
+    # DR-7：git 侧以 surrogateescape 解码，输出侧同口径回写，避免非 UTF-8 文件名
+    # 在 `--working` 分支触发 UnicodeEncodeError（Bash 原实现按原始字节透传）。
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n", errors="surrogateescape")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n", errors="surrogateescape")
     args = list(sys.argv[1:] if argv is None else argv)
     # 0) 帮助优先（无需位于 Git 仓库）：仅当**首个**参数即 -h/--help 时短路
     if args and args[0] in ("-h", "--help"):

@@ -72,6 +72,13 @@ class TestDocLinkDetection(unittest.TestCase):
             self.manage.has_doc_link("[x](./a(b).md)", "a(b).md"))
         self.assertTrue(
             self.manage.has_doc_link("[x](./my-doc.md)", "my-doc.md"))
+        # DR-5：目标后必须紧跟可选锚点/查询串与右括号，半截或带尾巴的链接不算已登记
+        for malformed in ("[x](./a.md", '[x](./a.md garbage)', '[x](./a.md "title")',
+                          "[x](./a.md extra)"):
+            self.assertFalse(self.manage.has_doc_link(malformed, "a.md"), malformed)
+        self.assertTrue(self.manage.has_doc_link("[x](./a.md)", "a.md"))
+        self.assertTrue(self.manage.has_doc_link("[x](./a.md#install)", "a.md"))
+        self.assertTrue(self.manage.has_doc_link("[x](./a.md?tab=1)", "a.md"))
 
 
 class IndexConventionTestBase(unittest.TestCase):
