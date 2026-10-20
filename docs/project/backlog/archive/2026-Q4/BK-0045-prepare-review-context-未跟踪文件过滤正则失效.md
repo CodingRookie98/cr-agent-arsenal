@@ -2,19 +2,16 @@
 id: BK-0045
 title: prepare-review-context 未跟踪文件过滤正则失效（GNU BRE `\?` 为重复算子）
 type: Bug
-status: active
+status: completed
 priority: P2
 trigger: null
 created_at: 2026-10-19
-updated_at: 2026-10-19
-closed_at: null
-resolution: null
-destination: null
+updated_at: 2026-10-20
+closed_at: 2026-10-20
+resolution: delivered
+destination: docs/project/plans/2026-10-20-p3-six-backlog-batch.md
 source: [skill-scripts-python-unification]
-acceptance_criteria:
-  - 未跟踪文件清单仅包含 `??` 状态行，且跨 GNU/BSD grep 语义一致
-  - 新增行为用例覆盖「已暂存/已修改/未跟踪」三态混排输入
-  - 回归：prepare-review-context 差分矩阵与既有契约测试全绿
+acceptance_criteria: 
 ---
 
 ## 1. 背景与问题陈述
@@ -40,12 +37,16 @@ M  a.txt
 - 迁移自证: 本次「技能脚本 Python 统一化」交付对既有实现**保真复刻**（byte-parity 为首要验收），故刻意不改；差分证据见 `.goal-loop/cases/prepare-review-context.txt`（两侧一致）。**未新增任何固化该错误语义的断言**。
 
 ## 3. 验收准则与验证设计 (DoD)
-- [ ] 过滤逻辑改为平台无关写法，能在 GNU/BSD grep 与 Windows（无 grep 依赖）下得到同一集合
-- [ ] 新增三态混排夹具的行为用例（已暂存 / 已修改 / 未跟踪），断言仅未跟踪项进入清单
-- [ ] 更新 `skills/dual-round-review/SKILL.md` 与相关模板中的输出示例（若受影响）
-- [ ] `python3 -B -m pytest skills/dual-round-review/tests -q` 全绿，差分矩阵与既有契约测试无回归
+- [x] 过滤逻辑改为平台无关写法，能在 GNU/BSD grep 与 Windows（无 grep 依赖）下得到同一集合
+- [x] 新增三态混排夹具的行为用例（已暂存 / 已修改 / 未跟踪），断言仅未跟踪项进入清单
+- [x] 更新 `skills/dual-round-review/SKILL.md` 与相关模板中的输出示例（若受影响）
+- [x] `python3 -B -m pytest skills/dual-round-review/tests -q` 全绿，差分矩阵与既有契约测试无回归
 
 *（§3 DoD 复选框由作者在结项前人工核验并逐项勾选；`close` 只收敛本卡占位语并提示未勾选项数，不代勾验收准则。）*
 
 ## 4. 实施去向与结项记录
-*(未开工)*
+
+### 结项记录 (2026-10-20)
+- **结论**: delivered
+- **去向/凭据**: docs/project/plans/2026-10-20-p3-six-backlog-batch.md
+- **归档目录**: archive/2026-Q4/

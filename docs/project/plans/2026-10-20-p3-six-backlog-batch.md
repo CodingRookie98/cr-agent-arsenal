@@ -27,13 +27,13 @@
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3（集成验证与文档同步）
-- **当前活跃子任务**: W5 卡片结项/注册面/门禁 → W6 双轮独立审查
+- **当前活跃阶段**: P4（双轮独立审查与阻断修复闭环）
+- **当前活跃子任务**: R2 终审 → R1 阻断项修复提交 → Delta 闭环 → 结项与归档
 - **当前子任务重试计数**: 0/3
-- **外层循环迭代**: 1/5
-- **最后一次验证状态**: WSL 定向 154 passed（dual-round-review 全量 + doc-index 文件）；新增用例单测 11 passed（WSL）/10 passed + 1 skipped（Windows）；Windows 定向 21 failed 全部为 doc-governance 存量 cp936 债务（⊆ 基线）
-- **最新有效提交**: `7a2a3a0`（批次基线；本批次改动未提交）
-- **阻断原因**: 无
+- **外层循环迭代**: 2/5
+- **最后一次验证状态**: WSL 全量 499 passed（提交 7f35a33 干净树）；Windows 全量 94 failed / 408 passed / 15 skipped（基线 94 failed / 400 passed / 14 skipped，新增失败 0）；R1 阻断项修复后定向用例待复跑（见 §5）
+- **最新有效提交**: `7f35a33`（W1–W5 代码与文档，已提交）；R1 阻断修复改动尚未提交
+- **阻断原因**: R1 判定不放行（2 个 P1：六卡未结项宣称闭环、BK-0016 含空格文件名幂等回归）——修复中
 
 ---
 
@@ -44,9 +44,9 @@
 2. **WSL 全量回归**：`python3 -B -m pytest skills/ -q` **0 failed** 且通过数 ≥ 490（基线 490）。
 3. **Windows umbrella**：`.venv\Scripts\python.exe -B -m pytest skills/ -q` 失败集 ⊆ 改造前基线失败集（新增失败 0；存量 cp936/POSIX-only 债务按口径 B 豁免披露），且本次触碰的 4 个测试文件在 Windows 原生全绿——例外：`test_doc_index_convention.py` 的存量 20 条 cp936 失败属基线债务（`manage-doc-index.py` / `scaffold-doc.py` 调用的兄弟脚本 emoji 输出），按口径 B 豁免披露；本批次在该文件新增的端到端用例以 `unittest.skipIf(os.name == "nt")` 隔离并给出原因，新增纯逻辑用例 `TestDocLinkDetection` 在 Windows 全绿（见 §1.4 第 4 项）。
 4. **差分矩阵**：`prepare-review-context`、`check-review-report` 的 bash↔python 差分在「有意分歧白名单」之外逐字节一致（见 §1.4）。
-5. **契约与文档门禁**：`verify-contract.py` 0 失败；`check-doc-links` / `check-doc-control-sync` / `audit-doc-health` / `trim-revision --keep 5` 全绿；`judge.py` 无新增 BLOCKER/HIGH 发现。
-6. **交付流程**：独立子智能体 R1（红队）→ R2（架构师元审判）Zero Blockers 裁决；审查报告逐字归档并登记台账与 SHA256 指纹。
-7. **backlog 结项**：6 张卡片 `manage-backlog.py close --resolution delivered` 迁入 archive，`sync-index` 后 index 仪表盘更新。
+5. **契约与文档门禁**：文档四件套（`check-doc-links` / `check-doc-control-sync` / `audit-doc-health` / `trim-revision --keep 5`）全绿；`judge.py` 无新增 BLOCKER/HIGH 发现。本批次不涉及 8 个既有技能脚本的 Python 契约壳，故 `.goal-loop/verify-contract.py`（Lead 临时工具，`.gitignore` 忽略，证据边界见 §1.5）不适用于本批次（R1-10 更正）。
+6. **交付流程**：独立子智能体 R1（红队）→ R2（架构师元审判）Zero Blockers 裁决；审查报告逐字归档并登记台账与 SHA256 指纹。说明（R1-1 处置口径）：提交 `7f35a33` 的「闭环六项」指**代码与文档闭环**，卡片状态由 W5 结项提交收口；结项事实以 `docs/project/backlog/index.md` 与本计划 §5 为准，不改写历史提交信息。
+7. **backlog 结项**：6 张卡片 `manage-backlog.py close --resolution delivered` 迁入 archive，`sync-index` 后 index 仪表盘更新（活跃 21 → 15、归档 24 → 30）。
 
 ### 1.1 变更范围（写作用域）
 - `skills/dual-round-review/scripts/prepare-review-context.py`（BK-0045、BK-0010）
@@ -67,13 +67,14 @@
 - **L1**：两脚本 bash↔python 差分矩阵（含新增白名单）。
 - **L2**：WSL 全量 `pytest skills/`。
 - **L3**：Windows 目标四文件 + Windows 全量失败集 ⊆ 基线。
-- **L4**：文档四件套门禁 + `verify-contract.py` + `judge.py`。
+- **L4**：文档四件套门禁 + `judge.py`（`.goal-loop/verify-contract.py` 仅覆盖 8 个既有技能脚本契约壳，本批次不适用，见 §1.0 第 5 条）。
 
 ### 1.4 已知有意分歧白名单（R1 不得据此定级阻断项）
 1. **BK-0045**：未跟踪清单由「全部 status 条目」收窄为「仅 `??` 条目」——修复目标本身，与 bash 原实现差分必然不同。
 2. **BK-0008**：围栏未闭合告警追加「嵌套围栏演示请避免行首标记」，文案差分必然不同。
 3. **BK-0010**：`--archive-root` 空值/根路径新增拒绝分支——原实现无此错误分支，属新增防御而非回归。
-4. **BK-0016 的 Windows 用例隔离**：新增端到端用例 `test_register_is_idempotent_with_anchor_variant` 在 Windows 上 `skip`，原因是被调用脚本 `manage-doc-index.py` 打印 emoji 触发存量 cp936 `UnicodeEncodeError`（口径 B 豁免的平台债务，非本批次引入）；同一修复的跨平台覆盖由新增纯逻辑用例 `TestDocLinkDetection`（直接加载模块调用 `has_doc_link`）承担，该用例在 Windows 全绿。
+4. **BK-0016 的 Windows 用例隔离**：新增端到端用例 `test_register_is_idempotent_with_anchor_variant`、`test_register_is_idempotent_for_spaced_filename` 在 Windows 上 `skip`，原因是被调用脚本 `manage-doc-index.py` 打印 emoji 触发存量 cp936 `UnicodeEncodeError`（口径 B 豁免的平台债务，非本批次引入）；同一修复的跨平台覆盖由新增纯逻辑用例 `TestDocLinkDetection`（直接加载模块调用 `has_doc_link`）承担，该用例在 Windows 全绿。
+5. **BK-0010 归档根守卫的判定面收窄（R1-3 处置）**：守卫只拦截两类形态——空值、以及经 `os.path.realpath` 解析后仍为文件系统根的路径（含「符号链接指向根」）；`../` 相对外跳、仓库外绝对路径等其余形态由调用方自行保证落在仓库内。`SKILL.md`、代码注释与错误文案同步收窄了「报告不得散落到仓库外任意位置」的宽泛宣称，避免宣称与实现不同宽。
 
 ---
 
@@ -84,7 +85,7 @@
 - **W3（BK-0016）**：`register_doc` 幂等判据改为「剥离 `#锚点` / `?查询串` 后与文件名精确比对」；补锚点变体用例。
 - **W4（BK-0007 + BK-0014）**：GOVERNANCE.md §4.1 豁免表文本精确化为「该目录不参与任何计分维度扫描」+ 显式声明归档索引控制头与报告清单互链为无守卫可读性约定（控制头升版 V1.6.2 + 修订行）；`dual-round-review/SKILL.md` 异常分支 7 补一句作废留痕要求。
 - **W5**：6 张卡片 close + `sync-index`；`docs/index.md` 登记本计划行与升版；`docs/llms.txt` 重生成；四件套门禁。
-- **W6**：`prepare-review-context.py --slug=p3-six-backlog-batch --round=r1 <BASE> <HEAD>` → R1 独立子智能体 → R2 → Zero Blockers → 归档门禁 `--require-verdict=PASS`。
+- **W6**：`prepare-review-context.py --slug=p3-six-backlog-batch --round=r1 <BASE> <HEAD>` → R1 独立子智能体 → R2 → Zero Blockers → 归档门禁 `--require-verdict=PASS`。本轮 R1 判「不放行」（2 P1 + 9 建议），故按 Full-Delta 从 R1 重走闭环：阻断修复提交后派发 delta-r1（聚焦 R1-1/R1-2 修复证据与直接次生退化）→ delta-r2 终审 → PASS。
 
 ---
 
@@ -116,4 +117,14 @@
 | 2026-10-20 | 定向回归：WSL `154 passed`（dual-round-review 全量 + doc-index 文件）；新用例 WSL `11 passed` / Windows `10 passed, 1 skipped`（BK-0016 端到端按 §1.4 第 4 项隔离） | `.goal-loop` 本地运行输出 |
 | 2026-10-20 | 文档面：`docs/index.md` 登记本计划行（V1.36.8 + 修订行）；`docs/llms.txt` 重生成（85 篇） | `docs/index.md`、`docs/llms.txt` |
 | 2026-10-20 | 文档门禁四件套：`check-doc-links`（88 md，0 断链）、`check-doc-control-sync`（42 md，0 漂移）、`trim-revision --keep 5`（87 文件，0 超限）、`audit-doc-health` PASS | `.goal-loop/gates.sh` 输出 |
+| 2026-10-20 | **证据口径更正（R1-5）**：此前「新用例 WSL 11 passed」不足以证明新增 11 条（选择器含既有用例）；准确口径＝本批次新增用例 **11 条**（`test_prepare_review_context` 4 + `test_check_review_report` 1 + `TestDocLinkDetection` 4 + doc-governance e2e 2），Windows 上 9 passed + 2 skipped。「消除 154」系误引迁移前基线；正确口径＝BASE `7a2a3a0` 的 Windows 结果 94 failed / 400 passed / 14 skipped → HEAD `7f35a33` 94 failed / 408 passed / 15 skipped，**新增失败 0、新增通过 8**。「WSL 499 passed」仅在干净树成立；工作树存在未跟踪归档 README 时全量会出现 1 failed（归档门禁对未登记目录的既有机制，归档提交后消失）。 | 本计划 §5；`.goal-loop/win-batch.txt`、`win-baseline.txt` |
+| 2026-10-20 | 提交 `7f35a33`（W1–W5 代码与文档落盘；11 files / +306 / −21）。提交信息中的「消除 154」「11 passed」数字口径以本节更正行为准。 | `git show --stat 7f35a33` |
+| 2026-10-20 | R1 派发与归档：句柄 `8d6c5172`，报告 17780 B / SHA256 `3ea790f6960b…`；裁决**不放行**（🔴 2 + 🟡 3 + ⚪ 6），并主动驳回 §1.4 白名单四项（驳回理由经复核成立：白名单仅提供定级豁免，不豁免卡片结项与证据口径）。 | `docs/project/reviews/2026-10-20-p3-six-backlog-batch/` |
+| 2026-10-20 | R2 派发（同基线 `7a2a3a0..7f35a33`，句柄 `bd273adc`），要求逐条裁决 R1 的 11 项并复核 R1-1/R1-2/R1-5。 | `.goal-loop/dispatch-ledger.md` |
+| 2026-10-20 | **R1-1 修复**：六卡 §3 DoD 全部勾选 + `manage-backlog.py close --resolution delivered` 迁入 `archive/2026-Q4/` + `sync-index`；instrument 活跃 21→15、归档 24→30。计划 §1.0 第 6 条补「代码闭环 vs 卡片结项」处置口径。 | `docs/project/backlog/index.md`、`archive/2026-Q4/` |
+| 2026-10-20 | **R1-2 修复**：`has_doc_link()` 目标捕获从 `[^)\s?#]+` 改为「到右括号为止」的 `[^()\n]*`（`validate_file_arg` 放行的含空格文件名恢复幂等）+ 新增纯逻辑用例 `test_spaced_filename_link_is_detected` 与 e2e 用例 `test_register_is_idempotent_for_spaced_filename`。 | `skills/doc-governance/scripts/manage-doc-index.py`、`test_doc_index_convention.py` |
+| 2026-10-20 | **R1-3 修复**：归档根根判定改用 `os.path.realpath`（覆盖符号链接指向根）；`SKILL.md` 与错误文案把宣称收窄为「空值 + 解析后为根」两类形态（§1.4 第 5 项）。 | `skills/dual-round-review/scripts/prepare-review-context.py`、`SKILL.md` |
+| 2026-10-20 | **R1-4 修复**：围栏诊断用例补断言「嵌套围栏演示请避免行首标记」——对 BASE 脚本变异可杀死（此前该用例对 BASE 同样通过＝空转）。 | `skills/dual-round-review/tests/test_check_review_report.py` |
+| 2026-10-20 | **R1-10/R1-11 修复**：计划删除 `verify-contract.py` 的本批次适用性引用（§1.0 第 5 条、§1.3 L4）；`SKILL.md` 异常分支 7 留痕要求补「与 §1.6 转录降级留痕要求同构」。 | 本计划、`skills/dual-round-review/SKILL.md` |
+| 2026-10-20 | 结项工具的平台依赖观察（非本批次引入，未修）：`manage-backlog.py` 在 Windows 生成索引链接用 `\`，在 WSL/Linux 用 `/`；本次在 Windows 上 `close`/`sync-index` 后 WSL 的 `check-doc-links` 报 35 处 404，改用 WSL 重跑 `sync-index` 后恢复（88 md 0 断链）。该跨平台差异登记为后续独立事项（对应 BK-0037 输出路径族），不纳入本批次写作用域。 | `docs/project/backlog/index.md`；WSL 门禁输出 |
 

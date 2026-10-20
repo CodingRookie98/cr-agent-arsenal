@@ -2,18 +2,16 @@
 id: BK-0008
 title: 围栏奇偶告警文案补充嵌套演示规避提示
 type: Governance
-status: active
+status: completed
 priority: P3
 trigger: null
-created_at: '2026-10-04'
-closed_at: null
-resolution: null
-destination: null
-source:
-- Delta R2 R1-12
-acceptance_criteria:
-- 围栏奇偶告警文案补充「嵌套围栏演示请避免行首标记」（≤1 行）
-- 否决配对栈重写（避免过度工程）
+created_at: 2026-10-04
+closed_at: 2026-10-20
+resolution: delivered
+destination: docs/project/plans/2026-10-20-p3-six-backlog-batch.md
+source: 
+acceptance_criteria: 
+updated_at: 2026-10-20
 ---
 
 ## 1. 背景与问题描述
@@ -31,9 +29,14 @@ acceptance_criteria:
 
 ## 3. 验收条件 (Definition of Done)
 
-- [ ] 围栏奇偶告警文案补充「嵌套围栏演示请避免行首标记」（≤1 行）
-- [ ] 否决配对栈重写（避免过度工程）
+- [x] 围栏奇偶告警文案补充「嵌套围栏演示请避免行首标记」（≤1 行）
+- [x] 否决配对栈重写（避免过度工程）
 
 ## 4. 结项与闭环记录
 
 *(当前处于活跃计划中，结项后由 `manage-backlog.py close` 自动迁入 archive/)*
+
+### 结项记录 (2026-10-20)
+- **结论**: delivered
+- **去向/凭据**: docs/project/plans/2026-10-20-p3-six-backlog-batch.md
+- **归档目录**: archive/2026-Q4/

@@ -130,11 +130,12 @@ def _validate(opts: dict[str, object]) -> None:
             "请显式给出仓库内相对路径，如 --archive-root=docs/project/reviews）\n"
         )
         raise _Exit(1)
-    root_abs = os.path.abspath(archive_root)
+    root_abs = os.path.realpath(archive_root)
     if os.path.dirname(root_abs) == root_abs:
         sys.stderr.write(
             f"❌ 错误: --archive-root 不能为文件系统根目录: {archive_root}"
-            "（报告会散落在根目录；请改用仓库内相对路径，如 --archive-root=docs/project/reviews）\n"
+            "（含经符号链接解析后指向根的情形；报告会散落在根目录；"
+            "请改用仓库内相对路径，如 --archive-root=docs/project/reviews）\n"
         )
         raise _Exit(1)
     if not opts["round_set"]:

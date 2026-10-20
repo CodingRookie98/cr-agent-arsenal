@@ -59,6 +59,14 @@ class TestDocLinkDetection(unittest.TestCase):
         self.assertFalse(
             self.manage.has_doc_link("- 登记 deployment.md", "deployment.md"))
 
+    def test_spaced_filename_link_is_detected(self):
+        """R1-2 回归：validate_file_arg 放行的含空格文件名必须可被识别。"""
+        for variant in ("./my doc.md", "./my doc.md#install", "./my doc.md?tab=1"):
+            self.assertTrue(
+                self.manage.has_doc_link(f"[x]({variant})", "my doc.md"), variant)
+        self.assertFalse(
+            self.manage.has_doc_link("[x](./my-doc.md)", "my doc.md"))
+
 
 class IndexConventionTestBase(unittest.TestCase):
     def setUp(self):
@@ -213,6 +221,25 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
             self.assertEqual(before.count("](./deployment.md"), 1, "清单不得出现重复行")
 
         self.assertIn("**当前版本**: V1.0.1", before, "锚点变体不得触发版本递增")
+
+    @unittest.skipIf(
+        os.name == "nt",
+        "manage-doc-index.py 存量 cp936 emoji 债务（口径 B：Windows 失败集 ⊆ 基线，非本次引入）；"
+        "跨平台逻辑已由 TestDocLinkDetection 覆盖",
+    )
+    def test_register_is_idempotent_for_spaced_filename(self):
+        """R1-2 回归：含空格文件名连续登记不得重复追加清单行或重复升版本。"""
+        self.prepare_doc("how-to", "my doc.md")
+        args = (
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "my doc.md", "--title", "带空格文档", "--kind", "HowTo",
+        )
+        for _ in range(3):
+            res = self.run_manage(*args)
+            self.assertEqual(res.returncode, 0, res.stderr)
+        content = self.read("how-to/index.md")
+        self.assertEqual(content.count("](./my doc.md)"), 1, "清单不得出现重复行")
+        self.assertIn("**当前版本**: V1.0.1", content, "连续登记只应升一次补丁版本")
 
     def test_register_skips_manual_index(self):
         self.prepare_doc("how-to", "deployment.md")

@@ -236,6 +236,8 @@ def test_unclosed_fence_message_identifies_report_and_parity(tmp_path):
     assert line is not None, r.stdout
     assert r1_file.name in line, '诊断须指出具体报告文件'
     assert '围栏标记' in line and '应为偶数' in line
+    # R1-4 变异可杀：BK-0008 新增的排障提示必须出现，否则本用例对 BASE 实现同样通过（空转）。
+    assert '嵌套围栏演示请避免行首标记' in line, line
 
 
 def test_r2_missing_section_fails(tmp_path):
