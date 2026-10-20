@@ -87,8 +87,13 @@ USAGE = """用法: check-review-report.sh <归档目录> [--require-verdict=PASS
 
 SPACE = " \t\n\v\f\r"
 _FENCE_RE = re.compile(r"^[ \t\v\f\r]*(?:```|~~~)")
-_ID_HEADER_RE = re.compile(r"^\|[ \t\v\f\r]*(?:R1[ \t\v\f\r]+)?稳定 ID")
+# R1-01 回归（fail-open 修复）：原实现用 gawk `[[:space:]]`（UTF-8 locale 下含 U+3000 等
+# Unicode 空白）识别「稳定 ID」表头；若此处退回 ASCII 字符类，U+3000 缩进表头将抽取不到任何
+# 稳定 ID，进而使下方「R2 空裁决表禁止放行」保护整体静默跳过。故此处使用 Unicode 感知 `\s`。
+_ID_HEADER_RE = re.compile(r"^\|\s*(?:R1\s+)?稳定 ID")
 _ID_CELL_RE = re.compile(r"^D?R1?-[0-9]+$")
+# 仅用于 fail-closed 守卫的「ID 记号」探测（宽松匹配，不要求单元格列结构规范）。
+_ID_TOKEN_RE = re.compile(r"D?R1?-[0-9]+")
 _ROUND_PREFIX_RE = re.compile(r"^(delta-r1|delta-r2|r1|r2)")
 _NON_FILE_CHARS_RE = re.compile(r"[^A-Za-z0-9._-]")
 _NON_HEX_CHARS_RE = re.compile(r"[^0-9a-fA-F]")
@@ -198,7 +203,9 @@ def _ledger_rows(lines: list[str]) -> list[str]:
         matched = _ROUND_PREFIX_RE.match(round_name)
         if matched:
             round_name = matched.group(0)
-        write_mode = raw_mode.strip(SPACE)
+        # R1-02 回归：原实现经 `[[:space:]]`（UTF-8 含 Unicode 空白）归一化单元格，
+        # 此处用 `str.strip()`（Unicode 感知）保持一致，避免 U+3000/U+2002 填充把合法归档误判非法。
+        write_mode = raw_mode.strip()
         fname = _NON_FILE_CHARS_RE.sub("", raw_file)
         declared = _NON_HEX_CHARS_RE.sub("", raw_hash)
         if not _HAS_ALNUM_RE.search(round_name):
@@ -232,11 +239,38 @@ def _section_ids(path: str, header: str) -> str:
         if not line.startswith("|"):
             in_table = False
             continue
-        cell = re.sub(r"^\|[ \t\v\f\r]*", "", line)
-        cell = re.sub(r"[ \t\v\f\r]*\|.*$", "", cell)
+        cell = re.sub(r"^\|\s*", "", line)
+        cell = re.sub(r"\s*\|.*$", "", cell)
         if _ID_CELL_RE.match(cell):
             found.add(cell)
     return _sort_u("\n".join(found))
+
+
+def _has_unparsed_id_rows(path: str, header: str) -> bool:
+    """区块内存在「稳定 ID」表头与含 ID 记号的数据行，但 `_section_ids` 未抽取到任何 ID。
+
+    R1-01 回归：仅做「解析失败」判别——只有表头之后确实出现形如 `R1-1`/`DR1-1` 的数据行、
+    却一个都没被捕获时，才 fail-closed（防止空白字符/列结构漂移让两向对齐与「R2 空表放行」
+    保护整体静默跳过）。真正的零缺陷报告（表头后无数据行）不触发，避免误拒干净审查。
+    """
+    lines = _strip_fences(_read_lines(path))
+    in_section = False
+    header_seen = False
+    for line in lines:
+        if line.startswith(header):
+            in_section = True
+            continue
+        if line.startswith("## "):
+            in_section = False
+        if not in_section or not line.startswith("|"):
+            continue
+        if not header_seen:
+            if "稳定 ID" in line:
+                header_seen = True
+            continue
+        if _ID_TOKEN_RE.search(line):
+            return True
+    return False
 
 
 def _base_key(path: str) -> str:
@@ -390,11 +424,15 @@ def _check_id_alignment(r1_files: list[str], r2_files: list[str], messages: list
     r1_by_base: dict[str, str] = {}
     r2_by_base: dict[str, str] = {}
     bases: list[str] = []
+    unparsed_r1: set[str] = set()
     for path in r1_files:
         header = ARTIFACT_R1_ID_SECTION if _report_schema(path) == "artifact" else CODE_R1_ID_SECTION
         ids = _section_ids(path, header)
         r1_ids_text += ids + "\n"
         key = _base_key(path)
+        if ids == "" and _has_unparsed_id_rows(path, header):
+            # R1-01 回归：表头之后出现 ID 记号行却抽不到任何 ID（解析失败）时 fail-closed。
+            unparsed_r1.add(key)
         if not r1_by_base.get(key, ""):
             bases.append(key)
         r1_by_base[key] = r1_by_base.get(key, "") + ids + "\n"
@@ -423,6 +461,12 @@ def _check_id_alignment(r1_files: list[str], r2_files: list[str], messages: list
             continue
         round_r1 = _sort_u(r1_by_base[key])
         if not round_r1:
+            if key in unparsed_r1:
+                messages.append(
+                    f"错误: 基线 {key} 的 R1 缺陷清单存在「稳定 ID」表头但未抽取到任何稳定 ID"
+                    "（禁止空表放行；请检查表头/单元格的空白字符与列结构）"
+                )
+                errors += 1
             continue
         if not r2_by_base.get(key, ""):
             messages.append(f"错误: 基线 {key} 的 R1 报告未配同基线 R2 报告（轮次未闭环，禁止靠他轮 R2 顶包放行）")

@@ -644,3 +644,58 @@ def test_compat_shim_forwards_to_python(tmp_path):
     assert via_sh_err.stdout == via_py_err.stdout
     assert via_sh_err.stderr == via_py_err.stderr
 
+
+# --- R1-01 / R1-02 回归（fail-open 与 Unicode 空白填充）---------------------------
+
+
+def _without_table_rows(body):
+    """删除「稳定 ID」契约表格的数据行，仅保留表头与列分隔行。"""
+    return '\n'.join(line for line in body.split('\n') if not line.startswith('| R1-'))
+
+
+def _with_malformed_id_cells(body):
+    """把 ID 单元格改成「含 ID 记号但不符合契约列结构」（→ 解析失败信号，触发 fail-closed）。"""
+    return body.replace('| R1-1 |', '| R1-1（P1） |', 1).replace('| R1-2 |', '| R1-2（P2） |', 1)
+
+
+def test_u3000_padded_id_header_cannot_bypass_empty_r2_table(tmp_path):
+    """R1-01 回归：U+3000 缩进的「稳定 ID」表头不得让「R2 空裁决表」保护整体失效（fail-open）。
+
+    原实现以 gawk `[[:space:]]` 识别表头（UTF-8 locale 下匹配 U+3000）；若移植时退化为 ASCII
+    字符类，则表头匹配失败 → ID 集为空 → 两向对齐与空表保护被静默跳过，非法归档被放行。
+    """
+    r1_body = R1_BODY.replace('| 稳定 ID |', '|\u3000稳定 ID |', 1)
+    d, _, _ = _build(tmp_path, r1_body=r1_body, r2_body=_without_table_rows(R2_BODY))
+    r = _run(d)
+    assert r.returncode == 1, r.stdout + r.stderr
+    assert '禁止空表放行' in r.stdout
+
+
+def test_id_header_without_ids_fails_closed(tmp_path):
+    """R1-01 回归：表头出现且表格含 ID 记号行、却抽不到任何契约 ID 时必须 fail-closed。"""
+    d, _, _ = _build(tmp_path, r1_body=_with_malformed_id_cells(R1_BODY))
+    r = _run(d)
+    assert r.returncode == 1, r.stdout + r.stderr
+    assert '未抽取到任何稳定 ID' in r.stdout
+
+
+def test_zero_defect_clean_report_is_accepted(tmp_path):
+    """R1-01 回归边界：真正零缺陷的空明细表（表头后无 ID 记号行）不得被误判为解析失败。"""
+    d, _, _ = _build(tmp_path,
+                     r1_body=_without_table_rows(R1_BODY),
+                     r2_body=_without_table_rows(R2_BODY))
+    r = _run(d)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert '未抽取到任何稳定 ID' not in r.stdout
+
+
+def test_unicode_padded_write_mode_cell_is_accepted(tmp_path):
+    """R1-02 回归：写入形态单元格的 Unicode 空白填充不应把合法归档误判为非法。"""
+    d, _, _ = _build(tmp_path)
+    index = (d / 'README.md').read_text(encoding='utf-8')
+    (d / 'README.md').write_text(
+        index.replace('| direct |', '|\u3000direct\u3000|', 1), encoding='utf-8', newline='\n')
+    r = _run(d)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert '通过' in r.stdout
+
