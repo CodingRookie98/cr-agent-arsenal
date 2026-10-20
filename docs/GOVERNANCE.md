@@ -2,9 +2,9 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.6.0
+> - **当前版本**: V1.6.1
 > - **维护负责人**: 核心架构组
-> - **生效日期**: 2026-09-10
+> - **生效日期**: 2026-10-19
 
 ---
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.6.1** | 2026-10-19 | DSH AI Agent | 王辉 | 技能脚本 Python 统一化同步：`scaffold-doc` 与 `prepare-review-context` 的现行主路径命令改为 `.py` 实现（`.sh` 退为 POSIX 兼容壳，旧调用仍可用），§2 目录级索引约定与 §3 工具链表、§4.1 边界行同步 |
 | **V1.6.0** | 2026-10-13 | DSH AI Agent | 王辉 | 断链扫描域扩容：`check-doc-links.py` 根扫描显式纳入 `<docs 根>/llms.txt`（此前 `.txt` 不在 `*.md` 扫描域，其相对链接游离于门禁外）⇒ §4.1 零覆盖态豁免中「死链不受任何门禁覆盖」的代价不再成立，同步收敛该段口径 |
 | **V1.5.0** | 2026-10-09 | DSH AI Agent | 王辉 | 补「目录级索引约定」：根级人类入口唯一、象限索引按需托管（`<!-- doc-index:managed -->` 标记 + 幂等登记 + 人工索引零改写），新增工具 `manage-doc-index.py` 与 `scaffold-doc.sh` 索引自愈 |
 | **V1.4.0** | 2026-10-04 | DSH AI Agent | 王辉 | 目录拓扑补 `docs/project/reviews/`（交付凭据归档：审查报告全文进版本库）与 `docs/project/plans/`；归档根遵循「推荐默认 + 宿主优先」 |
 | **V1.3.0** | 2026-09-16 | DSH AI Agent | 王辉 | 需求确认文档补「验收口径」（验收人/验收场景/不验收项/口径裁决人）；人机契约字段（需求方/批准人/批准基线）进入计划与 RFC 模板 |
-| **V1.2.0** | 2026-09-16 | DSH AI Agent | 王辉 | RFC 标准模板新增「术语表与易歧义对齐」段（术语先行前置条件）与 `docs/reference/rules/glossary.md` SSOT 落位；决策台账顺延为 §7 |
 
 ---
 
@@ -71,7 +71,7 @@ docs/
     └── reviews/             # 交付凭据归档（审查报告全文；推荐默认归档根，schema 见 RFC-0001）
 ```
 
-**目录级索引约定**：根级 `docs/index.md` 为**唯一**的人类总索引入口；象限/子目录 `index.md`（或 `README.md`）为**按需存在**的分流入口，由 `scaffold-doc.sh` 经 `manage-doc-index.py` 自动创建与幂等登记（托管标记 `<!-- doc-index:managed -->`）。不含托管标记的索引视为人工维护，脚本只读不改；严禁为凑齐拓扑批量创建空索引。
+**目录级索引约定**：根级 `docs/index.md` 为**唯一**的人类总索引入口；象限/子目录 `index.md`（或 `README.md`）为**按需存在**的分流入口，由 `scaffold-doc.py` 经 `manage-doc-index.py` 自动创建与幂等登记（托管标记 `<!-- doc-index:managed -->`）。不含托管标记的索引视为人工维护，脚本只读不改；严禁为凑齐拓扑批量创建空索引。
 
 ---
 
@@ -86,7 +86,7 @@ docs/
 | **`audit-doc-health.py`** | 综合健康体检（打分 0-100 分，断链/元数据/孤儿/架构/**机器地图一致性**） | 交付验收 / 定期体检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs` |
 | **`generate-llms-txt.py`** | 自动提取 Frontmatter 并刷新机器地图 `llms.txt` | 文档拓扑变动后 | `python3 skills/doc-governance/scripts/generate-llms-txt.py --root docs --output docs/llms.txt` |
 | **`manage-doc-index.py`** | 象限索引托管维护（ensure 骨架 / register 幂等登记 / 人工索引零改写） | 新建文档后 / 拓扑变动 | `python3 skills/doc-governance/scripts/manage-doc-index.py register --root docs --dir how-to --file deployment.md --title "部署 SOP" --kind HowTo` |
-| **`scaffold-doc.sh`** | 快速生成符合 Diátaxis 规范的文档脚手架，并自动 ensure 象限索引与登记（跨象限链接按需降级） | 新建文档时 | `skills/doc-governance/scripts/scaffold-doc.sh <type> <name>` |
+| **`scaffold-doc.py`** | 快速生成符合 Diátaxis 规范的文档脚手架，并自动 ensure 象限索引与登记（跨象限链接按需降级；POSIX 下旧 `.sh` 兼容壳仍可用） | 新建文档时 | `python3 skills/doc-governance/scripts/scaffold-doc.py <type> <name>` |
 
 ---
 
@@ -126,4 +126,4 @@ docs/
 - **fail-closed 边界**：既有地图不可读、非合法 UTF-8、或首行不符合标准 H1 格式时，一律拒绝覆盖（不得归一化或回落占位名后静默改写）；
 - **地图缺失边界**：无既有地图时不触发本契约；「有可收录文档但地图缺失」**不参与**一致性判定（与零覆盖态边界同源），该逃逸面由 `docs/index.md` 的入链断链门禁间接兜底，属**已登记豁免**。
 
-**边界**：豁免仅覆盖 `<docs 根>/project/reviews/**`。归档**索引** `README.md` 仍应携带标准控制头（`prepare-review-context.sh` 的 scaffold 模板已内置），以保持人类可读性。
+**边界**：豁免仅覆盖 `<docs 根>/project/reviews/**`。归档**索引** `README.md` 仍应携带标准控制头（`prepare-review-context.py` 的 scaffold 模板已内置），以保持人类可读性。

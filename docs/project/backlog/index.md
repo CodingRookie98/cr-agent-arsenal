@@ -4,18 +4,18 @@
 > - **文档标识**: BK-INDEX-GOV
 > - **当前版本**: V2.0.0 (动态索引)
 > - **维护模式**: 机器脚本自动化生成 (请勿手写对账日记，运行 `manage-backlog.py sync-index` 自动刷新)
-> - **更新日期**: 2026-10-14
+> - **更新日期**: 2026-10-19
 
 ---
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **20** 项 (进行中: 0, 计划中: 20)
+- **现役活跃待办**: **21** 项 (进行中: 0, 计划中: 21)
 - **历史已归档项**: **24** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 0 | 20 |
+| **活跃数量** | 0 | 0 | 1 | 20 |
 
 ---
 
@@ -29,6 +29,7 @@
 
 | 编号 | 优先级 | 类型 | 标题 | 触发条件 | 卡片入口 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **BK-0045** | `P2` | `Bug` | prepare-review-context 未跟踪文件过滤正则失效（GNU BRE `\?` 为重复算子） | — | [BK-0045](./active/BK-0045-prepare-review-context-未跟踪文件过滤正则失效.md) |
 | **BK-0005** | `P3` | `Governance` | 豁免判定前执行路径根相对语义归一化 | — | [BK-0005](./active/BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0006** | `P3` | `TechDebt` | 四条审查护栏各补 1 条反证测试用例 | — | [BK-0006](./active/BK-0006-review-gates-negative-test-cases.md) |
 | **BK-0007** | `P3` | `Governance` | GOVERNANCE.md 豁免表文本精确化 | — | [BK-0007](./active/BK-0007-governance-doc-exemption-table-accuracy.md) |
