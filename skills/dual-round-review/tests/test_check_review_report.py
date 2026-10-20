@@ -226,6 +226,20 @@ def test_unclosed_fence_fails(tmp_path):
     assert '围栏' in r.stdout
 
 
+def test_unclosed_fence_message_identifies_report_and_parity(tmp_path):
+    """BK-0008：围栏奇偶判定失败须给出可定位诊断（报告标识 + 标记数 + 应为偶数）。"""
+    body = R1_BODY + '\n```text\n未闭合\n'
+    d, r1_file, _ = _build(tmp_path, r1_body=body)
+    r = _run(d)
+    assert r.returncode == 1
+    line = next((ln for ln in r.stdout.splitlines() if '围栏代码块未闭合' in ln), None)
+    assert line is not None, r.stdout
+    assert r1_file.name in line, '诊断须指出具体报告文件'
+    assert '围栏标记' in line and '应为偶数' in line
+    # R1-4 变异可杀：BK-0008 新增的排障提示必须出现，否则本用例对 BASE 实现同样通过（空转）。
+    assert '嵌套围栏演示请避免行首标记' in line, line
+
+
 def test_r2_missing_section_fails(tmp_path):
     body = R2_BODY.replace('## 3. 终审放行结论', '## 三、结论')
     d, _, _ = _build(tmp_path, r2_body=body)

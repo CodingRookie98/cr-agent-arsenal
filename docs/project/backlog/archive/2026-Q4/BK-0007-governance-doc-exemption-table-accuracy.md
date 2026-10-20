@@ -2,18 +2,16 @@
 id: BK-0007
 title: GOVERNANCE.md 豁免表文本精确化
 type: Governance
-status: active
+status: completed
 priority: P3
 trigger: null
-created_at: '2026-10-04'
-closed_at: null
-resolution: null
-destination: null
-source:
-- Delta R2 R1-6
-acceptance_criteria:
-- GOVERNANCE.md 豁免表文本精确化（1 行）：改为「该目录不参与任何计分维度扫描」
-- 显式声明索引控制头与报告清单互链为无守卫的可读性约定
+created_at: 2026-10-04
+closed_at: 2026-10-20
+resolution: delivered
+destination: docs/project/plans/2026-10-20-p3-six-backlog-batch.md
+source: 
+acceptance_criteria: 
+updated_at: 2026-10-20
 ---
 
 ## 1. 背景与问题描述
@@ -31,9 +29,14 @@ acceptance_criteria:
 
 ## 3. 验收条件 (Definition of Done)
 
-- [ ] GOVERNANCE.md 豁免表文本精确化（1 行）：改为「该目录不参与任何计分维度扫描」
-- [ ] 显式声明索引控制头与报告清单互链为无守卫的可读性约定
+- [x] GOVERNANCE.md 豁免表文本精确化（1 行）：改为「该目录不参与任何计分维度扫描」
+- [x] 显式声明索引控制头与报告清单互链为无守卫的可读性约定
 
 ## 4. 结项与闭环记录
 
 *(当前处于活跃计划中，结项后由 `manage-backlog.py close` 自动迁入 archive/)*
+
+### 结项记录 (2026-10-20)
+- **结论**: delivered
+- **去向/凭据**: docs/project/plans/2026-10-20-p3-six-backlog-batch.md
+- **归档目录**: archive/2026-Q4/

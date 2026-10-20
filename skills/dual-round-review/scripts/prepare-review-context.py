@@ -122,6 +122,22 @@ def _validate(opts: dict[str, object]) -> None:
     if slug and not _is_kebab_case(slug):
         sys.stderr.write(f"❌ 错误: --slug 必须为小写 kebab-case（^[a-z0-9][a-z0-9-]*$）: {slug}\n")
         raise _Exit(1)
+    # BK-0010：归档根空值/文件系统根会在写盘阶段把归档散落到任意位置，必须在解析后立即拦截。
+    archive_root = str(opts["archive_root"])
+    if archive_root == "":
+        sys.stderr.write(
+            "❌ 错误: --archive-root 值不能为空（空值会回退当前目录，报告可能落在任意位置；"
+            "请显式给出仓库内相对路径，如 --archive-root=docs/project/reviews）\n"
+        )
+        raise _Exit(1)
+    root_abs = os.path.realpath(archive_root)
+    if os.path.dirname(root_abs) == root_abs:
+        sys.stderr.write(
+            f"❌ 错误: --archive-root 不能为文件系统根目录: {archive_root}"
+            "（含经符号链接解析后指向根的情形；报告会散落在根目录；"
+            "请改用仓库内相对路径，如 --archive-root=docs/project/reviews）\n"
+        )
+        raise _Exit(1)
     if not opts["round_set"]:
         return
     round_value = str(opts["round"])
@@ -192,20 +208,24 @@ def _resolve_mode(opts: dict[str, object]) -> tuple[str, str, str]:
     return mode, base_ref, head_ref
 
 
-def _status_second_fields(status_output: str) -> str:
-    """复刻 `git status -s | grep '^\\?\\?' | awk '{print $2}'` 的实际语义。
+def _untracked_paths(status_z: str) -> str:
+    """提取未跟踪文件路径（BK-0045；R1-7 改用 NUL 分隔输出）。
 
-    注意：GNU grep BRE 中 `\\?` 是「前一项出现 0 或 1 次」的重复算子，而非字面问号，
-    故 `^\\?\\?` 恒匹配任意行（含空行）——该 grep 过滤实际是全通过。此处逐字节复刻
-    现状（含线两字段取 `$2`、字段数不足取空串的行为），不改写原实现语义。
+    历史实现复刻了 `git status -s | grep '^\\?\\?' | awk '{print $2}'` 在 GNU BRE 下的
+    缺陷：`\\?` 是「前一项出现 0 或 1 次」的重复算子而非字面问号，过滤恒匹配全部行，
+    导致「未跟踪新增文件」清单实际列出所有变更条目。此处改为平台无关的显式判定。
+
+    输出解析使用 `git status --porcelain -z`（NUL 分隔）：git 在该模式下不对路径加
+    引号，也不做 C 风格八进制转义，因此中文/空格路径按原样呈现（R1-7）。
     """
-    if not status_output:
-        return ""
-    lines = []
-    for line in status_output.split("\n"):
-        parts = line.split()
-        lines.append(parts[1] if len(parts) > 1 else "")
-    return "\n".join(lines).rstrip("\n")
+    paths = []
+    for entry in status_z.split("\0"):
+        if not entry.startswith("?? "):
+            continue
+        path = entry[3:]
+        if path:
+            paths.append(path)
+    return "\n".join(paths)
 
 
 def _emit_working(record: dict[str, str]) -> int:
@@ -220,8 +240,8 @@ def _emit_working(record: dict[str, str]) -> int:
     if rc != 0:
         return rc
     _emit("\n")
-    _, status_short = _run_git(["status", "-s"], capture=True)
-    untracked_text = _status_second_fields(status_short)
+    _, status_z = _run_git(["status", "--porcelain", "-z"], capture=True)
+    untracked_text = _untracked_paths(status_z)
     if untracked_text:
         _emit("⚠️ 发现未跟踪的新增文件 (Untracked Files):\n")
         _emit(untracked_text + "\n")
@@ -480,8 +500,10 @@ def _scaffold_archive(
 
 
 def main(argv: list[str] | None = None) -> int:
-    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
-    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
+    # DR-7：git 侧以 surrogateescape 解码，输出侧同口径回写，避免非 UTF-8 文件名
+    # 在 `--working` 分支触发 UnicodeEncodeError（Bash 原实现按原始字节透传）。
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n", errors="surrogateescape")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n", errors="surrogateescape")
     args = list(sys.argv[1:] if argv is None else argv)
     # 0) 帮助优先（无需位于 Git 仓库）：仅当**首个**参数即 -h/--help 时短路
     if args and args[0] in ("-h", "--help"):

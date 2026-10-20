@@ -9,6 +9,7 @@ test_doc_index_convention.py - RFC-0003 目录级索引约定与 scaffold 索引
   3. 技能规范补登记断言 (G1): SKILL.md / 设计书 / GOVERNANCE.md 的象限索引契约。
 """
 
+import os
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,63 @@ SKILL_DIR = SCRIPTS_DIR.parent
 REPO_ROOT = SKILL_DIR.parent.parent
 
 MANAGED_MARKER = "<!-- doc-index:managed -->"
+
+
+def _load_manage_module():
+    """以模块方式加载 manage-doc-index.py：纯逻辑用例跨平台可跑，不依赖子进程编码。"""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "manage_doc_index_under_test", SCRIPTS_DIR / "manage-doc-index.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestDocLinkDetection(unittest.TestCase):
+    """BK-0016：登记判据须剥离锚点/查询串后再比对文件名（跨平台纯逻辑用例）。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.manage = _load_manage_module()
+
+    def test_plain_relative_link_is_detected(self):
+        self.assertTrue(
+            self.manage.has_doc_link("[deploy](./deployment.md)", "deployment.md"))
+
+    def test_anchor_and_query_variants_are_detected(self):
+        for variant in ("./deployment.md#install", "./deployment.md?tab=1"):
+            text = f"[deploy]({variant})"
+            self.assertTrue(self.manage.has_doc_link(text, "deployment.md"), variant)
+
+    def test_other_files_and_bare_mentions_are_not_confused(self):
+        self.assertFalse(
+            self.manage.has_doc_link("[x](./deployment-notes.md#a)", "deployment.md"))
+        self.assertTrue(
+            self.manage.has_doc_link("[x](./deployment-notes.md#a)", "deployment-notes.md"))
+        self.assertFalse(
+            self.manage.has_doc_link("- 登记 deployment.md", "deployment.md"))
+
+    def test_link_target_grammar_stops_at_unsafe_characters(self):
+        """R2 §3.3/R1-2：非法文件名（空白/#/? 等）不得被链接识别（fail-closed 同源）。
+
+        修复方向是收紧 ``validate_file_arg`` 而不是放宽正则；识别侧对这类目标
+        只截取到首个不安全字符为止，因此与非法文件名永不相等。
+        """
+        for variant in ("./my doc.md", "./my doc.md#install", "./my doc.md?tab=1"):
+            self.assertFalse(
+                self.manage.has_doc_link(f"[x]({variant})", "my doc.md"), variant)
+        self.assertFalse(
+            self.manage.has_doc_link("[x](./a(b).md)", "a(b).md"))
+        self.assertTrue(
+            self.manage.has_doc_link("[x](./my-doc.md)", "my-doc.md"))
+        # DR-5：目标后必须紧跟可选锚点/查询串与右括号，半截或带尾巴的链接不算已登记
+        for malformed in ("[x](./a.md", '[x](./a.md garbage)', '[x](./a.md "title")',
+                          "[x](./a.md extra)"):
+            self.assertFalse(self.manage.has_doc_link(malformed, "a.md"), malformed)
+        self.assertTrue(self.manage.has_doc_link("[x](./a.md)", "a.md"))
+        self.assertTrue(self.manage.has_doc_link("[x](./a.md#install)", "a.md"))
+        self.assertTrue(self.manage.has_doc_link("[x](./a.md?tab=1)", "a.md"))
 
 
 class IndexConventionTestBase(unittest.TestCase):
@@ -147,6 +205,51 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
         self.assertEqual(first, content, "重复登记不得改写索引")
         self.assertEqual(content.count("](./deployment.md)"), 1, "清单不得出现重复行")
         self.assertIn("**当前版本**: V1.0.1", content, "重复登记不得重复升版本")
+
+    @unittest.skipIf(
+        os.name == "nt",
+        "manage-doc-index.py 存量 cp936 emoji 债务（口径 B：Windows 失败集 ⊆ 基线，非本次引入）；"
+        "跨平台逻辑已由 TestDocLinkDetection 覆盖",
+    )
+    def test_register_is_idempotent_with_anchor_variant(self):
+        """BK-0016：既有链接带锚点/查询串时不得判为未登记（禁止重复行与误升版本）。"""
+        self.prepare_doc("how-to", "deployment.md")
+        args = (
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "deployment.md", "--title", "生产部署 SOP", "--kind", "HowTo",
+        )
+        self.run_manage(*args)
+        index_file = self.test_dir / "how-to" / "index.md"
+
+        for variant in ("./deployment.md#install", "./deployment.md?tab=1"):
+            text = index_file.read_text(encoding="utf-8").replace(
+                "](./deployment.md)", f"]({variant})")
+            index_file.write_text(text, encoding="utf-8", newline="\n")
+            before = index_file.read_text(encoding="utf-8")
+
+            res = self.run_manage(*args)
+            self.assertEqual(res.returncode, 0, res.stderr)
+            self.assertEqual(before, index_file.read_text(encoding="utf-8"),
+                             f"链接变体 {variant} 已登记时不得改写索引")
+            self.assertEqual(before.count("](./deployment.md"), 1, "清单不得出现重复行")
+
+        self.assertIn("**当前版本**: V1.0.1", before, "锚点变体不得触发版本递增")
+
+    def test_register_rejects_non_compliant_filename(self):
+        """R2 §3.3/R1-2：非法文件名必须在写盘前 fail-closed（不幂等、不误拒合规名）。"""
+        self.prepare_doc("how-to", "my doc.md")
+        index_file = self.test_dir / "how-to" / "index.md"
+        before = index_file.read_text(encoding="utf-8") if index_file.exists() else None
+
+        res = self.run_manage(
+            "register", "--root", str(self.test_dir), "--dir", "how-to",
+            "--file", "my doc.md", "--title", "带空格文档", "--kind", "HowTo",
+        )
+        self.assertEqual(res.returncode, 1, "非法文件名应被拒绝")
+        self.assertIn("不允许的字符", res.stderr)
+        self.assertIn("kebab-case", res.stderr)
+        after = index_file.read_text(encoding="utf-8") if index_file.exists() else None
+        self.assertEqual(before, after, "拒绝时必须零写入（不得产生清单行或版本漂移）")
 
     def test_register_skips_manual_index(self):
         self.prepare_doc("how-to", "deployment.md")

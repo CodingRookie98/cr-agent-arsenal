@@ -241,7 +241,10 @@ def _section_ids(path: str, header: str) -> str:
             continue
         cell = re.sub(r"^\|\s*", "", line)
         cell = re.sub(r"\s*\|.*$", "", cell)
-        if _ID_CELL_RE.match(cell):
+        # 稳定 ID 单元格可能被 markdown 强调记号包裹（`**DR-1**` / `` `R1-1` ``），
+        # 剥掉强调记号后再匹配；否则合规报告会被误判为「空明细表」而 fail-closed。
+        cell = cell.strip(SPACE).strip("*`_").strip()
+        if _ID_CELL_RE.fullmatch(cell):
             found.add(cell)
     return _sort_u("\n".join(found))
 
@@ -290,7 +293,10 @@ def _check_sections(path: str, label: str, sections: tuple[str, ...], messages: 
     errors = 0
     fence_count = sum(1 for line in lines if _FENCE_RE.match(line))
     if fence_count % 2 != 0:
-        messages.append(f"错误: 围栏代码块未闭合（{label} 围栏标记 {fence_count} 个，应为偶数）")
+        messages.append(
+            f"错误: 围栏代码块未闭合（{label} 围栏标记 {fence_count} 个，应为偶数；"
+            "嵌套围栏演示请避免行首标记）"
+        )
         errors += 1
     body = _strip_fences(lines)
     for section in sections:

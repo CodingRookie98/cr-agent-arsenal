@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 import subprocess
@@ -89,6 +90,86 @@ def test_invalid_base_ref_fails(tmp_path):
     repo = _repo(tmp_path)
     r = _run(repo, 'no-such-ref', 'HEAD')
     assert r.returncode != 0
+
+
+# --- BK-0045 未跟踪清单 / BK-0010 归档根防御 ---------------------------------
+
+
+def test_untracked_block_lists_only_untracked_paths(tmp_path):
+    """BK-0045：未跟踪清单不得混入已修改/已暂存条目（GNU BRE `\\?` 缺陷回归）。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8', newline='\n')
+    (repo / 'staged.txt').write_text('s\n', encoding='utf-8', newline='\n')
+    _git(repo, 'add', 'staged.txt')
+    (repo / 'new.txt').write_text('n\n', encoding='utf-8', newline='\n')
+    r = _run(repo, '--no-record', '--working')
+    assert r.returncode == 0, r.stderr
+    assert '未跟踪的新增文件' in r.stdout
+    block = r.stdout.split('未跟踪的新增文件', 1)[1].split('💡', 1)[0]
+    assert 'new.txt' in block
+    assert 'a.txt' not in block
+    assert 'staged.txt' not in block
+
+
+def test_untracked_block_absent_without_untracked_files(tmp_path):
+    """BK-0045：无未跟踪文件（仅修改/已暂存）时不出现未跟踪提示块。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8', newline='\n')
+    (repo / 'staged.txt').write_text('s\n', encoding='utf-8', newline='\n')
+    _git(repo, 'add', 'staged.txt')
+    r = _run(repo, '--no-record', '--working')
+    assert r.returncode == 0, r.stderr
+    assert '未跟踪的新增文件' not in r.stdout
+
+
+def test_untracked_block_preserves_unicode_and_space_paths(tmp_path):
+    """R1-7：未跟踪清单须原样呈现中文/空格路径（-z 输出，无八进制转义与引号）。"""
+    repo = _repo(tmp_path)
+    tricky = '文档 名.md'
+    (repo / tricky).write_text('x\n', encoding='utf-8', newline='\n')
+    r = _run(repo, '--no-record', '--working')
+    assert r.returncode == 0, r.stderr
+    block = r.stdout.split('未跟踪的新增文件', 1)[1].split('💡', 1)[0]
+    assert tricky in block
+    assert '\\346' not in block
+    assert '"文档' not in block
+
+
+def test_untracked_block_preserves_non_utf8_path_without_crash(tmp_path):
+    """DR-7：非 UTF-8 文件名字节解码为 surrogate 后，输出侧须以 surrogateescape 回写，
+    不得在 `--working` 分支抛 UnicodeEncodeError（Bash 原实现按原始字节透传）。"""
+    if os.name == 'nt':
+        pytest.skip('Windows 无法创建非 UTF-8 字节文件名')
+    repo = _repo(tmp_path)
+    raw_name = b'bad\xff.md'
+    os.close(os.open(os.path.join(os.fsencode(str(repo)), raw_name), os.O_CREAT | os.O_WRONLY))
+    # 输出含原始 0xff 字节，解码侧同样用 surrogateescape（与脚本内部口径一致）
+    r = subprocess.run([sys.executable, str(SCRIPT), '--no-record', '--working'], cwd=repo,
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='surrogateescape')
+    assert r.returncode == 0, r.stderr
+    assert 'UnicodeEncodeError' not in r.stderr
+    assert '未跟踪的新增文件' in r.stdout
+    assert 'bad\udcff.md' in r.stdout
+
+
+def test_empty_archive_root_is_rejected(tmp_path):
+    """BK-0010：--archive-root= 空值须在写盘前终结性拒绝（rc≠0 且给出修复提示）。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8', newline='\n')
+    r = _run(repo, '--working', '--no-record', '--archive-root=')
+    assert r.returncode != 0
+    assert 'archive-root' in r.stderr and '不能为空' in r.stderr
+    assert not (repo / 'docs').exists()
+
+
+def test_filesystem_root_archive_root_is_rejected(tmp_path):
+    """BK-0010：--archive-root 指向文件系统根时拒绝（报告不得散落到任意位置）。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8', newline='\n')
+    r = _run(repo, '--working', '--no-record', f'--archive-root={os.path.abspath(os.sep)}')
+    assert r.returncode != 0
+    assert '文件系统根目录' in r.stderr
 
 
 # --- RFC-0001 交付凭据归档 scaffold -----------------------------------------

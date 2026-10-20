@@ -114,7 +114,9 @@ SKILL_DIR="<dual-round-review 技能实际所在目录>"
 # 智能模式（优先未提交改动，无改动则检查最近一次 Commit）+ 启用交付凭据归档 scaffold（RFC-0001）
 python3 "$SKILL_DIR/scripts/prepare-review-context.py" --slug=<交付单元slug>
 
-# 或指定提交区间（归档根可用 --archive-root=<路径> 覆盖，默认 docs/project/reviews）
+# 或指定提交区间（归档根可用 --archive-root=<路径> 覆盖，默认 docs/project/reviews；
+# 空值或文件系统根目录——含经符号链接解析后指向根的情形——会被拒绝；
+# 其余路径形态（如 ../ 相对外跳、仓库外绝对路径）由调用方自行保证落在仓库内）
 python3 "$SKILL_DIR/scripts/prepare-review-context.py" --slug=<交付单元slug> [BASE_SHA] [HEAD_SHA]
 ```
 * 脚本为跨平台 Python 实现（POSIX 下旧 `.sh` 兼容壳仍可用；Windows 原生以 `python` 调用）。
@@ -164,7 +166,7 @@ python3 "$SKILL_DIR/scripts/prepare-review-context.py" --slug=<交付单元slug>
   4. **子智能体不可写（无能力 / 写入失败）** → 走转录降级，台账登记 `transcribed`，锚点记录降级原因；**严禁**为规避降级而更换目标路径、创建目录或覆盖既有文件；
   5. **指纹复算不一致 或 目标文件缺失** → 判定为写入异常，**不得登记台账**，按 `goal-loop` 的 `references/host-adapters.md` §5 收口；
   6. **子智能体返回了报告文本但未写盘** → 先确认是否能力缺失；确认后方可降级，**严禁**默认转录并按 `direct` 登记；
-  7. **同轮同基线需重派（报告不合格）** → 确定性命名 + Write-Once 组合下**没有就地恢复路径**（目标文件已存在且不可覆盖）。合法处置：**作废该轮**——将不合格报告移出归档目录留痕（如 `.review-context/`，已 gitignore），**不登记台账**，再以**同一轮次标记与同一基线**重派（重写同一路径）。若重派仍不合格，按铁律 7「同一角色对同一基线的重派上限 2 次」收口并升级人类裁决。**严禁**覆盖、**严禁**改用其他路径规避、**严禁**把不合格报告登记进台账。
+  7. **同轮同基线需重派（报告不合格）** → 确定性命名 + Write-Once 组合下**没有就地恢复路径**（目标文件已存在且不可覆盖）。合法处置：**作废该轮**——将不合格报告移出归档目录留痕（如 `.review-context/`，已 gitignore），**不登记台账**，再以**同一轮次标记与同一基线**重派（重写同一路径）。若重派仍不合格，按铁律 7「同一角色对同一基线的重派上限 2 次」收口并升级人类裁决。**严禁**覆盖、**严禁**改用其他路径规避、**严禁**把不合格报告登记进台账。**作废事实与原因必须登记到归档索引 README 的留痕区**（`> [!WARNING]` 等提示块或「待办与后续轮次」清单），使后续读者可追溯派发历史（与 §1.6 转录降级留痕要求同构）；留痕文本须与报告结构同构——命令片段用行内代码、多行结构用标注语言的围栏，避免破坏归档 README 的机械解析。
 
 ### 2. 委派第一轮审查：红队与第一性原理 (Dispatch Round 1)
 **上下文隔离红线**：分发独立的子智能体，**严禁传入主会话的聊天历史**。提示词模板按 Schema 选择：`code` → [round-1-red-team.md](references/round-1-red-team.md)；`artifact` → [round-1-artifact-red-team.md](references/round-1-artifact-red-team.md)（该模板内含三条硬约束：steelman 义务、过去时 pre-mortem、Toulmin 四元组）：

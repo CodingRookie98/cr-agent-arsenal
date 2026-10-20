@@ -2,18 +2,16 @@
 id: BK-0014
 title: 作废轮次的版本库留痕缺失
 type: Governance
-status: active
+status: completed
 priority: P3
 trigger: null
-created_at: '2026-10-08'
-updated_at: '2026-10-08'
-closed_at: null
-resolution: null
-destination: null
-source:
-- dual-round-review V2.2.0 Delta R2 DR-5
-acceptance_criteria:
-- SKILL.md 异常分支 7 补一句：作废事实与原因须同步登记至归档索引留痕区（与 §1.6 转录降级要求同构）
+created_at: 2026-10-08
+updated_at: 2026-10-20
+closed_at: 2026-10-20
+resolution: delivered
+destination: docs/project/plans/2026-10-20-p3-six-backlog-batch.md
+source: 
+acceptance_criteria: 
 ---
 
 ## 1. 背景与问题陈述
@@ -24,7 +22,11 @@ acceptance_criteria:
 - 风险点: 待评估
 
 ## 3. 验收准则与验证设计 (DoD)
-- [ ] SKILL.md 异常分支 7 补一句：作废事实与原因须同步登记至归档索引留痕区（与 §1.6 转录降级要求同构）
+- [x] SKILL.md 异常分支 7 补一句：作废事实与原因须同步登记至归档索引留痕区（与 §1.6 转录降级要求同构）
 
 ## 4. 实施去向与结项记录
-*(未开工)*
+
+### 结项记录 (2026-10-20)
+- **结论**: delivered
+- **去向/凭据**: docs/project/plans/2026-10-20-p3-six-backlog-batch.md
+- **归档目录**: archive/2026-Q4/
