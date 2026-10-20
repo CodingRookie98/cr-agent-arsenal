@@ -1,0 +1,6 @@
+# 统一换行策略：仓库内文本一律以 LF 存储并检出。
+#
+# 背景：本仓库在 Windows 上开发（core.autocrlf=true），检出后 .sh/.py 变为 CRLF，
+# 导致 WSL/Linux 下按 shebang 直接执行的脚本全部失败（实测 `/usr/bin/env: 'bash\r'`，
+# 131 个用例红）。本文件覆盖 core.autocrlf，保证 Windows 检出同样得到 LF 工作区。
+* text=auto eol=lf

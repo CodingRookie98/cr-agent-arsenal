@@ -197,6 +197,7 @@ def test_cross_skill_scanner_self_check():
     for sample in illegal:
         assert CROSS_SKILL_LINK.search(sample), f"漏检: {sample}"
     command_examples = [
+        "python3 skills/taste-driven-designer/scripts/generate-seed.py -l 64",
         "bash skills/taste-driven-designer/scripts/generate-seed.sh -l 64",
         "python3 skills/doc-governance/scripts/check-doc-links.py --root docs",
     ]

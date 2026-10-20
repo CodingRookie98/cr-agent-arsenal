@@ -112,12 +112,13 @@ Value Calls），逐字内联进派发提示词，并向用户输出一行开审
 SKILL_DIR="<dual-round-review 技能实际所在目录>"
 
 # 智能模式（优先未提交改动，无改动则检查最近一次 Commit）+ 启用交付凭据归档 scaffold（RFC-0001）
-bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug>
+python3 "$SKILL_DIR/scripts/prepare-review-context.py" --slug=<交付单元slug>
 
 # 或指定提交区间（归档根可用 --archive-root=<路径> 覆盖，默认 docs/project/reviews）
-bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [BASE_SHA] [HEAD_SHA]
+python3 "$SKILL_DIR/scripts/prepare-review-context.py" --slug=<交付单元slug> [BASE_SHA] [HEAD_SHA]
 ```
-* 确保准备好：① Git Diff 内容与变更统计；② 需求设计或任务描述（Spec）；③ 仓库编码标准；④ **（条件）前端产物交付时：`frontend-qa-gate`《前端验收报告》的结论必须为 PASS（以 `check-qa-report.sh --require-verdict=PASS --min-assertions=15` 机械校验为准）；FAIL / BLOCKED（含未验证项）时先按该技能回流路由处理，不得进入审查放行。**
+* 脚本为跨平台 Python 实现（POSIX 下旧 `.sh` 兼容壳仍可用；Windows 原生以 `python` 调用）。
+* 确保准备好：① Git Diff 内容与变更统计；② 需求设计或任务描述（Spec）；③ 仓库编码标准；④ **（条件）前端产物交付时：`frontend-qa-gate`《前端验收报告》的结论必须为 PASS（以 `python3 skills/frontend-qa-gate/scripts/check-qa-report.py --require-verdict=PASS --min-assertions=15` 机械校验为准）；FAIL / BLOCKED（含未验证项）时先按该技能回流路由处理，不得进入审查放行。**
 
 ### 1.5 审查记录锚点 (Review Record Anchor)
 审查循环的短周期状态必须落盘，避免上下文截断后丢失 `Previous Blockers` 与迭代计数。每个基线创建一个记录文件 `.review-context/review-<baseline-sha>.md`（该目录已在 `.gitignore` 中忽略），schema 固定如下：
@@ -134,7 +135,7 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
 - **阻断项统计**: [🔴 X / 🟡 Y / ⚪ Z]
 ```
 
-**恢复规则**：进入审查前若已存在同基线记录，先读取该文件恢复轮次、`Previous Blockers` 与迭代计数，再决定继续、再循环或升级。记录文件由 `prepare-review-context.sh` 生成，或按上述 schema 手工创建。若锚点含「归档索引」段，**同时**从该归档根读取 `README.md` 轮次台账，恢复上一轮报告文件路径与其 SHA256 指纹（Delta 再循环据此核验报告未被改写）。
+**恢复规则**：进入审查前若已存在同基线记录，先读取该文件恢复轮次、`Previous Blockers` 与迭代计数，再决定继续、再循环或升级。记录文件由 `prepare-review-context.py` 生成，或按上述 schema 手工创建。若锚点含「归档索引」段，**同时**从该归档根读取 `README.md` 轮次台账，恢复上一轮报告文件路径与其 SHA256 指纹（Delta 再循环据此核验报告未被改写）。
 
 ### 1.6 交付凭据归档 (Review Evidence Archive)
 审查报告全文是**不可重建**的交付凭据：会话一旦结束，子智能体的推理链、攻击路径推演与 `文件:行` 反证据即永久消失（本仓库曾出现归档摘要自述「全文见会话记录」）。因此必须与运行时锚点**分层落盘**：
@@ -143,17 +144,17 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
 |:---|:---|:---|:---:|
 | ① 运行时状态 | `.review-context/review-<baseline-sha>.md` | 一次审查循环 | ❌（已 gitignore，正确设计） |
 | ② 交付凭据 | `<归档根>/<YYYY-MM-DD>-<slug>/` | 交付审计期 | ✅ |
-| ③ 机械门禁 | `scripts/check-review-report.sh` | — | ✅ |
+| ③ 机械门禁 | `scripts/check-review-report.py` | — | ✅ |
 
 * **归档根**：推荐默认 `docs/project/reviews/`；宿主项目若已有既定的审查记录规范（既有 `reviews/` 目录或 doc-governance 变体）**以宿主规范为准**，并把实际归档根登记至锚点「归档索引」段。
-* **命名规范**：一个交付单元一个目录（Delta 再循环各轮共享，目录名日期取**首次审查日**）；轮次文件为 `<轮次标记>-<base7>..<head7>.md`，轮次标记取 `r1` / `r2` / `delta-r1` / `delta-r2`。目标路径由 `prepare-review-context.sh --slug=<slug> --round=<轮次>` **机械化产出**（见步骤 2「派发前预授权」），**禁止手工拼装**。
+* **命名规范**：一个交付单元一个目录（Delta 再循环各轮共享，目录名日期取**首次审查日**）；轮次文件为 `<轮次标记>-<base7>..<head7>.md`，轮次标记取 `r1` / `r2` / `delta-r1` / `delta-r2`。目标路径由 `prepare-review-context.py --slug=<slug> --round=<轮次>` **机械化产出**（见步骤 2「派发前预授权」），**禁止手工拼装**。
 * **归档索引** `README.md` 的轮次台账 schema：`| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 | 写入形态 |`。**「轮次」列取值须以 `r1` / `r2` / `delta-r1` / `delta-r2` 之一开头**（允许带人类描述如 `delta-r1 · 第6轮`，门禁按前导标记值解析）。**「写入形态」列取值只能为 `direct` 或 `transcribed`**，它是唯一能区分「子智能体直写原文」与「主智能体转录产物」的可审计属性（RFC-0002 §3.4）。
 * **写入通道与路径预授权（V2.2.0）**：
   * **直写通道（默认）**：R1/R2 子智能体的 `Write-Scope` 约束为其开**唯一例外**——**作者本人**将报告原文写入主智能体预授权的目标路径。主智能体**不再经手内容**，改为**独立复算 SHA256 全值**（`sha256sum <报告文件>`）并与子智能体回报的**全值**逐字比对（**R1-4 回归**：两侧口径必须同为 64 位——模板回报全值、核验复算全值；仅**登记台账**时才取前 12 位），一致方可登记。
   * **转录降级**：子智能体无写盘能力或写入失败时，由主智能体逐字转录写盘，**必须在台账登记 `transcribed`**。**静默降级违规**。**降级原因须写入版本库载体（R1-10 回归）**——在归档索引 `README.md` 的留痕区（`[!WARNING]` / `[!NOTE]` 块）显式记录降级事实、原因与受影响轮次；**严禁**只写进 `.review-context/` 锚点（该目录已 gitignore，clone 即失），**严禁**把原因文本拼进「写入形态」单元格（第 8 项按等值校验，拼接即判非法）。
   * **路径预授权六条**：① 路径由主智能体在派发前确定并以**字面值**内联提示词，子智能体**不得自选/推断/改写**；② **路径必须是基线的确定函数**——`--round` 与自适应模式（自动判定 working/range）**互斥**，必须显式给出 `BASE_SHA [HEAD_SHA]` 或 `--working`/`--staged`；否则同一命令两次调用会因工作区被 scaffold 自身弄脏而输出不同文件名，Write-Once 保护静默失效、产生门禁不可枚举的孤儿报告（**R1-1 回归**）；③ 归档目录须已 scaffold，子智能体**不得创建目录**；④ 目标文件**不得预创建**；⑤ **Write-Once**——已存在即中止，严禁覆盖；⑥ 该路径是子智能体**唯一**被授权的写入面，索引 `README.md`、锚点、`.gitignore`、任何源码一律禁写。
   * **诚实边界（不得省略）**：路径预授权是**提示词契约**。本技能为宿主无关的分发资产，不掌握宿主沙箱，故其约束强度等同于宿主的实际能力——**严禁**在文档或汇报中表述为「已隔离」。直写通道消除的是**转录失真**；`transcribed` 形态下的转录改写残差仍在，且 `direct` 形态的声明本身**不可机械验证**（RFC-0002 §3.3 / §3.5）。
-* **门禁**：归档完成后运行 `bash "$SKILL_DIR/scripts/check-review-report.sh" <归档目录>`；交付放行场景追加 `--require-verdict=PASS`。校验项：索引字段齐备 / 报告在位非空 / 指纹一致 / R1 五区块 / R2 三区块 / 稳定 ID 两轮对齐 / 围栏剥离后仍齐备 / **写入形态合法（`direct` 或 `transcribed`）**。
+* **门禁**：归档完成后运行 `python3 "$SKILL_DIR/scripts/check-review-report.py" <归档目录>`；交付放行场景追加 `--require-verdict=PASS`。校验项：索引字段齐备 / 报告在位非空 / 指纹一致 / R1 五区块 / R2 三区块 / 稳定 ID 两轮对齐 / 围栏剥离后仍齐备 / **写入形态合法（`direct` 或 `transcribed`）**。
 * **V2.1.0 → V2.2.0 迁移**：既有归档的轮次台账须**一次性补「写入形态」列**，历史轮次一律填 `transcribed`（V2.1.0 只有转录通道）；**只改索引台账，报告文件与 SHA256 指纹不得变动**。未补列（或该值退回缺失）的旧台账会被门禁判失败（第 8 项）。
   * **机制如实说明（R1-3 回归）**：第 8 项按**行内第 7 个数据单元格**取值校验——**缺失即失败、取值非 `direct`/`transcribed` 即失败**，它**不解析表头**。因此「删掉表头的『写入形态』单元格」本身不豁免校验（值仍在即通过），但这**不等于**门禁在强制 schema 一致性——本技能**刻意不**为此新增表头解析（新增解析耦合属过度工程）。
 * **异常降级**：
@@ -181,8 +182,8 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
   5. **定向再循环核验 (Delta Re-Loop)**：若属于 Blocker 修复后的再循环，重点审计上一轮 Blocker 是否被根治，以及修复补丁本身是否引入次生缺陷。
 * **真实产出纪律**：在 R1 真实报告返回前，不输出任何审查预判或假想报告，也不提前派发 R2；异步派发时结束回合并等待唤醒。
 * **派发预算 (Dispatch Budget)**：R1 的等待预算为 **1 个检查点周期**。超期未返回即判定为超期事件，按 `goal-loop` 技能的 `references/host-adapters.md` §5 收口（中断 → 落盘记录 `.review-context/review-<baseline-sha>.md` → 替代路径 → 更新派发账本），**严禁无限期等待**。中断并如实记录不违反真实产出纪律；用空报告冒充审查结论才是违规。
-* **派发前预授权**：运行 `bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<slug> --round=r1 <BASE_SHA> [HEAD_SHA]`（**必须显式给出基线**，或显式用 `--working`/`--staged`；`--round` 与自适应模式互斥——否则路径会因工作区被 scaffold 自污染而漂移，见 §1.6 路径预授权第 ② 条），从输出取「**本轮报告目标路径**」，将其**字面值内联**至派发提示词的 `[REPORT_PATH]` 槽位。目标文件已存在时脚本会给出 Write-Once 告警——**先排查命名冲突**（基线漂移缺陷）再派发。**禁止**由子智能体自选路径。
-* **收到回报后核验与登记**：拿到 R1 返回后依次完成 ① **核验写入结果**——文件确实存在于预授权路径、字节数一致，并**独立复算 SHA256 全值** `sha256sum <报告文件>` 与子智能体回报的**全值**比对（两侧同为 64 位，见 §1.6 直写通道的 R1-4 口径；不一致或缺失 → 按 §1.6 异常降级第 5 条收口，**不得登记**）；② 写入 `.review-context/review-<baseline-sha>.md` 的 Round 1 字段（见步骤 1.5）；③ 在归档索引轮次台账登记基线、派发句柄、文件名、SHA256 前 12 位、结论与**写入形态**（直写填 `direct`；转录降级填 `transcribed` 并记录原因）；④ 运行 `check-review-report.sh` 确认结构可校验。**归档与登记完成后方可进入步骤 3**。
+* **派发前预授权**：运行 `python3 "$SKILL_DIR/scripts/prepare-review-context.py" --slug=<slug> --round=r1 <BASE_SHA> [HEAD_SHA]`（**必须显式给出基线**，或显式用 `--working`/`--staged`；`--round` 与自适应模式互斥——否则路径会因工作区被 scaffold 自污染而漂移，见 §1.6 路径预授权第 ② 条），从输出取「**本轮报告目标路径**」，将其**字面值内联**至派发提示词的 `[REPORT_PATH]` 槽位。目标文件已存在时脚本会给出 Write-Once 告警——**先排查命名冲突**（基线漂移缺陷）再派发。**禁止**由子智能体自选路径。
+* **收到回报后核验与登记**：拿到 R1 返回后依次完成 ① **核验写入结果**——文件确实存在于预授权路径、字节数一致，并**独立复算 SHA256 全值** `sha256sum <报告文件>` 与子智能体回报的**全值**比对（两侧同为 64 位，见 §1.6 直写通道的 R1-4 口径；不一致或缺失 → 按 §1.6 异常降级第 5 条收口，**不得登记**）；② 写入 `.review-context/review-<baseline-sha>.md` 的 Round 1 字段（见步骤 1.5）；③ 在归档索引轮次台账登记基线、派发句柄、文件名、SHA256 前 12 位、结论与**写入形态**（直写填 `direct`；转录降级填 `transcribed` 并记录原因）；④ 运行 `check-review-report.py` 确认结构可校验。**归档与登记完成后方可进入步骤 3**。
 * 获取子智能体返回的《第一轮对抗审查报告》。
 
 ### 3. 委派第二轮审查：元架构师审判 (Dispatch Round 2)
@@ -199,7 +200,7 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
 * **真实产出纪律**：在 R2 真实裁决返回前，不输出“终审裁决书”；终审裁决必须基于 R2 的真实结果生成（异步派发时结束回合等待唤醒）。
 * **派发预算**：同 R1（等待预算 1 个检查点周期）；超期按 `goal-loop` 技能的 `references/host-adapters.md` §5 收口并落盘。
 * **派发前预授权**：以 `--round=r2`（Delta 再循环用 `delta-r2`）**并显式给出同一基线**重新取目标路径并内联至 `[REPORT_PATH]`。
-* **收到回报后核验与登记**：拿到 R2 裁决后依次完成 ① **核验写入结果**（同步骤 2 的独立复算与存在性检查）；② 写入 `.review-context/review-<baseline-sha>.md` 的终审字段（见步骤 1.5）；③ 登记轮次台账并填**写入形态**；④ 运行 `check-review-report.sh --require-verdict=PASS` 确认放行结论可机械校验。**归档与登记完成后方可进入步骤 4**。
+* **收到回报后核验与登记**：拿到 R2 裁决后依次完成 ① **核验写入结果**（同步骤 2 的独立复算与存在性检查）；② 写入 `.review-context/review-<baseline-sha>.md` 的终审字段（见步骤 1.5）；③ 登记轮次台账并填**写入形态**；④ 运行 `check-review-report.py --require-verdict=PASS` 确认放行结论可机械校验。**归档与登记完成后方可进入步骤 4**。
 * 获取终审输出的《最终裁决明细表》。
 
 ### 4. 裁决分流与定性处理 (Verdict Triage)
@@ -262,8 +263,8 @@ bash "$SKILL_DIR/scripts/prepare-review-context.sh" --slug=<交付单元slug> [B
 * [failure-modes-catalog.md](references/failure-modes-catalog.md) - 大模型代码生成与审查高频失败模式库
 * [round-1-red-team.md](references/round-1-red-team.md) - 第一轮红队与第一性原理子智能体任务模板
 * [round-2-meta-architect.md](references/round-2-meta-architect.md) - 第二轮元审判资深架构师子智能体任务模板
-* [check-review-report.sh](scripts/check-review-report.sh) - 《交付凭据归档》结构机械门禁（索引字段 / 指纹一致 / 两轮区块 / 稳定 ID 对齐 / **写入形态合法**；`--require-verdict=PASS` 供交付放行）
-* [prepare-review-context.sh](scripts/prepare-review-context.sh) - 审查上下文提取与归档 scaffold（`--slug` + `--round` 产出**预授权报告目标路径**，供派发提示词内联）
+* [check-review-report.py](scripts/check-review-report.py) - 《交付凭据归档》结构机械门禁（索引字段 / 指纹一致 / 两轮区块 / 稳定 ID 对齐 / **写入形态合法**；`--require-verdict=PASS` 供交付放行；POSIX 下旧 `.sh` 兼容壳仍可用）
+* [prepare-review-context.py](scripts/prepare-review-context.py) - 审查上下文提取与归档 scaffold（`--slug` + `--round` 产出**预授权报告目标路径**，供派发提示词内联；POSIX 下旧 `.sh` 兼容壳仍可用）
 
 ### 交付面模板 (Templates)
 * [review-archive-index.md](templates/review-archive-index.md) - 归档索引骨架（三必需字段 + 轮次台账列与取值 + 指纹登记位 + 门禁清单）

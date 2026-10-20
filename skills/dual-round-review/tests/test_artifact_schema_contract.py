@@ -13,10 +13,11 @@
 """
 import hashlib
 import subprocess
+import sys
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
-SCRIPT = SKILL_DIR / 'scripts' / 'check-review-report.sh'
+SCRIPT = SKILL_DIR / 'scripts' / 'check-review-report.py'
 REPO = SKILL_DIR.parents[1]
 REVIEWS = REPO / 'docs' / 'project' / 'reviews'
 
@@ -114,15 +115,15 @@ def _build(tmp_path, name, reports, *, schema='artifact', verdict='🔴 阻断�
     rows = '\n'.join(_row(t, f, b) for t, f, b in reports)
     (d / 'README.md').write_text(
         INDEX_TMPL.format(unit=name, root=str(d), mode=schema, verdict=verdict, rows=rows),
-        encoding='utf-8')
+        encoding='utf-8', newline='\n')
     for _, fname, body in reports:
-        (d / fname).write_text(body, encoding='utf-8')
+        (d / fname).write_text(body, encoding='utf-8', newline='\n')
     return d
 
 
 def _run_gate(archive):
-    return subprocess.run(['bash', str(SCRIPT), str(archive)],
-                          capture_output=True, text=True)
+    return subprocess.run([sys.executable, str(SCRIPT), str(archive)],
+                          capture_output=True, text=True, encoding='utf-8')
 
 
 # --- 1. 零迁移回归 ------------------------------------------------------------

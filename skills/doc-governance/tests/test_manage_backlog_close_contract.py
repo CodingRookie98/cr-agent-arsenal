@@ -86,7 +86,7 @@ class ManageBacklogCloseContractTest(unittest.TestCase):
     def test_close_after_manual_tick_has_no_hint_and_keeps_ticks(self):
         """作者已手工勾选 DoD 时，close 不得改写复选框、也不得输出未勾选提示"""
         card = self.create_card()
-        card.write_text(card.read_text(encoding="utf-8").replace("- [ ] ", "- [x] "), encoding="utf-8")
+        card.write_text(card.read_text(encoding="utf-8").replace("- [ ] ", "- [x] "), encoding="utf-8", newline="\n")
         self.close_card()
         text = self.archived_card().read_text(encoding="utf-8")
         self.assertIn("- [x] 各租户数据物理隔离", text)
@@ -98,7 +98,7 @@ class ManageBacklogCloseContractTest(unittest.TestCase):
         """历史卡片写作 *(未开工；结项时由 close 指令自动追加)* 时同样必须被收敛"""
         card = self.create_card()
         legacy = card.read_text(encoding="utf-8").replace("*(未开工)*", "*(未开工；结项时由 close 指令自动追加)*")
-        card.write_text(legacy, encoding="utf-8")
+        card.write_text(legacy, encoding="utf-8", newline="\n")
         self.close_card()
         text = self.archived_card().read_text(encoding="utf-8")
         self.assertNotIn("未开工", text)
@@ -157,14 +157,14 @@ class ManageBacklogCloseContractTest(unittest.TestCase):
         text = card.read_text(encoding="utf-8")
         marker = "## 4. 实施去向与结项记录"
         self.assertIn(marker, text, "建卡模板应包含 §4 小节标题")
-        card.write_text(text.replace(marker, marker + "\n- [ ] 归档后补录验证证据"), encoding="utf-8")
+        card.write_text(text.replace(marker, marker + "\n- [ ] 归档后补录验证证据"), encoding="utf-8", newline="\n")
         self.close_card()
         archived = self.archived_card().read_text(encoding="utf-8")
         self.assertIn("§3 DoD 仍有 2 项未勾选", archived)
         self.assertIn("- [ ] 归档后补录验证证据", archived)
 
 
-SCAFFOLD_SCRIPT = SCRIPTS_DIR / "scaffold-doc.sh"
+SCAFFOLD_SCRIPT = SCRIPTS_DIR / "scaffold-doc.py"
 
 
 def duty_note_line(text: str) -> str:
@@ -176,10 +176,11 @@ def duty_note_line(text: str) -> str:
 
 
 class ScaffoldBacklogTemplateConsistencyTest(unittest.TestCase):
-    """scaffold-doc.sh 生成的 backlog 骨架必须与 create 模板逐字一致
+    """scaffold-doc.py 生成的 backlog 骨架必须与 create 模板逐字一致
 
-    回归目标：该脚本用未加引号的 heredoc 生成卡片，正文里的反引号必须转义，
+    回归目标：该脚本（原 Bash 版）用未加引号的 heredoc 生成卡片，正文里的反引号必须转义，
     否则会被 shell 当作命令替换执行（反引号包裹的 close 被吞掉并报 command not found）。
+    迁移到 Python 实现后，此断言转为守护「骨架正文逐字保留反引号」这一产物契约。
     """
 
     def setUp(self):
@@ -192,8 +193,9 @@ class ScaffoldBacklogTemplateConsistencyTest(unittest.TestCase):
         docs_root = self.test_dir / "scaf" / "docs"
         docs_root.mkdir(parents=True)
         res = subprocess.run(
-            ["bash", str(SCAFFOLD_SCRIPT), "backlog", "骨架一致性用例", "--root", str(docs_root)],
-            capture_output=True, text=True, cwd=str(self.test_dir),
+            [sys.executable, str(SCAFFOLD_SCRIPT), "backlog", "骨架一致性用例",
+             "--root", str(docs_root)],
+            capture_output=True, text=True, cwd=str(self.test_dir), encoding="utf-8",
         )
         self.assertEqual(res.returncode, 0, f"scaffold 失败: {res.stderr}")
         self.assertNotIn("command not found", res.stderr)

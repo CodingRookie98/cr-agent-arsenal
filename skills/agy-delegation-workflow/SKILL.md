@@ -77,7 +77,7 @@ graph LR
 使用辅助脚本或在命令中强制前置清除 WSL/Linux 代理变量，杜绝连接拒绝：
 ```bash
 # 方式 A：使用辅助脚本（推荐，自动注入 Gemini 3.8 Flash、代理清除与 workspace 注册）
-bash skills/agy-delegation-workflow/scripts/dispatch-agy.sh -f .agy-tasks/task-a.md
+python3 skills/agy-delegation-workflow/scripts/dispatch-agy.py -f .agy-tasks/task-a.md
 
 # 方式 B：原生命令（必须自带 --add-dir "$PWD"，否则 Hindsight 记忆库会落错）
 unset HTTPS_PROXY HTTP_PROXY http_proxy https_proxy ALL_PROXY all_proxy; \
@@ -91,7 +91,7 @@ agy --add-dir "$PWD" -p "$(cat .agy-tasks/task-a.md)" \
 > `workspacePaths` 是空数组，且 agy 给 hook / MCP server 子进程的 cwd 固定为 `~/.gemini/config`
 > （不是 agy 自己的 cwd）。不显式注册 workspace 时，bank 模板 `coding-agent::{gitProject}`
 > 会退化成目录 basename，整批会话被写进 `coding-agent::config`（实测曾误收 75 个文档 / 3,237 条记忆单元，横跨 6 个仓库）。
-> 辅助脚本已自动处理；手写命令时请自带 `--add-dir`。
+> 辅助脚本已自动处理；手写命令时请自带 `--add-dir`。POSIX 下旧 `.sh` 兼容壳调用仍可用。
 
 ### 3. 多任务编排与并行准则 (Batch Orchestration)
 * **同文件任务必须合并**：若两个任务修改同一个文件，必须合并为一个 Prompt，严禁并行发起导致冲突竞态。
@@ -123,4 +123,4 @@ agy --add-dir "$PWD" -p "$(cat .agy-tasks/task-a.md)" \
 
 ### 任务模板与工具脚本
 * [task-prompt-template.md](templates/task-prompt-template.md) - 包含 7 维黄金标准的任务 Prompt 规范模板
-* [dispatch-agy.sh](scripts/dispatch-agy.sh) - 一键清除代理、注入 Gemini 3.8 Flash 模型的后台委派辅助脚本
+* [dispatch-agy.py](scripts/dispatch-agy.py) - 一键清除代理、注入 Gemini 3.8 Flash 模型的后台委派辅助脚本（POSIX 下旧 `.sh` 兼容壳仍可用）

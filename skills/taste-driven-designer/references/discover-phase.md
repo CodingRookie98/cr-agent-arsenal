@@ -12,7 +12,7 @@
 
 ### 1.1 施工步骤（完整规程）
 
-1. **生成种子**：`bash ${SKILL_DIR}/scripts/generate-seed.sh`（默认 64 位 base62 真随机；多方向并行用 `-l 128 -c 3`；团队复现用 `-s <种子词>`）。完整 Prompt 模板见 [seed-string-procedure.md](../templates/seed-string-procedure.md)。
+1. **生成种子**：`python3 ${SKILL_DIR}/scripts/generate-seed.py`（默认 64 位 base62 真随机；多方向并行用 `-l 128 -c 3`；团队复现用 `-s <种子词>`；POSIX 下旧 `.sh` 壳仍可用）。完整 Prompt 模板见 [seed-string-procedure.md](../templates/seed-string-procedure.md)。
 2. **提取子模式**：要求模型在种子串里"看"出可用的灵感——子模式、特殊数字、字母形状、奇偶分布、分段节奏等，越过表面寻找暗示。
 3. **定义创意方向**：基于提取的暗示定义完整方向：配色 / 布局 / 字体 / 质感 / 交互氛围。
 4. **落地执行**：把方向写进设计简报（[design-brief-template.md](../templates/design-brief-template.md)）并实现。
@@ -84,7 +84,7 @@ Can you sharpen this one based on my tastes?
 
 ## 3. D1 出口检查清单
 
-- [ ] 种子串已生成且**未被模型自选**（外部熵，`generate-seed.sh` 产出）
+- [ ] 种子串已生成且**未被模型自选**（外部熵，`generate-seed.py` 产出）
 - [ ] 至少 2 个方向简报（多方向并行；每份含配色/布局/字体/质感四个决策域）
 - [ ] 用户（创意总监）已选定方向或明确兼修策略
 - [ ] 未在任何可见位置泄露种子串

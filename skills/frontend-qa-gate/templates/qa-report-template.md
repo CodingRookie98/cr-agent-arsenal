@@ -3,7 +3,7 @@
 > 使用说明：复制本模板后逐项填写。所有 `<...>` 占位符必须替换；
 > 每条断言行必须含「操作 / 证据 / 状态」三项（完整字段定义见 references/browser-verification-protocol.md §2）；
 > 明细断言与结论表必须在提交前调整到一致（断言行数 = 明细中 `- [ ]` 行数），
-> 然后运行 `bash scripts/check-qa-report.sh <本文件>` 通过结构校验。
+> 然后运行 `python3 scripts/check-qa-report.py <本文件>` 通过结构校验（POSIX 下旧 `.sh` 兼容壳仍可用）。
 
 -- 轮次标识 --
 - 轮次 nonce: `<random>`

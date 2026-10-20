@@ -1,4 +1,7 @@
-"""test_generate_seed.py — scripts/generate-seed.sh 的确定性行为校验。
+"""test_generate_seed.py — scripts/generate-seed.py 的确定性行为校验。
+
+旧 scripts/generate-seed.sh 已退役为兼容壳（exec 转发到同目录 .py），其转发契约由
+本文件末尾的兼容壳用例覆盖（仅 POSIX + bash 环境）。
 
 覆盖:
 1. 默认参数: 64 位 base62 字符集单条输出
@@ -7,14 +10,23 @@
 4. 确定性模式 (-s): 相同种子输出逐字节一致, 且与 Python 复刻的
    Park-Miller LCG 计算结果完全一致 (防脚本侧回归漂移)
 5. 不同种子输出互异
-6. 真随机模式 (/dev/urandom): 多次运行存在多样性
+6. 真随机模式 (os.urandom): 多次运行存在多样性
 """
 
+import shutil
 import string
 import subprocess
+import sys
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "generate-seed.sh"
+import pytest
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+SCRIPT = SKILL_DIR / "scripts" / "generate-seed.py"
+SCRIPT_SH = SKILL_DIR / "scripts" / "generate-seed.sh"
+
+# 兼容壳（旧 .sh 调用面）转发测试仅在 POSIX + bash 环境执行；Windows 保留 .py 调用面。
+BASH_AVAILABLE = sys.platform != "win32" and shutil.which("bash") is not None
 
 BASE62 = set(string.ascii_letters + string.digits)
 CHARSET = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -23,7 +35,12 @@ A = 48271  # Park-Miller 乘数
 
 
 def run(*args):
-    return subprocess.run([str(SCRIPT), *args], capture_output=True, text=True)
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
 
 
 def park_miller(seed_text, length):
@@ -140,3 +157,29 @@ def test_empty_seed_falls_back_to_random():
     assert set(out) <= BASE62
     outro = run("-s", "", "-l", "24").stdout
     assert out != outro
+
+
+# --- 兼容壳（旧 .sh 调用面）----------------------------------------------------
+
+@pytest.mark.skipif(not BASH_AVAILABLE, reason="兼容壳转发仅在 POSIX + bash 环境验证")
+def test_compat_shell_forwards_deterministic_output():
+    """旧 .sh 调用仍可用：确定性输出与 .py 逐字节一致（Windows 无 bash，由 .py 主路径覆盖）。"""
+    args = ("-s", "team-design-2026", "-l", "24")
+    shell_run = subprocess.run(
+        ["bash", str(SCRIPT_SH), *args], capture_output=True, text=True, encoding="utf-8"
+    )
+    py_run = run(*args)
+    assert shell_run.returncode == py_run.returncode == 0, shell_run.stderr
+    assert shell_run.stdout == py_run.stdout
+    assert shell_run.stderr == py_run.stderr
+
+
+@pytest.mark.skipif(not BASH_AVAILABLE, reason="兼容壳转发仅在 POSIX + bash 环境验证")
+def test_compat_shell_forwards_help():
+    """帮助文案也必须由壳原样转发（rc=0）。"""
+    shell_run = subprocess.run(
+        ["bash", str(SCRIPT_SH), "-h"], capture_output=True, text=True, encoding="utf-8"
+    )
+    py_run = run("-h")
+    assert shell_run.returncode == py_run.returncode == 0
+    assert shell_run.stdout == py_run.stdout

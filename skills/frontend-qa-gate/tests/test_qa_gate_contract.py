@@ -15,15 +15,23 @@ dual-round-review 的重复品或第二个不可靠的评分门禁（taste V1.1 
 """
 
 import re
+import shutil
 import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL_MD = SKILL_DIR / "SKILL.md"
 MATRIX = SKILL_DIR / "references" / "acceptance-matrix.md"
 ROUTING = SKILL_DIR / "references" / "regression-routing.md"
 TEMPLATE = SKILL_DIR / "templates" / "qa-report-template.md"
-CHECKER = SKILL_DIR / "scripts" / "check-qa-report.sh"
+CHECKER = SKILL_DIR / "scripts" / "check-qa-report.py"
+CHECKER_SH = SKILL_DIR / "scripts" / "check-qa-report.sh"
+
+# 兼容壳（旧 .sh 调用面）转发测试仅在 POSIX + bash 环境执行；Windows 保留 .py 调用面。
+BASH_AVAILABLE = sys.platform != "win32" and shutil.which("bash") is not None
 
 FENCE = "```"
 
@@ -61,8 +69,17 @@ def assert_no_score_gate(text, label):
             )
 
 
+def run_checker_argv(*argv):
+    return subprocess.run(
+        [sys.executable, str(CHECKER), *argv],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+
 def run_checker(report, *extra):
-    return subprocess.run(["bash", str(CHECKER), str(report), *extra], capture_output=True, text=True)
+    return run_checker_argv(str(report), *extra)
 
 
 def test_no_score_gate_in_any_skill_doc():
@@ -243,7 +260,7 @@ def test_checker_fails_when_tri_state_incomplete(tmp_path):
 
 
 def test_checker_fails_on_missing_file():
-    r = subprocess.run(["bash", str(CHECKER), "/nonexistent/qa-report.md"], capture_output=True, text=True)
+    r = run_checker_argv("/nonexistent/qa-report.md")
     assert r.returncode != 0
     assert "不存在" in r.stdout + r.stderr or "usage" in (r.stdout + r.stderr).lower()
 
@@ -277,12 +294,13 @@ def test_cross_skill_link_scanner_self_check():
     for sample in illegal:
         assert CROSS_SKILL_LINK.search(sample), f'跨技能链接正则漏检: {sample}'
     command_examples = [
+        'python skills/frontend-qa-gate/scripts/check-qa-report.py report.md',
         'bash skills/frontend-qa-gate/scripts/check-qa-report.sh report.md',
         'python3 skills/doc-governance/scripts/check-doc-links.py --root docs',
     ]
     for sample in command_examples:
         assert is_command_example(sample), f'命令行示例未被识别（会误报）: {sample}'
-    legal = ['(references/acceptance-matrix.md)', '(scripts/check-qa-report.sh)', '(templates/qa-report-template.md)', '.goal-loop/dispatch-ledger.md']
+    legal = ['(references/acceptance-matrix.md)', '(scripts/check-qa-report.py)', '(scripts/check-qa-report.sh)', '(templates/qa-report-template.md)', '.goal-loop/dispatch-ledger.md']
     for sample in legal:
         assert not CROSS_SKILL_LINK.search(sample), f'跨技能链接正则误伤技能内路径: {sample}'
 
@@ -663,3 +681,31 @@ def test_checker_accepts_modifier_before_keyword(tmp_path):
         report.write_text(PASS_REPORT.replace("- 无", sample, 1), encoding="utf-8")
         r = run_checker(report, "--require-verdict=PASS")
         assert r.returncode == 0, f"{sample} 应通过: " + r.stdout + r.stderr
+
+
+# --- 兼容壳（旧 .sh 调用面）----------------------------------------------------
+
+@pytest.mark.skipif(not BASH_AVAILABLE, reason="兼容壳转发仅在 POSIX + bash 环境验证")
+def test_compat_shell_forwards_to_python_implementation(tmp_path):
+    """旧 .sh 调用仍可用：stdout/退出码与 .py 完全一致（Windows 无 bash，由 .py 主路径覆盖）。"""
+    report = tmp_path / "qa-report.md"
+    report.write_text(PASS_REPORT, encoding="utf-8")
+    shell_run = subprocess.run(
+        ["bash", str(CHECKER_SH), str(report)], capture_output=True, text=True, encoding="utf-8"
+    )
+    py_run = run_checker(report)
+    assert shell_run.returncode == py_run.returncode == 0, shell_run.stdout + shell_run.stderr
+    assert shell_run.stdout == py_run.stdout
+    assert shell_run.stderr == py_run.stderr
+
+
+@pytest.mark.skipif(not BASH_AVAILABLE, reason="兼容壳转发仅在 POSIX + bash 环境验证")
+def test_compat_shell_forwards_usage_error():
+    """用法错误的退出码与文案也必须由壳原样转发（rc=2）。"""
+    shell_run = subprocess.run(
+        ["bash", str(CHECKER_SH)], capture_output=True, text=True, encoding="utf-8"
+    )
+    py_run = run_checker_argv()
+    assert shell_run.returncode == py_run.returncode == 2
+    assert shell_run.stdout == py_run.stdout
+    assert shell_run.stderr == py_run.stderr

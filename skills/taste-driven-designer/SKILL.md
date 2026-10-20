@@ -32,7 +32,7 @@ $$\text{World-Class AI Design} = \text{外部随机种子} + \text{独立 Critic
 
 ## 铁律 (Invariants)
 
-1. **随机性必须来自模型外部**：任何设计开工前先跑种子字符串规程（`scripts/generate-seed.sh`）；"随机一点 / 独特一点"等口头指令不算数——模型只会预测"听起来随机"的 Token。
+1. **随机性必须来自模型外部**：任何设计开工前先跑种子字符串规程（`scripts/generate-seed.py`）；"随机一点 / 独特一点"等口头指令不算数——模型只会预测"听起来随机"的 Token。
 2. **Critic 分离纪律**：Critic 每次以**全新上下文** + **固定模板** + **只看产物**介入——默认只收当前产物（截图，无则降级）；**盲比模式另附去标识、随机左右的上一版**。任何模式下都不得携带实现代码、迭代记录与前次批评全文。
 3. **三信号收敛门禁**：D2 完成必须同时满足 —— **A 结构清单**（7 AI Tells + 层级/间距/状态/文案审计，逐项可核验）+ **B 盲比改进**（上一版 vs 当前版强制选择：哪个更好 + 胜出维度，**不输出分数**）+ **C 人类签收**。结构清单扩展项见 [critic-loop-protocol.md](references/critic-loop-protocol.md) Gate A；**产物级验收**（响应式与移动端、交互状态矩阵、无障碍键盘路径、浏览器覆盖、性能预算）以 `frontend-qa-gate` 技能为主路径，其验收基线为内联最小副本，来源版本见该技能的 acceptance-matrix（A 方案：Gate A 为验收基线单一来源）。绝对分数（如 x/10）**仅作遥测**，任何时候不得作为通过判据；**门禁未达 ≠ 交付完成**，如实报 blocked 待裁。
 4. **预算有上限**：先跑 1~2 轮验证可收敛性；全流程迭代上限 5 轮，超限熔断向用户汇报。
@@ -60,7 +60,7 @@ $$\text{World-Class AI Design} = \text{外部随机种子} + \text{独立 Critic
 ## 快速流程清单 (Quick Checklist)
 
 ```text
-D1  ┌ generate-seed.sh 生成种子 → 提取子模式 → 定义创意方向（配色/布局/字体/质感）
+D1  ┌ generate-seed.py 生成种子 → 提取子模式 → 定义创意方向（配色/布局/字体/质感）
     ├ 多方向并行：产出 2~4 个 Brief（必要时派发子智能体分别执行）
     └ 与用户对齐方向，选定 1 个（兼修时取 2 个）
 D2  ┌ 实现初版 → 捕获产物（截图 / 降级文本）→ 附版本 nonce
@@ -94,14 +94,16 @@ D3  ┌ 逐项过 AI Tells 审计清单（7 反模式 + 减法 + 文案黑名单
 
 ## 辅助脚本（可选）
 
-`scripts/generate-seed.sh` 为 Discover 阶段注入外部随机性（String Seed of Thought）：
+`scripts/generate-seed.py` 为 Discover 阶段注入外部随机性（String Seed of Thought）：
 
 ```bash
 SKILL_DIR="<taste-driven-designer 技能实际所在目录>"
-bash "$SKILL_DIR/scripts/generate-seed.sh"            # 64 位真随机种子
-bash "$SKILL_DIR/scripts/generate-seed.sh" -l 128 -c 3  # 3 条种子并行探索
-bash "$SKILL_DIR/scripts/generate-seed.sh" -s team-2026 -l 48  # 团队可复现
+python3 "$SKILL_DIR/scripts/generate-seed.py"            # 64 位真随机种子
+python3 "$SKILL_DIR/scripts/generate-seed.py" -l 128 -c 3  # 3 条种子并行探索
+python3 "$SKILL_DIR/scripts/generate-seed.py" -s team-2026 -l 48  # 团队可复现
 ```
+
+旧 `bash "$SKILL_DIR/scripts/generate-seed.sh"` 调用仍可用（POSIX 兼容壳；Windows 原生环境用 `python` 调用同目录 `.py`）。
 
 完整施工步骤与灵感提取 Prompt 见 [seed-string-procedure.md](templates/seed-string-procedure.md)。
 

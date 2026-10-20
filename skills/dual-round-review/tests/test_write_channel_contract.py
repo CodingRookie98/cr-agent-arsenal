@@ -10,8 +10,17 @@ SKILL_DIR = Path(__file__).resolve().parents[1]
 R1 = SKILL_DIR / 'references' / 'round-1-red-team.md'
 R2 = SKILL_DIR / 'references' / 'round-2-meta-architect.md'
 SKILL = SKILL_DIR / 'SKILL.md'
-CHECKER = SKILL_DIR / 'scripts' / 'check-review-report.sh'
-PREPARE = SKILL_DIR / 'scripts' / 'prepare-review-context.sh'
+CHECKER = SKILL_DIR / 'scripts' / 'check-review-report.py'
+PREPARE = SKILL_DIR / 'scripts' / 'prepare-review-context.py'
+CHECKER_SHIM = SKILL_DIR / 'scripts' / 'check-review-report.sh'
+PREPARE_SHIM = SKILL_DIR / 'scripts' / 'prepare-review-context.sh'
+
+SHIM_TEMPLATE = """#!/usr/bin/env bash
+# 兼容壳：保留既有调用面，转发到跨平台 Python 实现（同目录 {name}.py）。
+set -euo pipefail
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec python3 "$script_dir/{name}.py" "$@"
+"""
 
 LEGACY_READONLY = ('Read-Only constraint: You must not modify the working tree, '
                    'branch, or index.')
@@ -112,6 +121,8 @@ def test_skill_documents_legacy_migration():
 
 
 # --- 脚本：门禁与预授权路径 ----------------------------------------------------
+# 契约迁移（2026-10-19）：`.sh` 退役为 §2.2 五行转发壳，内容特征断言改锚 `.py` 实现，
+# 并新增「壳转发契约」断言之——否则壳被改写/加料时无人察觉。
 
 
 def test_checker_enforces_write_mode():
@@ -126,6 +137,14 @@ def test_prepare_supports_round_argument():
     for r in ('r1', 'r2', 'delta-r1', 'delta-r2'):
         assert r in t, r
     assert 'Write-Once' in t
+
+
+def test_compat_shells_are_thin_forwarders():
+    """壳转发契约（契约迁移）：`.sh` 必须逐字等于 §2.2 模板，不得做参数解析或输出加工。"""
+    for shim, name in ((CHECKER_SHIM, 'check-review-report'),
+                       (PREPARE_SHIM, 'prepare-review-context')):
+        assert _text(shim) == SHIM_TEMPLATE.format(name=name), shim.name
+        assert (shim.parent / (name + '.py')).is_file(), '壳的同目录必须有同名 .py 实现'
 
 
 # --- Delta 回归（R1-8 / R1-11）------------------------------------------------
@@ -182,6 +201,12 @@ def test_skill_fingerprint_comparison_is_full_value():
 
 
 def test_checker_uses_last_column_not_fixed_index():
-    """R1-12 回归：写入形态须按末列定位，避免结论含裸竖线时错位。"""
-    assert 'NF>=9' in _text(CHECKER)
+    """R1-12 回归：写入形态须按末列定位，避免结论含裸竖线时错位。
+
+    契约迁移：原断言 `NF>=9`（awk 字段数）；Python 实现的等价特征为「字段数 ≥ 9 时取
+    `len(fields) - 2`（末列前一格，即跳过 `|` 结尾产生的空尾字段）」。断言语义不变。
+    """
+    t = _text(CHECKER)
+    assert 'len(fields) >= 9' in t
+    assert 'len(fields) - 2' in t
 

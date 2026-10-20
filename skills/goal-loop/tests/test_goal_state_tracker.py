@@ -1,10 +1,19 @@
 import json
 import os
 import re
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'goal-state-tracker.sh'
+import pytest
+
+SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'goal-state-tracker.py'
+COMPAT_SHELL = SCRIPT.with_suffix('.sh')
+POSIX_ONLY = pytest.mark.skipif(
+    sys.platform == 'win32' or shutil.which('bash') is None,
+    reason='兼容壳为 POSIX Bash 转发实现，Windows 原生环境不适用',
+)
 
 PLAN = """# 测试目标 实施方案计划
 
@@ -38,9 +47,18 @@ REL = 'docs/project/plans/2026-01-01-x.md'
 
 
 def _run(tmp_path, *args):
+    # 契约迁移：实现已迁移到跨平台 .py，统一用当前解释器执行（Windows 原生可用）。
     env = dict(os.environ, GOAL_LOOP_ROOT=str(tmp_path))
-    return subprocess.run(['bash', str(SCRIPT), *args],
-                          cwd=tmp_path, capture_output=True, text=True, env=env)
+    return subprocess.run([sys.executable, str(SCRIPT), *args],
+                          cwd=tmp_path, capture_output=True, text=True,
+                          encoding='utf-8', env=env)
+
+
+def _run_via_compat_shell(tmp_path, *args):
+    env = dict(os.environ, GOAL_LOOP_ROOT=str(tmp_path))
+    return subprocess.run(['bash', str(COMPAT_SHELL), *args],
+                          cwd=tmp_path, capture_output=True, text=True,
+                          encoding='utf-8', env=env)
 
 
 def _plan(tmp_path, rel=REL):
@@ -251,9 +269,29 @@ def test_complete_task_rejects_non_ascii_id(tmp_path):
 
 def test_tracker_fields_match_plan_template():
     base = Path(__file__).resolve().parents[1]
-    tracker = (base / 'scripts' / 'goal-state-tracker.sh').read_text(encoding='utf-8')
+    # 契约迁移：实现已迁至 goal-state-tracker.py（.sh 退化为兼容壳，不再承载 FIELDS 字面量）。
+    tracker = (base / 'scripts' / 'goal-state-tracker.py').read_text(encoding='utf-8')
     fields = set(re.findall(r"'([^']+)'", re.search(r'FIELDS = \[(.*?)\]', tracker, re.S).group(1)))
     tpl = (base / 'templates' / 'goal-plan-template.md').read_text(encoding='utf-8')
     section = tpl.split('## 🚀 活跃执行状态与持久化检查点')[1].split('---')[0]
     keys = set(re.findall(r'^- \*\*(.+?)\*\*:', section, re.M))
     assert fields == keys
+
+
+@POSIX_ONLY
+def test_compat_shell_help_matches_python(tmp_path):
+    # 契约迁移：.sh 兼容壳必须与 .py 输出与退出码完全一致。
+    direct = _run(tmp_path, '-h')
+    shell = _run_via_compat_shell(tmp_path, '-h')
+    assert shell.returncode == direct.returncode
+    assert shell.stdout == direct.stdout
+
+
+@POSIX_ONLY
+def test_compat_shell_status_matches_python(tmp_path):
+    # 契约迁移：未绑定状态下的派生输出必须逐字一致（无状态子命令）。
+    direct = _run(tmp_path, 'status')
+    shell = _run_via_compat_shell(tmp_path, 'status')
+    assert shell.returncode == direct.returncode
+    assert shell.stdout == direct.stdout
+    assert shell.stderr == direct.stderr

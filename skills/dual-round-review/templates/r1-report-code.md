@@ -5,7 +5,7 @@
 > **审查模式**: FULL_REVIEW | LIGHT_REVIEW | DELTA_REVIEW
 > **基线**: `<base>..<head>`
 > **Write-Scope（唯一授权写入路径）**: <归档根>/r1-<base>..<head>.md
-> **结构契约**：下列五个区块标题必须为**行首**标题且**不得只出现在围栏代码块内**，否则 `check-review-report.sh` 判为缺失。
+> **结构契约**：下列五个区块标题必须为**行首**标题且**不得只出现在围栏代码块内**，否则 `check-review-report.py` 判为缺失。
 
 ## 1. 第一性原理与本质溯源分析
 

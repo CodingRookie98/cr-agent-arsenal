@@ -50,7 +50,7 @@ def build_skeleton(dir_rel: str, title: str, today: str) -> str:
     return f"""# {title} 象限索引 (Quadrant Index)
 
 {MANAGED_MARKER}
-> ⚙️ **托管索引声明**: 本文件由 `manage-doc-index.py` 自动创建与维护（`scaffold-doc.sh` 生成文档时同步登记）。删除上方托管标记即可转为人工维护，届时脚本将不再改写本文件。
+> ⚙️ **托管索引声明**: 本文件由 `manage-doc-index.py` 自动创建与维护（`scaffold-doc.py` 生成文档时同步登记）。删除上方托管标记即可转为人工维护，届时脚本将不再改写本文件。
 
 > **文档控制信息**
 > - **文档标识**: DOCIDX-{slug}-{year}

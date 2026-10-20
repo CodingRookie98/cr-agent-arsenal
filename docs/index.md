@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.36.6 (更正记录全链留痕并登记治理卡 BK-0044：提交信息「取证」行的易失数字与不可复核属性反复触发独立复核阻断，判据待裁决)
+> - **当前版本**: V1.36.7 (登记技能脚本 Python 统一化计划：8 个自建技能脚本改为单一 Python 实现 + `.sh` POSIX 兼容壳，9 套契约测试运行时无关化)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.36.7** | 2026-10-19 | DSH AI Agent | 王辉 | **技能脚本 Python 统一化注册**：§4 新增计划行（8 个自建技能脚本改为单一 Python 实现 + `.sh` POSIX 兼容壳；9 套契约测试运行时无关化；Windows 侧以 uv 隔离环境取证）；同步 `GOVERNANCE.md` V1.6.1 与 `docs/reference/rules/index.md` V1.0.7 的脚本主路径口径（`scaffold-doc.py` / `prepare-review-context.py`） |
 | **V1.36.6** | 2026-10-13 | DSH AI Agent | 王辉 | **复核循环治理登记**：新增 BK-0044（提交信息取证据口径 —— 易失数字/一次测量值与工作区属性不得作为完成度宣称；V8/V9/V11/V12 四次同根因触发，两次判阻断）；BK-0042 §5 更正 E-4 的耗时标注为「本机一次测量、非可复现常数」、E-5 归因更正为提交 `c24f27c`（提交 `64283f6`）；docs/index.md V1.36.5 行的凭据改为「本地只读门禁可复跑」，并注明 V11/V12 报告均未入库 |
 | **V1.36.5** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V11）更正记录**：提交 `8390df8` 的取证行称 `pytest skills/doc-governance -q = 132 passed`，该提交树实测 134（132 为父提交 `ecf5d24` 数值，技能总数 448→450 互证），属凭据数字与实测不同宽，已在 BK-0042 §5 追加 E-4；另登记 E-5 两处口径澄清（「trim 5 行」为修订表滑窗上限、`llms.txt` 重生成为幂等无 diff）。功能面与门禁可由本地只读门禁复跑验证（`check-doc-links` / `check-doc-control-sync` / `trim-revision --keep 5` / `audit-doc-health` 与 `pytest skills/doc-governance -q`，期望 rc=0；复跑历史提交须先取该提交的树）；独立复核报告（V11/V12）均未入库，其结论在仓内不可核验 |
 | **V1.36.4** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V10）收口（提交 8390df8）**：V10 阻断项 B1 —— `scaffold-doc.sh:390` 未加引号的 heredoc 使新增 `:420` 行反引号被命令替换，骨架卡丢失 `close` 词元（rc 仍为 0），已转义并补「与 create 模板逐字一致」回归用例；非阻断 N1 —— 未勾选项数由全正文统计收敛为 §3 小节统计（`count_unchecked_dod()`）并在 spec 注明范围；非阻断 N3 —— 七张历史归档卡占位语残余登记为不追溯项（BK-0042 §5 E-1~E-3） |
 | **V1.36.3** | 2026-10-13 | DSH AI Agent | 王辉 | **BK-0042 结项（提交 afdb4e5）**：`manage-backlog.py` 的 `close` 归档时机械收敛 §4 `*(未开工)*` 占位语（兼容历史措辞）并按项数提示未勾选 DoD（不代勾复选框），`create` 写明 DoD 由作者人工勾选，`reopen` 写明历史结项记录仅作留痕；`scaffold-doc.sh` 与 `references/backlog-specification.md` 同步；新增 8 用例契约测试（变异 4 项逐项被捕获） |
-| **V1.36.2** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V9）收口**：BK-0039 §5 追加 E-5（`0600→0644` 属工作区副作用，git 不追踪、不可由提交复核，今后不进入提交信息宣称）并把 E-1 由动因归因改写为末态实测对照；E-1~E-5 经 V9 逐项复现（8facf12 = 7/0 含 C-02；3abacf7 = 10/2；6eacc31 = 11/3；历史未改写）。新增 BK-0043：Write-Once 审查归档 `2026-10-12-spec-evolution-v1` 的终审裁决字段不满足 `--require-verdict=PASS` 精确匹配契约（9 个归档中唯一失败者，不可就地修复） |
 
 ---
 
@@ -91,6 +91,7 @@
 | **ADR-0002 子智能体直写通道** | 写盘权归还内容作者：消除转录失真、写盘与核验分离；显式登记三项代价（授权面由零扩大为单文件、路径预授权是提示词契约而非沙箱强制、写入形态声明不可机械验证）（MADR 3.0） | [0002-subagent-direct-write-channel.md](./explanation/decisions/0002-subagent-direct-write-channel.md) |
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |
 | **P2 批次六项 backlog 卡片闭环** | 闭环 BK-0003/BK-0004/BK-0020/BK-0033/BK-0034/BK-0040：稳定 ID 按基线逐轮配对与终审裁决唯一性、修订表头章节作用域、非 UTF-8 输出硬化、baseline 损坏显式失败、嵌套类型逃逸收口（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-14-p2-six-backlog-items.md](./project/plans/2026-10-14-p2-six-backlog-items.md) |
+| **技能脚本 Python 统一化** | 8 个自建技能脚本改为**单一 Python 实现** + 同目录 `.sh` POSIX 兼容壳（形态 B，旧调用面零破坏）；9 套契约测试改为运行时无关（Windows 默认 `sys.executable`，POSIX 另验壳转发）；四注册面与技能内文档口径同步为 Python 主路径；Windows 侧以 uv 隔离环境取证（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-19-skill-scripts-python-unification.md](./project/plans/2026-10-19-skill-scripts-python-unification.md) |
 
 ---
 

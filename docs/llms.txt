@@ -52,6 +52,7 @@
 - [BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议](project/backlog/active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md): id: BK-0041
 - [BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约](project/backlog/active/BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约.md): id: BK-0043
 - [BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断](project/backlog/active/BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断.md): id: BK-0044
+- [BK-0045-prepare-review-context-未跟踪文件过滤正则失效](project/backlog/active/BK-0045-prepare-review-context-未跟踪文件过滤正则失效.md): id: BK-0045
 - [BK-0001-trim-revision-py-archive-exemption](project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0003-stable-id-pair-by-filename](project/backlog/archive/2026-Q4/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
@@ -95,6 +96,7 @@
 - [全局提示词渐进披露重构实施计划 (AGENTS.md Progressive Disclosure)](project/plans/2026-10-10-agents-md-progressive-disclosure.md): 2026-10-10，一次 **9 行**的全局提示词改动被挂载了 `dual-round-review` 完整流程：**6 轮**独立子智能体对抗审查、**6 份报告共 216KB**、6 次提交。用户判语：
 - [spec-evolution 机械化演进回路技能实现计划 (Implementation Plan)](project/plans/2026-10-12-spec-evolution.md): Use when auditing delivery-surface completeness of this repository's skills and root prompt, or when a goal-loop P5 delivery re-checks the skills it touched. Runs a read-only fact collector and a deterministic exit-code judge (zero LLM, zero network) mapping facts to findings C-01 through C-10, emitting a report whose human-verdict section stays empty. Triggers on missing tests or design docs, incomplete skill surfaces, registration gaps, frontmatter length limits, oversized files, and root-prompt net growth.
 - [P2 批次六项 backlog 卡片闭环实施计划 (Implementation Plan)](project/plans/2026-10-14-p2-six-backlog-items.md)
+- [自建技能脚本 Python 统一化实施计划 (Implementation Plan)](project/plans/2026-10-19-skill-scripts-python-unification.md): 1. 8 个技能各自拥有 `<name>.py` 实现，在 **Windows 原生 Python** 与 **WSL/Linux Python** 上均可直接执行，行为与改造前 Bash 实现**逐字节一致**（stdout/stderr...
 
 ## Other Documentation (其他文档)
 

@@ -1,13 +1,22 @@
-"""check-review-report.sh 契约测试：校验《审查归档》结构门禁的判定语义。
+"""check-review-report.py 契约测试：校验《审查归档》结构门禁的判定语义。
 
 覆盖 RFC-0001 §3.5 的 7 项校验规则，每项各配失败与通过用例。
+
+跨平台口径：默认调用 Python 实现（`sys.executable`）；POSIX 下旧 `.sh` 兼容壳仍可用，
+其行为等价性由 `test_compat_shim_forwards_to_python` 守护。
 """
+import ast
 import hashlib
 import re
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'check-review-report.sh'
+import pytest
+
+SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'check-review-report.py'
+SHIM = SCRIPT.with_suffix('.sh')
 
 R1_BODY = """# 第一轮对抗审查报告 (Round 1 Red-Team Review Report)
 
@@ -89,29 +98,29 @@ def _build(tmp_path, *, mode='full', verdict='✅ 准予交付', with_r2=True,
     d.mkdir()
     r1_name = 'r1-940e0f3..a1b2c3d.md'
     r2_name = 'r2-940e0f3..a1b2c3d.md'
-    (d / r1_name).write_text(r1_body, encoding='utf-8')
+    (d / r1_name).write_text(r1_body, encoding='utf-8', newline='\n')
     rows = [_row('R1', r1_name, r1_sha if r1_sha is not None else _sha12(r1_body),
                  '🔴 1 / 🟡 1 / ⚪ 0', r1_mode)]
     r2_file = None
     if with_r2:
         r2_file = d / r2_name
-        r2_file.write_text(r2_body, encoding='utf-8')
+        r2_file.write_text(r2_body, encoding='utf-8', newline='\n')
         rows.append(_row('R2', r2_name, r2_sha if r2_sha is not None else _sha12(r2_body),
                          verdict, r2_mode))
     index = index_override if index_override is not None else INDEX_TMPL.format(
         mode=mode, verdict=verdict, rows='\n'.join(rows))
-    (d / 'README.md').write_text(index, encoding='utf-8')
+    (d / 'README.md').write_text(index, encoding='utf-8', newline='\n')
     if drop_file:
         (d / r1_name).unlink()
     if tamper_after_index:
         # 索引登记后篡改报告内容，制造指纹漂移
-        (d / r1_name).write_text(r1_body + '\n追加篡改行\n', encoding='utf-8')
+        (d / r1_name).write_text(r1_body + '\n追加篡改行\n', encoding='utf-8', newline='\n')
     return d, d / r1_name, r2_file
 
 
 def _run(target, *args):
-    return subprocess.run(['bash', str(SCRIPT), str(target), *args],
-                          capture_output=True, text=True)
+    return subprocess.run([sys.executable, str(SCRIPT), str(target), *args],
+                          capture_output=True, text=True, encoding='utf-8')
 
 
 def test_help_exits_zero(tmp_path):
@@ -121,20 +130,20 @@ def test_help_exits_zero(tmp_path):
 
 
 def test_usage_error_when_no_args():
-    r = subprocess.run(['bash', str(SCRIPT)], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, str(SCRIPT)], capture_output=True, text=True, encoding='utf-8')
     assert r.returncode == 2
     assert 'usage' in r.stderr.lower() or '用法' in r.stderr
 
 
 def test_usage_error_when_dir_missing(tmp_path):
-    r = subprocess.run(['bash', str(SCRIPT), str(tmp_path / 'nope')],
-                       capture_output=True, text=True)
+    r = subprocess.run([sys.executable, str(SCRIPT), str(tmp_path / 'nope')],
+                       capture_output=True, text=True, encoding='utf-8')
     assert r.returncode == 2
 
 
 def test_usage_error_when_arg_is_file(tmp_path):
     f = tmp_path / 'a.md'
-    f.write_text('x', encoding='utf-8')
+    f.write_text('x', encoding='utf-8', newline='\n')
     assert _run(f).returncode == 2
 
 
@@ -174,7 +183,7 @@ def test_missing_report_file_fails(tmp_path):
 
 def test_empty_report_file_fails(tmp_path):
     d, r1, _ = _build(tmp_path)
-    r1.write_text('', encoding='utf-8')
+    r1.write_text('', encoding='utf-8', newline='\n')
     r = _run(d)
     assert r.returncode == 1
 
@@ -264,11 +273,20 @@ _TEMPLATES = {
 
 
 def _checker_sections():
-    text = SCRIPT.read_text(encoding='utf-8')
-    r1 = text.split('R1_SECTIONS=(')[1].split(')')[0]
-    r2 = text.split('R2_SECTIONS=(')[1].split(')')[0]
-    return (re.findall(r'"(## \d+\.[^"]*)"', r1),
-            re.findall(r'"(## \d+\.[^"]*)"', r2))
+    """从门禁 Python 实现中解析必需区块常量。
+
+    契约迁移：原实现从 `.sh` 的 `R1_SECTIONS=(` 文本切分解析；`.sh` 退役为转发壳后
+    改为从 `.py` 读取同名模块级常量。改用 AST 取字面量元组，断言强度不降反升——
+    常量必须仍是字面量序列才可解析，字符串拼接/动态构造会直接失败。
+    """
+    tree = ast.parse(SCRIPT.read_text(encoding='utf-8'))
+    found = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target = node.targets[0]
+            if isinstance(target, ast.Name) and target.id in ('R1_SECTIONS', 'R2_SECTIONS'):
+                found[target.id] = list(ast.literal_eval(node.value))
+    return found.get('R1_SECTIONS', []), found.get('R2_SECTIONS', [])
 
 
 def _template_headings(path):
@@ -279,7 +297,8 @@ def _template_headings(path):
 def test_template_headings_match_checker_constants():
     """提示词模板的输出区块标题必须以门禁必需常量为前缀——防止两处独立漂移。
 
-    门禁用 grep -F（前缀子串）匹配，故模板标题允许携带英文副标题，但不得改名。
+    门禁按行首**前缀**匹配（Python 实现为 `line.startswith(section)`，等价于原
+    `grep -F` 前缀语义），故模板标题允许携带英文副标题，但不得改名。
     """
     r1_secs, r2_secs = _checker_sections()
     assert r1_secs and r2_secs, '未能从门禁脚本解析出必需区块常量'
@@ -294,7 +313,7 @@ def test_ledger_rows_outside_section_ignored(tmp_path):
     d, _, _ = _build(tmp_path)
     index = (d / 'README.md').read_text(encoding='utf-8')
     index += ('\n## 其他表格\n| R1 | `x..y` | sub-9 | `ghost.md` | `deadbeef0000` | 🔴 0 |\n')
-    (d / 'README.md').write_text(index, encoding='utf-8')
+    (d / 'README.md').write_text(index, encoding='utf-8', newline='\n')
     r = _run(d)
     # 台账区块内的登记项合法；区块外的 ghost.md 不得触发「文件不存在」
     assert r.returncode == 0, r.stdout
@@ -436,7 +455,7 @@ def test_legacy_six_column_ledger_fails(tmp_path):
         _row('R1', r1.name, _sha12(R1_BODY), '🔴 1 / 🟡 1 / ⚪ 0', None),
         _row('R2', r2.name, _sha12(R2_BODY), '✅ 准予交付', None),
     ])
-    (d / 'README.md').write_text(LEGACY_INDEX_TMPL.format(rows=legacy_rows), encoding='utf-8')
+    (d / 'README.md').write_text(LEGACY_INDEX_TMPL.format(rows=legacy_rows), encoding='utf-8', newline='\n')
     r = _run(d)
     assert r.returncode != 0
     assert '写入形态' in r.stdout + r.stderr
@@ -496,7 +515,7 @@ def _build_two_round(tmp_path, *, round2_ids=('R1-1', 'R1-2'), with_round2_r2=Tr
             r2_body, r2_table_head, round2_r2_ids,
             '\n## 3. 终审放行结论\n- **交付判定**: ✅ 准予交付\n')
     for fname, body in names.items():
-        (d / fname).write_text(body, encoding='utf-8')
+        (d / fname).write_text(body, encoding='utf-8', newline='\n')
     rows = [_row(rank, fname, _sha12(names[fname]), '🔴 1 / 🟡 1 / ⚪ 0')
             for rank, fname in (('R1', 'r1-aaa1111..bbb2222.md'),
                                 ('R2', 'r2-aaa1111..bbb2222.md'),
@@ -505,7 +524,7 @@ def _build_two_round(tmp_path, *, round2_ids=('R1-1', 'R1-2'), with_round2_r2=Tr
             if fname in names]
     (d / 'README.md').write_text(
         INDEX_TMPL.format(mode='full', verdict='✅ 准予交付', rows='\n'.join(rows)),
-        encoding='utf-8')
+        encoding='utf-8', newline='\n')
     return d
 
 
@@ -535,13 +554,13 @@ def test_two_round_archive_with_paired_ids_passes(tmp_path):
     r2_round2 = _body_with_ids(
         R2_BODY, R2_TABLE_HEAD, ['R1-1', 'R1-2'],
         '\n## 3. 终审放行结论\n- **交付判定**: ✅ 准予交付\n')
-    (d / 'delta-r2-bbb2222..ccc3333.md').write_text(r2_round2, encoding='utf-8')
+    (d / 'delta-r2-bbb2222..ccc3333.md').write_text(r2_round2, encoding='utf-8', newline='\n')
     index = (d / 'README.md').read_text(encoding='utf-8')
     # 台账指纹随内容同步（门禁按登记的 SHA256 前 12 位比对）
     index = re.sub(
         r'(\| `delta-r2-bbb2222\.\.ccc3333\.md` \| `)[0-9a-f]{12}(`)',
         lambda m: m.group(1) + _sha12(r2_round2) + m.group(2), index)
-    (d / 'README.md').write_text(index, encoding='utf-8')
+    (d / 'README.md').write_text(index, encoding='utf-8', newline='\n')
     r = _run(d)
     assert r.returncode == 0, r.stdout + r.stderr
 
@@ -582,7 +601,7 @@ def test_fenced_example_verdict_cannot_preempt_real_field(tmp_path):
     example = '```markdown\n- **终审裁决**: ✅ 准予交付\n```\n\n'
     (d / 'README.md').write_text(
         index.replace('# 审查归档 · 示例交付\n', '# 审查归档 · 示例交付\n\n' + example, 1),
-        encoding='utf-8')
+        encoding='utf-8', newline='\n')
     r = _run(d, '--require-verdict=PASS')
     assert r.returncode == 1, '围栏示例行不得抢答真实裁决字段'
     assert '终审裁决' in r.stdout
@@ -593,8 +612,90 @@ def test_duplicate_verdict_field_fails_without_require_verdict(tmp_path):
     d, _, _ = _build(tmp_path)
     index = (d / 'README.md').read_text(encoding='utf-8')
     (d / 'README.md').write_text(
-        index + '\n> 备注：上文 **终审裁决** 字段亦见于派发提示词模板。\n', encoding='utf-8')
+        index + '\n> 备注：上文 **终审裁决** 字段亦见于派发提示词模板。\n', encoding='utf-8', newline='\n')
     r = _run(d)
     assert r.returncode == 1
     assert '终审裁决' in r.stdout
+
+
+# --- 兼容壳（契约迁移：`.sh` 退役为 §2.2 转发壳）--------------------------------
+
+
+@pytest.mark.skipif(sys.platform == 'win32' or shutil.which('bash') is None,
+                    reason='POSIX 兼容壳仅在 POSIX + bash 环境可执行')
+def test_compat_shim_forwards_to_python(tmp_path):
+    """L4 壳等价性：`bash check-review-report.sh` 与 `.py` 退出码/stdout 必须一致。
+
+    壳只做转发（§2.2），不得做参数解析或输出加工，故对同一归档的裁决输出必须逐字相同。
+    """
+    d, _, _ = _build(tmp_path)
+    via_py = subprocess.run([sys.executable, str(SCRIPT), str(d)],
+                            capture_output=True, text=True, encoding='utf-8')
+    via_sh = subprocess.run(['bash', str(SHIM), str(d)],
+                            capture_output=True, text=True, encoding='utf-8')
+    assert via_sh.returncode == via_py.returncode == 0, via_sh.stdout + via_sh.stderr
+    assert via_sh.stdout == via_py.stdout
+
+    via_py_err = subprocess.run([sys.executable, str(SCRIPT), str(d), '--bogus'],
+                                capture_output=True, text=True, encoding='utf-8')
+    via_sh_err = subprocess.run(['bash', str(SHIM), str(d), '--bogus'],
+                                capture_output=True, text=True, encoding='utf-8')
+    assert via_sh_err.returncode == via_py_err.returncode == 2
+    assert via_sh_err.stdout == via_py_err.stdout
+    assert via_sh_err.stderr == via_py_err.stderr
+
+
+# --- R1-01 / R1-02 回归（fail-open 与 Unicode 空白填充）---------------------------
+
+
+def _without_table_rows(body):
+    """删除「稳定 ID」契约表格的数据行，仅保留表头与列分隔行。"""
+    return '\n'.join(line for line in body.split('\n') if not line.startswith('| R1-'))
+
+
+def _with_malformed_id_cells(body):
+    """把 ID 单元格改成「含 ID 记号但不符合契约列结构」（→ 解析失败信号，触发 fail-closed）。"""
+    return body.replace('| R1-1 |', '| R1-1（P1） |', 1).replace('| R1-2 |', '| R1-2（P2） |', 1)
+
+
+def test_u3000_padded_id_header_cannot_bypass_empty_r2_table(tmp_path):
+    """R1-01 回归：U+3000 缩进的「稳定 ID」表头不得让「R2 空裁决表」保护整体失效（fail-open）。
+
+    原实现以 gawk `[[:space:]]` 识别表头（UTF-8 locale 下匹配 U+3000）；若移植时退化为 ASCII
+    字符类，则表头匹配失败 → ID 集为空 → 两向对齐与空表保护被静默跳过，非法归档被放行。
+    """
+    r1_body = R1_BODY.replace('| 稳定 ID |', '|\u3000稳定 ID |', 1)
+    d, _, _ = _build(tmp_path, r1_body=r1_body, r2_body=_without_table_rows(R2_BODY))
+    r = _run(d)
+    assert r.returncode == 1, r.stdout + r.stderr
+    assert '禁止空表放行' in r.stdout
+
+
+def test_id_header_without_ids_fails_closed(tmp_path):
+    """R1-01 回归：表头出现且表格含 ID 记号行、却抽不到任何契约 ID 时必须 fail-closed。"""
+    d, _, _ = _build(tmp_path, r1_body=_with_malformed_id_cells(R1_BODY))
+    r = _run(d)
+    assert r.returncode == 1, r.stdout + r.stderr
+    assert '未抽取到任何稳定 ID' in r.stdout
+
+
+def test_zero_defect_clean_report_is_accepted(tmp_path):
+    """R1-01 回归边界：真正零缺陷的空明细表（表头后无 ID 记号行）不得被误判为解析失败。"""
+    d, _, _ = _build(tmp_path,
+                     r1_body=_without_table_rows(R1_BODY),
+                     r2_body=_without_table_rows(R2_BODY))
+    r = _run(d)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert '未抽取到任何稳定 ID' not in r.stdout
+
+
+def test_unicode_padded_write_mode_cell_is_accepted(tmp_path):
+    """R1-02 回归：写入形态单元格的 Unicode 空白填充不应把合法归档误判为非法。"""
+    d, _, _ = _build(tmp_path)
+    index = (d / 'README.md').read_text(encoding='utf-8')
+    (d / 'README.md').write_text(
+        index.replace('| direct |', '|\u3000direct\u3000|', 1), encoding='utf-8', newline='\n')
+    r = _run(d)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert '通过' in r.stdout
 

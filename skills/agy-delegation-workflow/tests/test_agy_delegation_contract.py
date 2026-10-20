@@ -13,16 +13,16 @@
 4. 优先级链三级顺序：宿主原生派发 -> 无头命令行执行 -> 兜底前台直接编写；
 5. 标准委派 SOP 五个步骤标题齐备且有序；
 6. 技能内相对链接目标必须存在且不得逸出技能目录；跨技能链接扫描器自检覆盖 ../ 逃逸形态；
-7. scripts/dispatch-agy.sh 行为契约：--help / 无参数 / -f 文件缺失 / PATH 无 agy /
+7. scripts/dispatch-agy.py 行为契约：--help / 无参数 / -f 文件缺失 / PATH 无 agy /
    前台派发 argv 与代理清除 / 后台模式 PID + 日志落盘。
    脚本测试全程使用临时 git 仓库与假 agy shim，绝不调用真实 agy、绝不写入本仓库、绝不触网。
 """
 
 import os
 import re
-import shlex
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -31,11 +31,15 @@ import pytest
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL_MD = SKILL_DIR / "SKILL.md"
-DISPATCH = SKILL_DIR / "scripts" / "dispatch-agy.sh"
+DISPATCH = SKILL_DIR / "scripts" / "dispatch-agy.py"
+COMPAT_SHELL = DISPATCH.with_suffix(".sh")
 
 # 子进程默认使用绝对路径的 bash，避免 PATH 被测试改写后找不到解释器。
 BASH = shutil.which("bash") or "/bin/bash"
-ENV_BIN = shutil.which("env") or "/usr/bin/env"
+POSIX_ONLY = pytest.mark.skipif(
+    sys.platform == "win32" or shutil.which("bash") is None,
+    reason="兼容壳为 POSIX Bash 转发实现，Windows 原生环境不适用",
+)
 
 DEFAULT_MODEL = "Gemini 3.8 Flash (High)"
 DEFAULT_TIMEOUT = "20m"
@@ -246,7 +250,7 @@ def test_cross_skill_link_scanner_self_check():
     legal = [
         "references/priority-fallback-chain.md",
         "templates/task-prompt-template.md",
-        "scripts/dispatch-agy.sh",
+        "scripts/dispatch-agy.py",
         "#when-to-use",
         "https://example.com/agy-delegation-workflow.md",
     ]
@@ -255,31 +259,44 @@ def test_cross_skill_link_scanner_self_check():
 
 
 # ---------------------------------------------------------------------------
-# G. scripts/dispatch-agy.sh 行为契约（假 agy + 临时 git 仓库，离线确定）
+# G. scripts/dispatch-agy.py 行为契约（假 agy + 临时 git 仓库，离线确定）
 # ---------------------------------------------------------------------------
 
-FAKE_AGY_TEMPLATE = """#!/bin/bash
-# 测试用假 agy：仅记录 argv/env 后立即退出；绝不触达真实 CLI、仓库或网络。
-{ printf '%s\\0' "$@"; } > @ARGV@
-@ENV_BIN@ > @ENV_FILE@
-printf 'fake-agy-stdout\\n'
-: > @MARKER@
-exit 0
-"""
+FAKE_AGY_HELPER = '''# 测试用假 agy：仅记录 argv/env 后立即退出；绝不触达真实 CLI、仓库或网络。
+import os
+import sys
+
+argv_file, env_file, marker_file = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(argv_file, "wb") as handle:
+    for value in sys.argv[4:]:
+        handle.write(value.encode("utf-8") + b"\\0")
+with open(env_file, "w", encoding="utf-8", newline="\\n") as handle:
+    for key, value in os.environ.items():
+        handle.write(f"{key}={value}\\n")
+sys.stdout.write("fake-agy-stdout\\n")
+sys.stdout.flush()
+open(marker_file, "w", encoding="utf-8").close()
+sys.exit(0)
+'''
 
 
 def install_fake_agy(bindir, argv_file, env_file, marker_file):
+    """安装跨平台假 agy shim：POSIX 为 bash 包装，Windows 为 .cmd 包装（PATHEXT 可发现）。"""
     bindir.mkdir(parents=True, exist_ok=True)
-    shim = bindir / "agy"
-    content = (
-        FAKE_AGY_TEMPLATE
-        .replace("@ARGV@", shlex.quote(str(argv_file)))
-        .replace("@ENV_BIN@", shlex.quote(ENV_BIN))
-        .replace("@ENV_FILE@", shlex.quote(str(env_file)))
-        .replace("@MARKER@", shlex.quote(str(marker_file)))
+    helper = bindir / "fake_agy.py"
+    helper.write_text(FAKE_AGY_HELPER, encoding="utf-8")
+    quoted = " ".join(
+        f'"{item}"' for item in (sys.executable, helper, argv_file, env_file, marker_file)
     )
-    shim.write_text(content, encoding="utf-8")
-    shim.chmod(0o755)
+    if os.name == "nt":
+        shim = bindir / "agy.cmd"
+        shim.write_text(
+            f"@echo off\r\n{quoted} %*\r\n", encoding="utf-8", newline=""
+        )
+    else:
+        shim = bindir / "agy"
+        shim.write_text(f'#!/usr/bin/env bash\nexec {quoted} "$@"\n', encoding="utf-8")
+        shim.chmod(0o755)
     return shim
 
 
@@ -305,19 +322,43 @@ def dispatch_env(tmp_path):
 
 
 def run_dispatch(env, args, cwd=None, path=None):
+    # 契约迁移：实现已迁至跨平台 dispatch-agy.py，统一用当前解释器执行（Windows 原生可用）。
     child_env = dict(os.environ)
     child_env["PATH"] = env.path if path is None else path
     child_env.pop("AGY_MODEL", None)
     for var in PROXY_VARS:
         child_env[var] = "http://127.0.0.1:9/proxy-must-be-stripped"
     return subprocess.run(
-        [BASH, str(DISPATCH), *args],
+        [sys.executable, str(DISPATCH), *args],
         cwd=str(cwd if cwd is not None else env.repo),
         env=child_env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         timeout=20,
     )
+
+
+def run_compat_shell(env, args, cwd=None, path=None):
+    child_env = dict(os.environ)
+    child_env["PATH"] = env.path if path is None else path
+    child_env.pop("AGY_MODEL", None)
+    for var in PROXY_VARS:
+        child_env[var] = "http://127.0.0.1:9/proxy-must-be-stripped"
+    return subprocess.run(
+        [BASH, str(COMPAT_SHELL), *args],
+        cwd=str(cwd if cwd is not None else env.repo),
+        env=child_env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=20,
+    )
+
+
+def same_path(left, right):
+    """跨平台路径等价判定（Windows 上 git 返回正斜杠形态，归一化后比较）。"""
+    return os.path.normcase(os.path.realpath(left)) == os.path.normcase(os.path.realpath(right))
 
 
 def read_agy_argv(env):
@@ -381,7 +422,7 @@ def test_g5_foreground_dispatch_argv_and_proxy_stripping(dispatch_env):
     r = run_dispatch(dispatch_env, ["-p", "CONTRACT CONTENT 42"])
     assert r.returncode == 0, r.stdout + r.stderr
     argv = read_agy_argv(dispatch_env)
-    assert flag_value(argv, "--add-dir") == dispatch_env.root, argv
+    assert same_path(flag_value(argv, "--add-dir"), dispatch_env.root), argv
     assert flag_value(argv, "-p") == "CONTRACT CONTENT 42", argv
     assert flag_value(argv, "--model") == DEFAULT_MODEL, argv
     assert flag_value(argv, "--print-timeout") == DEFAULT_TIMEOUT, argv
@@ -390,7 +431,7 @@ def test_g5_foreground_dispatch_argv_and_proxy_stripping(dispatch_env):
     child_env = read_env_file(dispatch_env.env_file)
     leaked = [var for var in PROXY_VARS if var in child_env]
     assert not leaked, f"子进程环境仍带代理变量（WSL proxyconnect 根因，脚本必须清除）: {leaked}"
-    assert child_env.get("HINDSIGHT_MCP_PROJECT_CWD") == dispatch_env.root, (
+    assert same_path(child_env.get("HINDSIGHT_MCP_PROJECT_CWD", ""), dispatch_env.root), (
         "脚本必须把仓库根同时导出给 Hindsight MCP server（bank 归属修复）"
     )
 
@@ -406,7 +447,7 @@ def test_g5_file_dispatch_reads_prompt_and_registers_repo_root(dispatch_env):
     r = run_dispatch(dispatch_env, ["-f", str(task)], cwd=outside)
     assert r.returncode == 0, r.stdout + r.stderr
     argv = read_agy_argv(dispatch_env)
-    assert flag_value(argv, "--add-dir") == dispatch_env.root, argv
+    assert same_path(flag_value(argv, "--add-dir"), dispatch_env.root), argv
     assert flag_value(argv, "-p") == "FILE CONTENT 7", argv
 
 
@@ -425,3 +466,25 @@ def test_g6_background_mode_reports_pid_and_writes_log(dispatch_env):
     log_path = dispatch_env.repo / log_rel
     assert log_path.is_file(), f"后台模式必须生成日志文件: {log_path}"
     assert "fake-agy-stdout" in read(log_path), "后台日志必须承载 agy 输出"
+
+
+# ---------------------------------------------------------------------------
+# H. 兼容壳契约（契约迁移：.sh 退化为 §2.2 兼容壳，必须与 .py 输出/退出码一致）
+# ---------------------------------------------------------------------------
+
+@POSIX_ONLY
+def test_h1_compat_shell_help_matches_python(dispatch_env):
+    direct = run_dispatch(dispatch_env, ["--help"])
+    shell = run_compat_shell(dispatch_env, ["--help"])
+    assert shell.returncode == direct.returncode
+    assert shell.stdout == direct.stdout
+
+
+@POSIX_ONLY
+def test_h2_compat_shell_failure_matches_python(dispatch_env):
+    # 用「任务文件不存在」这一错误路径对照：兼容壳经 python3 转发，需保留宿主 PATH。
+    missing = dispatch_env.tmp_path / "no-such-task.md"
+    direct = run_dispatch(dispatch_env, ["-f", str(missing)])
+    shell = run_compat_shell(dispatch_env, ["-f", str(missing)])
+    assert shell.returncode == direct.returncode == 1
+    assert shell.stderr == direct.stderr

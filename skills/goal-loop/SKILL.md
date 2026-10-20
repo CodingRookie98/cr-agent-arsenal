@@ -28,7 +28,7 @@ license: MIT
 
 ## 铁律 (Invariants)
 
-1. **计划文件是唯一人类可读真相源**。进度、复选框与检查点写入计划头部；机器状态写入宿主原生 goal 原语，**不建并行状态文件**（`scripts/goal-state-tracker.sh` 只做派生读写）。
+1. **计划文件是唯一人类可读真相源**。进度、复选框与检查点写入计划头部；机器状态写入宿主原生 goal 原语，**不建并行状态文件**（`scripts/goal-state-tracker.py` 只做派生读写）。
 2. **先读检查点再动**。进入新阶段或恢复会话时，首选动作是读计划头部的 `Active Checkpoint` 锚点。
 3. **未获用户明确认可（User Nod），不写代码、不写落地计划**（P-1 门禁）。
 4. **选型裁决未完成，不进 P1 计划**（P0.5 门禁）；优先复用成熟方案，自研必须书面辩护。
@@ -75,17 +75,17 @@ license: MIT
 
 ## 辅助状态脚本（可选）
 
-`scripts/goal-state-tracker.sh` 提供断点看板与阶段切换。技能目录随安装方式而定（源码仓库通常为 `skills/goal-loop`，安装后通常为 `.agents/skills/goal-loop`）：
+`scripts/goal-state-tracker.py` 提供断点看板与阶段切换。技能目录随安装方式而定（源码仓库通常为 `skills/goal-loop`，安装后通常为 `.agents/skills/goal-loop`）：
 
 ```bash
 SKILL_DIR="<goal-loop 技能实际所在目录>"
-bash "$SKILL_DIR/scripts/goal-state-tracker.sh" init "目标名称" "计划文件路径"
-bash "$SKILL_DIR/scripts/goal-state-tracker.sh" status
-bash "$SKILL_DIR/scripts/goal-state-tracker.sh" set-phase P3
-bash "$SKILL_DIR/scripts/goal-state-tracker.sh" complete-task "p3-1"
+python3 "$SKILL_DIR/scripts/goal-state-tracker.py" init "目标名称" "计划文件路径"
+python3 "$SKILL_DIR/scripts/goal-state-tracker.py" status
+python3 "$SKILL_DIR/scripts/goal-state-tracker.py" set-phase P3
+python3 "$SKILL_DIR/scripts/goal-state-tracker.py" complete-task "p3-1"
 ```
 
-> 计划文件始终是唯一可读真相源，该脚本仅作派生视图。
+> 计划文件始终是唯一可读真相源，该脚本仅作派生视图。POSIX 下旧 `.sh` 兼容壳调用仍可用。
 
 ---
 

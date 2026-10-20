@@ -2,7 +2,7 @@
 
 > **用法**：把「决策台账」一节整体拷入计划文件或检查点；每个里程碑（默认每轮提问结束）**即时**更新，禁止事后补记。
 > **字段纪律**（哪些必填、怎么写）见 [references/decision-ledger.md](../references/decision-ledger.md)；去重与提前收敛判定式同文。
-> **结构校验**：`bash scripts/check-decision-ledger.sh <本文件>`（0 合规 / 1 不合规 / 2 用法错误）。
+> **结构校验**：`python3 scripts/check-decision-ledger.py <本文件>`（0 合规 / 1 不合规 / 2 用法错误；POSIX 下旧 `.sh` 兼容壳仍可用）。
 
 - 关联计划 / 需求确认文档: docs/project/plans/2026-10-13-example-plan.md
 - 当前轮次: 第 2 轮

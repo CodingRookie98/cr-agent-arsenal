@@ -1,6 +1,6 @@
 # 审查归档 · <slug>
 
-> **本文件是骨架模板**：在主调度智能体派发 R1 前（或落盘首份报告时）复制为 `<归档根>/README.md`，由 `scripts/check-review-report.sh` 机械校验。
+> **本文件是骨架模板**：在主调度智能体派发 R1 前（或落盘首份报告时）复制为 `<归档根>/README.md`，由 `scripts/check-review-report.py` 机械校验。
 > `<...>` 为必填槽位；落地时必须替换为真实值，**不得保留槽位文本**。
 
 > **文档控制信息**
@@ -41,8 +41,10 @@
 ## 机械门禁 (Gate)
 
 ```bash
-bash skills/dual-round-review/scripts/check-review-report.sh <归档根>
-bash skills/dual-round-review/scripts/check-review-report.sh <归档根> --require-verdict=PASS   # 交付放行用法
+python3 skills/dual-round-review/scripts/check-review-report.py <归档根>
+python3 skills/dual-round-review/scripts/check-review-report.py <归档根> --require-verdict=PASS   # 交付放行用法
 ```
+
+（POSIX 下旧 `.sh` 兼容壳仍可用；Windows 原生以 `python` 调用。）
 
 退出码：`0` 通过 / `1` 结构或证据缺陷 / `2` 用法错误。校验项：索引三字段（`**交付单元**` / `**归档根**` / `**终审裁决**`）、台账登记的报告文件在位且非空、指纹与登记一致、R1 五区块齐备（**行首标题**且不得只存在于围栏代码块内）、R2 三区块齐备、稳定 ID 对齐（R2 裁决表的 `R1-<n>` 必须存在于 R1 缺陷清单）、`--require-verdict=PASS`、写入形态合法、schema 自描述、轮次列前导标记容错。

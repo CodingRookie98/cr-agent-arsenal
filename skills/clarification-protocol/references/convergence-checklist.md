@@ -7,7 +7,7 @@
 
 - 每个里程碑（默认：每轮提问结束）执行一次；不额外增设里程碑。
 - 自检回合**不带新问题**；自检中发现的疑问只能进入下一轮，不得混进本轮结论。
-- 自检前先确认台账结构齐备：三类登记都有内容（字段纪律见 [references/decision-ledger.md](./decision-ledger.md)，机械校验用 `bash scripts/check-decision-ledger.sh <台账文件>`）。
+- 自检前先确认台账结构齐备：三类登记都有内容（字段纪律见 [references/decision-ledger.md](./decision-ledger.md)，机械校验用 `python3 scripts/check-decision-ledger.py <台账文件>`；POSIX 下旧 `.sh` 兼容壳仍可用）。
 - 结论落进需求确认文档的「收敛结论」段（骨架见 [templates/requirement-confirmation-template.md](../templates/requirement-confirmation-template.md)）。
 
 ## 2. 逐问判定标准

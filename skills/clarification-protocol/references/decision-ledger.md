@@ -7,7 +7,7 @@
 
 - **即时登记**：裁决落下或被采用的那一刻就写进计划文件或检查点；禁止事后补记，禁止只留在对话里（上下文压缩后对话不再是证据）。
 - **位置**：计划文件的「决策台账」小节，或需求确认文档的对应小节；骨架可直接取用 [templates/decision-ledger-template.md](../templates/decision-ledger-template.md)。
-- **可核验性**：每条登记都有编号（D- / E- / A-），§4 自检逐条引用编号而非复述印象；结构完整性可用 `bash scripts/check-decision-ledger.sh <文件>` 机械校验（退出码 0 / 1 / 2）。
+- **可核验性**：每条登记都有编号（D- / E- / A-），§4 自检逐条引用编号而非复述印象；结构完整性可用 `python3 scripts/check-decision-ledger.py <文件>` 机械校验（退出码 0 / 1 / 2；POSIX 下旧 `.sh` 兼容壳仍可用）。
 
 ## 2. 三类登记的「必须写明」字段
 
@@ -81,4 +81,4 @@ SKILL.md §3 要求「提前收敛时必须登记被判定为低影响而转为�
 ## 6. 与收敛自检的接口
 
 - 自检（§4）逐项引用台账编号作为证据；「三项皆否定」必须能回答「查了哪些条目、为什么否定」。
-- 执行规程见 [references/convergence-checklist.md](./convergence-checklist.md)；校验脚本见 [scripts/check-decision-ledger.sh](../scripts/check-decision-ledger.sh)。
+- 执行规程见 [references/convergence-checklist.md](./convergence-checklist.md)；校验脚本见 [scripts/check-decision-ledger.py](../scripts/check-decision-ledger.py)（POSIX 下旧 `.sh` 兼容壳仍可用）。

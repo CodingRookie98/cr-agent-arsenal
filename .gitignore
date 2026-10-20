@@ -16,6 +16,7 @@ Thumbs.db
 skills-lock.json
 
 # Python cache
+.venv/
 __pycache__/
 *.py[cod]
 *$py.class
