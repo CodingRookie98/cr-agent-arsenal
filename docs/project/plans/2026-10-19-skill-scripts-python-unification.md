@@ -15,8 +15,8 @@
 > - **需求方**: 王辉
 > - **批准人 (User Nod)**: 王辉 | **批准时间**: 2026-10-19（原始诉求「我需要你将我们自建的那几个技能的sh脚本新增powershell版本」；后经方案拷问裁决为「统一抽象为 Python + 保留 `.sh` 兼容壳」）
 > - **批准基线**: `master` @ `81dbb15`
-> - **状态**: 已完成（本地分支 `feat/skill-scripts-python`；双轮 + Delta 审查 Zero Blockers，未合入 `master`、未 push）
-> - **隔离分支**: `feat/skill-scripts-python`（基点 `81dbb15`）
+> - **状态**: 已完成并合入 `master`（合并提交 `c445498`；`origin/master` 尚未推送）
+> - **隔离分支**: `feat/skill-scripts-python`（基点 `81dbb15`，已合入 `master` 并删除）
 > - **需求确认文档**: 豁免（需求源为用户两轮显式裁决 + 仓库既有 9 个 `.py` 脚本的成熟范式，无新增公共 API 语义）
 > - **技术调研备忘录**: 豁免（零第三方依赖，纯标准库；运行时形态已由用户裁决，无选型空间）
 > - **临时 Scratchpad**: `.goal-loop/scratchpad.md`、`.goal-loop/orig/`（原始 Bash 逐字节副本，差分基线，均被 `.gitignore` 忽略）
@@ -28,11 +28,11 @@
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
 - **当前活跃阶段**: DONE
-- **当前活跃子任务**: 交付完成（本地分支 `feat/skill-scripts-python`，等待需求方裁决合入/推送）
+- **当前活跃子任务**: 交付完成（已合入 `master@c445498`，本地尚未推送；等待需求方决定 push 时机）
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 1/5
-- **最后一次验证状态**: 交付门禁全绿（2026-10-20 实测）——WSL `python3 -B -m pytest skills/ -q` 全绿（基线 472，新增兼容壳/转发用例）；Windows `.venv` 全量失败集 ⊆ 改造前基线（新增失败 0、消除 154，存量 cp936/POSIX-only 债务按用户裁决 B 豁免披露，见 §1.4 第 7 项）；差分矩阵 8/8 脚本双 pair（24 套用例集）；契约检查 8/8 PASS；双轮审查 R1→R2 阻断后经 Delta 闭环取得 **Delta-r2「✅ 准予交付，Blockers = 0」**，归档 `--require-verdict=PASS` 门禁通过；文档四件套门禁（链接/健康度/控制头/修订历史）全绿。
-- **最新有效提交**: `6b10890`（R1-01/R1-02 修复）→ 归档与计划收尾提交见 §7 末行
+- **最后一次验证状态**: 交付门禁全绿（2026-10-20 实测，合入后复核）——WSL `python3 -B -m pytest skills/ -q` = **490 passed / 0 failed**；Windows `.venv` 全量失败集 ⊆ 改造前基线（新增失败 0、消除 154，存量 cp936/POSIX-only 债务按用户裁决 B 豁免披露，见 §1.4 第 7 项）；差分矩阵 8/8 脚本双 pair（24 套用例集）；契约检查 8/8 PASS；双轮审查 R1→R2 阻断后经 Delta 闭环取得 **Delta-r2「✅ 准予交付，Blockers = 0」**，归档 `--require-verdict=PASS` 门禁通过；文档四件套门禁（链接/健康度/控制头/修订历史）全绿。
+- **最新有效提交**: `c445498`（merge：8 个技能脚本 Python 统一化合入 master）
 - **阻断原因**: 无
 
 ---
@@ -272,4 +272,6 @@ exec python3 "$script_dir/<name>.py" "$@"
 | 2026-10-20 | 文档门禁复检：`check-doc-links` 87 md 0 断链、`check-doc-control-sync` 41 md 100% 一致、`trim-revision --keep 5` 86 文件合规、`audit-doc-health` PASS（llms.txt 复核后字节无变化：生成器不收录 `project/reviews`） | 各脚本 stdout |
 | 2026-10-20 | 全量 WSL 回归（含 6b10890 新增用例）：`python3 -B -m pytest skills/ -q` = **490 passed in 156.67s**（0 failed；基线 472） | 作业 `pwsh-44444d23dc134756` exit 0 |
 | 2026-10-20 | 最终 HEAD（`83b7925`）Windows 全量回归复核：**94 failed / 400 passed / 14 skipped**（203.09s）vs 改造前基线 **248 failed / 241 passed / 1 skipped**（121.89s）；`comm` 逐条比对**新增失败 0、消除 154**；残留 76 个唯一失败用例 ID 全部集中在 doc-governance（69）与 spec-evolution（7）的存量 cp936/POSIX-only 债务（口径 B 豁免披露） | `.goal-loop/win-final.txt`；`.goal-loop/final-win-compare.sh` 输出 |
-| 2026-10-20 | 交付收尾提交（审查归档 + 计划状态流转 + 本执行日志）：本地分支 `feat/skill-scripts-python`，未合入 `master`、未推送；最终提交标识见 `git log --oneline -1` | `git show --stat HEAD` |
+| 2026-10-20 | 交付收尾提交（审查归档 + 计划状态流转 + 执行日志：`83b7925`、`175e8b4`）：当时位于隔离分支，未合入 `master` | `git log --oneline` |
+| 2026-10-20 | **合入 `master`**（需求方指令「先合并，然后删除分支」）：`git merge --no-ff feat/skill-scripts-python` → 合并提交 **`c445498`**；零冲突，`git diff --stat feat/skill-scripts-python master` 为空（两侧树逐文件一致）；隔离分支已删除（`git branch -d`，删除前已被合并包含）；`origin/master` 未推送（本地领先 8 个提交，push 时点待需求方裁决） | `git log --oneline -3`；`git rev-list --parents -n 1 HEAD`（双亲 `81dbb15`/`175e8b4`） |
+| 2026-10-20 | 合入后复核：WSL 全量 **490 passed in 138.61s**（0 failed）、归档门禁 PASS（`… 稳定 ID 对齐 · 终审裁决 准予交付`）、契约检查 0 项失败；工作树干净 | 作业 `pwsh-610e9d232fe04f03` exit 0 |
