@@ -71,7 +71,7 @@ Q1  ┌ 确定验收范围：产物入口、目标设备/浏览器、基线（�
 Q2  ┌ 按 acceptance-matrix 五域逐项执行断言（能力门控：缺能力即记未验证）
     ├ 每项断言记录：操作步骤 + 证据路径 + 三态标记
     └ 状态矩阵与视口矩阵必须逐格填写（缺失态写「未实现」而非留空）
-Q3  ┌ 校验报告结构：bash scripts/check-qa-report.sh <报告文件>
+Q3  ┌ 校验报告结构：python3 scripts/check-qa-report.py <报告文件>
     ├ 失败缺陷按 regression-routing.md 分流并登记
     └ 存在未验证项 → 结论 BLOCKED，交人类裁决
 Q4  ┌ 人类签收（放行权在用户）
@@ -107,4 +107,4 @@ Q4  ┌ 人类签收（放行权在用户）
 - [browser-verification-protocol.md](references/browser-verification-protocol.md) — 能力门控、证据契约、回执与阻断语义
 - [regression-routing.md](references/regression-routing.md) — 缺陷分类回流路由表与路由记录格式
 - [qa-report-template.md](templates/qa-report-template.md) — 《前端验收报告》模板（结构受脚本校验）
-- [check-qa-report.sh](scripts/check-qa-report.sh) — 报告结构机械门禁
+- [check-qa-report.py](scripts/check-qa-report.py) — 报告结构机械门禁（POSIX 下旧 `.sh` 兼容壳仍可用）

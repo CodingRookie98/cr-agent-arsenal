@@ -7,7 +7,7 @@ test_doc_governance_scripts.py - 文档治理自动化脚本全量回归单元�
   2. trim-revision.py: 修订历史滑动窗口检测、超额裁剪自愈、表头完整性保持;
   3. audit-doc-health.py: Frontmatter 解析、各象限拓扑识别、孤儿文档探测、综合评分;
   4. generate-llms-txt.py: 标题与摘要提取、llms.txt 规范生成;
-  5. scaffold-doc.sh: 各类 Diátaxis 与 RFC 脚手架自动化生成。
+  5. scaffold-doc.py: 各类 Diátaxis 与 RFC 脚手架自动化生成（POSIX 下旧 .sh 兼容壳仍可用）。
 """
 
 import json
@@ -61,7 +61,7 @@ class TestCheckDocLinks(unittest.TestCase):
         target_file = self.test_dir / "target.md"
         target_file.write_text(
             "# Target Document\n\n## Section One\nContent\n\n## 中文章节\nMore content\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         source_file = self.test_dir / "source.md"
@@ -71,7 +71,7 @@ class TestCheckDocLinks(unittest.TestCase):
             "- [Go to Section](./target.md#section-one)\n"
             "- [Go to Chinese](./target.md#中文章节)\n"
             "- [External](https://google.com)\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         cache = {}
@@ -81,7 +81,7 @@ class TestCheckDocLinks(unittest.TestCase):
     def test_detect_404_broken_link(self):
         """测试探测 404 不存在的链接"""
         source_file = self.test_dir / "source.md"
-        source_file.write_text("- [Broken Link](./non-existent.md)\n", encoding="utf-8")
+        source_file.write_text("- [Broken Link](./non-existent.md)\n", encoding="utf-8", newline="\n")
 
         cache = {}
         errs = check_doc_links.check_file_links(source_file, self.test_dir, cache, strict_md_extension=True)
@@ -91,11 +91,11 @@ class TestCheckDocLinks(unittest.TestCase):
     def test_detect_missing_md_extension(self):
         """测试严格模式下检测缺少 .md 后缀的 Markdown 链接"""
         target_file = self.test_dir / "target.md"
-        target_file.write_text("# Target\n", encoding="utf-8")
+        target_file.write_text("# Target\n", encoding="utf-8", newline="\n")
 
         source_file = self.test_dir / "source.md"
         # 故意省略 .md
-        source_file.write_text("- [Link without ext](./target)\n", encoding="utf-8")
+        source_file.write_text("- [Link without ext](./target)\n", encoding="utf-8", newline="\n")
 
         cache = {}
         # 目标 ./target 实际不存在因此会报 404
@@ -106,10 +106,10 @@ class TestCheckDocLinks(unittest.TestCase):
     def test_detect_missing_anchor(self):
         """测试目标文件存在但锚点不存在的错误"""
         target_file = self.test_dir / "target.md"
-        target_file.write_text("# Target Doc\n\n## Existing Section\n", encoding="utf-8")
+        target_file.write_text("# Target Doc\n\n## Existing Section\n", encoding="utf-8", newline="\n")
 
         source_file = self.test_dir / "source.md"
-        source_file.write_text("- [Bad Anchor](./target.md#ghost-section)\n", encoding="utf-8")
+        source_file.write_text("- [Bad Anchor](./target.md#ghost-section)\n", encoding="utf-8", newline="\n")
 
         cache = {}
         errs = check_doc_links.check_file_links(source_file, self.test_dir, cache, strict_md_extension=True)
@@ -124,7 +124,7 @@ class TestCheckDocLinks(unittest.TestCase):
             "行内图片代码: `![alt](url \"title\")` 以及 `[link](fake.md)`\n"
             "双反引号代码: `` `[xxx.md](./path/xxx.md)` ``\n"
             "合规自引用: [Self](./source.md)\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         cache = {}
         errs = check_doc_links.check_file_links(source_file, self.test_dir, cache, strict_md_extension=True)
@@ -151,7 +151,7 @@ class TestTrimRevision(unittest.TestCase):
             "| V1.0.0 | 2026-09-01 | Alice | Bob | 首次创建 |\n"
             "| V1.1.0 | 2026-09-02 | Alice | Bob | 新增功能 |\n\n"
             "## 1. 正文内容\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         overflow, count, new_content = trim_revision.process_markdown_file(doc, max_keep=5, fix=True)
@@ -175,7 +175,7 @@ class TestTrimRevision(unittest.TestCase):
             "| V1.5.0 | 2026-09-06 | Alice | Bob | 历史 6 |\n"
             "| V1.6.0 | 2026-09-07 | Alice | Bob | 历史 7 |\n\n"
             "## 1. 正文内容\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         # 1. 检查模式 (fix=False)
@@ -232,21 +232,21 @@ class TestAuditDocHealth(unittest.TestCase):
         t1.write_text(
             "---\nversion: V1.0.0\nid: TUT-001\n---\n"
             "# Quick Start\n\n- [Check HowTo](../how-to/deploy.md)\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         h1 = self.test_dir / "how-to" / "deploy.md"
         h1.write_text(
             "---\nversion: V1.0.0\nid: HOW-001\n---\n"
             "# Deploy Guide\n\nContent\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         # 根目录 index.md 引用 t1
         idx = self.test_dir / "index.md"
         idx.write_text(
             "# Index\n\n- [Tutorial](./tutorials/quick-start.md)\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         report = audit_doc_health.audit_health(self.test_dir, compat_mode=False)
@@ -266,7 +266,7 @@ class TestAuditDocHealth(unittest.TestCase):
             "| 版本号 | 修订日期 | 修订人 | 修订描述 |\n"
             "| :--- | :--- | :--- | :--- |\n"
             "| **V2.4.0** | 2026-10-03 | Agent | 漏登 2.4.1 |\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         report = audit_doc_health.audit_health(self.test_dir, compat_mode=False)
         self.assertIn("version_drift_files", report)
@@ -291,13 +291,13 @@ class TestGenerateLlmsTxt(unittest.TestCase):
         rfc = self.test_dir / "proposals" / "RFC-0001-test.md"
         rfc.write_text(
             "# RFC-0001: 协同画布设计\n\n> 描述: 这是一个协同画布提案\n\n正文内容\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         ref = self.test_dir / "reference" / "api.md"
         ref.write_text(
             "# API Specifications\n\n权威 API 接口规格说明\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         out_file = self.test_dir / "llms.txt"
@@ -312,7 +312,7 @@ class TestGenerateLlmsTxt(unittest.TestCase):
 
 
 class TestScaffoldDocSh(unittest.TestCase):
-    """测试脚手架生成脚本"""
+    """测试脚手架生成脚本（契约迁移：`.sh` 退役为转发壳，默认调用 `.py`）。"""
 
     def setUp(self):
         self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_scaffold_"))
@@ -322,17 +322,17 @@ class TestScaffoldDocSh(unittest.TestCase):
 
     def test_scaffold_all_types(self):
         """测试生成 tutorial, how-to, reference, explanation, adr, rfc 各类脚手架"""
-        scaffold_script = SCRIPTS_DIR / "scaffold-doc.sh"
+        scaffold_script = SCRIPTS_DIR / "scaffold-doc.py"
         self.assertTrue(scaffold_script.exists())
 
         types = ["tutorial", "how-to", "reference", "explanation", "adr", "rfc"]
         for t in types:
             res = subprocess.run(
-                [str(scaffold_script), t, f"test-{t}", "--root", str(self.test_dir)],
+                [sys.executable, str(scaffold_script), t, f"test-{t}", "--root", str(self.test_dir)],
                 capture_output=True,
-                text=True,
+                text=True, encoding="utf-8",
             )
-            self.assertEqual(res.returncode, 0, f"scaffold-doc.sh {t} 失败: {res.stderr}")
+            self.assertEqual(res.returncode, 0, f"scaffold-doc.py {t} 失败: {res.stderr}")
 
         # 检查生成的文件
         self.assertTrue((self.test_dir / "tutorials" / "test-tutorial.md").exists())
@@ -341,6 +341,32 @@ class TestScaffoldDocSh(unittest.TestCase):
         self.assertTrue((self.test_dir / "explanation" / "test-explanation.md").exists())
         self.assertTrue((self.test_dir / "explanation" / "decisions" / "0001-test-adr.md").exists())
         self.assertTrue((self.test_dir / "proposals" / "RFC-0001-test-rfc.md").exists())
+
+    @unittest.skipIf(sys.platform == "win32" or shutil.which("bash") is None,
+                     "POSIX 兼容壳仅在 POSIX + bash 环境可执行")
+    def test_compat_shim_forwards_to_python(self):
+        """L4 壳等价性（契约迁移）：`bash scaffold-doc.sh` 与 `.py` 的 rc/stdout 与产物必须一致。"""
+        shim_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_scaffold_shim_"))
+        self.addCleanup(shutil.rmtree, shim_dir, True)
+        py_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_scaffold_py_"))
+        self.addCleanup(shutil.rmtree, py_dir, True)
+
+        py_res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "scaffold-doc.py"),
+             "tutorial", "shim", "--root", str(py_dir)],
+            capture_output=True, text=True, encoding="utf-8")
+        sh_res = subprocess.run(
+            ["bash", str(SCRIPTS_DIR / "scaffold-doc.sh"),
+             "tutorial", "shim", "--root", str(shim_dir)],
+            capture_output=True, text=True, encoding="utf-8")
+
+        self.assertEqual(sh_res.returncode, py_res.returncode)
+        self.assertEqual(sh_res.returncode, 0, sh_res.stderr)
+        # 两侧唯一差异是沙箱根路径，故归一化后 stdout 必须逐字相同
+        self.assertEqual(sh_res.stdout.replace(str(shim_dir), "<ROOT>"),
+                         py_res.stdout.replace(str(py_dir), "<ROOT>"))
+        self.assertEqual((shim_dir / "tutorials" / "shim.md").read_text(encoding="utf-8"),
+                         (py_dir / "tutorials" / "shim.md").read_text(encoding="utf-8"))
 
 
 class TestEvidenceArchiveExemption(unittest.TestCase):
@@ -361,7 +387,7 @@ class TestEvidenceArchiveExemption(unittest.TestCase):
         arch = self.test_dir / "project" / "reviews" / "2026-01-01-demo"
         arch.mkdir(parents=True, exist_ok=True)
         for name in files:
-            (arch / name).write_text("# 审查报告\n\n无控制头的逐字原文\n", encoding="utf-8")
+            (arch / name).write_text("# 审查报告\n\n无控制头的逐字原文\n", encoding="utf-8", newline="\n")
         return arch
 
     def test_health_exempts_evidence_archive(self):
@@ -372,7 +398,7 @@ class TestEvidenceArchiveExemption(unittest.TestCase):
             "> - **当前版本**: V1.0.0\n"
             "> - **维护负责人**: t\n"
             "> - **生效日期**: 2026-01-01\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         res = audit_doc_health.audit_health(self.test_dir)
         self.assertNotIn("error", res)
@@ -383,7 +409,7 @@ class TestEvidenceArchiveExemption(unittest.TestCase):
     def test_link_check_exempts_evidence_archive(self):
         self._make_archive(files=("r1-x.md",))
         (self.test_dir / "project" / "reviews" / "2026-01-01-demo" / "r1-x.md").write_text(
-            "[broken](./nope.md)\n", encoding="utf-8")
+            "[broken](./nope.md)\n", encoding="utf-8", newline="\n")
         total, errors, _ = check_doc_links.scan_directory(self.test_dir, [], strict_md=True)
         self.assertEqual(total, 0, "归档报告不得计入断链扫描文件数")
         self.assertEqual(errors, 0, "归档报告内的相对链接不得被判为断链")
@@ -403,7 +429,7 @@ class TestBacklogAudit(unittest.TestCase):
         (self.test_dir / "index.md").write_text(
             "> **文档控制信息**\n> - **文档标识**: DOC-001\n> - **当前版本**: V1.0.0\n\n"
             "# Index\n\n- [Backlog](./project/backlog.md)\n- [Archive](./project/archive/backlog-v0.9.md)\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         proj_dir = self.test_dir / "project"
         arch_dir = proj_dir / "archive"
@@ -423,7 +449,7 @@ class TestBacklogAudit(unittest.TestCase):
             "- [ ] **BK-0005** `[Type:Security]` `[Pri:P0]` 凭据泄露防护拦截\n"
             "  - **来源**: R1 审查建议\n"
             "  - **验收**: 403 严格 Fail-Closed\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         (arch_dir / "backlog-v0.9.md").write_text(
@@ -431,7 +457,7 @@ class TestBacklogAudit(unittest.TestCase):
             "# v0.9.0 已结项归档\n\n"
             "- [x] **BK-0001** `[Type:Feature]` `[Pri:P1]` 多租户行级隔离 (2026-09-11 交付)\n"
             "- [x] **BK-0002** `[Type:Bug]` `[Pri:P0]` 修复登录空指针异常 (2026-09-12 交付)\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         res = audit_doc_health.audit_health(self.test_dir)
@@ -463,12 +489,12 @@ class TestBacklogAudit(unittest.TestCase):
         hot_file.write_text(
             "- [ ] **BK-0001** 有编号条目\n"
             "- [ ] 没有编号的条目\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         cold_file = arch_dir / "backlog-v0.1.md"
         cold_file.write_text(
             "- [x] **BK-0001** 冷区重号条目\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
 
         issues, warnings, metrics = audit_doc_health.audit_backlog(self.test_dir, [hot_file, cold_file])
@@ -486,7 +512,7 @@ class TestBacklogAudit(unittest.TestCase):
             "## 进行中\n- [ ] **BK-0001** 进行中项\n\n"
             "## 已关闭\n- [x] **BK-0002** 已完成项滞留在热区\n"
         )
-        hot_file.write_text(content, encoding="utf-8")
+        hot_file.write_text(content, encoding="utf-8", newline="\n")
 
         issues, warnings, metrics = audit_doc_health.audit_backlog(self.test_dir, [hot_file])
         self.assertEqual(issues, [])
@@ -629,7 +655,7 @@ class TestManageBacklogAndFormB(unittest.TestCase):
         # 合规形态 B 索引与条目
         (backlog_dir / "index.md").write_text(
             "> **文档控制信息**\n> - **文档标识**: BK-INDEX\n> - **当前版本**: V2.0.0\n\n# Backlog Index\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         manage_backlog.dump_item_file(
             active_dir / "BK-0001-active.md",
@@ -721,7 +747,7 @@ class TestCheckDocControlSync(unittest.TestCase):
             "| :--- | :--- | :--- | :--- |\n"
             "| **V1.4.0** | 2026-10-04 | Agent | 最新特性升级 |\n"
             "| **V1.3.0** | 2026-09-16 | Agent | 初始版本 |\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         is_synced, h_ver, r_ver, err = check_doc_control_sync.check_file_version_sync(doc)
         self.assertTrue(is_synced)
@@ -739,7 +765,7 @@ class TestCheckDocControlSync(unittest.TestCase):
             "| 版本号 | 修订日期 | 修订人 | 修订描述 |\n"
             "| :--- | :--- | :--- | :--- |\n"
             "| **V2.4.0** | 2026-10-03 | Agent | 历史发布版本（漏记 V2.4.1） |\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         is_synced, h_ver, r_ver, err = check_doc_control_sync.check_file_version_sync(doc)
         self.assertFalse(is_synced)
@@ -752,12 +778,12 @@ class TestCheckDocControlSync(unittest.TestCase):
         doc_ok = self.test_dir / "ok.md"
         doc_ok.write_text(
             "# OK\n\n> - **当前版本**: V1.0.0\n\n### 修订历史\n\n| 版本号 | 描述 |\n| :--- | :--- |\n| V1.0.0 | 初始 |\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         doc_bad = self.test_dir / "bad.md"
         doc_bad.write_text(
             "# BAD\n\n> - **当前版本**: V2.0.0\n\n### 修订历史\n\n| 版本号 | 描述 |\n| :--- | :--- |\n| V1.9.0 | 漏升 |\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         total, drifts = check_doc_control_sync.scan_version_sync(self.test_dir)
         self.assertEqual(total, 2)
@@ -787,7 +813,7 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
         ]
         for i in range(rows):
             body.append(f"| **V1.0.{i}** | 2026-01-0{i + 1} | AI Agent | 架构师 | r{i} |")
-        path.write_text("\n".join(body) + "\n", encoding="utf-8")
+        path.write_text("\n".join(body) + "\n", encoding="utf-8", newline="\n")
         return path
 
     def test_trim_revision_exempts_archive_reports(self):
@@ -819,7 +845,7 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
         """BK-0021：--output 缺省时落点随 --root 派生，隔离复算成立"""
         docs = self.test_dir / "docs"
         (docs / "explanation").mkdir(parents=True)
-        (docs / "explanation" / "a.md").write_text("# A\n\n正文段落\n", encoding="utf-8")
+        (docs / "explanation" / "a.md").write_text("# A\n\n正文段落\n", encoding="utf-8", newline="\n")
         cwd = self.test_dir / "cwd"
         cwd.mkdir()
 
@@ -908,7 +934,7 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
         archived_dir = self.test_dir / "docs" / "project" / "reviews"
         archived_dir.mkdir(parents=True)
         (self.test_dir / "docs" / "explanation").mkdir(parents=True, exist_ok=True)
-        (self.test_dir / "docs" / "explanation" / "a.md").write_text("# A\n\n正文\n", encoding="utf-8")
+        (self.test_dir / "docs" / "explanation" / "a.md").write_text("# A\n\n正文\n", encoding="utf-8", newline="\n")
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
@@ -926,7 +952,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         self.test_dir = Path(tempfile.mkdtemp(prefix="doc_gov_test_batch_b_"))
         self.docs = self.test_dir / "docs"
         (self.docs / "explanation").mkdir(parents=True)
-        (self.docs / "explanation" / "a.md").write_text("# A 文档\n\n正文段落。\n", encoding="utf-8")
+        (self.docs / "explanation" / "a.md").write_text("# A 文档\n\n正文段落。\n", encoding="utf-8", newline="\n")
 
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
@@ -942,7 +968,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         archived_dir = self.docs / "project" / "reviews"
         archived_dir.mkdir(parents=True)
         victim = archived_dir / "victim.md"
-        victim.write_text("# 归档受害者\n\n逐字凭据\n", encoding="utf-8")
+        victim.write_text("# 归档受害者\n\n逐字凭据\n", encoding="utf-8", newline="\n")
         before = victim.read_bytes()
         try:
             (self.docs / "llms.txt").symlink_to(Path("project") / "reviews" / "victim.md")
@@ -959,7 +985,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         shutil.rmtree(self.docs / "explanation")
         archived_dir = self.docs / "project" / "reviews"
         archived_dir.mkdir(parents=True)
-        (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8")
+        (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8", newline="\n")
 
         res = self._run_llms()
 
@@ -968,7 +994,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
 
     def test_audit_detects_llms_map_drift(self):
         """BK-0025：机器地图与注册命令生成物不一致时，健康门禁必须报出"""
-        (self.docs / "llms.txt").write_text("# Stale Map\n\n- 过期的条目\n", encoding="utf-8")
+        (self.docs / "llms.txt").write_text("# Stale Map\n\n- 过期的条目\n", encoding="utf-8", newline="\n")
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
@@ -1013,10 +1039,10 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         """R1-1：无可收录文档时不得形成不可修复的硬阻断死胡同"""
         shutil.rmtree(self.docs / "explanation")
         # 根文件不入机器地图但计入 total_files，用于绕过 audit 的 total_files==0 早退（否则本用例空转）
-        (self.docs / "index.md").write_text("# 索引\n\n根文件不进入机器地图。\n", encoding="utf-8")
+        (self.docs / "index.md").write_text("# 索引\n\n根文件不进入机器地图。\n", encoding="utf-8", newline="\n")
         archived_dir = self.docs / "project" / "reviews"
         archived_dir.mkdir(parents=True)
-        (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8")
+        (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8", newline="\n")
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
@@ -1043,11 +1069,11 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         而非「该状态下地图条目已被校验」这一正确性契约——见 GOVERNANCE §4.1 零覆盖态边界。
         """
         shutil.rmtree(self.docs / "explanation")
-        (self.docs / "index.md").write_text("# 索引\n\n根文件不进入机器地图。\n", encoding="utf-8")
+        (self.docs / "index.md").write_text("# 索引\n\n根文件不进入机器地图。\n", encoding="utf-8", newline="\n")
         archived_dir = self.docs / "project" / "reviews"
         archived_dir.mkdir(parents=True)
-        (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8")
-        (self.docs / "llms.txt").write_text("# 陈旧地图\n\n- 旧条目\n", encoding="utf-8")
+        (archived_dir / "only.md").write_text("# 仅归档\n\n正文\n", encoding="utf-8", newline="\n")
+        (self.docs / "llms.txt").write_text("# 陈旧地图\n\n- 旧条目\n", encoding="utf-8", newline="\n")
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
@@ -1072,10 +1098,10 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         shutil.rmtree(self.docs / "explanation", ignore_errors=True)
         (self.docs / "explanation").mkdir(parents=True, exist_ok=True)
         (self.docs / "explanation" / "a.md").write_text(
-            "# A 文档\n\n" + self._CTRL.format(doc_id="DOC-A"), encoding="utf-8")
+            "# A 文档\n\n" + self._CTRL.format(doc_id="DOC-A"), encoding="utf-8", newline="\n")
         (self.docs / "index.md").write_text(
             "# 索引\n\n" + self._CTRL.format(doc_id="DOC-IDX") + "\n- [A 文档](./explanation/a.md)\n",
-            encoding="utf-8")
+            encoding="utf-8", newline="\n")
 
     def test_audit_blocks_drift_on_a_perfect_tree(self):
         """BK-0025：合规树上的漂移必须阻断——锁定 PASS 接线承重（防 MUT-E1 空转）"""
@@ -1088,7 +1114,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         self.assertEqual(baseline.returncode, 0,
                          f"夹具本身必须是 PASS 的合规树：{baseline.stdout}{baseline.stderr}")
 
-        (self.docs / "llms.txt").write_text("# Stale Map\n\n- 过期条目\n", encoding="utf-8")
+        (self.docs / "llms.txt").write_text("# Stale Map\n\n- 过期条目\n", encoding="utf-8", newline="\n")
         drifted = subprocess.run(audit_cmd, capture_output=True, text=True)
 
         self.assertNotEqual(drifted.returncode, 0,
@@ -1114,10 +1140,10 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
         self.docs = self.test_dir / "docs"
         (self.docs / "explanation").mkdir(parents=True)
         (self.docs / "explanation" / "a.md").write_text(
-            "# A 文档\n\n" + self._CTRL.format(doc_id="DOC-A"), encoding="utf-8")
+            "# A 文档\n\n" + self._CTRL.format(doc_id="DOC-A"), encoding="utf-8", newline="\n")
         (self.docs / "index.md").write_text(
             "# 索引\n\n" + self._CTRL.format(doc_id="DOC-IDX") + "\n- [A 文档](./explanation/a.md)\n",
-            encoding="utf-8")
+            encoding="utf-8", newline="\n")
 
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
@@ -1125,7 +1151,7 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
     def _write_drifted_map(self, project_name):
         """写入首行为指定项目名的漂移地图（触发一致性缺陷并带上该项目名）。"""
         (self.docs / "llms.txt").write_text(
-            f"# {project_name} Machine-Readable Knowledge Base Map\n\n- 过期条目\n", encoding="utf-8")
+            f"# {project_name} Machine-Readable Knowledge Base Map\n\n- 过期条目\n", encoding="utf-8", newline="\n")
 
     def _audit(self):
         return subprocess.run(
@@ -1293,10 +1319,10 @@ class TestBatchDIdentityContract(unittest.TestCase):
         self.docs = self.test_dir / "docs"
         (self.docs / "explanation").mkdir(parents=True)
         (self.docs / "explanation" / "a.md").write_text(
-            "# A 文档\n\n" + self._CTRL.format(doc_id="DOC-A"), encoding="utf-8")
+            "# A 文档\n\n" + self._CTRL.format(doc_id="DOC-A"), encoding="utf-8", newline="\n")
         (self.docs / "index.md").write_text(
             "# 索引\n\n" + self._CTRL.format(doc_id="DOC-IDX") + "\n- [A 文档](./explanation/a.md)\n",
-            encoding="utf-8")
+            encoding="utf-8", newline="\n")
 
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
@@ -1315,7 +1341,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
 
     def _write_map(self, head: str) -> Path:
         path = self.docs / "llms.txt"
-        path.write_text(head, encoding="utf-8")
+        path.write_text(head, encoding="utf-8", newline="\n")
         return path
 
     def test_regeneration_keeps_identity_and_passes(self):
@@ -1452,7 +1478,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
         同时必须给出唯一有效通道（先移除既有地图）。
         """
         (self.docs / "llms.txt").write_text(
-            "# Foo Machine-Readable Knowledge Base Map  \n\n- 漂移条目\n", encoding="utf-8")
+            "# Foo Machine-Readable Knowledge Base Map  \n\n- 漂移条目\n", encoding="utf-8", newline="\n")
 
         res = self._audit()
         out = res.stdout + res.stderr
@@ -1465,7 +1491,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
         """DR1-2 正向：H1 合法且漂移时，审计下发的 --name 必须真的可执行（含名字带空格）"""
         name = "A 运行 B"
         (self.docs / "llms.txt").write_text(
-            f"# {name} Machine-Readable Knowledge Base Map\n\n- 漂移条目\n", encoding="utf-8")
+            f"# {name} Machine-Readable Knowledge Base Map\n\n- 漂移条目\n", encoding="utf-8", newline="\n")
 
         res = self._audit()
         out = res.stdout + res.stderr
@@ -1505,7 +1531,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
     def test_generator_does_not_normalize_identity_whitespace(self):
         """R1-5：既有 H1 含行边界空白时必须拒绝，不得静默归一化为去空白后的身份"""
         (self.docs / "llms.txt").write_text(
-            "# Foo Machine-Readable Knowledge Base Map  \n\n- 漂移条目\n", encoding="utf-8")
+            "# Foo Machine-Readable Knowledge Base Map  \n\n- 漂移条目\n", encoding="utf-8", newline="\n")
         before = (self.docs / "llms.txt").read_bytes()
 
         res = self._run_llms("--output", str(self.docs / "llms.txt"))
@@ -1530,7 +1556,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
     def test_generation_failure_leaves_no_partial_map(self):
         """R1-5 / R1-23：生成失败不得留下半成品地图或临时残 file"""
         bad_name = b"bad" + bytes([0xFF]) + b".md"
-        (self.docs / "explanation" / os.fsdecode(bad_name)).write_text("# B\n\n正文\n", encoding="utf-8")
+        (self.docs / "explanation" / os.fsdecode(bad_name)).write_text("# B\n\n正文\n", encoding="utf-8", newline="\n")
 
         res = self._run_llms("--output", str(self.docs / "llms.txt"))
 
@@ -1542,7 +1568,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
     def test_preset_tmp_symlink_is_not_followed(self):
         """R1-21 / R1-23：预置的 llms.txt.tmp 软链不得被跟随（影子路径写保护）"""
         victim = self.docs / "victim.txt"
-        victim.write_text("原始内容\n", encoding="utf-8")
+        victim.write_text("原始内容\n", encoding="utf-8", newline="\n")
         before = victim.read_bytes()
         (self.docs / "llms.txt.tmp").symlink_to(victim)
 
@@ -1569,7 +1595,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
     def test_branch2_prescription_recommends_registered_command(self):
         """R1-20 / R1-28：身份可反解但不可安全回显时，处方必须指向注册命令而非劝离删除"""
         (self.docs / "llms.txt").write_text(
-            "# A\x07B Machine-Readable Knowledge Base Map\n\n- 漂移条目\n", encoding="utf-8")
+            "# A\x07B Machine-Readable Knowledge Base Map\n\n- 漂移条目\n", encoding="utf-8", newline="\n")
 
         res = self._audit()
         out = res.stdout + res.stderr

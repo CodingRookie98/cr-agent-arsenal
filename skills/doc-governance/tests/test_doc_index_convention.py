@@ -4,8 +4,8 @@
 test_doc_index_convention.py - RFC-0003 目录级索引约定与 scaffold 索引自愈验收测试
 覆盖:
   1. manage-doc-index.py: ensure 托管索引骨架创建、人工索引零改写、register 幂等与版本联动;
-  2. scaffold-doc.sh: 产物零断链 (AS-1)、象限索引自愈与登记 (AS-2)、幂等 (AS-3)、
-     人工索引只读与链接降级 (AS-4);
+  2. scaffold-doc.py: 产物零断链 (AS-1)、象限索引自愈与登记 (AS-2)、幂等 (AS-3)、
+     人工索引只读与链接降级 (AS-4)（POSIX 下旧 .sh 兼容壳仍可用）;
   3. 技能规范补登记断言 (G1): SKILL.md / 设计书 / GOVERNANCE.md 的象限索引契约。
 """
 
@@ -40,9 +40,10 @@ class IndexConventionTestBase(unittest.TestCase):
 
     def run_scaffold(self, *args):
         return subprocess.run(
-            [str(SCRIPTS_DIR / "scaffold-doc.sh"), *args, "--root", str(self.test_dir)],
+            [sys.executable, str(SCRIPTS_DIR / "scaffold-doc.py"), *args,
+             "--root", str(self.test_dir)],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         )
 
     def run_link_check(self):
@@ -66,7 +67,7 @@ class IndexConventionTestBase(unittest.TestCase):
         """按 R1-6 契约：register 前目标文档必须真实存在。"""
         path = self.test_dir / dir_rel / filename
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
+        path.write_text(content, encoding="utf-8", newline="\n")
         return path
 
 
@@ -105,7 +106,7 @@ class TestManageDocIndexEnsure(IndexConventionTestBase):
         manual_dir = self.test_dir / "how-to"
         manual_dir.mkdir(parents=True)
         manual_body = "# 人工维护的操作指南索引\n\n> 由人手工撰写，脚本不得改写。\n"
-        (manual_dir / "index.md").write_text(manual_body, encoding="utf-8")
+        (manual_dir / "index.md").write_text(manual_body, encoding="utf-8", newline="\n")
 
         res = self.run_manage("ensure", "--root", str(self.test_dir), "--dir", "how-to")
         self.assertEqual(res.returncode, 0, res.stderr)
@@ -152,7 +153,7 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
         manual_dir = self.test_dir / "how-to"
         manual_dir.mkdir(parents=True, exist_ok=True)
         manual_body = "# 人工索引\n\n- 手工条目\n"
-        (manual_dir / "index.md").write_text(manual_body, encoding="utf-8")
+        (manual_dir / "index.md").write_text(manual_body, encoding="utf-8", newline="\n")
 
         res = self.run_manage(
             "register", "--root", str(self.test_dir), "--dir", "how-to",
@@ -178,7 +179,7 @@ class TestManageDocIndexRegister(IndexConventionTestBase):
 
 
 class TestScaffoldIndexSelfHealing(IndexConventionTestBase):
-    """scaffold-doc.sh 索引自愈与零断链闭环 (AS-1 ~ AS-4)"""
+    """scaffold-doc.py 索引自愈与零断链闭环 (AS-1 ~ AS-4)（契约迁移：`.sh` 已退役为转发壳）"""
 
     def test_how_to_scaffold_creates_and_registers_index(self):
         res = self.run_scaffold("how-to", "deployment")
@@ -249,7 +250,7 @@ class TestScaffoldIndexSelfHealing(IndexConventionTestBase):
         manual_dir = self.test_dir / "how-to"
         manual_dir.mkdir(parents=True)
         manual_body = "# 人工维护索引\n\n> 禁止脚本改写。\n"
-        (manual_dir / "index.md").write_text(manual_body, encoding="utf-8")
+        (manual_dir / "index.md").write_text(manual_body, encoding="utf-8", newline="\n")
 
         res = self.run_scaffold("how-to", "deployment")
         self.assertEqual(res.returncode, 0, res.stderr)
@@ -287,7 +288,7 @@ class TestDeltaHardening(IndexConventionTestBase):
         manual_dir = self.test_dir / "how-to"
         manual_dir.mkdir(parents=True)
         body = "# 人工索引\n\n本文件不含 <!-- doc-index:managed --> 标记，请勿改写。\n"
-        (manual_dir / "index.md").write_text(body, encoding="utf-8")
+        (manual_dir / "index.md").write_text(body, encoding="utf-8", newline="\n")
         self.prepare_doc("how-to", "deployment.md")
 
         res = self.run_manage(
@@ -302,7 +303,7 @@ class TestDeltaHardening(IndexConventionTestBase):
         entry_dir = self.test_dir / "how-to"
         entry_dir.mkdir(parents=True)
         readme = "# 人工 README 入口\n"
-        (entry_dir / "README.md").write_text(readme, encoding="utf-8")
+        (entry_dir / "README.md").write_text(readme, encoding="utf-8", newline="\n")
 
         res = self.run_manage("ensure", "--root", str(self.test_dir), "--dir", "how-to")
         self.assertEqual(res.returncode, 0, res.stderr)
@@ -313,7 +314,7 @@ class TestDeltaHardening(IndexConventionTestBase):
         """R1-3：README 入口象限不登记、不生成"""
         entry_dir = self.test_dir / "how-to"
         entry_dir.mkdir(parents=True)
-        (entry_dir / "README.md").write_text("# 人工入口\n", encoding="utf-8")
+        (entry_dir / "README.md").write_text("# 人工入口\n", encoding="utf-8", newline="\n")
         self.prepare_doc("how-to", "deployment.md")
 
         res = self.run_manage(
@@ -368,7 +369,7 @@ class TestDeltaHardening(IndexConventionTestBase):
             "| :--- | :--- | :--- | :--- | :--- |\n"
             "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n\n"
             "---\n\n## 文档清单 (Document Inventory)\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         self.prepare_doc("how-to", "deployment.md")
 
@@ -394,7 +395,7 @@ class TestDeltaHardening(IndexConventionTestBase):
             "| :--- | :--- | :--- | :--- | :--- |\n"
             "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n"
         )
-        (index_dir / "index.md").write_text(original, encoding="utf-8")
+        (index_dir / "index.md").write_text(original, encoding="utf-8", newline="\n")
         self.prepare_doc("how-to", "deployment.md")
 
         res = self.run_manage(
@@ -419,7 +420,7 @@ class TestDeltaHardening(IndexConventionTestBase):
             "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
             "| :--- | :--- | :--- | :--- | :--- |\n"
             "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         self.prepare_doc("how-to", "deployment.md")
 
@@ -457,7 +458,7 @@ class TestDeltaHardening(IndexConventionTestBase):
             "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
             "| :--- | :--- | :--- | :--- | :--- |\n"
             "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n",
-            encoding="utf-8",
+            encoding="utf-8", newline="\n",
         )
         self.prepare_doc("how-to", "deployment.md")
 
@@ -483,7 +484,7 @@ class TestDeltaHardening(IndexConventionTestBase):
             "| :--- | :--- | :--- |\n"
             "| **V0.9.0** | 全量 | 无修订历史章节 |\n"
         )
-        (index_dir / "index.md").write_text(original, encoding="utf-8")
+        (index_dir / "index.md").write_text(original, encoding="utf-8", newline="\n")
         self.prepare_doc("how-to", "deployment.md")
 
         res = self.run_manage(
@@ -523,7 +524,7 @@ class TestDeltaHardening(IndexConventionTestBase):
                 "| :--- | :--- | :--- | :--- | :--- |\n"
                 "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n\n"
                 "---\n\n## 文档清单 (Document Inventory)\n")
-        (index_dir / "index.md").write_text(body, encoding="utf-8")
+        (index_dir / "index.md").write_text(body, encoding="utf-8", newline="\n")
         self.prepare_doc("how-to", "deployment.md")
 
         res = self.run_manage(
@@ -545,7 +546,7 @@ class TestDeltaHardening(IndexConventionTestBase):
                 "| :--- | :--- | :--- | :--- | :--- |\n"
                 "| **V1.0.0** | 2026-01-01 | AI Agent | 架构师 | 初始化 |\n\n"
                 "---\n\n## 文档清单 (Document Inventory)\n")
-        (index_dir / "index.md").write_text(body, encoding="utf-8")
+        (index_dir / "index.md").write_text(body, encoding="utf-8", newline="\n")
         self.prepare_doc("how-to", "deployment.md")
 
         res = self.run_manage(
@@ -559,7 +560,7 @@ class TestDeltaHardening(IndexConventionTestBase):
         """DR1-4：--dir 经符号链接解析为 root 本身时必须拒绝（N3）"""
         docs = self.test_dir / "docs"
         docs.mkdir(parents=True)
-        (docs / "index.md").write_text("# 人工根索引\n", encoding="utf-8")
+        (docs / "index.md").write_text("# 人工根索引\n", encoding="utf-8", newline="\n")
         try:
             (docs / "self").symlink_to(docs)
         except OSError:

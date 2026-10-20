@@ -106,7 +106,7 @@ docs/
 | 象限/子目录 | `<dir>/index.md` 或 `<dir>/README.md` | 本目录分流入口，**按需存在、非强制** | 托管（脚本）或人工 |
 
 1. **目录即入口铁律**：任何链接指向目录时，该目录必须含 `index.md` 或 `README.md`（由 `check-doc-links.py` 强制校验）；
-2. **托管索引自动生成**：`scaffold-doc.sh` 生成文档后自动调用 [manage-doc-index.py](./scripts/manage-doc-index.py) 创建象限索引并**幂等登记**本文档；托管索引正文含标记 `<!-- doc-index:managed -->`，携带标准控制头并随登记递增补丁版本（修订历史恒 ≤ 5 条）；
+2. **托管索引自动生成**：`scaffold-doc.py` 生成文档后自动调用 [manage-doc-index.py](./scripts/manage-doc-index.py) 创建象限索引并**幂等登记**本文档；托管索引正文含标记 `<!-- doc-index:managed -->`，携带标准控制头并随登记递增补丁版本（修订历史恒 ≤ 5 条）；
 3. **人工索引零改写**：不含托管标记的索引视为人工维护，脚本只读不改（安全 no-op）；
 4. **严禁追溯性空索引**：象限索引按需生成，严禁为凑齐拓扑批量创建空目录与空索引；
 5. **收录边界**：象限索引只收录本目录**直属**文档，跨象限收录统一归根级 `docs/index.md`。
@@ -142,7 +142,7 @@ docs/
 5. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt`，刷新供智能体消费的拓扑地图。
 
 ### 模式 3：脚手架与结晶归档 (Scaffold & Archive Mode)
-1. **新建文档/提案**：运行 `scripts/scaffold-doc.sh <type> <name>`（如 `scaffold-doc.sh rfc canvas-collab`），基于规范模板创建脚手架，自动填入合规控制头，并自动 ensure 象限索引与登记本文档（跨象限链接按目标索引是否存在自动降级，杜绝 404）；
+1. **新建文档/提案**：运行 `python3 scripts/scaffold-doc.py <type> <name>`（如 `scaffold-doc.py rfc canvas-collab`），基于规范模板创建脚手架，自动填入合规控制头，并自动 ensure 象限索引与登记本文档（跨象限链接按目标索引是否存在自动降级，杜绝 404）；
 2. **初期 RFC 对齐**：在 `docs/proposals/` 单文档中闭环业务故事、契约草案与选型权衡；
 3. **定案结晶下沉**：方案批准后，遵循 [rfc-crystallization-lifecycle.md](./references/rfc-crystallization-lifecycle.md) 将接口、规则、架构解构沉淀至 Diátaxis 对应目录；
 4. **提案归档防腐**：原 RFC 标记为 `Implemented` 并移至 `docs/proposals/archive/`，加注防腐历史备忘。
@@ -177,5 +177,5 @@ docs/
 
 | 模板 | 用途 |
 |:---|:---|
-| [doc-control-header.md](./templates/doc-control-header.md) | 手写／迁移文档的控制头、修订历史与填写规则骨架（`scaffold-doc.sh` 之外的手写文档） |
+| [doc-control-header.md](./templates/doc-control-header.md) | 手写／迁移文档的控制头、修订历史与填写规则骨架（`scaffold-doc.py` 之外的手写文档） |
 | [change-registration.md](./templates/change-registration.md) | 变更联动登记骨架（影响面扫描 → 四类同步 → 门禁证据 → 未同步项） |

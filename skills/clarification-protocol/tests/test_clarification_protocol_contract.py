@@ -11,8 +11,12 @@
 """
 
 import re
+import shutil
 import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL_MD = SKILL_DIR / "SKILL.md"
@@ -20,7 +24,11 @@ DECISION_LEDGER = SKILL_DIR / "references" / "decision-ledger.md"
 CONVERGENCE = SKILL_DIR / "references" / "convergence-checklist.md"
 LEDGER_TEMPLATE = SKILL_DIR / "templates" / "decision-ledger-template.md"
 RFC_TEMPLATE = SKILL_DIR / "templates" / "requirement-confirmation-template.md"
-CHECKER = SKILL_DIR / "scripts" / "check-decision-ledger.sh"
+CHECKER = SKILL_DIR / "scripts" / "check-decision-ledger.py"
+CHECKER_SH = SKILL_DIR / "scripts" / "check-decision-ledger.sh"
+
+# 兼容壳（旧 .sh 调用面）转发测试仅在 POSIX + bash 环境执行；Windows 保留 .py 调用面。
+BASH_AVAILABLE = sys.platform != "win32" and shutil.which("bash") is not None
 
 DELIVERABLES = [DECISION_LEDGER, CONVERGENCE, LEDGER_TEMPLATE, RFC_TEMPLATE, CHECKER]
 
@@ -293,19 +301,31 @@ GOOD_LEDGER = """# 决策台账 · 示例项目
 
 
 def run_checker(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["bash", str(CHECKER), *args], capture_output=True, text=True)
+    return subprocess.run(
+        [sys.executable, str(CHECKER), *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
 
 
 def write_ledger(tmp_path: Path, text: str) -> Path:
     path = tmp_path / "decision-ledger.md"
-    path.write_text(text, encoding="utf-8")
+    # newline="\n" 固化台账行尾：Windows 下 write_text 默认把 \n 翻成 \r\n，
+    # 而台账校验（与原 Bash/awk 行为一致）不把行尾 \r 视作空白，会产生平台相关假失败。
+    path.write_text(text, encoding="utf-8", newline="\n")
     return path
 
 
-def test_checker_script_declares_strict_mode():
+def test_checker_script_declares_python_entrypoint():
+    """契约迁移：原断言 .sh 的 `#!/usr/bin/env bash` + `set -euo pipefail`。
+
+    实现迁移为 check-decision-ledger.py 后改为断言 .py 的入口契约；旧 .sh 调用面
+    由下方兼容壳契约用例覆盖（壳仍保留 shebang 与 set -euo pipefail 并转发到 .py）。
+    """
     text = read(CHECKER)
-    assert text.startswith("#!/usr/bin/env bash")
-    assert "set -euo pipefail" in text, "校验脚本必须 set -euo pipefail"
+    assert text.startswith("#!/usr/bin/env python3"), "校验脚本必须声明 Python 3 shebang"
+    assert 'if __name__ == "__main__":' in text, "校验脚本必须提供 __main__ 入口"
 
 
 def test_checker_passes_on_compliant_ledger(tmp_path):
@@ -382,3 +402,28 @@ def test_checker_is_read_only(tmp_path):
     run_checker(str(path))
     after = {p.name: p.stat().st_mtime_ns for p in tmp_path.iterdir()}
     assert before == after, "校验脚本不得写入或触碰文件"
+
+
+# --- 兼容壳（旧 .sh 调用面）----------------------------------------------------
+
+@pytest.mark.skipif(not BASH_AVAILABLE, reason="兼容壳契约仅在 POSIX + bash 环境验证")
+def test_compat_shell_declares_forward_contract():
+    """旧 .sh 退役为兼容壳：保留 shebang/set -euo pipefail，并 exec 转发到同目录 .py。"""
+    text = read(CHECKER_SH)
+    assert text.startswith("#!/usr/bin/env bash"), "兼容壳必须是 bash 脚本"
+    assert "set -euo pipefail" in text, "兼容壳必须 set -euo pipefail"
+    assert "exec python3" in text, "兼容壳必须以 exec python3 转发（保留退出码）"
+    assert "check-decision-ledger.py" in text, "兼容壳必须转发到同目录 Python 实现"
+
+
+@pytest.mark.skipif(not BASH_AVAILABLE, reason="兼容壳转发仅在 POSIX + bash 环境验证")
+def test_compat_shell_forwards_to_python_implementation(tmp_path):
+    """旧 .sh 调用仍可用：stdout/退出码与 .py 完全一致（Windows 无 bash，由 .py 主路径覆盖）。"""
+    ledger = write_ledger(tmp_path, GOOD_LEDGER)
+    shell_run = subprocess.run(
+        ["bash", str(CHECKER_SH), str(ledger)], capture_output=True, text=True, encoding="utf-8"
+    )
+    py_run = run_checker(str(ledger))
+    assert shell_run.returncode == py_run.returncode == 0, shell_run.stdout + shell_run.stderr
+    assert shell_run.stdout == py_run.stdout
+    assert shell_run.stderr == py_run.stderr

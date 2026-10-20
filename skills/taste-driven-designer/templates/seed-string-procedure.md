@@ -9,8 +9,8 @@ I want you to build/redesign <目标：例如 a landing page for my productivity
 Follow this procedure:
 
 1. Generate a long, random alphanumeric string using a shell script:
-   bash <SKILL_DIR>/scripts/generate-seed.sh -l <64|更长越多样>
-   (多方向并行时加 -c <2~4> 生成多条; 团队复现方向时用 -s <种子词>)
+   python3 <SKILL_DIR>/scripts/generate-seed.py -l <64|更长越多样>
+   (多方向并行时加 -c <2~4> 生成多条; 团队复现方向时用 -s <种子词>; POSIX 下旧 .sh 壳仍可用)
 2. Define the creative direction (color scheme, layout, typography, texture, mood)
    based on the string. Look beyond the surface for subpatterns, special numbers,
    block rhythms, digit groupings — anything that inspires you.

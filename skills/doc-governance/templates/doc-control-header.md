@@ -1,6 +1,6 @@
 # 文档控制头模板 (Document Control Header Template)
 
-> **用途**：为**不经** `scripts/scaffold-doc.sh` 生成的手写／迁移文档补齐控制头与修订历史，使其通过 `scripts/check-doc-control-sync.py`。骨架中的 `<...>` 为必填槽位，落地时不得保留槽位文本。
+> **用途**：为**不经** `scripts/scaffold-doc.py` 生成的手写／迁移文档补齐控制头与修订历史，使其通过 `scripts/check-doc-control-sync.py`。骨架中的 `<...>` 为必填槽位，落地时不得保留槽位文本。
 
 ## 1. 骨架（复制到文档 H1 之后）
 
