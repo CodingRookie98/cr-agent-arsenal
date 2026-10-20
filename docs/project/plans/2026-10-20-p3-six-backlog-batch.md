@@ -28,11 +28,11 @@
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 - **当前执行通道**: Heavy Track
 - **当前活跃阶段**: P4（双轮独立审查与阻断修复闭环）
-- **当前活跃子任务**: delta-r1 已完成（不放行，1 阻断 DR-1 + 2 P2）→ DR-1/5/7/8 修复已落盘 → delta-r2 终审 → 归档定稿
+- **当前活跃子任务**: delta-r2 终审已完成（✅ 准予交付，Blockers=0）→ 归档闭包（配对键改名/README 定稿/门禁 PASS/本检查点收口）
 - **当前子任务重试计数**: 0/3
 - **外层循环迭代**: 3/5
-- **最后一次验证状态**: WSL 全量 `502 passed / 0 failed`（修复后工作树，基线 490）；Windows UTF-8 模式 HEAD 12 failed / 475 passed / 16 skipped，BASE `7a2a3a0` 12 failed / 464 passed / 14 skipped（失败集逐条相同、新增失败 0）；文档四件套全绿
-- **最新有效提交**: `f1f2189`（R1-1/R1-2 首轮修复）；本轮 R2 后续修复提交待归档提交号
+- **最后一次验证状态**: 闭包态 WSL 全量 `503 passed / 0 failed`；闭包态 Windows UTF-8 模式 `12 failed / 475 passed / 16 skipped`（BASE `7a2a3a0` 为 12 failed / 464 passed / 14 skipped，失败集逐条相同、新增失败 0）；文档四件套全绿
+- **最新有效提交**: 闭包提交（承载 delta-r2 归档、门禁 `--require-verdict=PASS` 通过与本文件收口；其后的书签提交仅把提交号回填入本行）
 - **阻断原因**: 无（R2 唯一阻断 R1-1 已由 `f1f2189` 结项，Delta 复核中）
 
 ---
@@ -42,7 +42,7 @@
 ### 1.0 验收准则
 1. **六张卡片 DoD 逐项达成**：BK-0045 / BK-0010 / BK-0008 / BK-0016 / BK-0007 / BK-0014 卡片 §3 所列验收条件全部满足。说明（R2 §1.2.5 反向发现）：BK-0045 的 frontmatter `priority` 为 **P2**，与本批次名「P3 六项」不一致——批次名沿用「六张 P2/P3 混合卡」的既有命名习惯（前例为「P2 批次六项」），非缺陷；BK-0045 以 P2 优先级随批次交付，其 `acceptance_criteria` 3 项与 §3 DoD 4 项不一致处，以 §3 为准（R1-1 已处置）。
 2. **WSL 全量回归**：`python3 -B -m pytest skills/ -q` **0 failed** 且通过数 ≥ 490（基线 490）。
-3. **Windows umbrella（同一 UTF-8 模式对照）**：在 Windows 上以 UTF-8 模式运行（`$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'`，随后执行 `.venv\Scripts\python.exe -B -m pytest skills/ -q`）。本批次新增测试显式以 `encoding="utf-8"` 解码子进程输出，必须让子进程同处 UTF-8 模式；plain cp936 控制台下会出现 18 条 `UnicodeDecodeError` 环境假差异，不作判定依据（§5 已记录）。同口径实测：BASE `7a2a3a0` = **12 failed / 464 passed / 14 skipped**；HEAD（修复后）= **12 failed / 475 passed / 15 skipped**，失败集逐条相同（**新增失败 0**）；残留 12 条均为 doc-governance（5）与 spec-evolution（7）的 POSIX-only / 存量债务（口径 B 豁免披露）。本次触碰的 **3 个**测试文件在该模式下全绿（dual-round-review 两文件 0 failed、`test_doc_index_convention.py` 0 failed）；该文件的端到端用例在 Windows 上按 §1.4 第 4 项 `skip`，跨平台覆盖由纯逻辑用例承担。
+3. **Windows umbrella（同一 UTF-8 模式对照）**：在 Windows 上以 UTF-8 模式运行（`$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'`，随后执行 `.venv\Scripts\python.exe -B -m pytest skills/ -q`）。本批次新增测试显式以 `encoding="utf-8"` 解码子进程输出，必须让子进程同处 UTF-8 模式；plain cp936 控制台下会出现 18 条 `UnicodeDecodeError` 环境假差异，不作判定依据（§5 已记录）。同口径实测：BASE `7a2a3a0` = **12 failed / 464 passed / 14 skipped**；HEAD（修复后）= **12 failed / 475 passed / 16 skipped**，失败集逐条相同（**新增失败 0**）；残留 12 条均为 doc-governance（5）与 spec-evolution（7）的 POSIX-only / 存量债务（口径 B 豁免披露）。本次触碰的 **3 个**测试文件在该模式下全绿（dual-round-review 两文件 0 failed、`test_doc_index_convention.py` 0 failed）；该文件的端到端用例在 Windows 上按 §1.4 第 4 项 `skip`，跨平台覆盖由纯逻辑用例承担。
 4. **差分矩阵**：`prepare-review-context`、`check-review-report` 的 bash↔python 差分在「有意分歧白名单」之外逐字节一致（见 §1.4）。
 5. **契约与文档门禁**：文档四件套（`check-doc-links` / `check-doc-control-sync` / `audit-doc-health` / `trim-revision --keep 5`）全绿；`judge.py` 无新增 BLOCKER/HIGH 发现。本批次不涉及 8 个既有技能脚本的 Python 契约壳，故 `.goal-loop/verify-contract.py`（Lead 临时工具，`.gitignore` 忽略，证据边界见 §1.5）不适用于本批次（R1-10 更正）。
 6. **交付流程**：独立子智能体 R1（红队）→ R2（架构师元审判）Zero Blockers 裁决；审查报告逐字归档并登记台账与 SHA256 指纹。说明（R1-1 处置口径）：提交 `7f35a33` 的「闭环六项」指**代码与文档闭环**，卡片状态由 W5 结项提交收口；结项事实以 `docs/project/backlog/index.md` 与本计划 §5 为准，不改写历史提交信息。
@@ -136,4 +136,6 @@
 | 2026-10-20 | **R2 §3.3 前置条件逐条落实**：R1-1（六卡结项 + DoD 勾选 + index + docs/index.md + 计划检查点/§5）、R1-4（补断言 + 变异）、R1-11（同构声明，前提交）、R1-2（fail-closed）、R1-5/R1-10（口径更正与计划行）、R1-3（SKILL:118 收窄，前提交）、R1-7（`-z`）。 | 本计划 §5 |
 | 2026-10-20 | 修复提交落盘后派发 **delta-r1**（基线 `7f35a33..<修复提交>`，聚焦阻断修复证据与次生退化）→ delta-r2 终审 → `--require-verdict=PASS`。 | `git log`；`.goal-loop/dispatch-ledger.md` |
 | 2026-10-20 | **Delta-r1 归档与裁决**：句柄 `eeb36673`，报告 30332 B / SHA256 `13db2d6d5baba…`；判 **不放行**（1 阻断 DR-1：`docs/index.md` 提前宣称「已完成 / Delta 闭环 Zero Blockers」，与计划「进行中」、README 终审「未定」、门禁 rc=1 冲突 → 宣称宽于取证）。独立复核确认 **R1-2/R1-4/R1-7 已根治**，新增 🟡 2（DR-7 非 UTF-8 文件名崩溃、DR-8 计划数字取自 `f1f2189` 树）。 | `docs/project/reviews/2026-10-20-p3-six-backlog-batch/README.md` |
-| 2026-10-20 | **Delta-r1 阻断与建议处置**：DR-1 → `docs/index.md` 恢复「进行中（Delta 复核中）」口径、修订历史去掉未兑现的「已完成 / Zero Blockers」；DR-7 → `prepare-review-context.py` 输出侧 `errors="surrogateescape"` 与 git 解码口径对齐 + POSIX 专用非 UTF-8 文件名用例；DR-8 → 计划 Windows 数字更正为 475 passed / 16 skipped；DR-5 → `has_doc_link` 要求「可选锚点/查询串 + 右括号」收尾并补 4 条负例断言；DR-6（原始状态块 C-quote，历史既有 P3）登记为后续项不修。 | 修复提交 diff |
+| 2026-10-20 | **Delta-r1 阻断与建议处置**：DR-1 → `docs/index.md` 恢复「进行中（Delta 复核中）」口径、修订历史去掉未兑现的「已完成 / Zero Blockers」；DR-7 → `prepare-review-context.py` 输出侧 `errors="surrogateescape"` 与 git 解码口径对齐 + POSIX 专用非 UTF-8 文件名用例；DR-8 → 计划 Windows 数字更正为 475 passed / 16 skipped（`:34` / `:45` / `:134` 三处同步）；DR-5 → `has_doc_link` 要求「可选锚点/查询串 + 右括号」收尾并补 4 条负例断言；DR-6（原始状态块 C-quote，历史既有 P3）登记为后续项不修。 | 修复提交 diff |
+| 2026-10-20 | **Delta-r2 归档与裁决**：句柄 `c8f54bab`，报告 35774 B / SHA256 `9d4ff312e9aa…`；终审 **✅ 准予交付（Blockers=0）**：DR-1/DR-5/DR-7 关闭、DR-6 维持后续项、DR-8 要求闭包口径统一；同时指出 🔴 闭包结构阻断（delta-r1 已归档而 delta-r2 默认命名 `8de971e..1f6a826` 与配对键不兼容，门禁 rc=1）→ 本提交处置。 | `docs/project/reviews/2026-10-20-p3-six-backlog-batch/README.md` |
+| 2026-10-20 | **闭包处置（delta-r2 §3.3 逐条）**：① delta-r2 报告改名为 `delta-r2-7f35a33..1f6a826.md`（与 delta-r1 同基线键；字节与 SHA256 不变，README 加 `[!NOTE]` 留痕）；② README 台账/链接/指纹补登，终审裁决置为 `✅ 准予交付`（V1.0.4）；③ 计划 `:34/:45/:134` 数字与 `:35/:36` 口径统一为闭包态；④ `docs/index.md` 恢复「已完成」并注明四轮审查闭环（仅在门禁 PASS 后书写）；⑤ llms.txt 重生成与文档四件套复跑。 | `docs/index.md`、本计划、归档 README |
