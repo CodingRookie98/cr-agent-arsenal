@@ -156,6 +156,28 @@ def collected_gates(facts: dict) -> dict:
     return {}
 
 
+def _gate_state(info: dict) -> str:
+    """单道门禁的三态：`ok` / `failed` / `incomplete`。
+
+    `subprocess.TimeoutExpired` 被采集器记成 exit_code=124，与真实非零退出同码；
+    若只看退出码，把「本轮没跑完」判成「交付基线不成立」，会让门禁在套件变大后
+    固定误报并被整条关掉（BK-0046）。这里**只认显式 `timed_out` 标记**，不去猜
+    退出码 124 的来源——猜错方向是 fail-open。
+
+    `error` 同理：非空表示采集器根本没能执行该命令（`OSError`、9p 断连），
+    此时退出码 125 与「命令自己返回 125」不可区分——同样是「本轮未取证」，
+    不能读成「仓库红」。
+
+    `timed_out` / `error` 均缺失（旧版 facts.json、外部手写输入）按 `failed` 处理：
+    没有证据表明那是环境故障，就按真红对待，宁可误报不可漏放。
+    """
+    if info.get("timed_out") is True or info.get("error"):
+        return "incomplete"
+    if info.get("exit_code") != 0:
+        return "failed"
+    return "ok"
+
+
 def _usable_baseline(root_prompt: dict) -> dict | None:
     """返回可用于 C-10 的基线（`lines`/`bytes` 均为正整数的对象）；否则返回 None。
 
@@ -188,12 +210,13 @@ def build_findings(facts: dict) -> list:
     out: list = []
 
     for key, info in sorted(collected_gates(facts).items()):
-        if info.get("exit_code") != 0:
-            out.append(_mk(
-                "C-09", "BLOCKER", "<repo>",
-                f"[REPO:{GATE_ANCHORS.get(key, 'skills/')}]", None, info.get("cmd", ""),
-                f"exit_code={info.get('exit_code')}", "exit_code == 0",
-                "既有门禁非零退出，交付基线不成立。"))
+        if _gate_state(info) != "failed":
+            continue
+        out.append(_mk(
+            "C-09", "BLOCKER", "<repo>",
+            f"[REPO:{GATE_ANCHORS.get(key, 'skills/')}]", None, info.get("cmd", ""),
+            f"exit_code={info.get('exit_code')}", "exit_code == 0",
+            "既有门禁非零退出，交付基线不成立。"))
 
     for sk in facts["skills"]:
         name = sk["name"]
@@ -293,16 +316,39 @@ def _cell(value) -> str:
     return str(value).replace("|", "\\|").replace("\n", " ")
 
 
+def _gate_rows(rows: list) -> list:
+    lines = ["| 门禁 | 证据命令 | 退出码 | 摘要 |", "| :--- | :--- | :--- | :--- |"]
+    for key, info in rows:
+        lines.append("| {} | `{}` | {} | {} |".format(
+            key, _cell(info.get("cmd", "")), info.get("exit_code"),
+            _cell(info.get("summary", ""))))
+    return lines
+
+
+def _incomplete_note(rows: list) -> str:
+    parts = []
+    for key, info in rows:
+        err = info.get("error")
+        if err:
+            parts.append(key + "（未能执行：" + _cell(err) + "）")
+        else:
+            parts.append(key + "（超时 " + str(info.get("duration_s", "?")) + "s）")
+    return ("（" + str(len(rows)) + " 道门禁**未得出结论**：" + "、".join(parts) +
+            " —— 既非失败亦非通过，本报告不据此对交付基线表态）")
+
+
 def render_report(facts: dict, findings: list) -> str:
     gates = collected_gates(facts)
-    failed = [(k, v) for k, v in sorted(gates.items()) if v.get("exit_code") != 0]
+    states = {k: _gate_state(v) for k, v in gates.items()}
+    failed = [(k, gates[k]) for k, s in sorted(states.items()) if s == "failed"]
+    incomplete = [(k, gates[k]) for k, s in sorted(states.items()) if s == "incomplete"]
     if failed:
-        lines = ["| 门禁 | 证据命令 | 退出码 | 摘要 |", "| :--- | :--- | :--- | :--- |"]
-        for key, info in failed:
-            lines.append("| {} | `{}` | {} | {} |".format(
-                key, _cell(info.get("cmd", "")), info.get("exit_code"),
-                _cell(info.get("summary", ""))))
+        lines = _gate_rows(failed)
+        if incomplete:
+            lines += ["", _incomplete_note(incomplete)]
         blocker_section = "## BLOCKER\n\n" + "\n".join(lines)
+    elif incomplete:
+        blocker_section = "## BLOCKER\n\n" + _incomplete_note(incomplete)
     elif not gates:
         blocker_section = ("## BLOCKER\n\n（未采集门禁事实 —— C-09 未执行；"
                            "本报告对既有门禁是否失败不作任何结论）")
@@ -336,6 +382,11 @@ def render_report(facts: dict, findings: list) -> str:
         verdict = "HIGH"
     elif findings:
         verdict = "MID"
+    elif incomplete:
+        # 没有 finding 不等于通过：门禁超时/未能执行时本轮**没取证**。若此处写 CLEAN，
+        # 头条与 BLOCKER 段「本报告不据此对交付基线表态」自相矛盾，扫读的人只看到 CLEAN
+        # （BK-0046 R1-H1）。
+        verdict = "INCOMPLETE"
     else:
         verdict = "CLEAN"
 

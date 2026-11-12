@@ -135,6 +135,119 @@ def test_c09_gate_failure_is_blocker(tmp_path):
     assert data[0]["anchor"] == "[REPO:skills/]"
 
 
+def test_c09_gate_timeout_is_not_a_blocker(tmp_path):
+    """超时是「未得出结论」，不能推出「交付基线不成立」（BK-0046）。
+
+    `subprocess.TimeoutExpired` 被记为 exit_code=124，与真实非零退出同码，C-09 曾
+    据此直接判 BLOCKER。超时只说明该门禁本轮未跑完——套件规模增长后 300s 阈值早已
+    临界（503 用例实测 204s，冷导入即越线）。把「没跑完」读成「仓库红」会让门禁在
+    每次全量复查时固定误报，进而被整条关掉，那比没有门禁更伤信任。judge 必须把
+    `timed_out` 门禁从 C-09 阻断中摘出，并在报告中显式声明「未得出结论」——
+    不得静默当作通过（那会把未取证的结论伪装成已取证）。
+    """
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["gates"] = {"pytest": {"cmd": "python3 -B -m pytest skills/ -q",
+                                 "exit_code": 124,
+                                 "summary": "TIMEOUT after 600s",
+                                 "timed_out": True, "duration_s": 600.0}}
+    report = tmp_path / "report.md"
+    proc, data = _run(root, facts, tmp_path, "--report", str(report))
+    assert proc.returncode == 0, proc.stderr
+    assert all(f["severity"] != "BLOCKER" for f in data), data
+    text = report.read_text(encoding="utf-8")
+    assert "未得出结论" in text
+    assert "交付基线不成立" not in text
+    assert "已采集门禁事实，无失败" not in text, "超时不得伪装成通过"
+    assert "判定结论: **INCOMPLETE**" in text, "未取证不等于通过，结论行不得写 CLEAN"
+
+
+def test_c09_real_failure_still_blocker_next_to_timeout(tmp_path):
+    """摘出超时不得连带放过同批真实失败。
+
+    C-09 的两类非零退出必须**分别**处置：`timed_out` 摘出阻断，其余照旧 BLOCKER。
+    否则修假阳性就会顺手把真红一起放过，等于用一个 fail-open 换一个 fail-closed。
+    """
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["gates"] = {
+        "pytest": {"cmd": "python3 -B -m pytest skills/ -q", "exit_code": 124,
+                   "summary": "TIMEOUT after 600s",
+                   "timed_out": True, "duration_s": 600.0},
+        "cross_skill_links": {"cmd": "python3 -B -m pytest skills/_shared/tests/test_cross_skill_links.py -q",
+                              "exit_code": 1, "summary": "1 failed",
+                              "timed_out": False, "duration_s": 7.5},
+    }
+    report = tmp_path / "report.md"
+    proc, data = _run(root, facts, tmp_path, "--report", str(report))
+    assert proc.returncode == 1
+    blockers = [f for f in data if f["severity"] == "BLOCKER"]
+    assert len(blockers) == 1, data
+    assert blockers[0]["criterion"] == "C-09"
+    text = report.read_text(encoding="utf-8")
+    assert "| cross_skill_links |" in text and "1 failed" in text
+    assert "未得出结论" in text
+
+
+def test_c09_gate_execution_error_is_not_a_blocker(tmp_path):
+    """采集器没能执行门禁（OSError/9p 断连）同样是「未得出结论」，不是仓库红。
+
+    2026-11-12 实测：/mnt/d 一次 9p 抖动让 Path.is_dir() 抛
+    OSError: [Errno 19] No such device，采集器把门禁记为 exit 125；若 125 被当作
+    「门禁失败」，报告会宣称「交付基线不成立」，而真实的仓库一个字都没被评估过。
+    退出码 125 与「命令自己返回 125」不可区分，故只认显式的 error 字段。
+    """
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["gates"] = {"pytest": {"cmd": "python3 -B -m pytest skills/ -q",
+                                 "exit_code": 125,
+                                 "summary": "OSError: [Errno 19] No such device",
+                                 "timed_out": False,
+                                 "error": "[Errno 19] No such device",
+                                 "duration_s": 0.1}}
+    report = tmp_path / "report.md"
+    proc, data = _run(root, facts, tmp_path, "--report", str(report))
+    assert proc.returncode == 0, proc.stderr
+    assert all(f["severity"] != "BLOCKER" for f in data), data
+    text = report.read_text(encoding="utf-8")
+    assert "未得出结论" in text and "未能执行" in text
+    assert "交付基线不成立" not in text
+
+
+def test_c09_timeout_code_without_marker_still_blocker(tmp_path):
+    """只有退出码 124、没有 `timed_out` 标记时按真红处理，不得去猜码义。
+
+    judge 的 docstring 明令「只认显式标记、不猜 124 的来源」，但把判据改成
+    `exit_code in (124, 125)` 时其余 C-09 用例仍全绿——它们都自带语义位。这里锁死
+    fail-closed 默认值：一条自己用 `timeout 1 ...` 包装、真返回 124 的门禁命令，
+    若被猜成「超时」就会静默吞掉真红（fail-open）。
+    """
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["gates"] = {"pytest": {"cmd": "timeout 1 python3 -m pytest skills/ -q",
+                                 "exit_code": 124,
+                                 "summary": "TIMEOUT after 600s"}}
+    report = tmp_path / "report.md"
+    proc, data = _run(root, facts, tmp_path, "--report", str(report))
+    assert proc.returncode == 1
+    assert [f["criterion"] for f in data if f["severity"] == "BLOCKER"] == ["C-09"], data
+    text = report.read_text(encoding="utf-8")
+    # BLOCKER 段渲染的是门禁表（按门禁名成行），C-09 finding 本身不进 findings 表。
+    assert "| pytest |" in text
+    assert "未得出结论" not in text
+
+
+def test_c09_execution_error_code_without_marker_still_blocker(tmp_path):
+    """退出码 125 但缺 `error` 字段时同样按真红处理（fail-closed 默认值）。"""
+    root = build_repo(tmp_path / "repo")
+    facts = _facts(root)
+    facts["gates"] = {"pytest": {"cmd": "python3 -B -m pytest skills/ -q",
+                                 "exit_code": 125, "summary": "timed out"}}
+    proc, data = _run(root, facts, tmp_path)
+    assert proc.returncode == 1
+    assert [f["criterion"] for f in data if f["severity"] == "BLOCKER"] == ["C-09"], data
+
+
 def test_c10_root_prompt_growth_is_mid(tmp_path):
     root = build_repo(tmp_path / "repo")
     facts = _facts(root)

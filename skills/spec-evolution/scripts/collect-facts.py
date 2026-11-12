@@ -18,6 +18,7 @@ import atexit
 import datetime as dt
 import json
 import os
+import time
 import re
 import shutil
 import subprocess
@@ -39,7 +40,12 @@ README_REL = Path("README.md")
 BASELINE_REL = Path("skills/spec-evolution/references/baseline.json")
 
 LINE_LIMIT = 1000
-GATE_TIMEOUT = 300
+# 单道门禁的超时上限（秒）。全量 pytest 在同一台机上实测 204s（暖缓存）~360-420s
+# （/mnt/d 9p + 冷导入 + 与前序门禁争 CPU），300s 阈值已临界，超时被记成 exit 124
+# 后被 C-09 读成「交付基线不成立」（BK-0046 假 BLOCKER）。这里放宽到 600s：相对
+# 最坏实测 420s 约 1.4 倍余量（不是相对暖缓存基线的 3 倍）。阈值只影响「跑不跑得
+# 完」；超时的**语义**由 timed_out 字段交给判定器分道处置，不靠调大数字掩盖问题。
+GATE_TIMEOUT = 600
 SCANNED_SUFFIXES = {".py", ".sh", ".md", ".json", ".yaml", ".yml", ".txt", ".cfg", ".toml"}
 # 字节码重定向目标：**仓库之外**（GI-6 只约束仓库内不留产物）。目录名随机、由
 # 本进程独占创建、退出即清理 —— 固定名（如 /tmp/spec-evolution-pycache）在
@@ -342,20 +348,44 @@ def subprocess_env(repo: Path) -> dict:
 def collect_gates(repo: Path) -> dict:
     gates = {}
     for key, cmd in GATES:
+        started = time.monotonic()
+        timed_out = False
+        error = None
         try:
             proc = subprocess.run(cmd, cwd=str(repo), capture_output=True, env=subprocess_env(repo),
                                   text=True, encoding="utf-8", errors="replace",
                                   timeout=GATE_TIMEOUT)
             exit_code, stdout = proc.returncode, proc.stdout
-        except subprocess.TimeoutExpired:
-            exit_code, stdout = 124, f"TIMEOUT after {GATE_TIMEOUT}s"
+        except subprocess.TimeoutExpired as exc:
+            # 超时前的输出必须保留：TimeoutExpired 上挂着已捕获的 stdout（text=True
+            # 时是 str）。只写一句 "TIMEOUT" 会让「跑到一半才挂死（teardown 卡住）」
+            # 与「一行没跑」在报告里无法区分，唯一能定位卡点的证据被删（BK-0046 R1-M3）。
+            partial = exc.stdout or ""
+            if isinstance(partial, bytes):
+                partial = partial.decode("utf-8", "replace")
+            tail = f"TIMEOUT after {GATE_TIMEOUT}s"
+            # 顺序要紧：summary 取 stdout 的**最后一行**（下方 lines[-1]）。把 tail 放前、
+            # 部分输出放后，落盘的才是「卡在哪一行」而非又一句 TIMEOUT（BK-0046 R2-H1）。
+            stdout = (tail + "\n" + partial.rstrip()) if partial.strip() else tail
+            exit_code, timed_out = 124, True
         except OSError as exc:
+            # 命令根本没跑起来（ENOENT / ENODEV / EACCES / 9p 断连）。这是采集环境
+            # 故障，不是门禁判决——2026-11-12 实测 /mnt/d 一次 9p 抖动就以
+            # OSError: [Errno 19] No such device 落在这里；若按 exit 125 判 BLOCKER，
+            # 报告会宣称「交付基线不成立」，而真实仓库一个字都没被评估。
             exit_code, stdout = 125, f"OSError: {exc}"
+            error = str(exc)
         lines = [ln.strip() for ln in stdout.splitlines() if ln.strip()]
         gates[key] = {
             "cmd": " ".join(cmd),
             "exit_code": exit_code,
             "summary": lines[-1] if lines else "",
+            # 超时与真实非零退出同码（124），单看 exit_code 无法区分。把「未得出结论」
+            # 提升为事实层的显式状态，判定器才能与「仓库红」分道处置（BK-0046）；
+            # 让消费者去猜退出码 124 的含义会把判据逻辑漏回采集层。
+            "timed_out": timed_out,
+            "error": error,
+            "duration_s": round(time.monotonic() - started, 1),
         }
     return gates
 

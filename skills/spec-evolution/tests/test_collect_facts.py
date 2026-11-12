@@ -176,3 +176,44 @@ def test_collector_is_read_only(repo: Path):
 def test_missing_repo_root_exits_2(tmp_path: Path):
     r = run_collect(tmp_path / "nope", "--no-gates")
     assert r.returncode == 2, "用法/输入错误须以退出码 2 终止"
+
+def _load_collector():
+    """按路径加载采集器模块（文件名带连字符，不能直接 import）。"""
+    import importlib.util
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "collect-facts.py"
+    spec = importlib.util.spec_from_file_location("collect_facts_under_test", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_gate_timeout_keeps_partial_output(repo: Path):
+    """超时门禁的 `summary` 必须是「卡在哪一行」，不是又一句 TIMEOUT。
+
+    `TimeoutExpired.stdout` 在 POSIX 上带着超时前已产出的输出，而事实层只落
+    `summary`（stdout 最后一行）。若把 `TIMEOUT after Ns` 拼在部分输出之后，落盘的
+    就只剩那句话，「跑到一半才挂死（teardown 卡住）」与「一行没跑」无法区分
+    （BK-0046 复审 H-1）。
+    """
+    import sys as _sys
+
+    mod = _load_collector()
+    mod.GATE_TIMEOUT = 1
+    mod.GATES = (("slow", [_sys.executable, "-c",
+                           "import time;print('FAILED test_x - assert 1==2', flush=True);time.sleep(5)"]),)
+    info = mod.collect_gates(repo)["slow"]
+    assert info["timed_out"] is True
+    assert info["error"] is None
+    assert info["exit_code"] == 124
+    assert "FAILED test_x" in info["summary"], info
+
+
+def test_gate_execution_error_records_reason(repo: Path):
+    """命令根本跑不起来（ENOENT）时记 `error`，不得与「命令自己返回 125」混同。"""
+    mod = _load_collector()
+    mod.GATES = (("missing", ["/nonexistent/definitely-not-a-binary"]),)
+    info = mod.collect_gates(repo)["missing"]
+    assert info["exit_code"] == 125
+    assert info["timed_out"] is False
+    assert info["error"], "必须记录 OSError 原因，否则与「命令自己返回 125」不可区分"
