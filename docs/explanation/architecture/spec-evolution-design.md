@@ -10,7 +10,7 @@
 >   - [RFC-0004 spec-evolution 演进回路](../../proposals/RFC-0004-spec-evolution.md)（已受理 · V0.3.0）
 >   - Huang et al., *Large Language Models Cannot Self-Correct Reasoning Yet* ([arXiv:2310.01798](https://arxiv.org/abs/2310.01798))
 >   - [Agent Skills 规范](https://agentskills.io/specification)（`description` 硬限 1024 字符）
->   - 内部技能生态：`goal-loop`（P5 文档归档挂载点）、`doc-governance`（Diátaxis 与文档门禁）、`dual-round-review`（交付终审）、`writing-skills`（技能形态与失败类型）
+>   - 内部技能生态：`goal-loop`、`doc-governance`（Diátaxis 与文档门禁）、`dual-round-review`（交付终审）、`writing-skills`（技能形态与失败类型）
 
 ---
 
@@ -80,7 +80,7 @@ GI-1~GI-6 门禁不变式 (门禁层)
 
 只读、零第三方依赖。产出 `facts.json`，三个事实域：
 
-- **S1 门禁事实**：跑四道既有门禁（`pytest` / `check-doc-links` / `audit-doc-health` / `cross_skill_links`）并记录 `{cmd, exit_code, summary}`；`--no-gates` 时 `gates = null`，此时 **C-09 不执行**，报告对该项输出「未采集门禁事实」而非「无失败」。
+- **S1 门禁事实**：跑四道既有门禁（`pytest` / `check-doc-links` / `audit-doc-health` / `cross_skill_links`）并记录 `{cmd, exit_code, summary, timed_out, error, duration_s}`；`--no-gates` 时 `gates = null`，此时 **C-09 不执行**，报告对该项输出「未采集门禁事实」而非「无失败」。`timed_out` / `error` / `duration_s` 是给判定层用的语义位：超时与真实非零退出同为 124、`OSError`（如 9p 断连）与被测命令自己返回 125 亦无法从退出码区分，让消费者去猜码义会把判据逻辑漏回采集层（BK-0046）。超时时 `summary` 保留门禁已产出的部分输出（事实层只落末行），用以区分「跑到一半才挂死」与「一行没跑」（BK-0046 R2-H1）。
 - **S2 结构事实**：逐技能记录目录存在性、`SKILL.md` frontmatter / `description` 字符数、最大文件行数、超限文件、跨技能相对链接、架构设计书。
 - **S3 注册事实**：四个注册面（`SKILL_NAMES` / `docs/index.md` / `README.md` / collections）是否登记该技能；根提示词行数、字节数与基线对比、标题树。
 
@@ -97,6 +97,8 @@ GI-1~GI-6 门禁不变式 (门禁层)
 | `2` | 用法/输入错误，或**锚点校验失败**（fail-closed，拒绝写出任何产物） |
 
 排序 `(严重度, 技能名, 判据 ID, 锚点, 证据命令, 观测值)` —— 与输入字典顺序无关，保证 `findings.json` 双跑逐字节相同。
+
+**C-09 的三态**（BK-0046）：单道门禁分 `ok` / `failed` / `incomplete`，不是二态。`incomplete`（门禁超时 `timed_out=true`，或采集器根本没跑起来、`error` 非空）**不产 finding、不阻断交付**——它证明的是「本轮未取证」，不是「仓库红」；把「没跑完」判成「交付基线不成立」会让门禁在套件变大后固定误报，进而被整条关掉，那比没有门禁更伤信任。超时同样**不算通过**：报告在 BLOCKER 段落显式写「N 道门禁未得出结论」，判定结论记 `INCOMPLETE` 而不是 `CLEAN`，退出码不对该门禁表态。`timed_out` 与 `error` 均缺失（旧版 `facts.json`、外部手写输入）一律按 `failed` 处理——没有证据表明那是超时，宁可真红不可漏放。
 
 ### 3.4 门禁层：`tests/test_gate_invariants.py`
 
@@ -151,7 +153,7 @@ Reviewer ≠ Author。判定器负责**列出**候选，人类负责**裁决**�
 | :--- | :--- | :--- |
 | [`doc-governance`](./doc-governance-design.md) | `docs/` 文档的链接、健康度、索引 | 本技能管**技能与根提示词**，不管文档制品 |
 | [`dual-round-review`](./dual-round-review-design.md) | 单次**交付物**的对抗审查 | 本技能管**跨时间的演进**，不做单次终审 |
-| [`goal-loop`](./goal-loop-design.md) | **执行**长程任务 | 本技能评估**技能自身**，不执行任务；仅作为 P5 文档归档的挂载点 |
+| [`goal-loop`](./goal-loop-design.md) | **执行**长程任务 | 本技能评估**技能自身**，不执行任务；**不被任何交付流程自动调用**（原 P5 挂载点从未实现，已于 RFC-0004 V0.6.0 撤回） |
 | **`spec-evolution`** | 采集摩擦 → 复现证据 → 确定性判定 → 生成带锚点的改进候选（人类二元裁决） | — |
 
 ---

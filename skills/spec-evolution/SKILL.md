@@ -1,6 +1,6 @@
 ---
 name: spec-evolution
-description: Use when auditing delivery-surface completeness of this repository's skills and root prompt, or when a goal-loop P5 delivery re-checks the skills it touched. Triggers on skills missing tests or design docs, incomplete skill surfaces (references/scripts/templates), registration gaps across README/index/collections, frontmatter description length limits, oversized files, cross-skill relative links, and root-prompt net growth.
+description: Use when explicitly asked to audit delivery-surface completeness of this repository's skills and root prompt. Triggers on skills missing tests or design docs, incomplete skill surfaces (references/scripts/templates), registration gaps across README/index/collections, frontmatter description length limits, oversized files, cross-skill relative links, and root-prompt net growth.
 license: MIT
 ---
 
@@ -18,8 +18,9 @@ license: MIT
 
 | 触发 | 说明 |
 | :--- | :--- |
-| **独立调用**（主路径） | 用户或智能体显式执行全量审计（7 技能 + 根提示词）；`--skills` 可缩窄范围 |
-| **`goal-loop` P5 增量挂载** | 交付归档阶段复查**本次交付触及**的 `skills/<n>/`；不做全量扫描 |
+| **显式手动调用**（唯一入口） | 用户或智能体主动执行全量审计（7 技能 + 根提示词）；`--skills` 可缩窄范围 |
+
+**本技能没有任何自动触发点。** 曾经写在这里的「`goal-loop` P5 增量挂载」从未实现——`skills/goal-loop/` 内对它零引用，P5 只可选地挂 `doc-governance`。该挂载的判据与交付流程自带的测试、文档门禁大面积重合，真挂上去只会把已经被人读过一遍的 finding 再产一遍。需要用的时候显式跑。
 
 **不适用**（结构性排除，详见 [references/checks-spec.md](references/checks-spec.md) §5）：
 - 评价「这个技能该不该存在」「职责是否重叠」「设计是否过重」——无客观信号，是谄媚高发区；
@@ -41,7 +42,7 @@ python3 skills/spec-evolution/scripts/judge.py --facts /tmp/facts.json \
 echo "exit=$?"        # 0 = 无 BLOCKER/HIGH；1 = 存在 BLOCKER/HIGH；2 = 用法或输入错误
 ```
 
-缩窄范围（P5 增量复查时用于缩短耗时）：
+缩窄范围（只复查部分技能时缩短耗时）：
 
 ```bash
 python3 skills/spec-evolution/scripts/collect-facts.py --no-gates --skills goal-loop,doc-governance --out /tmp/facts.json
@@ -63,7 +64,7 @@ python3 skills/spec-evolution/scripts/collect-facts.py --no-gates --skills goal-
 | **C-06** | 单文件行数 > 1000 | MID |
 | **C-07** | 技能在 4 个注册面中存在缺登记 | HIGH |
 | **C-08** | 技能内存在跨技能相对链接 | HIGH |
-| **C-09** | 既有门禁任一非零退出 | **BLOCKER** |
+| **C-09** | 既有门禁非零退出（**超时 / 采集失败不计**） | **BLOCKER** |
 | **C-10** | 根提示词相对基线净增长 | MID |
 
 ## 锚点契约 (Anchors)
@@ -74,11 +75,13 @@ python3 skills/spec-evolution/scripts/collect-facts.py --no-gates --skills goal-
 
 | 码 | 含义 |
 | :--- | :--- |
-| `0` | 无 **BLOCKER/HIGH**（可含 MID advisory；C-09 未采集时该项不参与判定） |
+| `0` | 无 **BLOCKER/HIGH**（可含 MID advisory；C-09 未采集、门禁超时或采集失败而未得出结论时，该项不参与判定） |
 | `1` | 存在 **BLOCKER/HIGH** |
 | `2` | 用法或输入错误（含锚点路径不存在 = 锚点幻觉） |
 
 > 权威定义在 `scripts/judge.py` 与 [references/checks-spec.md](references/checks-spec.md)；本表与之一致。
+
+**「未得出结论」的含义**：门禁超时（`timed_out`）或采集器无法执行该命令（`error`，如 9p 断连的 `OSError`）时，退出码 `124`/`125` 是采集器自己填的，不代表命令真的返回了非零。这类门禁不产 finding、不阻断交付；报告在 BLOCKER 段单列「N 道门禁未得出结论」，判定结论记为 `INCOMPLETE`（**不是** `CLEAN`——本轮没取证不等于通过）。语义位缺失时（旧版 `facts.json`、外部手写输入）一律按失败处理：宁可误报不可漏放。**消费方不得只读退出码**：`0` 只表示「无 BLOCKER/HIGH」，存在未得出结论的门禁时判定结论行是 `INCOMPLETE`，必须读该行才能判断这一轮到底取证齐全没有。
 
 ## 红线 (Red Lines)
 

@@ -4,7 +4,7 @@
 > - **标识**: RFC-2026-SPEC-EVOLUTION
 > - **当前状态**: Implemented
 > - **发起人**: 工程师 / AI Agent
-> - **当前版本**: V0.5.0
+> - **当前版本**: V0.6.0
 > - **初次发起日期**: 2026-10-12
 > - **目标里程碑**: spec-evolution V1.0.0（新增技能，不涉及仓库版本号变更）
 > - **定案日期**: 2026-10-12
@@ -23,6 +23,7 @@
 | **V0.3.0** | 2026-10-12 | DSH AI Agent | 王辉 | **状态流转 In Review → Accepted**（用户裁决准予受理）；批准进入 P1 编写落地计划。契约内容未变更，仅登记受理决定 |
 | **V0.4.0** | 2026-10-12 | DSH AI Agent | 王辉 | **状态流转 Accepted → Implemented**（交付完成）：采集器 `collect-facts.py`、判定器 `judge.py`（C-01~C-10 + 锚点硬门禁 + 退出码 0/1/2）、报告模板、GI-1~GI-6 门禁不变式（50 条测试）、架构设计书与四注册面接入全部落地。判定器对全仓实跑复现 §1.1 的 F-1~F-9 全部九项缺陷（findings 17 条 / HIGH+BLOCKER 8 条），修 F-9 后降至 11 条 / 3 条；**spec-evolution 自身零 finding**。**原位保留未移入 `proposals/archive/`**（仓库尚无该目录、RFC-0001~0003 均未归档，移位会打断技能内相对链接） |
 | **V0.5.0** | 2026-10-12 | DSH AI Agent | 待用户裁定 | **P3.5 双轮审查修正**（基线 `0306f37..fe8da78`，R2 裁定阻断交付）：① §3.4 补登 `[REPO:*]` 锚点形式与行号语义——C-07 的四个注册面与 C-09 的门禁证据均在技能目录之外，原文只登记 `[SKILL:*]`/`[RULE:*]` 属**契约缺口**（R1-7，R2 认定比 R1 所述更严重）；② §3.4 明确 `[RULE:*]` 解析域是**标题树**、加粗条目不可作锚点；③ §3.3 与 G2 的退出码口径按实现收敛为「0 = 无 BLOCKER/HIGH（可含 MID advisory）」（R1-2）；④ GI-3 与术语表同步扩至三类锚点。契约内容变更，实现侧同步见计划《执行偏差记录》D-10~D-15 |
+| **V0.6.0** | 2026-11-12 | DSH AI Agent | 待用户裁定 | **撤回未落地的 P5 增量挂载**（§3.6 路由表 + 段落 + 裁决项 + DK-8 + 见证表同步）：`skills/goal-loop/` 对本技能零引用，挂载从未实现；其判据与交付流程自带门禁重合，重复挂载只产出重复 finding。触发路由收敛为唯一入口「显式手动调用」，`SKILL.md` 同步删除自动触发承诺。**本行含两项独立变更**（提交时应拆分）：(a) P5 撤回；(b) 修 BK-0046 —— C-09 区分「门禁失败」与「门禁未得出结论」，采集器新增 `timed_out` / `error` / `duration_s`，`GATE_TIMEOUT` 300s→600s，超时与采集失败（`OSError`，如 9p 断连）都不再判 BLOCKER，报告单列「未得出结论」、结论记 `INCOMPLETE`（不静默转通过）；§3.2 判据表 C-09 行与严重度语义同步 |
 
 ---
 
@@ -175,11 +176,11 @@ V0.1.0 曾以「仓库既有规范」作为 500 的依据，该链是**循环引
 | **C-06** | 单文件行数 > 1000（`contexts/AGENTS.md` §3 硬约束） | S2 | MID | `wc -l` |
 | **C-07** | 技能在 4 个注册面中存在缺登记 | S3 | HIGH | 解析各注册面 |
 | **C-08** | 技能内存在跨技能相对链接 | S2 | HIGH | `test_cross_skill_links.py` 同源正则 |
-| **C-09** | 既有门禁任一非零退出 | S1 | **BLOCKER** | 四条命令 |
+| **C-09** | 既有门禁任一非零退出（**且** `timed_out` 非真、`error` 为空） | S1 | **BLOCKER** | 四条命令 |
 | **C-10** | 根提示词 `contexts/AGENTS.md` 相对基线（97 行 / 10746 字节）净增长 | S2 | MID | `wc -l` / `wc -c` |
 
 **严重度语义**：
-- `BLOCKER`：仓库既有门禁已失败，本技能不重复判定，直接置顶并阻断交付。
+- `BLOCKER`：仓库既有门禁已失败，本技能不重复判定，直接置顶并阻断交付。门禁**超时**（`timed_out` 为真）或**采集器无法执行该命令**（`error` 非空，如 9p 断连的 `OSError`）不属于此列——它们证明的是「本轮未取证」，报告单列「未得出结论」，判定结论记 `INCOMPLETE`（V0.6.0 实现）。
 - `HIGH`：违反**成文规范或外部硬限**（有权威出处，超限可致技能失效），应修复。
 - `MID`：交付面完整性缺口，或**对软性建议值的偏离**（advisory，无权威硬约束），登记为待办，不阻断交付。
 
@@ -242,9 +243,11 @@ skills/spec-evolution/scripts/judge.py --facts facts.json [--json findings.json]
 | 触发方式 | 范围 | 说明 |
 | :--- | :--- | :--- |
 | **独立调用**（v1 主路径） | 全量 7 技能 + 根提示词 | 用户或智能体显式执行；`--skills <a,b>` 可缩窄 |
-| **goal-loop P5 增量挂载**（v1 随附） | 仅本次交付触及的 `skills/<n>/` | 交付归档阶段复查被改动技能的交付面完整性 |
+| ~~**goal-loop P5 增量挂载**~~（**V0.6.0 撤回**） | — | **从未实现**：`skills/goal-loop/` 对本技能零引用。撤回理由见本节末「现况注记」 |
 
-挂载仅追加对**被改动技能**的定向检查，不做全量扫描，避免把周期性治理成本摊进每个 Heavy Path 任务。挂载点在 `skills/goal-loop/SKILL.md` 内，**不触碰 `contexts/AGENTS.md`**（N-3）。
+**现况注记（V0.6.0，2026-11-12）**：本节描述的 P5 增量挂载**从未落地**——`skills/goal-loop/` 内对本技能零引用，`skills/goal-loop/SKILL.md` 的 P5 节只可选挂载 `doc-governance`。2026-11-12 复核后判定撤回，理由三条：① 该挂载的判据（C-01/C-03/C-06/C-07/C-08）与交付流程自带的测试门禁、文档门禁大面积重合，真挂上去只会把交付人已经读过一遍的 finding 再产一遍；② C-09 会把交付门禁结果重复计入，把「哪条门禁红」混淆成「技能交付面不全」；③ 技能自 2026-10-14 起 30 天内真实执行 0 次、影响交付决策 0 次——不是它在起作用，是它没被接上却被当成在用。
+
+本技能因此只保留**唯一入口：显式手动调用**。自动挂载点已从 `SKILL.md` 与本节一并删除，**不触碰 `contexts/AGENTS.md`**（N-3 未变）。若将来出现只有它能提供的信号，须以新 RFC 重新提案。
 
 ### 3.7 门禁不变式 (Gate Invariants)
 
@@ -296,7 +299,7 @@ skills/spec-evolution/scripts/judge.py --facts facts.json [--json findings.json]
 | 「设计质量」是否应纳入 v1 | 纳入则覆盖完整，但无客观信号、谄媚高发 | **不纳入**。无退出码可复现的评价不产生 finding（G3 / N-1） |
 | 成本 vs 形态：曾在成本对比中落败的「独立技能」形态为何重启 | 2026-10-12 的 A1（独立技能，340 tok/任务）输给 A5（35 tok/任务） | **成本模型不同**：A1 是**每任务付费**的高频记录；本提案是**按需触发的低频审计**。同一形态在两个成本模型下结论相反，并不矛盾 |
 | C-10 能否判定「理由是否成立」 | 准入判据允许带理由的净增长 | **不能**。判定器只报「净增长」这一事实并提示核验，不自称判定理由成立与否（§3.2 口径说明） |
-| 是否 v1 就挂载到 goal-loop P5 | 早挂载可得强制路由，但误报会污染所有 Heavy Path 交付 | **挂载但限增量**：只扫本次触及的技能，全量保持按需（§3.6） |
+| 是否 v1 就挂载到 goal-loop P5 | 早挂载可得强制路由，但误报会污染所有 Heavy Path 交付 | ~~**挂载但限增量**：只扫本次触及的技能，全量保持按需（§3.6）~~ → **V0.6.0 推翻**：挂载从未实现，判据与交付门禁重合，已撤回（§3.6 现况注记） |
 | 500 字符上限是否升格为**成文规范** | 两个计划文件曾据此整改，看似构成先例 | **不升格**。出处原文是「Keep under 500 characters **if possible**」，属软性建议；C-04 降为 MID，硬限按规范原文归 C-05（`description` ≥1024）。依据见 §1.1 权威性裁定表 |
 | `docs/llms.txt` 是否为技能注册面 | 曾列为 C-07 第 5 面，但该面判定当前恒为「不适用」 | **剔除**。`generate-llms-txt.py` 的扫描根为 `docs/`（`root_dir.rglob("*.md")`），**结构上不可能收录 `skills/`**；且它是**派生文件**——对生成物查「忘登记」是范畴错误，正确操作是重跑生成器。它与 C-02 亦冗余（技能无设计书时同样进不了 llms.txt） |
 | F-1~F-9 是否随本次交付修复 | 「吃自己的狗粮」使仓库自洽的诱惑很强 | **不随本次交付**。检测与修复分离：混合二者使 diff 不可审、耦合两个独立决策；F-5/F-6（两份架构设计书）与 F-8（1583 行拆分）各自是独立的重型任务。**唯一例外 F-9**：本次交付本就要编辑 `collections/cr-agent-arsenal.json` 登记新技能，同数组内补 `clarification-protocol` 属同一处、同一动作 |
@@ -365,7 +368,7 @@ skills/spec-evolution/scripts/judge.py --facts facts.json [--json findings.json]
 | DK-5 | 锚点采用章节路径式 `[SKILL:...]` / `[REPO:...]` / `[RULE:...]` | 抗行号漂移；`[RULE:*]` 复用根提示词标题树；`[REPO:*]` 覆盖技能目录之外的注册面与门禁证据 |
 | DK-6 | 技能名 `spec-evolution` | 用户 m00219 裁定；符合 `<对象>-<名词>` 命名式 |
 | DK-7 | v1 被测对象 = 全量 7 技能 + 根提示词 | 用户 m00219 裁定 |
-| DK-8 | 触发路由 = 独立调用（主）+ goal-loop P5 增量挂载 | §3.6；避免把周期治理成本摊进每个任务，且不触碰根提示词 |
+| DK-8 | 触发路由 = **仅显式手动调用**（P5 挂载已于 V0.6.0 撤回） | §3.6 现况注记；该挂载从未实现且判据与交付门禁重合；不触碰根提示词 |
 | DK-9 | 不自动修改任何文件 | N-2 / G6；人类二元裁决是唯一出口 |
 | DK-10 | 交付通道 = Heavy Track（新增技能，触及公共契约与注册面） | goal-loop 铁律 8 |
 | DK-11 | C-04 保留 500 阈值但降为 MID（advisory），**不升格为成文规范** | §1.1 权威性裁定；出处为 `writing-skills` 软性建议（措辞 if possible） |
@@ -415,7 +418,7 @@ skills/spec-evolution/scripts/judge.py --facts facts.json [--json findings.json]
 | 采集器/判定器接口契约（§3.3） | `skills/spec-evolution/scripts/` + `SKILL.md` |
 | 报告模板契约（§3.5） | `skills/spec-evolution/templates/evolution-report.md` |
 | 门禁不变式 GI-1~GI-6（§3.7） | `skills/spec-evolution/tests/`（pytest 断言） |
-| 触发路由（§3.6） | `skills/goal-loop/SKILL.md` P5 节（增量挂载点） |
+| 触发路由（§3.6） | `skills/spec-evolution/SKILL.md` §触发条件（唯一入口：显式手动调用；P5 挂载已撤回） |
 | 架构设计书 | `docs/explanation/architecture/spec-evolution-design.md` |
 | 全套注册 | `test_cross_skill_links.py::SKILL_NAMES`、`docs/index.md`、`docs/llms.txt`、`README.md`、`tools/skills-manager/collections/cr-agent-arsenal.json`，并重跑 `python3 contexts/install.py` |
 | RFC 本体 | 交付后流转 `Implemented` 并置防腐声明（`proposals/archive/`） |
