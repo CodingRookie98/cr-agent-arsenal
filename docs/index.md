@@ -42,6 +42,7 @@
 | **`frontend-qa-gate`** | 源于 kejun《前端开发转向 AI Coding 的常见问题全景》：五域产物断言（响应式 / 状态矩阵 / 无障碍 / 浏览器 / 性能）+ 证据三态 + 回流路由；不做分数判据、不替代人工签收、不侵入代码级审查 | [frontend-qa-gate-design.md](./explanation/architecture/frontend-qa-gate-design.md) |
 | **`clarification-protocol`** | 以「依赖强度 × 实现影响」排序提问、以三类决策台账（已决项 / 已排除边界 / 默认假设）承载裁决、以三项收敛自检（目标 / 边界 / 矛盾）作终止判据；把「是否收敛」从感觉变成可判定句，台账结构由离线校验器机械把关 | [clarification-protocol-design.md](./explanation/architecture/clarification-protocol-design.md) |
 | **`spec-evolution`** | 机械化演进回路：把演进回路的「选择端」从模型意见换成脚本退出码（只读采集器 → 确定性判定器 → Exit 0/1/2）+ 锚点硬门禁（不可解析即 fail-closed）+ 人类裁决区永久留白；只判「产物存在性」，不做设计质量评价 | [spec-evolution-design.md](./explanation/architecture/spec-evolution-design.md) |
+| **`agy-delegation-workflow`** | 认知与执行分离：后台无头执行体的三级优先级链与宿主自适应 + 7 维自包含任务 Prompt + 假失败落盘判别 + 6 步零信任验收（Diff 范围 / 类型与 Lint / 失败模式 grep / 单测 / 全局构建 / 双轮终审） | [agy-delegation-workflow-design.md](./explanation/architecture/agy-delegation-workflow-design.md) |
 | **Backlog 治理最佳实践** | 结合软件工程史（精益/看板/Shape Up）与 AI 上下文工程的 14 项待办治理法则 | [backlog-governance-best-practices.md](./explanation/analysis/backlog-governance-best-practices.md) |
 
 ---
