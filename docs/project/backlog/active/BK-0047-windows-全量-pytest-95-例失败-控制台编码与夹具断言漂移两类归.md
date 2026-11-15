@@ -56,9 +56,16 @@ acceptance_criteria:
 - 根因（6 条一并修复）：夹具 `conftest.write()` 缺 `newline="\n"`，Windows 下 `\n` 被翻成 `\r\n`，夹具文件字节数比 LF 基线多出「行数」；C-10 比的正是字节数，于是合成仓库在 Windows 上**恒**被判根提示词净增长，连带 INCOMPLETE / CLEAN / finding 顺序等渲染断言一起跑偏。修法：夹具与被测基线同规（UTF-8 + LF）。
 - GI-6 的 `0o700` 断言按 POSIX 权限位语义分流：非 POSIX 平台只断言「可读取」，独占性由「两次运行路径必须不同」覆盖。
 - `test_create_and_sync_index` 根因不同：`.venv` 未装 PyYAML，走降级解析器，而该解析器只认 `key: value`，把 `key:\n  - a` 列表读成空串——`source` / `acceptance_criteria` 在无 PyYAML 环境静默丢失。修法：降级解析器支持「空值键 + `- ` 列表项」两态推进，无列表项时语义与旧实现逐字一致。
-- test_judge_contract.py::test_clean_repo_yields_no_findings：合成仓库上产出 C-10 MID，baseline.json 口径与夹具不一致；另有 INCOMPLETE / CLEAN / finding 顺序三处渲染断言与实现不符。
-- test_gate_invariants.py::test_gi4_rendered_verdict_rows_are_empty（实测 3 行 vs 期望 2 行）、test_gi6_pycache_prefix_is_per_run_and_private（实测 0o777 vs 期望 0o700，Windows 无 POSIX 权限位）。
-- test_doc_governance_scripts.py::test_create_and_sync_index：创建的卡片 source 解析为空串而非列表，需查 dump / parse 往返。
+- 修复后 spec-evolution 76 条全绿；C-10 / INCOMPLETE / CLEAN / finding 顺序四类断言一次性归因到同一处夹具换行。
+
+
+
+**批次 D · 隐含环境依赖（已闭环）**
+
+- 现场：把 PYTHONIOENCODING=utf-8 单独注入调用方环境（不配 PYTHONUTF8）后，门禁内 pytest 报 14 failed / 484 passed，而同一工作树手工运行 498 passed。调用方环境变了、代码没变，结论必须相同，否则「门禁绿」只是运气。
+- 根因：仍有 7 处 subprocess text 模式未声明 encoding，读者按 locale 解码；子进程输出编码一旦被环境变量改写，读者即解码失败并吞掉结果。
+- 修法：test_doc_governance_scripts 3 处、spec-evolution conftest 2 处、test_gate_invariants 2 处补齐 encoding="utf-8"。刻意**未改** dual-round-review 读取 git 输出的助手：git 输出的字节编码归 git 决定，强绑 UTF-8 会引入新的误判。
+- 收敛判据（四环境同结果，均 498 passed / 20 skipped / 0 failed）：干净环境 / PYTHONIOENCODING=utf-8 / PYTHONIOENCODING+PYTHONUTF8 / 附加 -B 与 PYTHONPYCACHEPREFIX。
 
 取证口径：每一批的用例清单须先全量采集并写回本卡，不以抽样代替全量；批次 A 的收敛判据是「无 UTF-8 环境变量下的通过数等于有 UTF-8 环境变量时的通过数」。
 
@@ -71,7 +78,8 @@ acceptance_criteria:
 - [x] 批次 B：POSIX 专属用例按能力守卫，FIFO 段 skip 前保留可跑断言
 - [x] 批次 C：test_judge_contract 的 C-10 基线与 INCOMPLETE 渲染断言与实现对齐（根因为夹具 CRLF，非判据逻辑）
 - [x] Windows .venv 下全量 pytest 为 0 failed（实测 498 passed / 20 skipped，有无 UTF-8 环境变量结果相同）
-- [ ] WSL 主线保持 0 failed，不回退既有通过数基线
+- [x] 批次 D：调用方注入 PYTHONIOENCODING 不再改变门禁结论（四环境同结果）
+- [ ] WSL 主线保持 0 failed，不回退既有通过数基线（本机 WSL 可用但本轮未跑，标记未验证）
 
 *（§3 DoD 复选框由作者在结项前人工核验并逐项勾选；`close` 只收敛本卡占位语并提示未勾选项数，不代勾验收准则。）*
 

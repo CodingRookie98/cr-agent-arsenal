@@ -488,7 +488,11 @@ def harden_stdio() -> None:
     """
     for stream in (sys.stdout, sys.stderr):
         try:
-            stream.reconfigure(errors="replace")
+            # BK-0047 批次 D：只设 errors="replace" 时**编码仍随宿主 locale**（Windows
+            # 为 cp936），于是「子进程写 cp936、调用方按 UTF-8 读」在多环境矩阵里必然
+            # 有一侧失败——输出编码变成调用方环境的函数。这里把编码一并固化，输出契约
+            # 才对环境不敏感；errors="replace" 保留，仍兜住不可编码字符（BK-0033）。
+            stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError, OSError):
             pass  # 非文本流/不可重配置（如测试捕获）时保持原状
 

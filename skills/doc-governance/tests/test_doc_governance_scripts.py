@@ -863,7 +863,7 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(docs), "--name", "T"],
-            capture_output=True, text=True, cwd=str(cwd),
+            capture_output=True, text=True, cwd=str(cwd), encoding="utf-8",
         )
         self.assertEqual(res.returncode, 0, res.stderr)
         self.assertTrue((docs / "llms.txt").exists(), "BK-0021: 默认落点应随 --root 派生")
@@ -1472,7 +1472,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
             as_fifo = subprocess.run(
                 [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
                  "--root", str(self.docs), "--output", str(fifo)],
-                capture_output=True, text=True, timeout=15,
+                capture_output=True, text=True, timeout=15, encoding="utf-8",
             )
         except subprocess.TimeoutExpired:
             self.fail("FIFO 落点必须被闸门立即拒绝，不得进入阻塞读取（无界读取面）")
@@ -1567,7 +1567,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
         try:
             res = subprocess.run(
                 [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
-                capture_output=True, text=True, timeout=20,
+                capture_output=True, text=True, timeout=20, encoding="utf-8",
             )
         except subprocess.TimeoutExpired:
             self.fail("审计对 FIFO 必须立即拒绝，不得进入阻塞读取")

@@ -217,7 +217,7 @@ def test_gi6_rejects_pycache_prefix_inside_repo(tmp_path):
     proc = subprocess.run(
         [sys.executable, "-B", str(COLLECT), "--repo-root", str(root),
          "--out", str(tmp_path / "facts.json")],
-        capture_output=True, text=True, env={**os.environ, "TMPDIR": str(root)},
+        capture_output=True, text=True, env={**os.environ, "TMPDIR": str(root)}, encoding="utf-8",
     )
     assert proc.returncode == 2, f"rc={proc.returncode}\n{proc.stdout}\n{proc.stderr}"
     assert "仓库内" in proc.stderr, proc.stderr
@@ -245,7 +245,7 @@ def test_gi6_pycache_prefix_is_per_run_and_private(tmp_path):
     seen = set()
     for _ in range(2):
         proc = subprocess.run([sys.executable, "-B", "-c", script],
-                              capture_output=True, text=True)
+                              capture_output=True, text=True, encoding="utf-8")
         assert proc.returncode == 0, proc.stderr
         path, mode = proc.stdout.split()
         if os.name == "posix":

@@ -125,14 +125,14 @@ def snapshot(root: Path, skip: set[str] | None = None) -> dict[str, tuple[int, i
 def run_collect(root: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(COLLECT), "--repo-root", str(root), *args],
-        capture_output=True, text=True, timeout=120,
+        capture_output=True, text=True, timeout=120, encoding="utf-8",
     )
 
 
 def run_judge(facts: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [sys.executable, str(JUDGE), "--facts", str(facts), *args],
-        capture_output=True, text=True, timeout=120,
+        capture_output=True, text=True, timeout=120, encoding="utf-8",
     )
 
 
