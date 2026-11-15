@@ -78,10 +78,32 @@ def parse_item_file(file_path: Path) -> Tuple[Dict, str]:
             except Exception:
                 metadata = {}
         else:
+            # BK-0047 批次 C：无 PyYAML 时的降级解析器（本模块刻意保持零依赖可选）。
+            # 原实现只认 "key: value"，会把 dump 出来的 "key:\n  - a" 列表读成空串，
+            # 于是 source / acceptance_criteria 在无 PyYAML 环境下静默丢失（Windows
+            # .venv 实测：create 出的卡片 source 被读成 ''）。此处按「键行 + 列表项」
+            # 两态推进：空值键先占位为 ''，遇到 "- " 行才升级为列表——无列表项时
+            # 语义与旧实现逐字一致。
+            current_key: Optional[str] = None
             for line in yaml_content.splitlines():
-                if ":" in line:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if stripped.startswith("- ") and current_key is not None:
+                    if not isinstance(metadata.get(current_key), list):
+                        metadata[current_key] = []
+                    metadata[current_key].append(stripped[2:].strip().strip("\"'"))
+                    continue
+                if line[:1] not in (" ", "\t") and ":" in line:
                     k, v = line.split(":", 1)
-                    metadata[k.strip()] = v.strip().strip("\"'")
+                    key = k.strip()
+                    val = v.strip().strip("\"'")
+                    if val == "[]":
+                        metadata[key] = []
+                        current_key = None
+                    else:
+                        metadata[key] = val
+                        current_key = key if val == "" else None
 
     return metadata, body
 

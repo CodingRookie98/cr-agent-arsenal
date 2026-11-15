@@ -27,6 +27,18 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 # 将短横线文件名做动态模块导入兼容
 import importlib.util
 
+# BK-0047 批次 B：本文件里少数用例依赖 POSIX 原语（FIFO / 非法字节文件名），
+# Windows 没有对等语义（os.mkfifo 不存在；字节路径交给 CreateProcess 会先崩在
+# 解码而不是被测断言上）。按能力而非按平台名做守卫，跨平台行为不打折。
+NEEDS_MKFIFO = unittest.skipUnless(
+    hasattr(os, "mkfifo"),
+    "依赖 os.mkfifo（POSIX FIFO 原语），当前平台无对等语义（BK-0047 批次 B）",
+)
+NEEDS_BYTE_PATHS = unittest.skipUnless(
+    os.name == "posix",
+    "依赖字节 argv / 非法字节文件名（POSIX 语义），Windows 文件系统与进程创建均不接受（BK-0047 批次 B）",
+)
+
 def load_module(name: str, file_path: Path):
     spec = importlib.util.spec_from_file_location(name, file_path)
     mod = importlib.util.module_from_spec(spec)
@@ -1440,12 +1452,19 @@ class TestBatchDIdentityContract(unittest.TestCase):
 
 
     def test_non_regular_file_output_is_refused(self):
-        """BK-0030 ③ / DR1-6：落点为目录或 FIFO 时必须拒绝（不得进入无界读取面）"""
+        """BK-0030 ③ / DR1-6：落点为目录或 FIFO 时必须拒绝（不得进入无界读取面）
+
+        目录分支全平台适用；FIFO 分支在无 os.mkfifo 的平台上显式 skip，
+        且 skip 发生在目录断言之后——不因平台缺原语而省略已可验证的部分。
+        """
         out_dir = self.test_dir / "outdir"
         out_dir.mkdir()
         as_dir = self._run_llms("--output", str(out_dir))
         self.assertNotEqual(as_dir.returncode, 0, "目录落点必须拒绝")
         self.assertTrue(out_dir.is_dir(), "不得破坏既有目录")
+
+        if not hasattr(os, "mkfifo"):
+            self.skipTest("无 os.mkfifo（POSIX FIFO 原语），FIFO 分支不可测（BK-0047 批次 B）")
 
         fifo = self.test_dir / "fifo"
         os.mkfifo(fifo)
@@ -1513,6 +1532,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
         self.assertEqual(gen.returncode, 0, f"按审计建议执行必须成功：{gen.stderr}")
 
 
+    @NEEDS_BYTE_PATHS
     def test_unencodable_byte_name_is_refused(self):
         """DR1-1：argv 中的非法字节（surrogateescape 孤立代理）必须在生成前被拒，
 
@@ -1540,6 +1560,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
         self.assertEqual((self.docs / "llms.txt").read_bytes(), before, "字节必须逐字节不变")
 
 
+    @NEEDS_MKFIFO
     def test_audit_refuses_non_regular_map(self):
         """R1-4 / R1-23：审计读路径对非规则文件必须立即拒绝（不得挂死或无界读取）"""
         os.mkfifo(self.docs / "llms.txt")
@@ -1553,6 +1574,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
         self.assertIn("机器地图", res.stdout + res.stderr, "必须给出可读缺陷串")
         self.assertNotEqual(res.returncode, 0, "非规则文件不得通过审计")
 
+    @NEEDS_BYTE_PATHS
     def test_generation_failure_leaves_no_partial_map(self):
         """R1-5 / R1-23：生成失败不得留下半成品地图或临时残 file"""
         bad_name = b"bad" + bytes([0xFF]) + b".md"

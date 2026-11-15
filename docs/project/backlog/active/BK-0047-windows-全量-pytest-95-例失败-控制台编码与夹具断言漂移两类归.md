@@ -45,11 +45,17 @@ acceptance_criteria:
 - 已改脚本（7 个 CLI 入口）：manage-backlog / audit-doc-health / check-doc-links / check-doc-control-sync / generate-llms-txt / trim-revision / manage-doc-index。
 - 已改测试侧解码（4 个文件）：test_doc_governance_scripts / test_doc_index_convention / test_llms_txt_hardening / test_manage_backlog_close_contract 的 subprocess 调用一律 encoding="utf-8"。
 
-**批次 B · 平台差异（POSIX 专属用例缺跳过守卫）**
+**批次 B · 平台差异（POSIX 专属用例缺跳过守卫）— 已闭环**
+
+- 修法：按**能力**而非平台名守卫（`hasattr(os, "mkfifo")` / `os.name == "posix"`），FIFO 分成两段——目录断言全平台照跑，仅在进入 FIFO 段前 `skipTest`，不因缺原语而放弃已可验证的部分。
 
 - TestBatchDIdentityContract 的 4 条（test_audit_refuses_non_regular_map / test_generation_failure_leaves_no_partial_map / test_non_regular_file_output_is_refused / test_unencodable_byte_name_is_refused）依赖 os.mkfifo（test_doc_governance_scripts.py:1451、:1545）与非法字节文件名；Windows 无此原语且无 skipif 守卫。
 
-**批次 C · 夹具与断言漂移**
+**批次 C · 夹具与断言漂移 — 已闭环**
+
+- 根因（6 条一并修复）：夹具 `conftest.write()` 缺 `newline="\n"`，Windows 下 `\n` 被翻成 `\r\n`，夹具文件字节数比 LF 基线多出「行数」；C-10 比的正是字节数，于是合成仓库在 Windows 上**恒**被判根提示词净增长，连带 INCOMPLETE / CLEAN / finding 顺序等渲染断言一起跑偏。修法：夹具与被测基线同规（UTF-8 + LF）。
+- GI-6 的 `0o700` 断言按 POSIX 权限位语义分流：非 POSIX 平台只断言「可读取」，独占性由「两次运行路径必须不同」覆盖。
+- `test_create_and_sync_index` 根因不同：`.venv` 未装 PyYAML，走降级解析器，而该解析器只认 `key: value`，把 `key:\n  - a` 列表读成空串——`source` / `acceptance_criteria` 在无 PyYAML 环境静默丢失。修法：降级解析器支持「空值键 + `- ` 列表项」两态推进，无列表项时语义与旧实现逐字一致。
 - test_judge_contract.py::test_clean_repo_yields_no_findings：合成仓库上产出 C-10 MID，baseline.json 口径与夹具不一致；另有 INCOMPLETE / CLEAN / finding 顺序三处渲染断言与实现不符。
 - test_gate_invariants.py::test_gi4_rendered_verdict_rows_are_empty（实测 3 行 vs 期望 2 行）、test_gi6_pycache_prefix_is_per_run_and_private（实测 0o777 vs 期望 0o700，Windows 无 POSIX 权限位）。
 - test_doc_governance_scripts.py::test_create_and_sync_index：创建的卡片 source 解析为空串而非列表，需查 dump / parse 往返。
@@ -62,8 +68,9 @@ acceptance_criteria:
 
 ## 3. 验收准则与验证设计 (DoD)
 - [x] 批次 A：skills/ 下无脚本把裸 emoji 直接 print 到 stdout（或统一改为 UTF-8 输出重配置），相关用例在 cp936 终端下转绿
-- [ ] 批次 B：test_judge_contract 的 C-10 基线与 INCOMPLETE 渲染断言与实现对齐，且不依赖同尺寸同 mtime 之类的脆弱性质
-- [ ] Windows .venv 下全量 pytest 为 0 failed，且采集器带门禁跑出 blocker/high = 0（C-09 不再红）
+- [x] 批次 B：POSIX 专属用例按能力守卫，FIFO 段 skip 前保留可跑断言
+- [x] 批次 C：test_judge_contract 的 C-10 基线与 INCOMPLETE 渲染断言与实现对齐（根因为夹具 CRLF，非判据逻辑）
+- [x] Windows .venv 下全量 pytest 为 0 failed（实测 498 passed / 20 skipped，有无 UTF-8 环境变量结果相同）
 - [ ] WSL 主线保持 0 failed，不回退既有通过数基线
 
 *（§3 DoD 复选框由作者在结项前人工核验并逐项勾选；`close` 只收敛本卡占位语并提示未勾选项数，不代勾验收准则。）*

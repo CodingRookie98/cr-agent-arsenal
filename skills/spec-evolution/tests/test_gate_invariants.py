@@ -248,7 +248,13 @@ def test_gi6_pycache_prefix_is_per_run_and_private(tmp_path):
                               capture_output=True, text=True)
         assert proc.returncode == 0, proc.stderr
         path, mode = proc.stdout.split()
-        assert mode == "0o700", f"重定向根权限 {mode}，非独占私有"
+        if os.name == "posix":
+            assert mode == "0o700", f"重定向根权限 {mode}，非独占私有"
+        else:
+            # BK-0047 批次 C：Windows 无 POSIX 权限位语义，chmod 后 os.stat 恒报 0o777。
+            # 「独占私有」在本平台的等价保证是 mkdtemp 的随机名 + 独占创建本身，
+            # 由下方「两次运行路径必须不同」的断言覆盖；此处只跳过权限位比较。
+            assert mode.startswith("0o"), f"权限读取失败: {mode}"
         assert str(root) not in path, f"重定向根落在仓库内: {path}"
         seen.add(path)
     assert len(seen) == 2, f"重定向根可预测（两次同路径 {seen}）——缓存投毒通道未关闭"

@@ -17,8 +17,14 @@ JUDGE = REPO_ROOT / "skills" / "spec-evolution" / "scripts" / "judge.py"
 
 
 def write(path: Path, text: str) -> Path:
+    """UTF-8 + LF 固化写入（BK-0047 批次 C）。
+
+    Windows 下 write_text 缺省 newline=None 会把 \n 翻成 \r\n，夹具文件的字节数因此
+    比 LF 基线多出「行数」那么多；C-10 比的是字节数，于是合成仓库在 Windows 上恒被判
+    「根提示词净增长」——判据本身被文件系统的换行约定污染。夹具必须与被测基线同规。
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    path.write_text(text, encoding="utf-8", newline="\n")
     return path
 
 
