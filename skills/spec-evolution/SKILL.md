@@ -50,6 +50,12 @@ python3 skills/spec-evolution/scripts/collect-facts.py --no-gates --skills goal-
 
 > ⚠️ `--no-gates` 会**跳过 S1 门禁事实采集**，因而 **C-09 在本轮不执行**：报告对该项输出「未采集门禁事实 —— C-09 未执行」而非「无失败」，退出码也不再反映既有门禁状态。**放行前的最终复查必须不带 `--no-gates`。**
 
+## 入参与落点守卫 (Guards)
+
+- **`--skills` 含未登记技能名 → exit 2**，并列出本仓库已知技能名。范围参数拼错不得伪装成「零 findings」（BK-0036）。
+- **输出路径不得指向被 git 跟踪的文件 → exit 2**：覆盖一份入库文档不可发现也无从恢复。确需覆盖时显式加 `--force`；未被跟踪的既有文件（含上次 `--out` 的产物）允许覆盖，`--out` 因此可重跑。
+- 守卫对 `--out`、`--report`、`--json` 一视同仁；非 git 仓库或目标在仓库外不触发（fail-open）。
+
 ## 判据表 (Criteria)
 
 十条判据的完整定义、严重度语义与已知表达上限见 [references/checks-spec.md](references/checks-spec.md)。

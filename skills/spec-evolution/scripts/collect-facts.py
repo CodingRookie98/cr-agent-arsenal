@@ -46,6 +46,9 @@ LINE_LIMIT = 1000
 # 最坏实测 420s 约 1.4 倍余量（不是相对暖缓存基线的 3 倍）。阈值只影响「跑不跑得
 # 完」；超时的**语义**由 timed_out 字段交给判定器分道处置，不靠调大数字掩盖问题。
 GATE_TIMEOUT = 600
+# 输出落点守卫里 `git ls-files` 的超时上限（秒）：只读索引查询，正常毫秒级，
+# 留 10s 只为兜住网络盘/杀毒软件导致的偶发挂起。
+TRACKED_CHECK_TIMEOUT = 10
 SCANNED_SUFFIXES = {".py", ".sh", ".md", ".json", ".yaml", ".yml", ".txt", ".cfg", ".toml"}
 # 字节码重定向目标：**仓库之外**（GI-6 只约束仓库内不留产物）。目录名随机、由
 # 本进程独占创建、退出即清理 —— 固定名（如 /tmp/spec-evolution-pycache）在
@@ -364,6 +367,41 @@ def subprocess_env(repo: Path) -> dict:
     }
 
 
+def is_git_tracked(repo: Path, target: Path) -> bool:
+    """目标是否被 git 索引跟踪（BK-0036 输出落点守卫的唯一判据）。
+
+    只拦「已被索引进版本库」的路径：覆盖一份入库文档既不可发现也无从恢复。未被跟踪的
+    既有文件（含上次 `--out` 的产物）必须允许覆盖，否则 `--out` 不可重跑。非 git 仓库、
+    git 不可用、目标在仓库外一律判为未跟踪（fail-open）——本守卫的职责是挡住「误把产物
+    写进源码树」，不是做仓库完整性判定。
+    """
+    try:
+        rel = target.resolve().relative_to(repo.resolve()).as_posix()
+    except (ValueError, OSError):
+        return False
+    try:
+        # git 本身不需要字节码抑制，但 GI-6 的结构性断言要求采集器内**每一处**
+        # subprocess.run 统一注入 env；统一优于为单点开例外，故直接复用 subprocess_env()。
+        proc = subprocess.run(
+            ["git", "-C", str(repo), "ls-files", "--error-unmatch", "--", rel],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            env=subprocess_env(repo), timeout=TRACKED_CHECK_TIMEOUT,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return proc.returncode == 0
+
+
+def output_guard(repo: Path, target: Path, force: bool) -> str | None:
+    """写入前守卫：拒绝覆盖被跟踪文件；返回拒绝原因，None 表示放行。"""
+    if force:
+        return None
+    if is_git_tracked(repo, target):
+        return (f"❌ 拒绝写入被 git 跟踪的文件: {target}\n"
+                f"   覆盖后不可恢复。确需覆盖请显式加 --force；否则把输出指向仓库外或未被跟踪的路径。")
+    return None
+
+
 def collect_gates(repo: Path) -> dict:
     gates = {}
     for key, cmd in GATES:
@@ -449,6 +487,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default=None, help="facts.json 输出路径；省略则打印到 stdout")
     ap.add_argument("--no-gates", action="store_true", help="跳过 S1 门禁事实采集（纯文件系统扫描）")
     ap.add_argument("--skills", default=None, help="逗号分隔的技能名子集；省略为全部")
+    ap.add_argument("--force", action="store_true",
+                    help="允许覆盖被 git 跟踪的输出路径（默认拒绝）")
     args = ap.parse_args(argv)
 
     repo = Path(args.repo_root).resolve()
@@ -460,6 +500,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     only = [s.strip() for s in args.skills.split(",") if s.strip()] if args.skills else None
+    if only is not None:
+        known = discover_skills(repo)
+        unknown = [s for s in only if s not in known]
+        if unknown:
+            # BK-0036 输入范围守卫：拼错的技能名此前产出 selected=[] → 「技能 0 个」→ CLEAN
+            # → exit 0，范围参数拼错被伪装成「零 findings」，与本技能「退出码即结论」冲突。
+            print(f"❌ --skills 含未登记技能名: {', '.join(unknown)}", file=sys.stderr)
+            print(f"   本仓库已知技能: {', '.join(known) if known else '（无）'}", file=sys.stderr)
+            return 2
     try:
         facts = build_facts(repo, with_gates=not args.no_gates, only=only)
     except CollectError as exc:
@@ -471,6 +520,10 @@ def main(argv: list[str] | None = None) -> int:
         out = Path(args.out)
         if not out.parent.is_dir():
             print(f"❌ 输出目录不存在: {out.parent}", file=sys.stderr)
+            return 2
+        refusal = output_guard(repo, out, args.force)
+        if refusal:
+            print(refusal, file=sys.stderr)
             return 2
         out.write_text(payload + "\n", encoding="utf-8")
         print(f"✅ 事实已导出: {out}（技能 {len(facts['skills'])} 个，门禁 {'已采集' if facts['gates'] else '已跳过'}）")

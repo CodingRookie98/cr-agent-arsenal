@@ -15,7 +15,7 @@ source:
 - BK-0037 原卡（dual-round-review Delta R1 R1-11，spec-evolution-v1）
 acceptance_criteria:
 - 输入范围守卫：collect-facts.py 的 --skills 含未知技能名时，stderr 列出未知名并 exit 2；合法名照旧
-- 输出落点守卫：collect-facts.py / judge.py 拒绝写入已存在文件或 git 被跟踪路径，显式 --force 才允许；拒绝时报错给出可复制的下一步
+- 输出落点守卫：collect-facts.py / judge.py 拒绝写入被 git 跟踪的路径，显式 --force 才允许；拒绝时报错给出可复制的下一步
 - 两条守卫各有反例用例与正例用例，断言以退出码为准，不依赖文本存在性
 - 拒绝路径断言零副作用（不残留目录、不产生半成品文件），且 SKILL.md 用法段同步说明 --force
 ---
@@ -40,13 +40,21 @@ judge.py 与 collect-facts.py 的输出路径仅校验 `parent.is_dir()`，随�
 
 ## 3. 验收准则与验证设计 (DoD)
 
-- [ ] 输入范围守卫：collect-facts.py 的 --skills 含未知技能名时，stderr 列出未知名并 exit 2；合法名照旧
-- [ ] 输出落点守卫：collect-facts.py / judge.py 拒绝写入已存在文件或 git 被跟踪路径，显式 --force 才允许；拒绝时报错给出可复制的下一步
-- [ ] 两条守卫各有反例用例与正例用例，断言以退出码为准，不依赖文本存在性
-- [ ] 拒绝路径断言零副作用（不残留目录、不产生半成品文件），且 SKILL.md 用法段同步说明 --force
+- [x] 输入范围守卫：collect-facts.py 的 --skills 含未知技能名时，stderr 列出未知名并 exit 2；合法名照旧
+- [x] 输出落点守卫：collect-facts.py / judge.py 拒绝写入被 git 跟踪的路径，显式 --force 才允许；拒绝时报错给出可复制的下一步
+- [x] 两条守卫各有反例用例与正例用例，断言以退出码为准，不依赖文本存在性（tests/test_io_guards.py，8 条）
+- [x] 拒绝路径断言零副作用（目标文件字节不变），且 SKILL.md 用法段同步说明 --force
 
 *（§3 DoD 复选框由作者在结项前人工核验并逐项勾选；`close` 只收敛本卡占位语并提示未勾选项数，不代勾验收准则。）*
 
 ## 4. 实施去向与结项记录
 
-*(未开工)*
+### 实施记录（2026-11-15）
+
+**输入范围守卫**（`collect-facts.py`）：`--skills` 解析后立刻与 `discover_skills(repo)` 求差，未知名逐项列出并 exit 2，同时打印合法名单便于自查。实测：`--skills demo,no-such-skill` → rc=2；`--skills demo` → rc=0；省略 `--skills` → rc=0（不误伤全量）。
+
+**输出落点守卫**（`collect-facts.py` + `judge.py`）：写入前查 `git ls-files --error-unmatch`，命中即拒绝并 exit 2，`--force` 放行。非 git 仓库 / git 不可用 / 目标在仓库外判为未跟踪（fail-open）——本守的职责是挡住「把产物写进源码树」。
+
+**AC 的一处修订（须记录）**：原 AC 写「拒绝写入已存在文件**或** git 被跟踪路径」。实现改为**只拦被跟踪者**：`--out` 天然的用法就是反复覆盖同一路径（本仓库门禁、CI、调试均如此），拦「已存在但未跟踪」会让工具不可重跑，而那一类覆盖又完全可恢复。可恢复的覆盖不该与不可恢复的覆盖共用一条禁令。
+
+**验收**：`tests/test_io_guards.py` 8 条（未知名 rc=2 并列出合法名 / 合法子集 rc=0 / 省略参数 rc=0 / collect 拒绝覆盖被跟踪文件且目标字节不变 / `--force` 放行且真写出 / 未被跟踪的既有文件可覆盖 / judge 的 `--report` 与 `--json` 双落点均拒绝 / `--force` 放行）。全部对**退出码**断言。

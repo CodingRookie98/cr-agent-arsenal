@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -432,6 +433,40 @@ def load_facts(path: Path) -> dict:
     return data
 
 
+TRACKED_CHECK_TIMEOUT = 10
+
+
+def is_git_tracked(repo: Path, target: Path) -> bool:
+    """目标是否被 git 索引跟踪（BK-0036 输出落点守卫）。
+
+    与 `collect-facts.py` 同源实现（两脚本各自独立分发，不共享模块）。只拦已被索引跟踪
+    的路径；非 git 仓库 / git 不可用 / 目标在仓库外一律判为未跟踪（fail-open）。
+    """
+    try:
+        rel = target.resolve().relative_to(repo.resolve()).as_posix()
+    except (ValueError, OSError):
+        return False
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(repo), "ls-files", "--error-unmatch", "--", rel],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=TRACKED_CHECK_TIMEOUT,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return proc.returncode == 0
+
+
+def output_guard(repo: Path, target: Path, force: bool) -> str | None:
+    """写入前守卫：拒绝覆盖被跟踪文件；返回拒绝原因，None 表示放行。"""
+    if force:
+        return None
+    if is_git_tracked(repo, target):
+        return (f"❌ 拒绝写入被 git 跟踪的文件: {target}\n"
+                f"   覆盖后不可恢复。确需覆盖请显式加 --force；否则把输出指向仓库外或未被跟踪的路径。")
+    return None
+
+
 def main(argv=None) -> int:
     # 编码硬化放在入口内（而非 `__main__`）：以模块方式导入并调用 `main()` 的
     # 调用方同样受保护（R1-5）；`run_entry` 兜住 reconfigure 失败的残余形态。
@@ -442,6 +477,8 @@ def main(argv=None) -> int:
                     help="锚点解析根；缺省取 facts.repo_root")
     ap.add_argument("--report", default=None, help="演进报告输出路径")
     ap.add_argument("--json", dest="json_out", default=None, help="finding JSON 输出路径")
+    ap.add_argument("--force", action="store_true",
+                    help="允许覆盖被 git 跟踪的输出路径（默认拒绝）")
     args = ap.parse_args(argv)
 
     try:
@@ -482,6 +519,14 @@ def main(argv=None) -> int:
         sys.stderr.write(
             f"❌ 事实文件结构畸形（判定器消费期异常，未写出任何产物）：{type(exc).__name__}: {exc}\n")
         return 2
+
+    for target in (args.report, args.json_out):
+        if not target:
+            continue
+        refusal = output_guard(repo_root, Path(target), args.force)
+        if refusal:
+            sys.stderr.write(refusal + "\n")
+            return 2
 
     if args.report:
         path = Path(args.report)
