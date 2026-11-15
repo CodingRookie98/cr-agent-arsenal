@@ -65,6 +65,8 @@ license: MIT
 
 判定阈值、通道 C 完整规程与误判降级规则见 [stage-progression-protocol.md](references/stage-progression-protocol.md) 的执行通道分级判定矩阵。
 
+> **可选依赖**：P-1 / P0 / P0.5 / P1 的外部技能是**增强件而非安装前提**。进入首个相关阶段前按 [optional-skill-dependencies.md](references/optional-skill-dependencies.md) 探测一次；缺失时按「交互可用 / 交互不可用 / 安装失败」三分支处置——**缺什么问什么，但不得阻塞，也不得伪称已激活**。
+
 ---
 
 ## 异常恢复
@@ -97,4 +99,5 @@ python3 "$SKILL_DIR/scripts/goal-state-tracker.py" complete-task "p3-1"
 - [context-engineering.md](references/context-engineering.md) — 2-Action Rule、读写决策矩阵与检查点规范
 - [failure-recovery-protocol.md](references/failure-recovery-protocol.md) — 失败矩阵与 3-Tries 熔断
 - [documentation-sync-matrix.md](references/documentation-sync-matrix.md) — P5 文档联动复核清单
+- [optional-skill-dependencies.md](references/optional-skill-dependencies.md) — 外部技能依赖清单、缺失探测与三分支降级
 - 模板套件：`templates/` 下的计划、原子任务、调研与评估四份模板
