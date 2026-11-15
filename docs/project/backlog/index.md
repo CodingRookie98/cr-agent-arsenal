@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **15** 项 (进行中: 0, 计划中: 15)
-- **历史已归档项**: **32** 项 (物理归档于 `archive/` 目录)
+- **现役活跃待办**: **14** 项 (进行中: 0, 计划中: 14)
+- **历史已归档项**: **33** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 1 | 14 |
+| **活跃数量** | 0 | 0 | 0 | 14 |
 
 ---
 
@@ -29,7 +29,6 @@
 
 | 编号 | 优先级 | 类型 | 标题 | 触发条件 | 卡片入口 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BK-0047** | `P2` | `Bug` | Windows 全量 pytest 95 例失败：控制台编码与夹具断言漂移两类归因 | 在 Windows 原生环境（cp936 终端）运行 spec-evolution 采集器带门禁模式，或全量 pytest 时 | [BK-0047](./active\BK-0047-windows-全量-pytest-95-例失败-控制台编码与夹具断言漂移两类归.md) |
 | **BK-0005** | `P3` | `Governance` | 豁免判定前执行路径根相对语义归一化 | null | [BK-0005](./active\BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0006** | `P3` | `TechDebt` | 四条审查护栏各补 1 条反证测试用例 | null | [BK-0006](./active\BK-0006-review-gates-negative-test-cases.md) |
 | **BK-0009** | `P3` | `Bug` | resolve_archive_dir 增加交付单元与请求 slug 一致性校验 | null | [BK-0009](./active\BK-0009-resolve-archive-dir-slug-consistency.md) |
@@ -49,10 +48,11 @@
 
 ## 4. 🗄️ 历史已结项归档 (Archive Summary)
 
-> 共收录 32 条已关闭历史条目，详情参见 `archive/` 各版本目录。
+> 共收录 33 条已关闭历史条目，详情参见 `archive/` 各版本目录。
 
 | 编号 | 类型 | 标题 | 结项日期 | 结论 | 交付去向 | 归档卡片 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **BK-0047** | `Bug` | Windows 全量 pytest 95 例失败：控制台编码与夹具断言漂移两类归因 | 2026-11-15 | delivered | 四批修复：a11ea14(A) / 1c982e4(B+C) / b9f37f1(D)；Windows 498 passed、WSL 518 passed、采集器四门禁 blocker/high=0 | [BK-0047](./archive\2026-Q4\BK-0047-windows-全量-pytest-95-例失败-控制台编码与夹具断言漂移两类归.md) |
 | **BK-0041** | `TechDebt` | 存量技能交付面残余债务：agy 设计书缺失 / 两条 description 超建议值 / doc-governance 测试文件超行限 | 2026-11-12 | wontfix | C-02 交付：新增 docs/explanation/architecture/agy-delegation-workflow-design.md；C-04 | [BK-0041](./archive\2026-Q4\BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md) |
 | **BK-0046** | `Bug` | spec-evolution 门禁 pytest 超时阈值（GATE_TIMEOUT=300s）与实际套件时长临界导致 C-09 假 BLOCKER | 2026-11-12 | delivered | docs/project/backlog/archive/2026-Q4/BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo.md | [BK-0046](./archive\2026-Q4\BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo.md) |
 | **BK-0007** | `Governance` | GOVERNANCE.md 豁免表文本精确化 | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0007](./archive\2026-Q4\BK-0007-governance-doc-exemption-table-accuracy.md) |
@@ -72,6 +72,5 @@
 | **BK-0033** | `TechDebt` | 门禁输出非 UTF-8 环境下的 print 硬化与异常退出码收敛 | 2026-10-14 | delivered | fix/p2-six-backlog-items @ deb691e（R2 终审 ✅ 准予交付；审查归档 docs/project/reviews/2026-10-14-p2-six-backlog-items/） | [BK-0033](./archive\2026-Q4\BK-0033-门禁子进程非-utf-8-输出导致裸-traceback.md) |
 | **BK-0034** | `Bug` | baseline.json 损坏静默降级导致 C-10 假阳性与假阴性 | 2026-10-14 | delivered | fix/p2-six-backlog-items @ deb691e（R2 终审 ✅ 准予交付；审查归档 docs/project/reviews/2026-10-14-p2-six-backlog-items/） | [BK-0034](./archive\2026-Q4\BK-0034-baseline-json-损坏静默降级导致-c-10-假阳性与假阴性.md) |
 | **BK-0035** | `Governance` | RFC-0004 的 GI-1/GI-3 不变式清单与实现未对齐 | 2026-10-14 | wontfix | 不回改历史提案：RFC-0004 与落地设计书的 GI 编号语义分歧属提案期与 SSOT 的正常演进，零运行时影响，设计书为权威口径 | [BK-0035](./archive\2026-Q4\BK-0035-rfc-0004-的-gi-1-gi-3-不变式清单与实现未对齐.md) |
-| **BK-0038** | `TechDebt` | 跨技能链接正则存在两份近似实现 | 2026-10-14 | wontfix | 前提不成立：两处正则在字符类成员上语义完全等价（唯一差异为冗余转义），零行为分歧；重复实现应随下次实际改动顺带收敛 | [BK-0038](./archive\2026-Q4\BK-0038-跨技能链接正则存在两份近似实现.md) |
 
-*(其余 12 条历史记录已隐藏，可查看 archive/ 目录)*
+*(其余 13 条历史记录已隐藏，可查看 archive/ 目录)*

@@ -2,14 +2,14 @@
 id: BK-0047
 title: Windows 全量 pytest 95 例失败：控制台编码与夹具断言漂移两类归因
 type: Bug
-status: active
+status: completed
 priority: P2
 trigger: 在 Windows 原生环境（cp936 终端）运行 spec-evolution 采集器带门禁模式，或全量 pytest 时
 created_at: 2026-11-15
 updated_at: 2026-11-15
-closed_at: null
-resolution: null
-destination: null
+closed_at: 2026-11-15
+resolution: delivered
+destination: 四批修复：a11ea14(A) / 1c982e4(B+C) / b9f37f1(D)；Windows 498 passed、WSL 518 passed、采集器四门禁 blocker/high=0
 source:
   - 2026-11-15 会话：C-09 假 BLOCKER 排查与解释器修复（提交 6b99b30）
   - docs/project/reviews/2026-10-19-skill-scripts-python-unification.md：既有 Windows 失败集为基线的记录
@@ -79,9 +79,13 @@ acceptance_criteria:
 - [x] 批次 C：test_judge_contract 的 C-10 基线与 INCOMPLETE 渲染断言与实现对齐（根因为夹具 CRLF，非判据逻辑）
 - [x] Windows .venv 下全量 pytest 为 0 failed（实测 498 passed / 20 skipped，有无 UTF-8 环境变量结果相同）
 - [x] 批次 D：调用方注入 PYTHONIOENCODING 不再改变门禁结论（四环境同结果）
-- [ ] WSL 主线保持 0 failed，不回退既有通过数基线（本机 WSL 可用但本轮未跑，标记未验证）
+- [x] WSL 主线保持 0 failed（ubuntu_dev 实测 518 passed / 0 failed，高于既有 502 基线）
 
 *（§3 DoD 复选框由作者在结项前人工核验并逐项勾选；`close` 只收敛本卡占位语并提示未勾选项数，不代勾验收准则。）*
 
 ## 4. 实施去向与结项记录
-*(未开工)*
+
+### 结项记录 (2026-11-15)
+- **结论**: delivered
+- **去向/凭据**: 四批修复：a11ea14(A) / 1c982e4(B+C) / b9f37f1(D)；Windows 498 passed、WSL 518 passed、采集器四门禁 blocker/high=0
+- **归档目录**: archive/2026-Q4/
