@@ -188,6 +188,27 @@ def _load_collector():
     return mod
 
 
+def test_gate_interpreter_inherits_then_overrides(monkeypatch):
+    """门禁解释器缺省继承本进程，`SPEC_EVOLUTION_PYTHON` 可覆盖，**不得写死 `python3`**。
+
+    写死会让「系统 python3 无 pytest、采集器所在 venv 有」的环境把环境缺失记成
+    `exit_code != 0`，再被 C-09 读成「仓库既有门禁已失败」（假 BLOCKER）。
+    """
+    import sys as _sys
+
+    monkeypatch.delenv("SPEC_EVOLUTION_PYTHON", raising=False)
+    mod = _load_collector()
+    assert [cmd[0] for _, cmd in mod.GATES], "GATES 不得为空"
+    assert all(cmd[0] == _sys.executable for _, cmd in mod.GATES), \
+        "缺省必须继承采集器自身的解释器"
+    assert not any(cmd[0] == "python3" for _, cmd in mod.GATES), "不得写死 python3"
+
+    monkeypatch.setenv("SPEC_EVOLUTION_PYTHON", "/opt/py/bin/python9")
+    mod = _load_collector()
+    assert all(cmd[0] == "/opt/py/bin/python9" for _, cmd in mod.GATES), \
+        "环境变量必须覆盖解释器，且覆盖发生在模块加载期"
+
+
 def test_gate_timeout_keeps_partial_output(repo: Path):
     """超时门禁的 `summary` 必须是「卡在哪一行」，不是又一句 TIMEOUT。
 

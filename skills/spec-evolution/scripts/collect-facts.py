@@ -72,15 +72,34 @@ COMMAND_EXAMPLE_RX = re.compile(r"^\s*(?:bash|sh|python3?|npx|pnpm|npm|node)\s")
 # 与 skills/_shared/tests/test_cross_skill_links.py 同源的跨技能链接正则
 CROSS_RX_TEMPLATE = r"(?:^|[\s(=/\"'>、，（])(?:[^)\s\"'<>]*?[\\/])*(?<![.])(?:{names})[\\/]"
 
+GATE_PYTHON_ENV = "SPEC_EVOLUTION_PYTHON"
+
+
+def gate_python() -> str:
+    """门禁子进程的解释器：缺省继承本进程解释器，`SPEC_EVOLUTION_PYTHON` 可覆盖。
+
+    不写死 `python3`：门禁必须与采集器跑在同一套依赖里。否则「采集器所在解释器装了
+    pytest、系统 python3 没装」会让门禁以非零码收场，再被 C-09 判成「仓库既有门禁已
+    失败」——把**环境缺失**伪装成**交付基线不成立**，且两者在现场不可分辨
+    （2026-11-15 实测：Windows 上 `python3` 无 pytest，`cross_skill_links` 与 `pytest`
+    两道门禁全红，而用 `.venv` 解释器实测该门禁为 4 passed）。
+
+    继承 `sys.executable` 是唯一自洽的默认：跑采集器与跑门禁的是同一套依赖。
+    需要临时换解释器时用环境变量覆盖，不必改代码。
+    """
+    override = os.environ.get(GATE_PYTHON_ENV, "").strip()
+    return override or sys.executable or "python3"
+
+
 GATES = (
-    ("pytest", ["python3", "-B", "-m", "pytest", "skills/", "-q", "-p", "no:cacheprovider"]),
+    ("pytest", [gate_python(), "-B", "-m", "pytest", "skills/", "-q", "-p", "no:cacheprovider"]),
     ("check_doc_links",
-     ["python3", "-B", "skills/doc-governance/scripts/check-doc-links.py",
+     [gate_python(), "-B", "skills/doc-governance/scripts/check-doc-links.py",
       "--root", "docs"]),
     ("audit_doc_health",
-     ["python3", "-B", "skills/doc-governance/scripts/audit-doc-health.py"]),
+     [gate_python(), "-B", "skills/doc-governance/scripts/audit-doc-health.py"]),
     ("cross_skill_links",
-     ["python3", "-B", "-m", "pytest", "skills/_shared/tests/test_cross_skill_links.py",
+     [gate_python(), "-B", "-m", "pytest", "skills/_shared/tests/test_cross_skill_links.py",
       "-q", "-p", "no:cacheprovider"]),
 )
 
