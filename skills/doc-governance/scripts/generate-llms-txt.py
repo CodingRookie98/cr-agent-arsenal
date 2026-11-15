@@ -344,6 +344,10 @@ def _resolve_outgoing_name(out_path: Path, requested: Optional[str]) -> str:
     sys.exit(1)
 
 def main():
+    # Windows 控制台缺省 cp936：入口处固化为 UTF-8，否则 emoji / 富符号 print 直接抛
+    # UnicodeEncodeError（BK-0047 批次 A）。与仓库既有多脚本同源写法保持一致。
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
     parser = argparse.ArgumentParser(description="机器可读 llms.txt 自动化生成器")
     parser.add_argument("--root", default="docs", help="文档根目录 (默认 docs)")
     parser.add_argument("--output", default=None, help="输出路径 (缺省为 <root>/llms.txt，随 --root 派生)")

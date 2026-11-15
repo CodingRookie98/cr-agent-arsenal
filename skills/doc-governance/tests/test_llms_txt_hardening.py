@@ -65,14 +65,14 @@ class LlmsHardeningTestBase(unittest.TestCase):
         return subprocess.run(
             [sys.executable, str(GENERATOR), "--root", str(self.root), "--output", str(self.llms_path())],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         )
 
     def run_check(self, *extra: str) -> subprocess.CompletedProcess:
         return subprocess.run(
             [sys.executable, str(CHECKER), "--root", str(self.root), *extra],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         )
 
     def find_lines(self, needle: str):

@@ -93,7 +93,7 @@ class IndexConventionTestBase(unittest.TestCase):
         return subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "manage-doc-index.py"), *args],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         )
 
     def run_scaffold(self, *args):
@@ -108,14 +108,14 @@ class IndexConventionTestBase(unittest.TestCase):
         return subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "check-doc-links.py"), "--root", str(self.test_dir)],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         )
 
     def run_control_sync(self):
         return subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "check-doc-control-sync.py"), "--root", str(self.test_dir)],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         )
 
     def read(self, rel):
@@ -149,7 +149,7 @@ class TestManageDocIndexEnsure(IndexConventionTestBase):
         sync_ok = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "check-doc-control-sync.py"), "--root", str(self.test_dir)],
             capture_output=True,
-            text=True,
+            text=True, encoding="utf-8",
         )
         self.assertEqual(sync_ok.returncode, 0, sync_ok.stdout + sync_ok.stderr)
 
@@ -612,7 +612,7 @@ class TestDeltaHardening(IndexConventionTestBase):
             [sys.executable, "-W", "error::SyntaxWarning", "-c",
              "import py_compile, sys; py_compile.compile(sys.argv[1], doraise=True)",
              str(SCRIPTS_DIR / "manage-doc-index.py")],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertEqual(res.returncode, 0, "DR1-1: 严格告警下编译失败\n" + res.stderr)
 

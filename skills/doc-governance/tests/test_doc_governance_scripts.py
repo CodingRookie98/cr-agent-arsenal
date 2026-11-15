@@ -532,7 +532,7 @@ class TestManageBacklogAndFormB(unittest.TestCase):
 
     def run_cli(self, *args) -> subprocess.CompletedProcess:
         cmd = [sys.executable, str(self.manage_script), "--root", str(self.test_dir)] + list(args)
-        return subprocess.run(cmd, capture_output=True, text=True)
+        return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
 
     def test_create_and_sync_index(self):
         """测试 create 命令自动分配递增 BK 编号、生成标准卡片文件并自动同步 index.md"""
@@ -884,7 +884,7 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "trim-revision.py"), "--root", str(archived), "--fix"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertEqual(res.returncode, 0, res.stderr)
         self.assertEqual(archived.read_bytes(), before, "R1-3: 单文件模式不得改写归档")
@@ -910,7 +910,7 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "trim-revision.py"), "--root", str(archived), "--fix"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertEqual(res.returncode, 0, res.stderr)
         self.assertNotIn("完美", res.stdout, "R1-3: 无可检查文档时不得宣称符合规范")
@@ -939,7 +939,7 @@ class TestArchiveExemptionBatchA(unittest.TestCase):
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
              "--root", str(archived_dir), "--name", "T"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertNotEqual(res.returncode, 0, "DR1-3: 不得向交付凭据归档内写机器地图")
         self.assertFalse((archived_dir / "llms.txt").exists(), "DR1-3: 归档内不得出现 llms.txt")
@@ -960,7 +960,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
     def _run_llms(self, *extra):
         return subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs), *extra],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
 
     def test_llms_output_symlinked_into_archive_is_refused(self):
@@ -998,7 +998,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
 
         combined = res.stdout + res.stderr
@@ -1017,7 +1017,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertNotIn("机器地图", res.stdout + res.stderr,
                          "BK-0025: 一致的机器地图不得被误报（精确断言，防通用假阳性）")
@@ -1030,7 +1030,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertNotIn("机器地图", res.stdout + res.stderr,
                          "R1-2: 自定义 --name 的地图不得被误报为漂移")
@@ -1046,7 +1046,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertNotIn("机器地图", res.stdout + res.stderr,
                          "R1-1: 零覆盖场景不适用本项，不得硬阻断")
@@ -1077,7 +1077,7 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
 
         res = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertNotIn("机器地图", res.stdout + res.stderr,
                          "R1-1: 零覆盖场景本项不适用，不得硬阻断（修复命令必然 rc=1）")
@@ -1110,12 +1110,12 @@ class TestBatchBLlmsIntegrity(unittest.TestCase):
         self.assertEqual(gen.returncode, 0, gen.stderr)
 
         audit_cmd = [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)]
-        baseline = subprocess.run(audit_cmd, capture_output=True, text=True)
+        baseline = subprocess.run(audit_cmd, capture_output=True, text=True, encoding="utf-8")
         self.assertEqual(baseline.returncode, 0,
                          f"夹具本身必须是 PASS 的合规树：{baseline.stdout}{baseline.stderr}")
 
         (self.docs / "llms.txt").write_text("# Stale Map\n\n- 过期条目\n", encoding="utf-8", newline="\n")
-        drifted = subprocess.run(audit_cmd, capture_output=True, text=True)
+        drifted = subprocess.run(audit_cmd, capture_output=True, text=True, encoding="utf-8")
 
         self.assertNotEqual(drifted.returncode, 0,
                             "漂移必须阻断：若 PASS 接线被移除，本断言即打红（接线承重）")
@@ -1156,7 +1156,7 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
     def _audit(self):
         return subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
 
     def test_hint_strips_terminal_control_sequences(self):
@@ -1198,7 +1198,7 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
                 gen = subprocess.run(
                     [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
                      "--output", str(self.docs / "llms.txt"), "--name=" + name],
-                    capture_output=True, text=True,
+                    capture_output=True, text=True, encoding="utf-8",
                 )
                 self.assertEqual(gen.returncode, 0, gen.stderr)
 
@@ -1217,7 +1217,7 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
         gen = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
              "--output", str(self.docs / "llms.txt"), "--name=--root"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertNotEqual(gen.returncode, 2, "D2-4: --name= 形式必须被 argparse 正常接受")
         self.assertNotIn("expected one argument", gen.stderr)
@@ -1277,7 +1277,7 @@ class TestBatchCLlmsHintHardening(unittest.TestCase):
                 subprocess.run(
                     [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs),
                      "--output", str(self.docs / "llms.txt")],
-                    capture_output=True, text=True,
+                    capture_output=True, text=True, encoding="utf-8",
                 )
 
                 after_h1 = (self.docs / "llms.txt").read_text(encoding="utf-8").splitlines()[0]
@@ -1330,13 +1330,13 @@ class TestBatchDIdentityContract(unittest.TestCase):
     def _run_llms(self, *extra):
         return subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.docs), *extra],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
 
     def _audit(self):
         return subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(self.docs)],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
 
     def _write_map(self, head: str) -> Path:
@@ -1508,7 +1508,7 @@ class TestBatchDIdentityContract(unittest.TestCase):
             [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
              "--root", str(self.docs), "--output", str(self.docs / "llms.txt"),
              shlex.split(line.split("请以 ", 1)[1])[0]],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertEqual(gen.returncode, 0, f"按审计建议执行必须成功：{gen.stderr}")
 

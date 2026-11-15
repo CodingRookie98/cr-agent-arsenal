@@ -592,6 +592,10 @@ def cmd_sync_index(args):
 # ==============================================================================
 
 def main():
+    # Windows 控制台缺省 cp936：入口处固化为 UTF-8，否则 emoji / 富符号 print 直接抛
+    # UnicodeEncodeError（BK-0047 批次 A）。与仓库既有多脚本同源写法保持一致。
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
     parser = argparse.ArgumentParser(description="Backlog 形态 B (Issue-as-File) 自动化管理与可编程查询工具")
     parser.add_argument("--root", default="docs", help="文档根目录 (默认: docs)")
 

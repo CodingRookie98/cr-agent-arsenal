@@ -254,6 +254,10 @@ def scan_directory(
 
 
 def main():
+    # Windows 控制台缺省 cp936：入口处固化为 UTF-8，否则 emoji / 富符号 print 直接抛
+    # UnicodeEncodeError（BK-0047 批次 A）。与仓库既有多脚本同源写法保持一致。
+    sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
     parser = argparse.ArgumentParser(description="全域 Markdown 物理链接与锚点断链静态扫描器")
     parser.add_argument("--root", default="docs", help="扫描根目录 (默认为 docs)")
     parser.add_argument("--dir", action="append", help="指定扫描子目录或文件 (可多次指定)")

@@ -33,7 +33,7 @@ class ManageBacklogCloseContractTest(unittest.TestCase):
 
     def run_cli(self, *args) -> subprocess.CompletedProcess:
         cmd = [sys.executable, str(MANAGE_SCRIPT), "--root", str(self.test_dir)] + list(args)
-        return subprocess.run(cmd, capture_output=True, text=True)
+        return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
 
     # ---------- helpers ----------
 
@@ -208,7 +208,7 @@ class ScaffoldBacklogTemplateConsistencyTest(unittest.TestCase):
         res_create = subprocess.run(
             [sys.executable, str(MANAGE_SCRIPT), "--root", str(create_root),
              "create", "对照用例", "--type", "TechDebt", "--priority", "P2"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding="utf-8",
         )
         self.assertEqual(res_create.returncode, 0, f"create 失败: {res_create.stderr}")
         created = sorted((create_root / BACKLOG_REL / "active").glob("BK-*.md"))
