@@ -2,22 +2,22 @@
 id: BK-0036
 title: collect-facts/judge 的输入范围与输出落点双守卫（未知技能名静默 CLEAN + 静默覆盖被跟踪文件）
 type: Security
-status: active
+status: completed
 priority: P2
 trigger: ① 调用 collect-facts.py --skills <拼错的技能名>；② 把 --out / --json / --report 指向仓库内已存在的被跟踪文件
-created_at: '2026-10-12'
-updated_at: '2026-11-15'
-closed_at: null
-resolution: null
-destination: null
+created_at: 2026-10-12
+updated_at: 2026-11-15
+closed_at: 2026-11-15
+resolution: delivered
+destination: 0954ca8（双守卫实现 + tests/test_io_guards.py 8 条退出码断言）
 source:
-- BK-0036 原卡（dual-round-review Delta R1 R1-10，spec-evolution-v1）
-- BK-0037 原卡（dual-round-review Delta R1 R1-11，spec-evolution-v1）
+  - BK-0036 原卡（dual-round-review Delta R1 R1-10，spec-evolution-v1）
+  - BK-0037 原卡（dual-round-review Delta R1 R1-11，spec-evolution-v1）
 acceptance_criteria:
-- 输入范围守卫：collect-facts.py 的 --skills 含未知技能名时，stderr 列出未知名并 exit 2；合法名照旧
-- 输出落点守卫：collect-facts.py / judge.py 拒绝写入被 git 跟踪的路径，显式 --force 才允许；拒绝时报错给出可复制的下一步
-- 两条守卫各有反例用例与正例用例，断言以退出码为准，不依赖文本存在性
-- 拒绝路径断言零副作用（不残留目录、不产生半成品文件），且 SKILL.md 用法段同步说明 --force
+  - 输入范围守卫：collect-facts.py 的 --skills 含未知技能名时，stderr 列出未知名并 exit 2；合法名照旧
+  - 输出落点守卫：collect-facts.py / judge.py 拒绝写入被 git 跟踪的路径，显式 --force 才允许；拒绝时报错给出可复制的下一步
+  - 两条守卫各有反例用例与正例用例，断言以退出码为准，不依赖文本存在性
+  - 拒绝路径断言零副作用（不残留目录、不产生半成品文件），且 SKILL.md 用法段同步说明 --force
 ---
 
 ## 1. 背景与问题陈述
@@ -58,3 +58,8 @@ judge.py 与 collect-facts.py 的输出路径仅校验 `parent.is_dir()`，随�
 **AC 的一处修订（须记录）**：原 AC 写「拒绝写入已存在文件**或** git 被跟踪路径」。实现改为**只拦被跟踪者**：`--out` 天然的用法就是反复覆盖同一路径（本仓库门禁、CI、调试均如此），拦「已存在但未跟踪」会让工具不可重跑，而那一类覆盖又完全可恢复。可恢复的覆盖不该与不可恢复的覆盖共用一条禁令。
 
 **验收**：`tests/test_io_guards.py` 8 条（未知名 rc=2 并列出合法名 / 合法子集 rc=0 / 省略参数 rc=0 / collect 拒绝覆盖被跟踪文件且目标字节不变 / `--force` 放行且真写出 / 未被跟踪的既有文件可覆盖 / judge 的 `--report` 与 `--json` 双落点均拒绝 / `--force` 放行）。全部对**退出码**断言。
+
+### 结项记录 (2026-11-15)
+- **结论**: delivered
+- **去向/凭据**: 0954ca8（双守卫实现 + tests/test_io_guards.py 8 条退出码断言）
+- **归档目录**: archive/2026-Q4/
