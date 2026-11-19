@@ -96,7 +96,28 @@ def _is_safely_displayable(name: str) -> bool:
     return bool(name) and len(name) <= PROJECT_NAME_MAX_LEN and all(ch.isprintable() for ch in name)
 
 
-def _resolve_project_name(llms_file: Path) -> Tuple[str, bool]:
+def evaluate_verdict(res: Dict, threshold: float) -> Tuple[bool, List[str]]:
+    """PASS 条件与 REJECT 原因由**同一组判定**产生（BK-0028 D1-7）。
+
+    此前 PASS 分支与 REJECT 分支各自重算同一批条件，两处漂移即出现「同一份体检结果既
+    满足 PASS 又给出 REJECT 原因」的自相矛盾。现在只在这里判一次：`reasons` 为空即 PASS，
+    非空即 REJECT，理由原样输出。
+    """
+    reasons: List[str] = []
+    if res["total_score"] < threshold:
+        reasons.append(f"得分 {res['total_score']} < 门槛 {threshold}")
+    if res["total_link_errors"]:
+        reasons.append(f"{res['total_link_errors']} 处断链")
+    if res.get("version_drift_files"):
+        reasons.append(f"{len(res['version_drift_files'])} 处版本漂移")
+    if res["backlog_issues"]:
+        reasons.append(f"{len(res['backlog_issues'])} 处 backlog 编号违规")
+    if res.get("llms_map_issue"):
+        reasons.append("机器地图不一致")
+    return (not reasons), reasons
+
+
+def _resolve_project_name(text: str) -> Tuple[str, bool]:
     """反解既有机器地图首行的项目名。
 
     返回 `(name, resolved)`：`resolved=False` 表示首行不符合标准 H1 格式，**名字不可信**
@@ -105,9 +126,10 @@ def _resolve_project_name(llms_file: Path) -> Tuple[str, bool]:
     判定路径必须使用本函数返回的**未净化原名**（生成物 H1 用的就是它），保证逐字同源。
     """
     try:
-        first_line = llms_file.read_text(encoding="utf-8").splitlines()[0]
-    except (OSError, IndexError, UnicodeDecodeError):
-        # BK-0031：严格解码——非法 UTF-8 不得被 errors="replace" 归一化后当作可信身份
+        # BK-0031：严格解码已在调用方完成（非法 UTF-8 不得被 errors="replace" 归一化后
+        # 当作可信身份）；此处只取首行。
+        first_line = text.splitlines()[0]
+    except IndexError:
         return PROJECT_NAME_FALLBACK, False
     # fullmatch + 贪婪捕获：名中含契约短语时不得被非贪婪截断（R1-3）；
     # 不 strip：与生成器同语义，避免审计下发一个生成器必然拒绝的 --name（DR1-2）
@@ -128,7 +150,16 @@ def check_llms_map_consistency(root_dir: Path) -> str:
     if not llms_file.is_file():
         # R1-4：非规则文件（FIFO/字符设备/目录）不得进入无界读取面
         return f"机器地图落点不是常规文件（{llms_file}），无法安全比对"
-    project_name, name_resolved = _resolve_project_name(llms_file)
+    try:
+        snapshot = llms_file.read_bytes()   # BK-0028 D1-8：单次快照，后续判定不再重读
+    except OSError as exc:
+        return f"机器地图一致性检查无法完成: {exc}"
+    try:
+        snapshot_text = snapshot.decode("utf-8")
+    except UnicodeDecodeError:
+        project_name, name_resolved = PROJECT_NAME_FALLBACK, False
+    else:
+        project_name, name_resolved = _resolve_project_name(snapshot_text)
     try:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_out = Path(tmp_dir) / "llms.txt"
@@ -138,7 +169,7 @@ def check_llms_map_consistency(root_dir: Path) -> str:
             if written == 0:
                 # R1-1：无可收录文档时本项不适用——否则修复命令必然 rc=1，形成不可修复的死胡同
                 return ""
-            if tmp_out.read_bytes() != llms_file.read_bytes():
+            if tmp_out.read_bytes() != snapshot:
                 # R1-1：反解不可信或名字不可安全回显时，**绝不下发任何 --name 命令**
                 # （否则用户照做会把地图 H1 静默改写为占位名或截断名，项目身份在 SSOT 中丢失）
                 if not name_resolved:
@@ -721,29 +752,12 @@ def main():
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")
 
     print("\n" + "=" * 60)
-    if (
-        res["total_score"] >= args.threshold
-        and res["total_link_errors"] == 0
-        and not res["backlog_issues"]
-        and not res.get("version_drift_files")
-        and not res.get("llms_map_issue")
-    ):
+    passed, reasons = evaluate_verdict(res, args.threshold)
+    if passed:
         print("🏁 诊断结论: PASS (健康度达标，准予交付) ✅")
         sys.exit(0)
-    else:
-        reasons = []
-        if res["total_score"] < args.threshold:
-            reasons.append(f"得分 {res['total_score']} < 门槛 {args.threshold}")
-        if res["total_link_errors"]:
-            reasons.append(f"{res['total_link_errors']} 处断链")
-        if res.get("version_drift_files"):
-            reasons.append(f"{len(res['version_drift_files'])} 处版本漂移")
-        if res["backlog_issues"]:
-            reasons.append(f"{len(res['backlog_issues'])} 处 backlog 编号违规")
-        if res.get("llms_map_issue"):
-            reasons.append("机器地图不一致")
-        print(f"🚫 诊断结论: REJECTED（{'；'.join(reasons) or '存在阻断项'}），请修复后重测")
-        sys.exit(1)
+    print(f"🚫 诊断结论: REJECTED（{'；'.join(reasons) or '存在阻断项'}），请修复后重测")
+    sys.exit(1)
 
 
 if __name__ == "__main__":

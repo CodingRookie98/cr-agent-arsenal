@@ -1731,6 +1731,50 @@ def test_exemption_matches_exact_segment_not_prefix(tmp_path):
     assert "gone.md" in res_bad.stdout
 
 
+# --- BK-0028 回归：机器地图判定侧的承重用例与单一真源 --------------------------
+
+
+def test_no_map_with_indexable_docs_is_not_a_defect(tmp_path):
+    """D2-2 承重：有可收录文档但**未生成** llms.txt 时，地图一致性判定必须跳过。
+
+    去掉「无地图即跳过」守卫后，生成器会产出 N>0 并与缺失文件比对 → 报「不一致」，
+    本用例即转红——这正是该分支此前零覆盖导致的假绿面。
+    """
+    docs = _mk_scope_tree(tmp_path)
+    assert audit_doc_health.check_llms_map_consistency(docs) == ""
+
+
+def test_verdict_single_source_lists_every_failure():
+    """D1-7：PASS 与 REJECT 同源——每个不满足项都要出现在同一份理由清单里。"""
+    res = {"total_score": 70.0, "total_link_errors": 2,
+           "version_drift_files": ["a"], "backlog_issues": ["b"], "llms_map_issue": "c"}
+    passed, reasons = audit_doc_health.evaluate_verdict(res, 80.0)
+    assert passed is False
+    assert len(reasons) == 5, reasons
+
+
+def test_verdict_single_source_passes_clean_result():
+    res = {"total_score": 95.0, "total_link_errors": 0,
+           "version_drift_files": [], "backlog_issues": [], "llms_map_issue": ""}
+    passed, reasons = audit_doc_health.evaluate_verdict(res, 80.0)
+    assert passed is True
+    assert reasons == [], "PASS 时不得残留任何理由（否则两处判定已再次分叉）"
+
+
+
+def test_zero_indexable_docs_with_existing_map_is_skipped(tmp_path):
+    """D2-1 承重：地图存在但可收录文档为 0 时，判定必须走「零覆盖态跳过」分支。
+
+    该分支此前零覆盖：删除 written==0 守卫后，任何「只剩 llms.txt」的仓库都会被判不一致，
+    而提示的修复命令必然 rc=1——不可修复的死胡同（BK-0027 登记）。
+    """
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "llms.txt").write_text("# Old Machine-Readable Knowledge Base Map\n\n- stale\n",
+                                   encoding="utf-8", newline="\n")
+    assert audit_doc_health.check_llms_map_consistency(docs) == "", \
+        "无可收录文档时不得报地图不一致（否则修复命令必然失败）"
+
 if __name__ == "__main__":
     unittest.main()
 
