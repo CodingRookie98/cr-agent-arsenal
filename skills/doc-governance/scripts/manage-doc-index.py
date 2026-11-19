@@ -85,6 +85,12 @@ def strip_leading_noise(text: str) -> str:
         idx += 1
         while idx < len(lines) and lines[idx].strip() != "---":
             idx += 1
+        if idx >= len(lines):
+            # BK-0022：围栏未闭合（外部截断 / 损坏的托管索引）时，旧实现会把 idx 推过
+            # EOF，`lines[idx:]` 退化为空串——整篇正文被吞掉，托管标记明明还在却被判
+            # 「人工索引」，register 返回 0 且不改文件，自愈链静默失联。这里保守返回
+            # 原文：宁可把未闭合围栏当成普通正文，也不让内容凭空消失。
+            return text.lstrip("\ufeff")
         idx += 1
     return "\n".join(lines[idx:])
 

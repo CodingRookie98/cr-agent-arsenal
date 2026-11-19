@@ -673,5 +673,32 @@ class TestDeltaHardening(IndexConventionTestBase):
         self.assertNotEqual(res.returncode, 0, "DR1-4: 解析为 root 本身的 --dir 必须拒绝")
 
 
+
+
+class TestUnclosedFrontmatterFence(unittest.TestCase):
+    """BK-0022：未闭合 frontmatter 围栏不得吞掉整篇正文。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.manage = _load_manage_module()
+
+    def test_unclosed_fence_keeps_body(self):
+        text = "---\ntitle: 手写\n\n# 目录\n\n<!-- 托管标记 -->\n- 条目\n"
+        stripped = self.manage.strip_leading_noise(text)
+        self.assertIn("# 目录", stripped, "未闭合围栏下正文不得被吞掉")
+        self.assertIn("- 条目", stripped)
+
+    def test_closed_fence_still_stripped(self):
+        """闭合围栏的既有行为必须不变：围栏内容仍被剥离。"""
+        text = "---\ntitle: 手写\n---\n\n# 目录\n"
+        stripped = self.manage.strip_leading_noise(text)
+        self.assertEqual(stripped.strip(), "# 目录")
+        self.assertNotIn("title:", stripped)
+
+    def test_bom_and_closed_fence_together(self):
+        text = "\ufeff---\ntitle: x\n---\n# H1\n"
+        self.assertEqual(self.manage.strip_leading_noise(text).strip(), "# H1")
+
+
 if __name__ == "__main__":
     unittest.main()
