@@ -2,18 +2,18 @@
 id: BK-0019
 title: README 入口象限的索引自愈与健康评分语义对齐
 type: Governance
-status: active
+status: completed
 priority: P3
 trigger: null
-created_at: '2026-10-09'
-updated_at: '2026-10-09'
-closed_at: null
-resolution: null
-destination: null
+created_at: 2026-10-09
+updated_at: 2026-11-19
+closed_at: 2026-11-19
+resolution: delivered
+destination: 1fb984f（入口象限豁免孤儿判定 + GOVERNANCE 登记代价）
 source:
-- RFC-0003 Delta 审查 DR1-3（Delta R2 由 P2 降 P3：DA-4 已明令，缺披露非缺陷）
+  - RFC-0003 Delta 审查 DR1-3（Delta R2 由 P2 降 P3：DA-4 已明令，缺披露非缺陷）
 acceptance_criteria:
-- 二选一并落地：(a) audit-doc-health 对 README 入口象限内文档豁免孤儿判定；或 (b) RFC/规范显式披露该评分代价与人工登记义务
+  - 二选一并落地：(a) audit-doc-health 对 README 入口象限内文档豁免孤儿判定；或 (b) RFC/规范显式披露该评分代价与人工登记义务
 ---
 
 ## 1. 背景与问题陈述
@@ -38,3 +38,8 @@ DA-4 明令 README 入口象限不生成托管索引，但该象限内 scaffold 
 **规范同步**：GOVERNANCE §3 补「孤儿文档计分的边界」：说明豁免理由 + **已知代价**（根级真孤儿不再由该指标发现，改由链接完整率与人工评审覆盖）。
 
 **复验**：doc-governance 151 passed / 7 skipped；真实仓库 audit PASS。
+
+### 结项记录 (2026-11-19)
+- **结论**: delivered
+- **去向/凭据**: 1fb984f（入口象限豁免孤儿判定 + GOVERNANCE 登记代价）
+- **归档目录**: archive/2026-Q4/
