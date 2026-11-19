@@ -31,9 +31,25 @@ acceptance_criteria:
 
 ## 3. 验收条件 (Definition of Done)
 
-- [ ] 四条护栏各补 1 条反证用例（行首锚定 / 方向二 / 豁免边界 / 索引控制头与互链）
-- [ ] 否决任何测试框架重构
+- [x] 四条护栏各补 1 条反证用例（行首锚定 / 方向二 / 豁免边界 / 索引控制头与互链）——复核后：三条此前已有，本次补「豁免边界」
+- [x] 否决任何测试框架重构（本次只加用例，零基建改动）
 
 ## 4. 结项与闭环记录
 
-*(当前处于活跃计划中，结项后由 `manage-backlog.py close` 自动迁入 archive/)*
+### 实施记录（2026-11-19）
+
+**复核结论：四条里三条此前已被后续批次补上，本次只补第四条。** 逐条取证：
+
+| 护栏 | 现有反证用例 |
+| :--- | :--- |
+| 行首锚定 | `test_check_review_report.py:339 / :347`（区块标题必须行首，散文提及不构成齐备） |
+| 方向二（按基线逐轮配对） | `test_check_review_report.py:478+`（删该护栏即红） |
+| 索引控制头与互链 | `test_prepare_review_context.py:214 / :233`（`## 归档索引` 唯一性） |
+| **豁免边界** | **本次新增** `test_exemption_matches_exact_segment_not_prefix` |
+
+**豁免边界的反证设计**（针对 R1-8 里「豁免常量改前缀仍 13 passed」的零覆盖）：
+
+1. 单元层直接断言 `in_evidence_archive()`：`project/reviews/…` 为 True，`project/reviews-extra/…` 为 **False**——前缀语义（`startswith("project/review")`）在这一步即失守；
+2. 端到端两阶段：树里只有归档内断链 → 豁免、rc=0；再加入形似越界的 `reviews-extra/` 断链 → 同一断链形态 rc=1 且报错指名 `gone.md`。两阶段互为对照，避免「整体恒红」式的伪覆盖。
+
+**未做**：任何测试框架重构（卡片明确否决）。doc-governance 全量 146 passed / 7 skipped；全仓库 517 passed / 20 skipped / 0 failed。

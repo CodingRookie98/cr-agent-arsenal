@@ -1676,6 +1676,62 @@ def test_control_sync_dir_escaping_root_is_usage_error(tmp_path):
     assert "越出根目录" in r.stderr
 
 
+# --- BK-0017 回归：ADR 模板元数据合规（控制头版本 + 修订历史）--------------------
+
+
+def test_scaffolded_adr_is_metadata_compliant(tmp_path):
+    """骨架产出的 ADR 必须自带 `当前版本`，否则元数据基线率被模板本身拖低。"""
+    docs = tmp_path / "docs"
+    r = subprocess.run([sys.executable, str(SCRIPTS_DIR / "scaffold-doc.py"),
+                        "adr", "决策甲", "--root", str(docs)],
+                       capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 0, r.stderr
+
+    adr = next(p for p in docs.rglob("0001-*.md"))
+    text = adr.read_text(encoding="utf-8")
+    assert "**当前版本**:" in text, "ADR 控制头缺少 当前版本"
+    assert "修订历史记录" in text, "ADR 必须带修订历史，否则控制头与修订表无法对齐"
+
+    audit = subprocess.run([sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"),
+                            "--root", str(docs)],
+                           capture_output=True, text=True, encoding="utf-8")
+    line = next(ln for ln in audit.stdout.splitlines() if "控制信息元数据基线" in ln)
+    assert "(合规文档: 2/2)" in line, f"ADR 与象限索引都应合规：{line}"
+
+
+# --- BK-0006 回归：交付凭据归档豁免的边界 ----------------------------------------
+
+
+def test_exemption_matches_exact_segment_not_prefix(tmp_path):
+    """豁免判据是**精确段元组**（project/reviews），不是字符串前缀。
+
+    前缀语义（`startswith("project/review")`）会把 `project/reviews-extra/` 一并豁免，
+    一处拼写错误就能把整棵新目录移出断链门禁——这正是 R1-8 变异实跑里「豁免常量改前缀
+    仍 13 passed」暴露的零覆盖。
+    """
+    root = tmp_path / "docs"
+    inside = root / "project" / "reviews" / "2026-01-01-unit" / "a.md"
+    outside = root / "project" / "reviews-extra" / "b.md"
+
+    assert check_doc_links.in_evidence_archive(inside, root) is True
+    assert check_doc_links.in_evidence_archive(outside, root) is False, \
+        "reviews-extra/ 不得被豁免（前缀语义即此处失守）"
+
+    # 第一阶段：树里只有归档内的断链 → 豁免，rc=0
+    inside.parent.mkdir(parents=True, exist_ok=True)
+    inside.write_text("# x\n\n[断了](./nope.md)\n", encoding="utf-8", newline="\n")
+    res_exempt = _run_gate("check-doc-links.py", root)
+    assert res_exempt.returncode == 0, f"归档内断链应豁免：{res_exempt.stdout}"
+
+    # 第二阶段：加入形似但越界的目录 → 同一断链形态必须被抓到，rc=1
+    outside.parent.mkdir(parents=True, exist_ok=True)
+    outside.write_text("# y\n\n[断了](./gone.md)\n", encoding="utf-8", newline="\n")
+    res_bad = _run_gate("check-doc-links.py", root)
+    assert res_bad.returncode == 1, f"reviews-extra/ 的断链必须被抓到：{res_bad.stdout}"
+    assert "gone.md" in res_bad.stdout
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
