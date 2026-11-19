@@ -2,19 +2,19 @@
 id: BK-0012
 title: 门禁枚举未登记报告文件或收紧 --round 命名输入
 type: TechDebt
-status: active
+status: completed
 priority: P3
 trigger: null
-created_at: '2026-10-08'
-updated_at: '2026-10-08'
-closed_at: null
-resolution: null
-destination: null
+created_at: 2026-10-08
+updated_at: 2026-11-19
+closed_at: 2026-11-19
+resolution: delivered
+destination: 4b30642（校验项 11：未登记报告可枚举；12/12 归档无假红）
 source:
-- dual-round-review V2.2.0 Delta R2 DR-3
+  - dual-round-review V2.2.0 Delta R2 DR-3
 acceptance_criteria:
-- 在「门禁枚举未登记报告文件」与「约束 --round 命名输入使 head 分量确定」之间择一实现，不做双份
-- 补回归用例（归档目录含 README.md，天真枚举会假红，须文件名模式 + 台账交叉校验）
+  - 在「门禁枚举未登记报告文件」与「约束 --round 命名输入使 head 分量确定」之间择一实现，不做双份
+  - 补回归用例（归档目录含 README.md，天真枚举会假红，须文件名模式 + 台账交叉校验）
 ---
 
 ## 1. 背景与问题陈述
@@ -36,3 +36,8 @@ R1-1 残余：单参数形式 --round <BASE_SHA> 下 HEAD 为符号引用，HEAD
 **新增校验项 11**（`_check_orphan_reports`）：遍历归档目录，凡匹配 `^(r1|r2|delta-r1|delta-r2)-.+\.md$` 且**未出现在轮次台账**的文件，逐条报缺陷。双条件（文件名模式 + 台账交叉校验）正是卡片要求的假红防护。
 
 **复验**：往真实归档副本里塞 `r1-orphan-unregistered.md` → rc=1 且报错指名该文件（改前 rc=0）；12 个真实归档全量扫 → **12/12 rc=0**（无假红）。dual-round-review 126 passed / 3 skipped。
+
+### 结项记录 (2026-11-19)
+- **结论**: delivered
+- **去向/凭据**: 4b30642（校验项 11：未登记报告可枚举；12/12 归档无假红）
+- **归档目录**: archive/2026-Q4/

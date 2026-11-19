@@ -33,7 +33,6 @@
 
 ## Project Governance (工程演进 / 发布日志与待办)
 
-- [BK-0012-enumerate-unregistered-reports](project/backlog/active/BK-0012-enumerate-unregistered-reports.md): id: BK-0012
 - [BK-0019-readme-入口象限的索引自愈与健康评分语义对齐](project/backlog/active/BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md): id: BK-0019
 - [BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约](project/backlog/active/BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md): id: BK-0028
 - [BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断](project/backlog/active/BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断.md): id: BK-0044
@@ -48,6 +47,7 @@
 - [BK-0009-resolve-archive-dir-slug-consistency](project/backlog/archive/2026-Q4/BK-0009-resolve-archive-dir-slug-consistency.md): id: BK-0009
 - [BK-0010-archive-root-empty-or-illegal-guard](project/backlog/archive/2026-Q4/BK-0010-archive-root-empty-or-illegal-guard.md): id: BK-0010
 - [BK-0011-review-contract-weak-assertions](project/backlog/archive/2026-Q4/BK-0011-review-contract-weak-assertions.md): id: BK-0011
+- [BK-0012-enumerate-unregistered-reports](project/backlog/archive/2026-Q4/BK-0012-enumerate-unregistered-reports.md): id: BK-0012
 - [BK-0013-trailing-pipe-column-misparse](project/backlog/archive/2026-Q4/BK-0013-trailing-pipe-column-misparse.md): id: BK-0013
 - [BK-0014-voided-round-repo-trace](project/backlog/archive/2026-Q4/BK-0014-voided-round-repo-trace.md): id: BK-0014
 - [BK-0015-working-staged-naming-literal](project/backlog/archive/2026-Q4/BK-0015-working-staged-naming-literal.md): id: BK-0015

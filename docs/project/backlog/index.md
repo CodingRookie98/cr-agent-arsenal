@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **4** 项 (进行中: 0, 计划中: 4)
-- **历史已归档项**: **43** 项 (物理归档于 `archive/` 目录)
+- **现役活跃待办**: **3** 项 (进行中: 0, 计划中: 3)
+- **历史已归档项**: **44** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 0 | 4 |
+| **活跃数量** | 0 | 0 | 0 | 3 |
 
 ---
 
@@ -29,7 +29,6 @@
 
 | 编号 | 优先级 | 类型 | 标题 | 触发条件 | 卡片入口 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BK-0012** | `P3` | `TechDebt` | 门禁枚举未登记报告文件或收紧 --round 命名输入 | null | [BK-0012](./active\BK-0012-enumerate-unregistered-reports.md) |
 | **BK-0019** | `P3` | `Governance` | README 入口象限的索引自愈与健康评分语义对齐 | null | [BK-0019](./active\BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md) |
 | **BK-0028** | `P3` | `TechDebt` | 机器地图判定侧剩余缺口（用例承重与反解契约） | null | [BK-0028](./active\BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md) |
 | **BK-0044** | `P3` | `Governance` | 提交信息取证据口径：易失数字与工作区属性反复触发独立复核阻断 | 独立复核循环 V8/V9/V11/V12 反复因提交信息的凭据表述判阻断或提更正：V8 阻断项（8facf12 提交信息的 judge findings | [BK-0044](./active\BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断.md) |
@@ -38,13 +37,14 @@
 
 ## 4. 🗄️ 历史已结项归档 (Archive Summary)
 
-> 共收录 43 条已关闭历史条目，详情参见 `archive/` 各版本目录。
+> 共收录 44 条已关闭历史条目，详情参见 `archive/` 各版本目录。
 
 | 编号 | 类型 | 标题 | 结项日期 | 结论 | 交付去向 | 归档卡片 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **BK-0005** | `Governance` | 豁免判定前执行路径根相对语义归一化 | 2026-11-19 | delivered | 78c73dc（--dir 作用域守卫 + 4 条回归 + GOVERNANCE 提示） | [BK-0005](./archive\2026-Q4\BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0006** | `TechDebt` | 四条审查护栏各补 1 条反证测试用例 | 2026-11-19 | delivered | e6fa6e6（豁免边界反证；其余三条复核已覆盖） | [BK-0006](./archive\2026-Q4\BK-0006-review-gates-negative-test-cases.md) |
 | **BK-0009** | `Bug` | resolve_archive_dir 增加交付单元与请求 slug 一致性校验 | 2026-11-19 | delivered | e238a1f（交付单元一致性校验 + 2 条回归） | [BK-0009](./archive\2026-Q4\BK-0009-resolve-archive-dir-slug-consistency.md) |
+| **BK-0012** | `TechDebt` | 门禁枚举未登记报告文件或收紧 --round 命名输入 | 2026-11-19 | delivered | 4b30642（校验项 11：未登记报告可枚举；12/12 归档无假红） | [BK-0012](./archive\2026-Q4\BK-0012-enumerate-unregistered-reports.md) |
 | **BK-0017** | `TechDebt` | scaffold ADR 模板补控制头版本字段 | 2026-11-19 | delivered | e6fa6e6（ADR 控制头版本 + 修订历史；八类批量 14/14 合规） | [BK-0017](./archive\2026-Q4\BK-0017-scaffold-adr-模板补控制头版本字段.md) |
 | **BK-0022** | `TechDebt` | strip_leading_noise 对未闭合 frontmatter 围栏兜底 | 2026-11-19 | delivered | 263a4a4（EOF 兜底 + 3 条回归） | [BK-0022](./archive\2026-Q4\BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜.md) |
 | **BK-0024** | `TechDebt` | 治理脚本契约细节四项（空范围返回契约/判定越界/归因顺序/表格渲染） | 2026-11-19 | superseded | 逐项复核：R1-18 已消除假绿、R1-19 为 GOVERNANCE §4.1 已披露的保守超集（DR1-1 已闭合）、R1-20 已修、R1-21 不成立；仅剩返回元组形状一项，主动不做 | [BK-0024](./archive\2026-Q4\BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染.md) |
@@ -61,6 +61,5 @@
 | **BK-0014** | `Governance` | 作废轮次的版本库留痕缺失 | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0014](./archive\2026-Q4\BK-0014-voided-round-repo-trace.md) |
 | **BK-0016** | `TechDebt` | 象限索引幂等判据精确匹配（剥离锚点与查询串） | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0016](./archive\2026-Q4\BK-0016-象限索引幂等判据精确匹配-剥离锚点与查询串.md) |
 | **BK-0045** | `Bug` | prepare-review-context 未跟踪文件过滤正则失效（GNU BRE `\?` 为重复算子） | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0045](./archive\2026-Q4\BK-0045-prepare-review-context-未跟踪文件过滤正则失效.md) |
-| **BK-0003** | `Governance` | 稳定 ID 方向二改为按文件名配对 R1-R2 后施加 | 2026-10-14 | delivered | fix/p2-six-backlog-items @ deb691e（R2 终审 ✅ 准予交付；审查归档 docs/project/reviews/2026-10-14-p2-six-backlog-items/） | [BK-0003](./archive\2026-Q4\BK-0003-stable-id-pair-by-filename.md) |
 
-*(其余 23 条历史记录已隐藏，可查看 archive/ 目录)*
+*(其余 24 条历史记录已隐藏，可查看 archive/ 目录)*
