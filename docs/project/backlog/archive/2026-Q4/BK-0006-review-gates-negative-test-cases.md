@@ -2,18 +2,19 @@
 id: BK-0006
 title: 四条审查护栏各补 1 条反证测试用例
 type: TechDebt
-status: active
+status: completed
 priority: P3
 trigger: null
-created_at: '2026-10-04'
-closed_at: null
-resolution: null
-destination: null
+created_at: 2026-10-04
+closed_at: 2026-11-19
+resolution: delivered
+destination: e6fa6e6（豁免边界反证；其余三条复核已覆盖）
 source:
-- Delta R2 R1-8
+  - Delta R2 R1-8
 acceptance_criteria:
-- 四条护栏各补 1 条反证用例（行首锚定 / 方向二 / 豁免边界 / 索引控制头与互链）
-- 否决任何测试框架重构
+  - 四条护栏各补 1 条反证用例（行首锚定 / 方向二 / 豁免边界 / 索引控制头与互链）
+  - 否决任何测试框架重构
+updated_at: 2026-11-19
 ---
 
 ## 1. 背景与问题描述
@@ -53,3 +54,8 @@ acceptance_criteria:
 2. 端到端两阶段：树里只有归档内断链 → 豁免、rc=0；再加入形似越界的 `reviews-extra/` 断链 → 同一断链形态 rc=1 且报错指名 `gone.md`。两阶段互为对照，避免「整体恒红」式的伪覆盖。
 
 **未做**：任何测试框架重构（卡片明确否决）。doc-governance 全量 146 passed / 7 skipped；全仓库 517 passed / 20 skipped / 0 failed。
+
+### 结项记录 (2026-11-19)
+- **结论**: delivered
+- **去向/凭据**: e6fa6e6（豁免边界反证；其余三条复核已覆盖）
+- **归档目录**: archive/2026-Q4/

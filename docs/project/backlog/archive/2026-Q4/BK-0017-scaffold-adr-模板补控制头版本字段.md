@@ -2,18 +2,18 @@
 id: BK-0017
 title: scaffold ADR 模板补控制头版本字段
 type: TechDebt
-status: active
+status: completed
 priority: P3
 trigger: null
-created_at: '2026-10-09'
-updated_at: '2026-10-09'
-closed_at: null
-resolution: null
-destination: null
+created_at: 2026-10-09
+updated_at: 2026-11-19
+closed_at: 2026-11-19
+resolution: delivered
+destination: e6fa6e6（ADR 控制头版本 + 修订历史；八类批量 14/14 合规）
 source:
-- RFC-0003 首轮审查 r1-95863c9..2583210 的 R1-14（历史既有；Delta R2 封顶 P3 正确；DR1-7 修正溯源标注）
+  - RFC-0003 首轮审查 r1-95863c9..2583210 的 R1-14（历史既有；Delta R2 封顶 P3 正确；DR1-7 修正溯源标注）
 acceptance_criteria:
-- 'ADR 模板补『当前版本: V1.0.0』并同步修订历史；全类型批量生成元数据合规率 12/12'
+  - ADR 模板补『当前版本: V1.0.0』并同步修订历史；全类型批量生成元数据合规率 12/12
 ---
 
 ## 1. 背景与问题陈述
@@ -36,3 +36,8 @@ scaffold-doc.sh ADR 分支模板控制头仅含决策编号/当前状态/决策�
 **实测（八类批量生成 + 审计）**：tutorial / how-to / reference / explanation / adr / rfc / backlog / proposal 各生成一份，共 14 篇（含 6 个象限索引），`控制信息元数据基线: 25.0 / 25（合规文档 14/14）`，诊断 PASS。卡片原定「12/12」在八类口径下为 14/14，合规率 100%。
 
 **回归**：`test_scaffolded_adr_is_metadata_compliant` —— 生成 ADR 后断言文件含 `**当前版本**` 与 `修订历史记录`，并断言审计的元数据行出现 `(合规文档: 2/2)`（ADR + 象限索引）。
+
+### 结项记录 (2026-11-19)
+- **结论**: delivered
+- **去向/凭据**: e6fa6e6（ADR 控制头版本 + 修订历史；八类批量 14/14 合规）
+- **归档目录**: archive/2026-Q4/
