@@ -627,6 +627,38 @@ def test_official_template_r2_empty_detail_table_still_fails(tmp_path):
     assert '明细表' in r.stdout
 
 
+
+
+# --- BK-0012 回归：归档内未登记报告必须可枚举 ------------------------------------
+
+
+def test_unregistered_report_file_is_reported(tmp_path):
+    """放进归档但未入台账的报告必须被抓到，否则凭据黑盒。"""
+    d, _, _ = _build(tmp_path)
+    (d / 'r1-orphan-unregistered.md').write_text('# 孤儿\n', encoding='utf-8', newline='\n')
+
+    r = _run(d)
+
+    assert r.returncode == 1, r.stdout
+    assert '未登记' in r.stdout and 'r1-orphan-unregistered.md' in r.stdout
+
+
+def test_readme_is_not_treated_as_orphan_report(tmp_path):
+    """天真枚举会把 README.md 判成孤儿报告——文件名模式必须把它排除。"""
+    d, _, _ = _build(tmp_path)
+    r = _run(d)
+    assert r.returncode == 0, r.stdout
+    assert '未登记' not in r.stdout
+
+
+def test_registered_delta_report_is_not_orphan(tmp_path):
+    """台账已登记的 delta 报告不得被误报为孤儿。"""
+    d, _, _ = _build(tmp_path)
+    names = sorted(p.name for p in d.glob('*.md'))
+    assert any(n.startswith('r1-') for n in names)
+    assert not any('未登记' in line for line in _run(d).stdout.splitlines())
+
+
 # --- BK-0004 回归：`**终审裁决**` 在索引中必须唯一 -------------------------------
 
 

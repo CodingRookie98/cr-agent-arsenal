@@ -528,6 +528,37 @@ def _check_verdict(index: str, require_verdict: str, messages: list[str]) -> tup
     return 0, " · 终审裁决 准予交付"
 
 
+_REPORT_NAME_RE = re.compile(r"^(r1|r2|delta-r1|delta-r2)-.+\.md$")
+
+
+def _check_orphan_reports(archive: str, index: str, messages: list[str]) -> int:
+    """11) 归档目录内的**未登记**报告文件必须报缺陷（BK-0012）。
+
+    背景：台账只校验「已登记项」，未入台账的报告文件此前完全不可见——它们在
+    Write-Once 证据面里既不被门禁枚举、也不被任何结论引用，等于凭据黑盒。
+
+    只认轮次前缀（`r1-` / `r2-` / `delta-r1-` / `delta-r2-`）的 `.md`：天真枚举整个
+    目录会把 `README.md` 判成孤儿报告（假红），故文件名模式 + 台账交叉校验双条件。
+    """
+    registered = set()
+    for row in _collect_rows(index):
+        fname = _read_fields(row)[1]
+        if fname:
+            registered.add(os.path.basename(fname))
+    try:
+        entries = os.listdir(archive)
+    except OSError:
+        return 0
+    orphans = sorted(
+        name for name in entries
+        if _REPORT_NAME_RE.match(name) and name not in registered
+    )
+    for name in orphans:
+        messages.append(
+            f"错误: 归档内存在未登记的报告文件: {name}（轮次台账未登记，凭据不可枚举）")
+    return len(orphans)
+
+
 def main(argv: list[str] | None = None) -> int:
     sys.stdout.reconfigure(encoding="utf-8", newline="\n")
     sys.stderr.reconfigure(encoding="utf-8", newline="\n")
@@ -548,6 +579,7 @@ def main(argv: list[str] | None = None) -> int:
     errors = _check_index(index, messages)
     report_count, r1_files, r2_files, report_errors = _check_reports(archive, _collect_rows(index), messages)
     errors += report_errors
+    errors += _check_orphan_reports(archive, index, messages)
     if report_count == 0:
         messages.append("错误: 轮次台账为空或未按 schema 登记任何报告文件")
         errors += 1
