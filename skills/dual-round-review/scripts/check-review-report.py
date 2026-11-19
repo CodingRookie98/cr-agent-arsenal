@@ -15,7 +15,8 @@
   6) 稳定 ID 对齐：R2 裁决明细表出现的 R1-<n> 必须全部存在于 R1 缺陷清单；
      且该方向**按文件名基线逐轮配对**施加，并断言「R1 清单非空 ⇒ 同基线 R2 明细表非空」
      （BK-0003：全局 ID 并集会让早轮 R2 行替新一轮顶包，空明细表静默放行）；
-  7) 可选 --require-verdict=PASS：终审裁决必须为「准予交付」；
+  7) 可选 --require-verdict=PASS：终审裁决必须为「准予交付」，或「准予交付」+ 一个含数字的
+   括号统计串（真实归档形态，BK-0043）；占位/否定/无统计后缀一律不成立；
   8) 写入形态合法性：台账每行的「写入形态」列必须存在且取值 ∈ {direct, transcribed}
      （RFC-0002 §3.5——该列是唯一能区分「子智能体直写原文」与「主智能体转录产物」的可审计属性）。
   9) schema 自描述（2026-10-11 产物审查能力）：报告首部含 `> **Review Schema**: artifact` 时，
@@ -67,7 +68,8 @@ USAGE = """用法: check-review-report.sh <归档目录> [--require-verdict=PASS
 校验双轮审查《交付凭据归档》的结构与证据完整性。
 
 选项:
-      --require-verdict=PASS  要求索引「终审裁决」为「准予交付」（交付门禁用法）
+      --require-verdict=PASS  要求索引「终审裁决」为「准予交付」，或「准予交付」+ 含数字的括号统计串
+                        （交付门禁用法；BK-0043）
   -h, --help                  显示本帮助
 
 退出码:
@@ -99,6 +101,11 @@ _NON_FILE_CHARS_RE = re.compile(r"[^A-Za-z0-9._-]")
 _NON_HEX_CHARS_RE = re.compile(r"[^0-9a-fA-F]")
 _HAS_ALNUM_RE = re.compile(r"[A-Za-z0-9]")
 _VERDICT_PREFIX_RE = re.compile(r"^.*\*\*终审裁决\*\*:[" + SPACE + r"]*")
+# BK-0043：真实归档写法是 `✅ **准予交付**（delta-r2：Blockers = 0；🔴 0 / 🟡 19 / ⚪ 0）`，
+# 而该目录属 Write-Once 证据面不可改写——旧的「精确相等」使门禁对合法归档永久失效。
+# 放宽面被**结构化收窄**：只接受「准予交付」紧跟**含阿拉伯数字的单个全角括号串**，且其后
+# 不得再有内容。`未准予交付` / `准予交付?` / `准予交付（见下）` / `准予交付（…）尾巴` 仍全败。
+_VERDICT_PASS_STAT_RE = re.compile(r"^准予交付（[^（）]*[0-9][^（）]*）$")
 
 
 class _Exit(Exception):
@@ -509,10 +516,13 @@ def _check_verdict(index: str, require_verdict: str, messages: list[str]) -> tup
     if value.startswith("✅"):
         value = value[len("✅"):]
     value = value.strip(SPACE)
-    if value != "准予交付":
+    # 加粗是排版而非语义：真实归档写作 `**准予交付**`，与裸值等价（BK-0043）
+    value = value.replace("**", "").strip(SPACE)
+    if not (value == "准予交付" or _VERDICT_PASS_STAT_RE.match(value)):
         shown = value if value else "未登记"
         messages.append(
-            f"错误: 终审裁决字段值必须精确等于「准予交付」（实际: '{shown}'；含该词元的占位符/否定式串不成立）"
+            "错误: 终审裁决必须为「准予交付」，或「准予交付」+ 一个含数字的括号统计串"
+            f"（实际: '{shown}'；占位符 / 否定式 / 无统计的后缀一律不成立）"
         )
         return 1, ""
     return 0, " · 终审裁决 准予交付"

@@ -402,6 +402,32 @@ def test_require_verdict_ok_on_bare_value(tmp_path):
     assert r.returncode == 0, r.stdout
 
 
+
+
+# --- BK-0043 回归：PASS 接受「准予交付」+ 括号统计串，但拒绝一切伪后缀 ----------
+
+
+def test_require_verdict_ok_on_real_archive_form(tmp_path):
+    """真实归档形态（加粗 + 括号统计）必须放行——证据面 Write-Once，改不了就改门禁。"""
+    d, _, _ = _build(
+        tmp_path,
+        verdict='✅ **准予交付**（delta-r2：Blockers = 0；🔴 0 / 🟡 19 / ⚪ 0）')
+    r = _run(d, '--require-verdict=PASS')
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_require_verdict_rejects_bracketed_suffix_without_digits(tmp_path):
+    """括号后缀必须含数字（统计）；纯文字后缀不构成统计。"""
+    d, _, _ = _build(tmp_path, verdict='**准予交付**（见下）')
+    assert _run(d, '--require-verdict=PASS').returncode == 1
+
+
+def test_require_verdict_rejects_trailing_text_after_suffix(tmp_path):
+    """括号后不得再有尾巴：锚定判定，避免尾部追加内容绕过。"""
+    d, _, _ = _build(tmp_path, verdict='**准予交付**（Blockers = 0）待复核')
+    assert _run(d, '--require-verdict=PASS').returncode == 1
+
+
 # --- RFC-0002 第 8 项：写入形态合法性 ------------------------------------------
 
 
