@@ -34,7 +34,6 @@
 ## Project Governance (工程演进 / 发布日志与待办)
 
 - [BK-0019-readme-入口象限的索引自愈与健康评分语义对齐](project/backlog/active/BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md): id: BK-0019
-- [BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约](project/backlog/active/BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md): id: BK-0028
 - [BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断](project/backlog/active/BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断.md): id: BK-0044
 - [BK-0001-trim-revision-py-archive-exemption](project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
@@ -62,6 +61,7 @@
 - [BK-0025-机器地图与生成物一致性需要门禁固化](project/backlog/archive/2026-Q4/BK-0025-机器地图与生成物一致性需要门禁固化.md): id: BK-0025
 - [BK-0026-机器地图提示文案的终端注入面与畸形项目名](project/backlog/archive/2026-Q4/BK-0026-机器地图提示文案的终端注入面与畸形项目名.md): id: BK-0026
 - [BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验](project/backlog/archive/2026-Q4/BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验.md): id: BK-0027
+- [BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约](project/backlog/archive/2026-Q4/BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md): id: BK-0028
 - [BK-0029-交付凭据写入侧历史残留-硬链接穿透与删除逃逸](project/backlog/archive/2026-Q4/BK-0029-交付凭据写入侧历史残留-硬链接穿透与删除逃逸.md): id: BK-0029
 - [BK-0030-机器地图身份写保护闸门的完备性残余](project/backlog/archive/2026-Q4/BK-0030-机器地图身份写保护闸门的完备性残余.md): id: BK-0030
 - [BK-0031-身份写保护契约登记与历史防护面残留](project/backlog/archive/2026-Q4/BK-0031-身份写保护契约登记与历史防护面残留.md): id: BK-0031
