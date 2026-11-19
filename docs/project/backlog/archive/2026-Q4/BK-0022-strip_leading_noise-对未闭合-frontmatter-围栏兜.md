@@ -2,18 +2,18 @@
 id: BK-0022
 title: strip_leading_noise 对未闭合 frontmatter 围栏兜底
 type: TechDebt
-status: active
+status: completed
 priority: P3
 trigger: null
-created_at: '2026-10-09'
-updated_at: '2026-10-09'
-closed_at: null
-resolution: null
-destination: null
+created_at: 2026-10-09
+updated_at: 2026-11-19
+closed_at: 2026-11-19
+resolution: delivered
+destination: 263a4a4（EOF 兜底 + 3 条回归）
 source:
-- RFC-0003 Delta 审核 DR1-13（第三轮 Delta R2 终审 P3，记入待办）
+  - RFC-0003 Delta 审核 DR1-13（第三轮 Delta R2 终审 P3，记入待办）
 acceptance_criteria:
-- 最小形态 2 行 fallback（未找到闭合围栏时 return 原文）+ 1 条回归用例；严禁引入 frontmatter 解析器或新判据框架
+  - 最小形态 2 行 fallback（未找到闭合围栏时 return 原文）+ 1 条回归用例；严禁引入 frontmatter 解析器或新判据框架
 ---
 
 ## 1. 背景与问题陈述
@@ -34,3 +34,8 @@ strip_leading_noise 对未闭合 frontmatter 围栏无兜底：闭合围栏搜�
 取舍说明：另两种写法都被否掉——(a) 抛错会让一次磁盘损坏阻断整个 register 流程，而该流程本可只降级；(b) 「把未闭合围栏当围栏内容继续剥离」等于猜测作者意图，且剥多剥少都能自圆其说。返回原文是唯一零损失、可解释的出口：托管标记若真在文中，判据依旧能命中。
 
 回归 3 条（`test_doc_index_convention.py::TestUnclosedFrontmatterFence`）：未闭合围栏下正文与托管标记不得丢失、闭合围栏剥离行为逐字不变（防回归到旧语义）、BOM + 闭合围栏组合仍能定位 H1。doc-governance 全量 144 passed / 7 skipped。
+
+### 结项记录 (2026-11-19)
+- **结论**: delivered
+- **去向/凭据**: 263a4a4（EOF 兜底 + 3 条回归）
+- **归档目录**: archive/2026-Q4/

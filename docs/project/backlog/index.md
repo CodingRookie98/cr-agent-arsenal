@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **9** 项 (进行中: 0, 计划中: 9)
-- **历史已归档项**: **38** 项 (物理归档于 `archive/` 目录)
+- **现役活跃待办**: **8** 项 (进行中: 0, 计划中: 8)
+- **历史已归档项**: **39** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 0 | 9 |
+| **活跃数量** | 0 | 0 | 0 | 8 |
 
 ---
 
@@ -33,7 +33,6 @@
 | **BK-0012** | `P3` | `TechDebt` | 门禁枚举未登记报告文件或收紧 --round 命名输入 | null | [BK-0012](./active\BK-0012-enumerate-unregistered-reports.md) |
 | **BK-0017** | `P3` | `TechDebt` | scaffold ADR 模板补控制头版本字段 | null | [BK-0017](./active\BK-0017-scaffold-adr-模板补控制头版本字段.md) |
 | **BK-0019** | `P3` | `Governance` | README 入口象限的索引自愈与健康评分语义对齐 | null | [BK-0019](./active\BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md) |
-| **BK-0022** | `P3` | `TechDebt` | strip_leading_noise 对未闭合 frontmatter 围栏兜底 | null | [BK-0022](./active\BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜.md) |
 | **BK-0024** | `P3` | `TechDebt` | 治理脚本契约细节四项（空范围返回契约/判定越界/归因顺序/表格渲染） | null | [BK-0024](./active\BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染.md) |
 | **BK-0028** | `P3` | `TechDebt` | 机器地图判定侧剩余缺口（用例承重与反解契约） | null | [BK-0028](./active\BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md) |
 | **BK-0043** | `P3` | `Governance` | Write-Once 审查归档 2026-10-12-spec-evolution-v1 的终审裁决字段不满足 check-review-report.sh 精确匹配契约 | dual-round-review 门禁维护窗口；无前置依赖 | [BK-0043](./active\BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约.md) |
@@ -43,12 +42,13 @@
 
 ## 4. 🗄️ 历史已结项归档 (Archive Summary)
 
-> 共收录 38 条已关闭历史条目，详情参见 `archive/` 各版本目录。
+> 共收录 39 条已关闭历史条目，详情参见 `archive/` 各版本目录。
 
 | 编号 | 类型 | 标题 | 结项日期 | 结论 | 交付去向 | 归档卡片 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **BK-0005** | `Governance` | 豁免判定前执行路径根相对语义归一化 | 2026-11-19 | delivered | 78c73dc（--dir 作用域守卫 + 4 条回归 + GOVERNANCE 提示） | [BK-0005](./archive\2026-Q4\BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0009** | `Bug` | resolve_archive_dir 增加交付单元与请求 slug 一致性校验 | 2026-11-19 | delivered | e238a1f（交付单元一致性校验 + 2 条回归） | [BK-0009](./archive\2026-Q4\BK-0009-resolve-archive-dir-slug-consistency.md) |
+| **BK-0022** | `TechDebt` | strip_leading_noise 对未闭合 frontmatter 围栏兜底 | 2026-11-19 | delivered | 263a4a4（EOF 兜底 + 3 条回归） | [BK-0022](./archive\2026-Q4\BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜.md) |
 | **BK-0011** | `TechDebt` | 审查归档契约测试的弱断言改为行为断言 | 2026-11-15 | superseded | 前提已被 test_write_channel_contract.py:203-211（R1-12 回归）推翻；残余形态偏好并入 BK-0006 判定 | [BK-0011](./archive\2026-Q4\BK-0011-review-contract-weak-assertions.md) |
 | **BK-0036** | `Security` | collect-facts/judge 的输入范围与输出落点双守卫（未知技能名静默 CLEAN + 静默覆盖被跟踪文件） | 2026-11-15 | delivered | 0954ca8（双守卫实现 + tests/test_io_guards.py 8 条退出码断言） | [BK-0036](./archive\2026-Q4\BK-0036-collect-facts-judge-输入范围与输出落点双守卫.md) |
 | **BK-0037** | `Security` | 输出路径可静默覆盖仓库内被跟踪文件 | 2026-11-15 | superseded | 并入 BK-0036（输入范围与输出落点双守卫，已提 P2） | [BK-0037](./archive\2026-Q4\BK-0037-输出路径可静默覆盖仓库内被跟踪文件.md) |
@@ -66,6 +66,5 @@
 | **BK-0013** | `TechDebt` | 台账末列定位对无尾随竖线且结论含裸竖线的行误判 | 2026-10-14 | wontfix | 有意保留 fail-closed：目标输入无尾随竖线且结论含裸竖线，本身已破坏 Markdown 表格渲染；BK-0011 行为用例已把「无尾随竖线行 | [BK-0013](./archive\2026-Q4\BK-0013-trailing-pipe-column-misparse.md) |
 | **BK-0015** | `TechDebt` | working/staged 模式的报告命名与 base7..head7 模板字面不符 | 2026-10-14 | wontfix | 不接受：纯命名措辞澄清，零运行时与门禁影响；卡片维护成本高于一句文案收益，可在后续文档润色时顺带修正 | [BK-0015](./archive\2026-Q4\BK-0015-working-staged-naming-literal.md) |
 | **BK-0018** | `Governance` | 明确 skills-lock.json computedHash 权威定义并评估全量重算 | 2026-10-14 | wontfix | 治理对象不在本仓所有权：skills-lock.json 已 gitignore 且未跟踪，由外部 npx skills 生成，82/86 | [BK-0018](./archive\2026-Q4\BK-0018-明确-skills-lock-json-computedhash-权威定义并评估.md) |
-| **BK-0020** | `TechDebt` | 修订表头定位限定在修订历史章节作用域内 | 2026-10-14 | delivered | fix/p2-six-backlog-items @ deb691e（R2 终审 ✅ 准予交付；审查归档 docs/project/reviews/2026-10-14-p2-six-backlog-items/） | [BK-0020](./archive\2026-Q4\BK-0020-修订表头定位限定在修订历史章节作用域内.md) |
 
-*(其余 18 条历史记录已隐藏，可查看 archive/ 目录)*
+*(其余 19 条历史记录已隐藏，可查看 archive/ 目录)*
