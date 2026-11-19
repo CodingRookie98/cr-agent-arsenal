@@ -566,9 +566,17 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
             except Exception:
                 pass
 
-    # 孤儿文档判定 (不包含根目录下的 index.md, llms.txt, GOVERNANCE.md 等入口)
+    # 孤儿文档判定。三类排除，各有理由：
+    #   1) **入口象限**（<root> 根级文档）不参与（BK-0019）：DA-4 明令该象限不生成托管索引，
+    #      其文档在结构上不可能被机械登记；把规范强制的结构计入缺陷是对同一决策的双重惩罚。
+    #      代价：根级真孤儿不再由本指标发现——根级本应只有入口文档，其健康度由链接完整率
+    #      与人工评审覆盖（已登记于 GOVERNANCE §3）。
+    #   2) 导航入口文件名（index / README / GOVERNANCE / llms.txt）不是叶子文档；
+    #   3) 归档区不参与（冷区凭据按签发时点固化）。
     orphan_docs = []
     for f in all_md_files:
+        if f.parent == root_dir:
+            continue
         if f.name in ("index.md", "README.md", "GOVERNANCE.md", "llms.txt"):
             continue
         if "archive" in f.parts or "archived" in f.parts:

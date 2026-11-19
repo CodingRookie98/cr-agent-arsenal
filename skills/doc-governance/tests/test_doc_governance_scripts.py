@@ -1775,6 +1775,27 @@ def test_zero_indexable_docs_with_existing_map_is_skipped(tmp_path):
     assert audit_doc_health.check_llms_map_consistency(docs) == "", \
         "无可收录文档时不得报地图不一致（否则修复命令必然失败）"
 
+
+
+# --- BK-0019 回归：入口象限不参与孤儿判定 ----------------------------------------
+
+
+def test_entry_quadrant_docs_are_not_orphans(tmp_path):
+    """根级文档属入口象限（DA-4 不生成托管索引），不得被判孤儿；深层叶子照旧判定。"""
+    docs = tmp_path / "docs"
+    (docs / "how-to").mkdir(parents=True)
+    header = ("> **文档控制信息**\n"
+              "> - **文档标识**: T-1\n"
+              "> - **当前版本**: V1.0.0\n\n")
+    (docs / "QUICKSTART.md").write_text(header + "# 快速开始\n", encoding="utf-8", newline="\n")
+    (docs / "how-to" / "orphan-leaf.md").write_text(header + "# 孤儿叶子\n", encoding="utf-8", newline="\n")
+
+    r = subprocess.run([sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"),
+                        "--root", str(docs)],
+                       capture_output=True, text=True, encoding="utf-8")
+
+    orphan_line = next(ln for ln in r.stdout.splitlines() if "孤立文档:" in ln)
+    assert "孤立文档: 1/2" in orphan_line, f"只应剩深层叶子一个孤儿：{orphan_line}"
 if __name__ == "__main__":
     unittest.main()
 
