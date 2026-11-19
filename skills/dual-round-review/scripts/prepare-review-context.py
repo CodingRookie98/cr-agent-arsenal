@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from datetime import date
@@ -354,14 +355,44 @@ def _emit_range(record: dict[str, str], base_ref: str, head_ref: str) -> int:
     return 0
 
 
+_UNIT_RX = re.compile(r"^>\s*-\s*\*\*交付单元\*\*:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
+
+
+def _read_unit(archive_dir: str) -> str | None:
+    """读归档索引登记的「交付单元」；索引缺失、不可读或无该字段时返回 None。"""
+    index = os.path.join(archive_dir, "README.md")
+    if not os.path.isfile(index):
+        return None
+    try:
+        match = _UNIT_RX.search(_read_text(index))
+    except OSError:
+        return None
+    return match.group(1) if match else None
+
+
 def _resolve_archive_dir(root: str, slug: str) -> str:
-    """6) 解析归档目录：复用既有同 slug 目录，否则按当天日期新建。"""
+    """6) 解析归档目录：复用**交付单元与 slug 一致**的既有目录，否则按当天日期新建。
+
+    BK-0009：后缀 glob（`*-<slug>`）会把 `2026-10-04-review-report-archive` 当成
+    `--slug=archive` 的归属目录——新轮次报告会写进另一个交付单元的归档，违反
+    「一交付单元一目录」。判据必须是索引登记的「交付单元」字段，而不是目录名后缀。
+
+    名字命中但单元不等（或索引缺该字段）的目录跳过并告警，**不硬阻断**：同后缀的其它
+    单元并存是合法形态（如 `review-report-archive` 与 `archive`）；只有在没有任何
+    目录登记相等时才按当天日期新建。
+    """
     matched = sorted(
         (f"{root}/{name}" for name in _glob_entries(root) if name.endswith("-" + slug)),
         key=lambda value: value.encode("utf-8", "surrogateescape"),
     )
-    if matched:
-        return matched[-1]
+    for candidate in reversed(matched):
+        unit = _read_unit(candidate)
+        if unit == slug:
+            return candidate
+        detail = ("索引缺少「交付单元」字段" if unit is None
+                  else f"交付单元为 '{unit}'，与请求 slug '{slug}' 不一致")
+        sys.stderr.write(
+            f"⚠️  跳过归档目录 {candidate}：{detail}（BK-0009：不得跨交付单元复用目录）\n")
     return f"{root}/{date.today().isoformat()}-{slug}"
 
 

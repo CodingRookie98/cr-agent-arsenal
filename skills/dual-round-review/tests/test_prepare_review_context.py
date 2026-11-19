@@ -383,6 +383,57 @@ def test_round_delta_alias_accepted(tmp_path):
 
 
 
+# --- BK-0009 回归：归档目录复用必须以「交付单元」为准，而非目录名后缀 -------------
+
+
+def _mk_archive(repo, dirname, unit_line):
+    d = repo / 'docs' / 'project' / 'reviews' / dirname
+    d.mkdir(parents=True)
+    (d / 'README.md').write_text(
+        '# 审查归档\n\n' + unit_line + '\n',
+        encoding='utf-8', newline='\n')
+    return d
+
+
+def test_archive_reuse_rejects_suffix_match_with_other_unit(tmp_path):
+    """BK-0009：`--slug=archive` 不得复用 `…-review-report-archive`。
+
+    名字后缀命中但交付单元不同的目录必须被跳过——否则新轮次报告会写进另一个交付单元
+    的归档，既破坏「一交付单元一目录」，也让门禁台账与报告归属错位。
+    """
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8', newline='\n')
+    foreign = _mk_archive(repo, '2026-10-04-review-report-archive',
+                          '> - **交付单元**: review-report-archive')
+
+    r = _run(repo, '--slug=archive', '--round=r1', '--working')
+
+    assert r.returncode == 0, r.stderr
+    assert '不一致' in r.stderr, f'必须告警说明跳过原因:\n{r.stderr}'
+    path = _report_path(r.stdout)
+    assert str(foreign) not in path, f'报告不得落入其它交付单元的归档: {path}'
+    created = [p for p in (repo / 'docs' / 'project' / 'reviews').iterdir()]
+    assert foreign in created, '既有归档目录不得被移动或改名'
+    assert any(p != foreign and p.name.endswith('-archive') for p in created), \
+        '应在同名 slug 下新建目录，而不是复用他人的目录'
+
+
+def test_archive_reuse_accepts_matching_unit(tmp_path):
+    """正向：交付单元与请求 slug 一致时必须复用该目录（不得新建重复目录）。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8', newline='\n')
+    mine = _mk_archive(repo, '2026-10-04-review-report-archive',
+                       '> - **交付单元**: review-report-archive')
+
+    r = _run(repo, '--slug=review-report-archive', '--round=r1', '--working')
+
+    assert r.returncode == 0, r.stderr
+    path = _report_path(r.stdout)
+    rel_dir = mine.relative_to(repo).as_posix()
+    assert rel_dir in path, f'交付单元一致时必须复用既有目录: {path}'
+    assert '不一致' not in r.stderr
+
+
 # --- RFC-0002 Delta 回归（R1-1 / R1-2 / R1-7）---------------------------------
 
 
