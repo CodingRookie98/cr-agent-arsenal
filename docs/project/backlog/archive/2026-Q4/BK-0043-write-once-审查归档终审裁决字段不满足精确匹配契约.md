@@ -2,21 +2,21 @@
 id: BK-0043
 title: Write-Once 审查归档 2026-10-12-spec-evolution-v1 的终审裁决字段不满足 check-review-report.sh 精确匹配契约
 type: Governance
-status: active
+status: completed
 priority: P3
 trigger: dual-round-review 门禁维护窗口；无前置依赖
-created_at: '2026-10-13'
-updated_at: '2026-10-13'
-closed_at: null
-resolution: null
-destination: null
+created_at: 2026-10-13
+updated_at: 2026-11-19
+closed_at: 2026-11-19
+resolution: delivered
+destination: 2677b9b（方案 a：正则结构化放宽 + 3 条回归；12/12 归档 rc=0）
 source:
-- 模板自验（2026-10-13）发现：真实归档 docs/project/reviews/2026-10-12-spec-evolution-v1 结构校验 rc=0，但 --require-verdict=PASS rc=1
-- 全量归档普查（2026-10-13）：9 个归档中 8 个 rc=0，仅该归档失败
+  - 模板自验（2026-10-13）发现：真实归档 docs/project/reviews/2026-10-12-spec-evolution-v1 结构校验 rc=0，但 --require-verdict=PASS rc=1
+  - 全量归档普查（2026-10-13）：9 个归档中 8 个 rc=0，仅该归档失败
 acceptance_criteria:
-- 在卡片中记录处置决策（三选一并写明依据）：(a) 门禁允许「判决值 + 单个括号统计后缀」并以正则显式定义；(b) 门禁新增显式归档豁免白名单（登记 slug 与理由）；(c) 维持严格契约，仅在 check-review-report.sh 与技能文档中登记该归档为历史例外
-- 按所选方案落地：若是 (a)/(b)，须在 skills/dual-round-review/tests 增加回归测试（正例 rc=0、反例 rc=1），并复跑 scripts/check-review-report.sh 对全部 9 个归档；若是 (c)，须在文档中给出一行可执行豁免命令或说明
-- 归档面 docs/project/reviews/** 保持 Write-Once，不改写既有证据文件
+  - 在卡片中记录处置决策（三选一并写明依据）：(a) 门禁允许「判决值 + 单个括号统计后缀」并以正则显式定义；(b) 门禁新增显式归档豁免白名单（登记 slug 与理由）；(c) 维持严格契约，仅在 check-review-report.sh 与技能文档中登记该归档为历史例外
+  - 按所选方案落地：若是 (a)/(b)，须在 skills/dual-round-review/tests 增加回归测试（正例 rc=0、反例 rc=1），并复跑 scripts/check-review-report.sh 对全部 9 个归档；若是 (c)，须在文档中给出一行可执行豁免命令或说明
+  - 归档面 docs/project/reviews/** 保持 Write-Once，不改写既有证据文件
 ---
 
 ## 1. 背景与问题陈述
@@ -51,3 +51,8 @@ acceptance_criteria:
 **复验**：12 个归档 `--require-verdict=PASS` 全部 rc=0，含此前唯一失败的 `2026-10-12-spec-evolution-v1`。dual-round-review 123 passed / 3 skipped。
 
 **副作用披露**：既有错误文案随之改为「必须为『准予交付』或『准予交付』+ 含数字的括号统计串」，并在其中点名三类被拒形态；`test_require_verdict_fails_on_*` 四条例仍全绿，说明收紧面未被破坏。
+
+### 结项记录 (2026-11-19)
+- **结论**: delivered
+- **去向/凭据**: 2677b9b（方案 a：正则结构化放宽 + 3 条回归；12/12 归档 rc=0）
+- **归档目录**: archive/2026-Q4/
