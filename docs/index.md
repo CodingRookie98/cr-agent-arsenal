@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.36.9 (P3 批次六项 backlog 卡片闭环交付**已完成**：四轮审查（R1 红队 → R2 元审判 → delta-r1 定向复核 → delta-r2 终审）闭环，终审 **准予交付**、门禁 `--require-verdict=PASS` 通过；归档见 `docs/project/reviews/2026-10-20-p3-six-backlog-batch/`)
+> - **当前版本**: V1.37.0 (新增 §6 规则 `commit-evidence`：提交信息取证口径成文)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.37.0** | 2026-11-19 | AI Agent | 核心架构组 | **规则成文**：§6 新增 `commit-evidence`（提交信息取证口径，BK-0044 闭环）；同步 `reference/rules/commit-evidence.md` V1.0.0 与象限索引 |
 | **V1.36.9** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 闭环交付登记**：四轮审查闭环（R1 红队 → R2 元审判 → delta-r1 定向复核 → delta-r2 终审），终审 **准予交付**（Blockers=0）、门禁 `--require-verdict=PASS` 通过；六卡 `close` 迁入 `archive/2026-Q4/`（index 活跃 21→15、归档 24→30）；计划行标注「已完成」并链接审查归档 |
 | **V1.36.8** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 闭环登记**：§4 新增计划行（BK-0045 未跟踪清单平台无关化 / BK-0010 `--archive-root` 防御 / BK-0008 围栏告警补嵌套提示 / BK-0016 象限索引幂等判据剥离锚点与查询串 / BK-0007 GOVERNANCE §4.1 豁免口径精确化 / BK-0014 作废轮次留痕）；同步 `GOVERNANCE.md` V1.6.2 与 `dual-round-review` SKILL.md 口径 |
 | **V1.36.7** | 2026-10-19 | DSH AI Agent | 王辉 | **技能脚本 Python 统一化注册**：§4 新增计划行（8 个自建技能脚本改为单一 Python 实现 + `.sh` POSIX 兼容壳；9 套契约测试运行时无关化；Windows 侧以 uv 隔离环境取证）；同步 `GOVERNANCE.md` V1.6.1 与 `docs/reference/rules/index.md` V1.0.7 的脚本主路径口径（`scaffold-doc.py` / `prepare-review-context.py`） |
 | **V1.36.6** | 2026-10-13 | DSH AI Agent | 王辉 | **复核循环治理登记**：新增 BK-0044（提交信息取证据口径 —— 易失数字/一次测量值与工作区属性不得作为完成度宣称；V8/V9/V11/V12 四次同根因触发，两次判阻断）；BK-0042 §5 更正 E-4 的耗时标注为「本机一次测量、非可复现常数」、E-5 归因更正为提交 `c24f27c`（提交 `64283f6`）；docs/index.md V1.36.5 行的凭据改为「本地只读门禁可复跑」，并注明 V11/V12 报告均未入库 |
-| **V1.36.5** | 2026-10-13 | DSH AI Agent | 王辉 | **独立复核（V11）更正记录**：提交 `8390df8` 的取证行称 `pytest skills/doc-governance -q = 132 passed`，该提交树实测 134（132 为父提交 `ecf5d24` 数值，技能总数 448→450 互证），属凭据数字与实测不同宽，已在 BK-0042 §5 追加 E-4；另登记 E-5 两处口径澄清（「trim 5 行」为修订表滑窗上限、`llms.txt` 重生成为幂等无 diff）。功能面与门禁可由本地只读门禁复跑验证（`check-doc-links` / `check-doc-control-sync` / `trim-revision --keep 5` / `audit-doc-health` 与 `pytest skills/doc-governance -q`，期望 rc=0；复跑历史提交须先取该提交的树）；独立复核报告（V11/V12）均未入库，其结论在仓内不可核验 |
 
 ---
 
@@ -112,5 +112,6 @@
 | 规则标识 | 约束对象与核心内容 | 规则文档 |
 | :--- | :--- | :--- |
 | **`source-group-inclusion`** | 预设来源组收录判据：缺省预设 `common` 的四条准入（即装即用 / 增量能力 / 厂商中立命名 / 粒度克制）、唯一例外边界、厂商／产品专用套件走独立预设、登记同步口径 | [source-group-inclusion.md](./reference/rules/source-group-inclusion.md) |
+| **`commit-evidence`** | 提交信息取证口径：区分可复核的门禁结论与一次测量值；数字须附可复现命令并落盘；不可复核属性不得作为完成度宣称；历史更正不回改 | [commit-evidence.md](./reference/rules/commit-evidence.md) |
 
 > 象限索引：[reference/rules/index.md](./reference/rules/index.md)

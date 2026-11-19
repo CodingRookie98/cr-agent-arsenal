@@ -5,7 +5,7 @@
 
 > **文档控制信息**
 > - **文档标识**: DOCIDX-REFERENCE-RULES-2026
-> - **当前版本**: V1.0.7
+> - **当前版本**: V1.0.8
 > - **文档状态**: Active
 > - **生效日期**: 2026-10-19
 > - **文档所有者**: AI Agent / 工程师
@@ -16,11 +16,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.8** | 2026-11-19 | AI Agent | 架构师 | 登记 commit-evidence.md |
 | **V1.0.7** | 2026-10-19 | AI Agent | 架构师 | 托管索引声明中的生成器脚本名同步为 `scaffold-doc.py`（技能脚本 Python 统一化） |
 | **V1.0.6** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.3（归并边界限定至整组安装路径） |
 | **V1.0.5** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.2（反查键语义与同源多组归并边界精确化） |
 | **V1.0.4** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.1（安装语义范围句与豁免表述措辞订正） |
-| **V1.0.3** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.0（C-3 与安装语义事实订正、取证边界与豁免范围收敛） |
 
 ---
 
@@ -28,3 +28,4 @@
 
 <!-- 本清单由 manage-doc-index.py 自动维护；全库总入口见根级 docs/index.md -->
 - [来源组收录判据](./source-group-inclusion.md) — Reference
+- [提交信息取证口径](./commit-evidence.md) — Reference
