@@ -35,7 +35,6 @@
 
 - [BK-0005-relative-to-root-path-normalization](project/backlog/active/BK-0005-relative-to-root-path-normalization.md): id: BK-0005
 - [BK-0006-review-gates-negative-test-cases](project/backlog/active/BK-0006-review-gates-negative-test-cases.md): id: BK-0006
-- [BK-0009-resolve-archive-dir-slug-consistency](project/backlog/active/BK-0009-resolve-archive-dir-slug-consistency.md): id: BK-0009
 - [BK-0012-enumerate-unregistered-reports](project/backlog/active/BK-0012-enumerate-unregistered-reports.md): id: BK-0012
 - [BK-0017-scaffold-adr-模板补控制头版本字段](project/backlog/active/BK-0017-scaffold-adr-模板补控制头版本字段.md): id: BK-0017
 - [BK-0019-readme-入口象限的索引自愈与健康评分语义对齐](project/backlog/active/BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md): id: BK-0019
@@ -50,6 +49,7 @@
 - [BK-0004-unique-verdict-in-review-index](project/backlog/archive/2026-Q4/BK-0004-unique-verdict-in-review-index.md): id: BK-0004
 - [BK-0007-governance-doc-exemption-table-accuracy](project/backlog/archive/2026-Q4/BK-0007-governance-doc-exemption-table-accuracy.md): id: BK-0007
 - [BK-0008-fence-parity-nested-block-guidance](project/backlog/archive/2026-Q4/BK-0008-fence-parity-nested-block-guidance.md): id: BK-0008
+- [BK-0009-resolve-archive-dir-slug-consistency](project/backlog/archive/2026-Q4/BK-0009-resolve-archive-dir-slug-consistency.md): id: BK-0009
 - [BK-0010-archive-root-empty-or-illegal-guard](project/backlog/archive/2026-Q4/BK-0010-archive-root-empty-or-illegal-guard.md): id: BK-0010
 - [BK-0011-review-contract-weak-assertions](project/backlog/archive/2026-Q4/BK-0011-review-contract-weak-assertions.md): id: BK-0011
 - [BK-0013-trailing-pipe-column-misparse](project/backlog/archive/2026-Q4/BK-0013-trailing-pipe-column-misparse.md): id: BK-0013
