@@ -1627,5 +1627,55 @@ class TestBatchDIdentityContract(unittest.TestCase):
         self.assertNotIn("先移除", out, "该分支不得建议移除既有地图（会丢失唯一身份载体）")
 
 
+# --- BK-0005 回归：--dir 的作用域必须落在 --root 之内且真实存在 ------------------
+
+
+def _run_gate(script_name, root, *args):
+    return subprocess.run(
+        [sys.executable, str(SCRIPTS_DIR / script_name), "--root", str(root), *args],
+        capture_output=True, text=True, encoding="utf-8")
+
+
+def _mk_scope_tree(root):
+    (root / "docs" / "a").mkdir(parents=True)
+    (root / "docs" / "a" / "x.md").write_text("# x\n\n[a](x.md)\n", encoding="utf-8", newline="\n")
+    (root / "outside").mkdir()
+    (root / "outside" / "y.md").write_text("# y\n", encoding="utf-8", newline="\n")
+    return root / "docs"
+
+
+def test_dir_escaping_root_is_usage_error(tmp_path):
+    """BK-0005：--dir 越出 --root 必须 exit 2，不得把扫描带到根外。"""
+    docs = _mk_scope_tree(tmp_path)
+    r = _run_gate("check-doc-links.py", docs, "--dir", "../../outside")
+    assert r.returncode == 2, f"越界必须拒绝：rc={r.returncode}\n{r.stdout}"
+    assert "越出根目录" in r.stderr
+
+
+def test_dir_nonexistent_is_usage_error(tmp_path):
+    """BK-0005：--dir 指向不存在的路径不得静默退化为「扫描 0 文件 + rc=0」。"""
+    docs = _mk_scope_tree(tmp_path)
+    r = _run_gate("check-doc-links.py", docs, "--dir", "a/nope")
+    assert r.returncode == 2, f"路径笔误必须报错而非空扫：rc={r.returncode}\n{r.stdout}"
+    assert "不存在" in r.stderr
+
+
+def test_dir_inside_root_still_narrows(tmp_path):
+    """收窄契约不变：根内子目录照常只扫该子树。"""
+    docs = _mk_scope_tree(tmp_path)
+    r = _run_gate("check-doc-links.py", docs, "--dir", "a")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "共扫描 1 个 Markdown 文件" in r.stdout, "收窄后应只扫 a/ 下的 1 篇"
+
+
+def test_control_sync_dir_escaping_root_is_usage_error(tmp_path):
+    """同一条作用域契约在 check-doc-control-sync.py 上同样成立。"""
+    docs = _mk_scope_tree(tmp_path)
+    r = _run_gate("check-doc-control-sync.py", docs, "--dir", "../../outside")
+    assert r.returncode == 2, f"越界必须拒绝：rc={r.returncode}\n{r.stdout}"
+    assert "越出根目录" in r.stderr
+
+
 if __name__ == "__main__":
     unittest.main()
+

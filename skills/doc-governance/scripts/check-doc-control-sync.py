@@ -192,6 +192,27 @@ def check_file_version_sync(file_path: Path) -> Tuple[bool, Optional[str], Optio
     return True, raw_header_ver, latest_raw, None
 
 
+def _validate_target_dirs(root_path: Path, target_dirs: List[str] | None) -> List[str]:
+    """校验 --dir 的作用域落在 --root 之内且真实存在（BK-0005）。
+
+    此前 `root_dir / d` 直接拼接：`--dir ../../etc` 会把扫描带到根外，
+    `--dir a/../..` 这类笔误则静默退化为「扫描 0 文件 + rc=0」——两种都是「用退出码
+    报平安」的假绿。判定用 resolve() 后的**根相对**语义，不做前缀字符串比较。
+    """
+    problems: List[str] = []
+    root_resolved = root_path.resolve()
+    for raw in target_dirs or []:
+        candidate = (root_path / raw).resolve()
+        try:
+            rel = candidate.relative_to(root_resolved)
+        except ValueError:
+            problems.append(f"--dir 越出根目录: {raw} → {candidate}")
+            continue
+        if not candidate.exists():
+            problems.append(f"--dir 指向不存在的路径: {raw} → {rel.as_posix()}")
+    return problems
+
+
 def scan_version_sync(
     root_dir: Path,
     target_dirs: Optional[List[str]] = None,
@@ -256,6 +277,12 @@ def main():
     if not root_path.exists():
         print(f"❌ 错误: 目标文档目录不存在: {root_path}", file=sys.stderr)
         sys.exit(1)
+
+    dir_problems = _validate_target_dirs(root_path, args.dir)
+    if dir_problems:
+        for problem in dir_problems:
+            print(f"❌ 错误: {problem}", file=sys.stderr)
+        sys.exit(2)
 
     print(f"🔍 启动文档控制头与修订历史版本联动一致性扫描: 根目录={root_path} ...")
     total_checked, drift_errors = scan_version_sync(root_path, args.dir)

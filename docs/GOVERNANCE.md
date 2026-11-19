@@ -88,6 +88,8 @@ docs/
 | **`manage-doc-index.py`** | 象限索引托管维护（ensure 骨架 / register 幂等登记 / 人工索引零改写） | 新建文档后 / 拓扑变动 | `python3 skills/doc-governance/scripts/manage-doc-index.py register --root docs --dir how-to --file deployment.md --title "部署 SOP" --kind HowTo` |
 | **`scaffold-doc.py`** | 快速生成符合 Diátaxis 规范的文档脚手架，并自动 ensure 象限索引与登记（跨象限链接按需降级；POSIX 下旧 `.sh` 兼容壳仍可用） | 新建文档时 | `python3 skills/doc-governance/scripts/scaffold-doc.py <type> <name>` |
 
+> **`--dir` 的作用域契约**：`--dir` 只用于在 `--root` **之内**收窄扫描面，取值按根相对路径给出且必须真实存在。越出根目录（如 `--dir ../../x`）或指向不存在的路径一律 **exit 2**——此前这两种写法会被静默拼成「扫描 0 个文件 + rc=0」，用退出码报平安。收窄根会改变豁免基线：判据是 `resolve()` 后的根相对语义，不是字符串前缀（BK-0005）。
+
 ---
 
 ## 4. ⛔ 核心红线与负向规范 (Negative Invariants)
