@@ -2,18 +2,19 @@
 id: BK-0005
 title: 豁免判定前执行路径根相对语义归一化
 type: Governance
-status: active
+status: completed
 priority: P3
 trigger: null
-created_at: '2026-10-04'
-closed_at: null
-resolution: null
-destination: null
+created_at: 2026-10-04
+closed_at: 2026-11-19
+resolution: delivered
+destination: 78c73dc（--dir 作用域守卫 + 4 条回归 + GOVERNANCE 提示）
 source:
-- Delta R2 R1-7
+  - Delta R2 R1-7
 acceptance_criteria:
-- 豁免判定前执行 path.resolve().relative_to(root_dir.resolve())（2 行/脚本；保持元组全等比较，禁止改前缀语义）
-- 在 docs/GOVERNANCE.md 补「根相对语义，收窄根即不豁免」提示
+  - 豁免判定前执行 path.resolve().relative_to(root_dir.resolve())（2 行/脚本；保持元组全等比较，禁止改前缀语义）
+  - 在 docs/GOVERNANCE.md 补「根相对语义，收窄根即不豁免」提示
+updated_at: 2026-11-19
 ---
 
 ## 1. 背景与问题描述
@@ -50,3 +51,8 @@ acceptance_criteria:
 **复验**：卡片原命令 `--root docs --dir project/reviews/../../plans` → `rc=2` + 「指向不存在的路径 … → plans」（此前 rc=0 / 0 文件）。回归 4 条：越界 exit 2、不存在 exit 2、根内子目录仍只扫该子树（「共扫描 1 个」）、control-sync 同契约。doc-governance 全量 73 passed / 6 skipped。
 
 **GOVERNANCE.md** 已补「`--dir` 作用域契约」提示：判据是 resolve 后的根相对语义，收窄根会改变豁免基线。
+
+### 结项记录 (2026-11-19)
+- **结论**: delivered
+- **去向/凭据**: 78c73dc（--dir 作用域守卫 + 4 条回归 + GOVERNANCE 提示）
+- **归档目录**: archive/2026-Q4/

@@ -33,7 +33,6 @@
 
 ## Project Governance (工程演进 / 发布日志与待办)
 
-- [BK-0005-relative-to-root-path-normalization](project/backlog/active/BK-0005-relative-to-root-path-normalization.md): id: BK-0005
 - [BK-0006-review-gates-negative-test-cases](project/backlog/active/BK-0006-review-gates-negative-test-cases.md): id: BK-0006
 - [BK-0012-enumerate-unregistered-reports](project/backlog/active/BK-0012-enumerate-unregistered-reports.md): id: BK-0012
 - [BK-0017-scaffold-adr-模板补控制头版本字段](project/backlog/active/BK-0017-scaffold-adr-模板补控制头版本字段.md): id: BK-0017
@@ -47,6 +46,7 @@
 - [BK-0002-generate-llms-txt-archive-exemption](project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0003-stable-id-pair-by-filename](project/backlog/archive/2026-Q4/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
 - [BK-0004-unique-verdict-in-review-index](project/backlog/archive/2026-Q4/BK-0004-unique-verdict-in-review-index.md): id: BK-0004
+- [BK-0005-relative-to-root-path-normalization](project/backlog/archive/2026-Q4/BK-0005-relative-to-root-path-normalization.md): id: BK-0005
 - [BK-0007-governance-doc-exemption-table-accuracy](project/backlog/archive/2026-Q4/BK-0007-governance-doc-exemption-table-accuracy.md): id: BK-0007
 - [BK-0008-fence-parity-nested-block-guidance](project/backlog/archive/2026-Q4/BK-0008-fence-parity-nested-block-guidance.md): id: BK-0008
 - [BK-0009-resolve-archive-dir-slug-consistency](project/backlog/archive/2026-Q4/BK-0009-resolve-archive-dir-slug-consistency.md): id: BK-0009
