@@ -35,7 +35,6 @@
 
 - [BK-0012-enumerate-unregistered-reports](project/backlog/active/BK-0012-enumerate-unregistered-reports.md): id: BK-0012
 - [BK-0019-readme-入口象限的索引自愈与健康评分语义对齐](project/backlog/active/BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md): id: BK-0019
-- [BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染](project/backlog/active/BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染.md): id: BK-0024
 - [BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约](project/backlog/active/BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md): id: BK-0028
 - [BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约](project/backlog/active/BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约.md): id: BK-0043
 - [BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断](project/backlog/active/BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断.md): id: BK-0044
@@ -60,6 +59,7 @@
 - [BK-0021-generate-llms-txt-py-的-root-与-output-落点解](project/backlog/archive/2026-Q4/BK-0021-generate-llms-txt-py-的-root-与-output-落点解.md): id: BK-0021
 - [BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜](project/backlog/archive/2026-Q4/BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜.md): id: BK-0022
 - [BK-0023-机器地图写入侧安全加固-符号链接穿透与零覆盖守卫](project/backlog/archive/2026-Q4/BK-0023-机器地图写入侧安全加固-符号链接穿透与零覆盖守卫.md): id: BK-0023
+- [BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染](project/backlog/archive/2026-Q4/BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染.md): id: BK-0024
 - [BK-0025-机器地图与生成物一致性需要门禁固化](project/backlog/archive/2026-Q4/BK-0025-机器地图与生成物一致性需要门禁固化.md): id: BK-0025
 - [BK-0026-机器地图提示文案的终端注入面与畸形项目名](project/backlog/archive/2026-Q4/BK-0026-机器地图提示文案的终端注入面与畸形项目名.md): id: BK-0026
 - [BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验](project/backlog/archive/2026-Q4/BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验.md): id: BK-0027
