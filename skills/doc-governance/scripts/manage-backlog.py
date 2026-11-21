@@ -84,26 +84,45 @@ def parse_item_file(file_path: Path) -> Tuple[Dict, str]:
             # .venv 实测：create 出的卡片 source 被读成 ''）。此处按「键行 + 列表项」
             # 两态推进：空值键先占位为 ''，遇到 "- " 行才升级为列表——无列表项时
             # 语义与旧实现逐字一致。
+            #
+            # 跨行折行：PyYAML dump 会按 best_width 把长 plain scalar 与长列表项折成
+            # 「缩进续行」。续行既不是键行也不是 "- " 行，旧实现整段丢弃，长字段因此被
+            # 截断（索引里 BK-0041 的 destination 停在「…；C-04」即此形态）。按 YAML
+            # 折行语义，续行以单个空格拼回上一标量值或上一列表项。
             current_key: Optional[str] = None
-            for line in yaml_content.splitlines():
-                stripped = line.strip()
+            current_is_list = False
+            for raw_line in yaml_content.splitlines():
+                stripped = raw_line.strip()
                 if not stripped:
                     continue
                 if stripped.startswith("- ") and current_key is not None:
                     if not isinstance(metadata.get(current_key), list):
                         metadata[current_key] = []
                     metadata[current_key].append(stripped[2:].strip().strip("\"'"))
+                    current_is_list = True
                     continue
-                if line[:1] not in (" ", "\t") and ":" in line:
-                    k, v = line.split(":", 1)
+                if raw_line[:1] in (" ", "\t") and current_key is not None:
+                    if current_is_list and metadata.get(current_key):
+                        metadata[current_key][-1] = (
+                            f"{metadata[current_key][-1]} {stripped.strip(chr(39) + chr(34))}"
+                        ).strip()
+                    elif not current_is_list and isinstance(metadata.get(current_key), str):
+                        metadata[current_key] = (
+                            f"{metadata[current_key]} {stripped}".strip().strip("\"'")
+                        )
+                    continue
+                if ":" in raw_line:
+                    k, v = raw_line.split(":", 1)
                     key = k.strip()
                     val = v.strip().strip("\"'")
                     if val == "[]":
                         metadata[key] = []
                         current_key = None
+                        current_is_list = False
                     else:
                         metadata[key] = val
-                        current_key = key if val == "" else None
+                        current_key = key
+                        current_is_list = False
 
     return metadata, body
 

@@ -631,6 +631,59 @@ class TestManageBacklogAndFormB(unittest.TestCase):
             target = (index_file.parent / link).resolve()
             self.assertTrue(target.exists(), f"索引链接不可解析: {link}")
 
+    @unittest.skipUnless(manage_backlog.yaml, "需要 PyYAML 提供对照真值，否则两条路径同源、断言空转")
+    def test_fallback_parser_folds_wrapped_scalars_and_list_items(self):
+        """无 PyYAML 降级解析器须与 PyYAML 同解：折行续行要折叠回上一标量值 / 上一列表项
+
+        缺陷形态：PyYAML dump 按 best_width 折行，续行既非键行也非 "- " 行，旧降级实现
+        整段丢弃，于是 destination 被截断（索引里 BK-0041 停在「…；C-04」），source 长
+        条目被截成半句。判据取「两条解析路径结果一致」，不把折叠细节写成实现细节。
+        """
+        card = (
+            self.test_dir / "docs" / "project" / "backlog"
+            / "archive" / "2026-Q4" / "BK-0001-wrapped.md"
+        )
+        card.parent.mkdir(parents=True, exist_ok=True)
+        card.write_text(
+            "---\n"
+            "id: BK-0001\n"
+            "title: 折行回归项\n"
+            "status: completed\n"
+            "destination: C-02 交付：新增 docs/x.md；C-04\n"
+            "  两条 description 与 C-06 测试行限裁定接受偏离\n"
+            "source:\n"
+            "- BK-0039 §4 残余项移交\n"
+            "- spec-evolution judge 全量复跑：agy 无设计书 /\n"
+            "  doc-governance 测试文件超限\n"
+            "acceptance_criteria:\n"
+            "- 具备设计书（C-02\n"
+            "  转绿）\n"
+            "---\n\n正文\n",
+            encoding="utf-8", newline="\n",
+        )
+
+        with_yaml, _ = manage_backlog.parse_item_file(card)
+        saved_yaml = manage_backlog.yaml
+        manage_backlog.yaml = None
+        try:
+            without_yaml, _ = manage_backlog.parse_item_file(card)
+        finally:
+            manage_backlog.yaml = saved_yaml
+
+        for key in ("destination", "source", "acceptance_criteria"):
+            self.assertEqual(
+                without_yaml.get(key), with_yaml.get(key),
+                f"{key} 的降级解析结果与 PyYAML 不一致（续行被丢弃或折叠不完整）",
+            )
+        self.assertEqual(
+            with_yaml["destination"],
+            "C-02 交付：新增 docs/x.md；C-04 两条 description 与 C-06 测试行限裁定接受偏离",
+        )
+        self.assertEqual(
+            with_yaml["source"][1],
+            "spec-evolution judge 全量复跑：agy 无设计书 / doc-governance 测试文件超限",
+        )
+
     def test_list_and_json_parsing(self):
         """测试 list 命令的脚本化过滤与可编程 JSON 输出"""
         # 创建测试条目
