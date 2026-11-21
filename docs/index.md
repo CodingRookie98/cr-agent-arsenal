@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.37.0 (新增 §6 规则 `commit-evidence`：提交信息取证口径成文)
+> - **当前版本**: V1.37.1 (新增 §2 调研报告 `llm-wiki-implementation-research`：LLM-WIKI 社区实现与难点对标)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.37.1** | 2026-11-21 | DSH AI Agent | 王辉 | **调研报告登记**：§2 新增《LLM-WIKI 社区实现全景与工程难点深度调研》（`explanation/analysis/llm-wiki-implementation-research.md` V1.0.0），含六条实现路线、十类难点、十二维 `doc-governance` 对照审计与八项改造建议 |
 | **V1.37.0** | 2026-11-19 | AI Agent | 核心架构组 | **规则成文**：§6 新增 `commit-evidence`（提交信息取证口径，BK-0044 闭环）；同步 `reference/rules/commit-evidence.md` V1.0.0 与象限索引 |
 | **V1.36.9** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 闭环交付登记**：四轮审查闭环（R1 红队 → R2 元审判 → delta-r1 定向复核 → delta-r2 终审），终审 **准予交付**（Blockers=0）、门禁 `--require-verdict=PASS` 通过；六卡 `close` 迁入 `archive/2026-Q4/`（index 活跃 21→15、归档 24→30）；计划行标注「已完成」并链接审查归档 |
 | **V1.36.8** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 闭环登记**：§4 新增计划行（BK-0045 未跟踪清单平台无关化 / BK-0010 `--archive-root` 防御 / BK-0008 围栏告警补嵌套提示 / BK-0016 象限索引幂等判据剥离锚点与查询串 / BK-0007 GOVERNANCE §4.1 豁免口径精确化 / BK-0014 作废轮次留痕）；同步 `GOVERNANCE.md` V1.6.2 与 `dual-round-review` SKILL.md 口径 |
 | **V1.36.7** | 2026-10-19 | DSH AI Agent | 王辉 | **技能脚本 Python 统一化注册**：§4 新增计划行（8 个自建技能脚本改为单一 Python 实现 + `.sh` POSIX 兼容壳；9 套契约测试运行时无关化；Windows 侧以 uv 隔离环境取证）；同步 `GOVERNANCE.md` V1.6.1 与 `docs/reference/rules/index.md` V1.0.7 的脚本主路径口径（`scaffold-doc.py` / `prepare-review-context.py`） |
-| **V1.36.6** | 2026-10-13 | DSH AI Agent | 王辉 | **复核循环治理登记**：新增 BK-0044（提交信息取证据口径 —— 易失数字/一次测量值与工作区属性不得作为完成度宣称；V8/V9/V11/V12 四次同根因触发，两次判阻断）；BK-0042 §5 更正 E-4 的耗时标注为「本机一次测量、非可复现常数」、E-5 归因更正为提交 `c24f27c`（提交 `64283f6`）；docs/index.md V1.36.5 行的凭据改为「本地只读门禁可复跑」，并注明 V11/V12 报告均未入库 |
 
 ---
 
@@ -44,6 +44,7 @@
 | **`spec-evolution`** | 机械化演进回路：把演进回路的「选择端」从模型意见换成脚本退出码（只读采集器 → 确定性判定器 → Exit 0/1/2）+ 锚点硬门禁（不可解析即 fail-closed）+ 人类裁决区永久留白；只判「产物存在性」，不做设计质量评价 | [spec-evolution-design.md](./explanation/architecture/spec-evolution-design.md) |
 | **`agy-delegation-workflow`** | 认知与执行分离：后台无头执行体的三级优先级链与宿主自适应 + 7 维自包含任务 Prompt + 假失败落盘判别 + 6 步零信任验收（Diff 范围 / 类型与 Lint / 失败模式 grep / 单测 / 全局构建 / 双轮终审） | [agy-delegation-workflow-design.md](./explanation/architecture/agy-delegation-workflow-design.md) |
 | **Backlog 治理最佳实践** | 结合软件工程史（精益/看板/Shape Up）与 AI 上下文工程的 14 项待办治理法则 | [backlog-governance-best-practices.md](./explanation/analysis/backlog-governance-best-practices.md) |
+| **LLM-WIKI 社区实现调研** | 六条实现路线（规范纯文件 / 索引检索 / 仓库生成 / 知识图谱 / 检索即答案 / 确定性编译器）+ 十类工程难点（含 21× token、漂移检出盲区、lint 召回 ~50%）+ 十二维对照审计与 P0–P2 改造建议 | [llm-wiki-implementation-research.md](./explanation/analysis/llm-wiki-implementation-research.md) |
 
 ---
 
