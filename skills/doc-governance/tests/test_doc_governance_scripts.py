@@ -684,6 +684,50 @@ class TestManageBacklogAndFormB(unittest.TestCase):
             "spec-evolution judge 全量复跑：agy 无设计书 / doc-governance 测试文件超限",
         )
 
+    @unittest.skipUnless(manage_backlog.yaml, "需要 PyYAML 作为合法性与语义的对照真值")
+    def test_fallback_dump_emits_parseable_yaml_for_hostile_values(self):
+        """零依赖 dump 必须产出 PyYAML 可解析且语义等价的合法 YAML
+
+        缺陷形态：旧 dump 直写 `f"{k}: {v}"`——多行值让后续行变成顶层伪键行（YAML 判非法或
+        结构错位），含引号 / 反斜杠的值改变语义，"- " 开头的列表项被读成嵌套列表。
+        """
+        metadata = {
+            "id": "BK-0001",
+            "title": '引号 " 与反斜杠 \\ 标题',
+            "status": "active",
+            "destination": "第一段\n第二段：含冒号与 # 井号",
+            "source": ["单行来源", "跨行来源\n第二行", "- 以短横开头"],
+            # 类型漂移面：裸写会被 PyYAML 读成 date / int / bool，字符串语义丢失
+            "created_at": "2026-10-13",
+            "priority": "1",
+            "trigger": "on",
+            "closed_at": None,
+        }
+        card = (
+            self.test_dir / "docs" / "project" / "backlog"
+            / "active" / "BK-0001-encoded.md"
+        )
+        card.parent.mkdir(parents=True, exist_ok=True)
+
+        saved_yaml = manage_backlog.yaml
+        manage_backlog.yaml = None
+        try:
+            manage_backlog.dump_item_file(card, metadata, "正文")
+            text = card.read_text(encoding="utf-8")
+            reloaded, _ = manage_backlog.parse_item_file(card)
+        finally:
+            manage_backlog.yaml = saved_yaml
+
+        frontmatter = text.split("---\n")[1]
+        oracle = manage_backlog.yaml.safe_load(frontmatter)
+        self.assertEqual(oracle, metadata, "零依赖 dump 的产物必须被 PyYAML 等价读回")
+        self.assertEqual(reloaded, metadata, "零依赖环境的写入-读回必须无损")
+        top_level = [ln for ln in frontmatter.splitlines() if ln and not ln.startswith(" ")]
+        self.assertEqual(
+            len(top_level), len(metadata),
+            "每个键必须恰好占一行：多行值不得撑成顶层伪键行",
+        )
+
     def test_list_and_json_parsing(self):
         """测试 list 命令的脚本化过滤与可编程 JSON 输出"""
         # 创建测试条目

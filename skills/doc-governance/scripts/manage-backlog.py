@@ -60,6 +60,80 @@ def slugify(text: str) -> str:
     return text.strip("-")[:40] or "task"
 
 
+# YAML 标量的最小加引号判据：只对「直写会改变结构或语义」的值做双引号转义编码，
+# 其余保持裸标量（status: active / priority: P1 这类），避免零依赖写出的卡片
+# 与 PyYAML 写出的卡片在文本层大面积分叉，也避免 audit-doc-health 的只读解析器
+# （不剥引号）把带引号的状态值读成 '"active"'。
+_YAML_INDICATOR_START = "-?:,[]{}#&*!|>'\"%@`"
+
+# PyYAML 会把下列裸标量解析成 bool / None / int / date，字符串字段必须加引号才不会
+# 在「零依赖写、PyYAML 读」的方向上发生类型漂移（PyYAML 自己的 dump 也如此加引号）。
+_YAML_RESERVED_WORDS = {
+    "true", "false", "yes", "no", "on", "off", "y", "n", "null", "~",
+}
+_YAML_NUMBER_LIKE = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?$")
+_YAML_DATE_LIKE = re.compile(r"\d{4}-\d{2}-\d{2}(?:[Tt ].*)?$")
+
+
+def _needs_quoting(text: str) -> bool:
+    """判断裸标量直写是否会破坏 YAML 结构或改变语义"""
+    if text == "" or text.strip() != text:
+        return True
+    if any(ch in text for ch in ("\n", "\r", "\t", "\\", '"')):
+        return True
+    if text[0] in _YAML_INDICATOR_START:
+        return True
+    if ": " in text or " #" in text or text.endswith(":"):
+        return True
+    if text.lower() in _YAML_RESERVED_WORDS:
+        return True
+    if _YAML_NUMBER_LIKE.match(text) or _YAML_DATE_LIKE.match(text):
+        return True
+    return False
+
+
+def _encode_scalar(value) -> str:
+    """把元数据值编码为单行 YAML 标量（必要时双引号 + 转义）
+
+    多行值改走 \n 转义而非块标量（| / |-）：块标量会引入多行缩进语法，序列化与
+    解析两侧都要各自实现缩进推断与 -> 折行语义，回归面扩大；转义式编码保持
+    「一键一行」，PyYAML 与本模块降级解析器都能读回。
+    """
+    if isinstance(value, bool) or isinstance(value, (int, float)):
+        return str(value).lower() if isinstance(value, bool) else str(value)
+    text = str(value)
+    if not _needs_quoting(text):
+        return text
+    escaped = (
+        text.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+    )
+    return f'"{escaped}"'
+
+
+def _decode_scalar(raw: str) -> str:
+    """还原 _encode_scalar 的双引号转义；其余形态沿用旧行为（去首尾引号）"""
+    text = raw.strip()
+    if len(text) >= 2 and text[0] == '"' and text[-1] == '"':
+        inner = text[1:-1]
+        out = []
+        i = 0
+        escapes = {"n": "\n", "r": "\r", "t": "\t", '"': '"', "\\": "\\"}
+        while i < len(inner):
+            ch = inner[i]
+            if ch == "\\" and i + 1 < len(inner):
+                out.append(escapes.get(inner[i + 1], inner[i + 1]))
+                i += 2
+                continue
+            out.append(ch)
+            i += 1
+        return "".join(out)
+    return text.strip("\"'")
+
+
 def parse_item_file(file_path: Path) -> Tuple[Dict, str]:
     """解析待办卡片文件的 Frontmatter 元数据与正文内容"""
     content = file_path.read_text(encoding="utf-8", errors="replace")
@@ -98,7 +172,7 @@ def parse_item_file(file_path: Path) -> Tuple[Dict, str]:
                 if stripped.startswith("- ") and current_key is not None:
                     if not isinstance(metadata.get(current_key), list):
                         metadata[current_key] = []
-                    metadata[current_key].append(stripped[2:].strip().strip("\"'"))
+                    metadata[current_key].append(_decode_scalar(stripped[2:]))
                     current_is_list = True
                     continue
                 if raw_line[:1] in (" ", "\t") and current_key is not None:
@@ -114,15 +188,20 @@ def parse_item_file(file_path: Path) -> Tuple[Dict, str]:
                 if ":" in raw_line:
                     k, v = raw_line.split(":", 1)
                     key = k.strip()
-                    val = v.strip().strip("\"'")
-                    if val == "[]":
+                    if v.strip() == "[]":
                         metadata[key] = []
                         current_key = None
                         current_is_list = False
                     else:
-                        metadata[key] = val
+                        metadata[key] = _decode_scalar(v)
                         current_key = key
                         current_is_list = False
+
+            # 与 PyYAML 对齐：裸 null / ~ / 空值在 YAML 语义上是 None，而不是字面串。
+            # 旧实现把 "null" 读成字符串，零依赖环境与 PyYAML 环境看到的元数据不一致。
+            for key, value in list(metadata.items()):
+                if isinstance(value, str) and value in ("", "null", "~"):
+                    metadata[key] = None
 
     return metadata, body
 
@@ -142,11 +221,11 @@ def dump_item_file(file_path: Path, metadata: Dict, body: str):
             if isinstance(v, list):
                 lines.append(f"{k}:")
                 for item in v:
-                    lines.append(f"  - {item}")
+                    lines.append(f"  - {_encode_scalar(item)}")
             elif v is None:
                 lines.append(f"{k}: null")
             else:
-                lines.append(f"{k}: {v}")
+                lines.append(f"{k}: {_encode_scalar(v)}")
         yaml_str = "\n".join(lines)
 
     full_content = f"---\n{yaml_str}\n---\n\n{body.strip()}\n"
