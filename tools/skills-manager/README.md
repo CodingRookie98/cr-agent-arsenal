@@ -14,7 +14,7 @@ skills-manager/
 │   ├── architecture.json        # 架构与深层模块设计
 │   ├── superpowers.json         # 超能力核心基线
 │   ├── video_creation.json      # 视频与媒体创作
-│   ├── frontend-slides.json     # HTML 网页演示文稿与 PPT 转换
+│   ├── ppt.json                 # 演示文稿生成与转换 (frontend-slides / ppt-master)
 │   └── document-illustrator.json # 文档智能配图与风格插画生成
 └── skills_collection.md         # 候选优质技能库参考
 ```
@@ -33,7 +33,7 @@ python3 skills_manager.py list
 # 查看指定预设 (可直接使用名称无需路径或后缀)
 python3 skills_manager.py list -f cr-agent-arsenal
 python3 skills_manager.py list -f frontend
-python3 skills_manager.py list -f frontend-slides
+python3 skills_manager.py list -f ppt
 python3 skills_manager.py list -f document-illustrator
 ```
 
@@ -48,7 +48,7 @@ python3 skills_manager.py install -a opencode
 # 安装特定预设
 python3 skills_manager.py install -a opencode -f cr-agent-arsenal
 python3 skills_manager.py install -a opencode -f frontend
-python3 skills_manager.py install -a opencode -f frontend-slides
+python3 skills_manager.py install -a opencode -f ppt
 
 # 安装特定单个技能
 python3 skills_manager.py install -a opencode -s agent-browser

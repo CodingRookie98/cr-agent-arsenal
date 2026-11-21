@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: REF-SOURCE-GROUP-INCLUSION-2026
-> - **当前版本**: V1.2.3
+> - **当前版本**: V1.2.4
 > - **文档状态**: Active
 > - **生效日期**: 2026-10-13
 > - **文档所有者**: 核心架构组
@@ -13,11 +13,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.4** | 2026-11-21 | AI Agent | 核心架构组 | §4 预设枚举同步：`frontend-slides.json` 更名为 `ppt.json`（演示文稿能力组，新增 `ppt-master` 来源）；预设总数 7 个与 `common` 计数均不变 |
 | **V1.2.3** | 2026-10-13 | AI Agent | 核心架构组 | 限定归并边界的适用路径（增量复核观察①）：该归并仅发生于 `install` 不带 `-s` 的整组安装分支（`skills_manager.py:194` else 分支 / `:196-208`），补「安装整组时」限定 |
 | **V1.2.2** | 2026-10-13 | AI Agent | 核心架构组 | 精确化两处措辞（增量复核观察）：`install -s` 的 `names` 是反查键而非硬门禁（未命中回退 `unknown_source` 继续执行）；`mode: "names"` 组「决定安装内容」补同源多组时按 `mode` 归并（`all` 覆盖 `names`）的边界 |
 | **V1.2.1** | 2026-10-13 | AI Agent | 核心架构组 | 措辞订正（独立复核 R1–R3）：范围句改为「判定对象是纳入基线时的 `names` 集合」，消除 `install -s` 读用 `mode: "all"` 组 `names` 的字面反例；`names` 登记数与实际整源装入集分离表述；豁免明确不向 C-4 转移 |
 | **V1.2.0** | 2026-10-13 | AI Agent | 核心架构组 | 订正 C-3 与安装语义的事实错误（`mode: "all"` 的 `names` 实为点名白名单 + 整组卸载清单，而非「不参与安装」），并显式登记 C-3 实际约束面；§1 补取证边界；§4 收敛独立预设豁免范围并补齐非 `common` 预设实况；§5 C-4 基准补「个人／组织维护的通用合集」 |
-| **V1.1.0** | 2026-10-13 | AI Agent | 核心架构组 | 闭合 C-3 作用域（`mode: "all"` 组不适用）与「变更」语义；品牌口径扩至个人／组织；补例外条件判定式、`mode: "all"` 组 C-4 审计基准与预设 opt-in 边界 |
 
 ---
 
@@ -63,7 +63,7 @@ C-3 的判定对象是来源组**纳入基线时的命名选择**（该次新增
 
 面向单一厂商或产品的成套工作流／记录／任务技能不进 `common`，应独立成一个预设文件，按需 `-f <preset>` 安装。独立预设**仅豁免 C-1 与 C-3**（opt-in 安装，其内容可绑定特定宿主或产品工具链，不受第 3 节例外条件的约束）；C-2（相对缺省基线的增量）仍是其存在理由；C-4 只约束基线收录面，不对独立预设成立。
 
-既有非 `common` 预设 7 个：`architecture.json`、`frontend.json`、`cr-agent-arsenal.json`（用途细分）、`superpowers.json`（第三方通用方法论合集）、`frontend-slides.json`、`document-illustrator.json`（第三方单技能）、`video_creation.json`（`remotion-dev/skills` 等产品工具链套件 —— 厂商套件走独立预设的既有先例）。
+既有非 `common` 预设 7 个：`architecture.json`、`frontend.json`、`cr-agent-arsenal.json`（用途细分）、`superpowers.json`（第三方通用方法论合集）、`ppt.json`（演示文稿能力组：`frontend-slides` + `ppt-master`）、`document-illustrator.json`（第三方单技能）、`video_creation.json`（`remotion-dev/skills` 等产品工具链套件 —— 厂商套件走独立预设的既有先例）。
 
 ## 5. 登记同步 (Registration Sync)
 
