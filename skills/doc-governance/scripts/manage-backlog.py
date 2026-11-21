@@ -169,7 +169,9 @@ def collect_all_items(backlog_dir: Path) -> List[Dict]:
         if not bk_id:
             continue
 
-        rel_path = str(f.relative_to(backlog_dir))
+        # Markdown 链接必须是 POSIX 分隔符：Windows 下 str(Path) 会写出反斜杠，
+        # 渲染侧与 check-doc-links.py 均判为 404（backlog 索引 20 处断链即此形态）。
+        rel_path = f.relative_to(backlog_dir).as_posix()
         is_archived = "archive" in f.parts
         status = meta.get("status") or ("completed" if is_archived else "active")
 

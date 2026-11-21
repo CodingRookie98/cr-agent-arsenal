@@ -12,6 +12,7 @@ test_doc_governance_scripts.py - 文档治理自动化脚本全量回归单元�
 
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -591,6 +592,44 @@ class TestManageBacklogAndFormB(unittest.TestCase):
         self.assertIn("BK-0001", index_content)
         self.assertIn("BK-0002", index_content)
         self.assertIn("待办健康度仪表盘", index_content)
+
+    def test_sync_index_links_use_posix_separator(self):
+        """index.md 卡片链接必须使用 POSIX 分隔符，且目标可在磁盘上解析
+
+        真实缺陷形态：Windows 宿主上 `str(Path.relative_to(...))` 会写出
+        `./archive\\2026-Q4\\BK-XXXX.md`，渲染与 check-doc-links.py 均判 404
+        （仓库 backlog 索引 47 条归档链接中 20 条即此形态）。断两层：
+          1) 生成文本内不得出现反斜杠（该层在 POSIX 宿主上天然成立，
+             真正的防护面是 Windows 宿主，历史缺陷正是在那里生成索引时引入）；
+          2) 每条链接按 '/' 解析后必须在磁盘上存在（跨平台有效：反斜杠目标
+             在 POSIX 上解不开，在 Windows 上被 Markdown 渲染侧解不开）。
+        """
+        self.run_cli("create", "链接分隔符回归项", "--priority", "P3")
+        backlog_dir = self.test_dir / "docs" / "project" / "backlog"
+        archive_dir = backlog_dir / "archive" / "2026-Q4"
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        (archive_dir / "BK-0002-link-separator.md").write_text(
+            "---\n"
+            "id: BK-0002\n"
+            "title: 链接分隔符回归项\n"
+            "status: completed\n"
+            "resolution: delivered\n"
+            "closed_at: 2026-11-21\n"
+            "---\n\n正文\n",
+            encoding="utf-8", newline="\n",
+        )
+
+        res = self.run_cli("sync-index")
+        self.assertEqual(res.returncode, 0, f"索引刷新失败: {res.stderr}")
+
+        index_file = backlog_dir / "index.md"
+        index_content = index_file.read_text(encoding="utf-8")
+        self.assertNotIn("\\", index_content, "索引不得出现反斜杠路径分隔符")
+        links = re.findall(r"\[BK-\d+\]\(([^)]+)\)", index_content)
+        self.assertTrue(links, "索引应至少包含一条卡片链接")
+        for link in links:
+            target = (index_file.parent / link).resolve()
+            self.assertTrue(target.exists(), f"索引链接不可解析: {link}")
 
     def test_list_and_json_parsing(self):
         """测试 list 命令的脚本化过滤与可编程 JSON 输出"""
