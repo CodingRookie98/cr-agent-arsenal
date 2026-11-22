@@ -66,9 +66,10 @@ def g01_rfc_status(root: Path) -> Tuple[Status, str]:
 def g02_rfc_has_plan(root: Path) -> Tuple[Status, str]:
     missing = []
     for f in _md_files(root, "proposals"):
-        # B-10：接受「落地计划 / 实施计划 / 计划」等同义写法，不字面匹配单一词
+        # B-10 / BD-4：接受「落地计划 / 实施计划」等写法，但必须伴随**链接**——
+        # 裸「计划」子串会让任何提到该词的 RFC 恒真通过。
         text = _read(f)
-        if not re.search(r"(落地|实施|执行)?计划", text):
+        if not re.search(r"(落地|实施|执行)?计划[^\n]{0,40}\]\(", text):
             missing.append(f.name)
     return ("gap", f"{len(missing)} 篇 RFC 缺落地计划链接") if missing else ("pass", "全部 RFC 有落地计划")
 
@@ -152,7 +153,8 @@ def g13_tutorial_quadrant(root: Path) -> Tuple[Status, str]:
 def g14_backlog_acceptance(root: Path) -> Tuple[Status, str]:
     active = root / "project" / "backlog" / "active"
     if not active.is_dir():
-        return "pass", "无活跃待办（目录不存在）"
+        # B-12：目录缺失不等于「没有待办」——可能被误删，需人工确认
+        return "gap", "active 目录不存在（待确认是否已废弃）"
     cards = sorted(active.glob("*.md"))
     if not cards:
         return "gap", "active 目录存在但为空（需确认是否已全部结项）"

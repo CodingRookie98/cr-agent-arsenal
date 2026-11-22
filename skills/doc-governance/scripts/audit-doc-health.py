@@ -357,9 +357,11 @@ def check_doc_size(
     docs: Dict[str, Dict] = {}
     issues: List[str] = []
     warnings: List[str] = []
+    seen_paths = set()
 
     for f in _size_docs(root_dir):
         rel = f.relative_to(root_dir).as_posix()
+        seen_paths.add(rel)
         metrics = _measure_doc(f)
         docs[rel] = metrics
         if metrics.get("unreadable"):
@@ -388,7 +390,19 @@ def check_doc_size(
         else:
             warnings.append(f"{detail}（存量，基线内未恶化）")
 
-    return {"docs": docs, "issues": issues, "warnings": warnings, "baseline_status": "ok" if baseline else "empty"}
+    # B-06：基线里指向「不存在的文档」的条目是投毒/残留——必须报告并忽略，
+    # 否则预置一个未来路径的巨值可让任意同名文档永久豁免。
+    stale_entries = sorted(set(baseline) - seen_paths)
+    for rel in stale_entries:
+        warnings.append(f"体量基线残留条目（文档不存在）: {rel} —— 建议 --write-size-baseline 重建")
+
+    return {
+        "docs": docs,
+        "issues": issues,
+        "warnings": warnings,
+        "baseline_status": "ok" if baseline else "empty",
+        "stale_baseline_entries": stale_entries,
+    }
 
 
 def write_size_baseline(
