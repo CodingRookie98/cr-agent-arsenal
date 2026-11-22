@@ -138,6 +138,25 @@ python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a an
 * 📖 **外部前沿文献与理论基准 (`docs/reference/articles/`)**
   * [ai-coding-frontend-common-problems.md](./docs/reference/articles/ai-coding-frontend-common-problems.md) — kejun：AI Coding 前端常见问题全景（`frontend-qa-gate` 需求源）
   * [how-to-turn-your-ai-into-a-world-class-designer.md](./docs/reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md) — Anshu Chimala：AI 设计双钻模型（`taste-driven-designer` 理论源）
+* 🧭 **智能体路由规则**: [docs/AGENTS.md](./docs/AGENTS.md)（读取顺序与硬约束，≤30 行）
+* 🗂️ **分层机器地图**: `docs/llms.txt`（象限入口）+ `docs/_llms/<象限>.md`（全量条目，生成物禁手改）
+
+### 文档门禁自动化（BK-0048）
+
+五道门禁（机器地图 / 断链 / 版本一致 / 真值轴 / 健康体检）由一个入口聚合，实测 **1.5 s**：
+
+```bash
+python3 skills/doc-governance/scripts/check-all.py          # 五道门禁
+python3 skills/doc-governance/scripts/check-all.py --full   # 追加 pytest 全量
+```
+
+**推荐安装 pre-commit hook（每个克隆执行一次）**：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+安装后每次 `git commit` 都会先跑门禁，失败即阻断（临时跳过用 `git commit --no-verify`，须在提交信息登记原因）。卸载：`git config --unset core.hooksPath`。
 
 ---
 

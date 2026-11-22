@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+# 文档治理门禁 pre-commit hook（BK-0048）
+#
+# 安装（每个克隆执行一次）：
+#   git config core.hooksPath .githooks
+# 卸载：
+#   git config --unset core.hooksPath
+#
+# 跳过（不推荐；须在提交信息中登记原因）：
+#   git commit --no-verify
+
+set -e
+
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+    echo "⚠️  未找到 $PYTHON_BIN，跳过文档门禁（请安装 Python 3 或设置 PYTHON_BIN）" >&2
+    exit 0
+fi
+
+if ! "$PYTHON_BIN" skills/doc-governance/scripts/check-all.py --quiet; then
+    echo "" >&2
+    echo "🚫 提交被阻断：文档门禁未通过。" >&2
+    echo "   修复后重新提交；如确需跳过：git commit --no-verify（须在提交信息登记原因）" >&2
+    exit 1
+fi

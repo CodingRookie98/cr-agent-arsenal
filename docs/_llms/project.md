@@ -3,6 +3,10 @@
 > 本文件由 `generate-llms-txt.py --split` 生成，请勿手改。
 > 上级入口：[../llms.txt](../llms.txt)
 
+- [BK-0048-门禁自动化-pre-commit-hook-一键聚合脚本](../project/backlog/active/BK-0048-门禁自动化-pre-commit-hook-一键聚合脚本.md): id: BK-0048
+- [BK-0049-知识库可用性评测-20-条-golden-task](../project/backlog/active/BK-0049-知识库可用性评测-20-条-golden-task.md): id: BK-0049
+- [BK-0050-存量超限文档拆分-spec-evolution-skill-scripts](../project/backlog/active/BK-0050-存量超限文档拆分-spec-evolution-skill-scripts.md): id: BK-0050
+- [BK-0051-检索层决策-当前不引入-mcp-已评估](../project/backlog/active/BK-0051-检索层决策-当前不引入-mcp-已评估.md): id: BK-0051
 - [BK-0001-trim-revision-py-archive-exemption](../project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](../project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0003-stable-id-pair-by-filename](../project/backlog/archive/2026-Q4/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
