@@ -4,7 +4,7 @@
 > - **标识**: RFC-2026-DOC-TRUTH-AXIS
 > - **当前状态**: In Review
 > - **发起人**: DSH AI Agent
-> - **当前版本**: V0.1.1
+> - **当前版本**: V0.1.2
 > - **初次发起日期**: 2026-11-22
 > - **目标里程碑**: doc-governance V1.1.0（新增脚本 + 可选门禁；**不改变现有默认计分口径**）
 > - **关联前置**: [LLM-WIKI 社区实现调研](../explanation/analysis/llm-wiki-implementation-research.md)（§4.2 / §6.2 / §7）、[GOVERNANCE.md](../GOVERNANCE.md)、[doc-governance SKILL](../../skills/doc-governance/SKILL.md)
@@ -16,6 +16,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.1.2** | 2026-11-22 | DSH AI Agent | 王辉 | **R1 阻断项收口**（4×P1）：同日复核按当日末刻、require 增覆盖率下限防「删锚点洗绿」、浅克隆 fail-closed（rc=2）、真值阻断理由与「完美」文案互斥；锚点分隔符不再切碎含逗号路径 |
 | **V0.1.1** | 2026-11-22 | DSH AI Agent | 王辉 | 实现期修正：① 判定五态补 `stale` 并按优先级排序；② 根级入口文档改为「仅未声明锚点时豁免」（避免 GOVERNANCE 声明了却不在统计内）；③ 门禁开关与实现对齐为 `--truth=require` |
 | **V0.1.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初稿：以调研报告 P0 三项为输入，给出「双轴并置」方案、三字段语法、漂移检测契约与验收用例；记录 D-1~D-6 决策台账 |
 
@@ -79,7 +80,7 @@
 | :--- | :--- |
 | 入参 | `--root docs`、`--repo .`、`--json`、`--fail-on-drift`、`--max-age-days N`（默认 180） |
 | 判定 | 对每个文档：锚点存在性 → 锚点文件最近提交时间 vs `复核于` → 输出 `drifted / missing_anchor / stale / unverified / fresh`（优先级即此序） |
-| 退出码 | `0` 无漂移（或未加 `--fail-on-drift`）；`1` 存在漂移；`2` 入参/环境错误（非 git 仓库等） |
+| 退出码 | `0` 无漂移（或未加 `--fail-on-drift`）；`1` 存在漂移；`2` 入参/环境错误（非 git 仓库、**浅克隆**等，fail-closed） |
 | 豁免 | `project/reviews/**`（逐字凭据）、`archive/**`；根级入口文档（index/README/GOVERNANCE）**仅在未声明锚点时**不计入分母——声明了却排除会造成静默覆盖黑洞 |
 | 幂等 | 只读，不写任何文件 |
 
@@ -87,7 +88,8 @@
 
 - 输出新增 `truth` 块：`{enabled, coverage, drifted, missing_anchor, unverified, freshness_score}`；
 - `freshness_score = 15 × (已声明且无漂移 / 已声明)`，`已声明 = 0` 时置 `0` 并报 `not_enabled`；
-- 默认 `--truth=warn`：**不改变** `total_score` 与 PASS 判定；`--truth=require` 时真值分低于 `--truth-threshold`（默认 12/15）即 REJECT，且「未启用」本身也算阻断；
+- 默认 `--truth=warn`：**不改变** `total_score` 与 PASS 判定；`--truth=require` 按序判定三条：①「未启用」即阻断；②声明覆盖率低于 `--min-coverage`（默认 0.5）即阻断；③真值分低于 `--truth-threshold`（默认 12/15）即阻断；
+- **同日复核语义**：`复核于` 只写日期时按**当日末刻**（23:59:59 UTC）起算，同日提交不算漂移；写了 commit 则以该提交时间为准；
 - `--json` 向后兼容：只增键，不改既有键名。
 
 ## 5. 验收用例（L1/L2）

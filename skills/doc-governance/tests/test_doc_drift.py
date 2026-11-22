@@ -308,3 +308,94 @@ class TestAuditTruthIntegration(unittest.TestCase):
         self.assertEqual(truth["missing_anchor"], 1)
         self.assertEqual(truth["missing_anchor_docs"], ["tutorials/a.md"])
         self.assertEqual(truth["freshness_score"], 0.0)
+
+class TestReviewFixes(unittest.TestCase):
+    """R1 阻断项回归（R1-1 / R1-2 / R1-3 + 路径切分加固）"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.audit = load_module("audit_doc_health", SCRIPTS_DIR / "audit-doc-health.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_fix_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _write(self, rel, text):
+        target = self.root / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+        return target
+
+    def test_r1_1_date_only_verification_covers_the_whole_day(self):
+        """R1-1：日期型「复核于」按当日末刻起算，同日提交不得判成漂移。"""
+        import datetime
+
+        content = make_doc("正文", anchors="src/a.py", verified="2026-11-22")
+        ts = self.mod._verified_ts(self.mod.parse_truth_fields(content), None)
+        expected = int(
+            datetime.datetime(2026, 11, 22, 23, 59, 59, tzinfo=datetime.timezone.utc).timestamp()
+        )
+        self.assertEqual(ts, expected)
+        status = self.mod.classify_doc(
+            anchor_paths=["src/a.py"],
+            anchor_exists=[True],
+            anchor_last_commits=[expected - 60],
+            verified_ts=ts,
+            now_ts=expected,
+            max_age_days=180,
+        )
+        self.assertEqual(status, "fresh")
+
+    def test_comma_inside_path_is_not_a_separator(self):
+        fields = self.mod.parse_truth_fields(make_doc("x", anchors="src/a,b.py"))
+        self.assertEqual([a["path"] for a in fields["anchors"]], ["src/a,b.py"])
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r1_3_shallow_repository_fails_closed(self):
+        repo = self.root
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True, env=env)
+        (repo / "src").mkdir()
+        (repo / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True, env=env)
+        subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True, env=env)
+        docs = repo / "docs"
+        docs.mkdir()
+        (docs / "a.md").write_text(make_doc("正文", anchors="src/a.py"), encoding="utf-8")
+        git_dir = subprocess.run(
+            ["git", "rev-parse", "--absolute-git-dir"], cwd=repo, capture_output=True, text=True, check=True
+        ).stdout.strip()
+        (Path(git_dir) / "shallow").write_text("", encoding="utf-8")
+
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / "check-doc-drift.py"),
+                "--root",
+                str(docs),
+                "--repo",
+                str(repo),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("浅克隆", proc.stderr)
+
+    def test_r1_2_require_mode_blocks_on_low_coverage(self):
+        """删锚点可以把 7.5 洗成 15.0；覆盖率下限必须拦住这条通道。"""
+        for i in range(10):
+            self._write(f"tutorials/t{i}.md", "# T\n\n正文\n")
+        self._write("tutorials/anchor.md", make_doc("正文", anchors="src/a.py", verified="2026-11-22"))
+        self._write("index.md", "# Index\n\n- [T](./tutorials/t0.md)\n")
+        res = self.audit.audit_health(self.root, truth_mode="require")
+        self.assertAlmostEqual(res["truth"]["coverage"], 1 / 11, places=4)
+        passed, reasons = self.audit.evaluate_verdict(res, 70.0, 12.0, 0.5)
+        self.assertFalse(passed)
+        self.assertTrue(any("覆盖率" in r for r in reasons), reasons)

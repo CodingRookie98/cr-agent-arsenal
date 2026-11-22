@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-DOC-TRUTH-AXIS-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.1.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 > - **代码锚点**: skills/doc-governance/scripts/check-doc-drift.py, skills/doc-governance/scripts/audit-doc-health.py
@@ -25,12 +25,12 @@
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3 → P3.5（A-1~A-6 已绿，待全量门禁与 P4 对抗审查）
-- **当前活跃子任务**: A-7 全量门禁 + 双轮审查 + 归档
-- **当前子任务重试计数**: 0/3（无触发）
+- **当前活跃阶段**: P4（R1 已返回并收口 4×P1，待 R2 元审判）
+- **当前活跃子任务**: A-7 双轮审查（R2 终审）+ 归档
+- **当前子任务重试计数**: 0/3（无触发；R1 阻断项一轮修复，未触发 3-Tries）
 - **门禁基线（改动前实测）**: `check-doc-links` rc=0（93 文件）｜`check-doc-control-sync` rc=0｜`audit-doc-health` PASS 100/100｜`pytest skills/doc-governance/tests` 161 passed
 - **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅ / A-6 ✅ / A-7 ⏳
-- **实测（本轮）**: `check-doc-drift.py` → 声明 3/46 篇、fresh 3、drifted 0、真值分 15.0/15；`pytest skills/doc-governance/tests` → 178 passed
+- **实测（R1 收口后）**: `check-doc-drift.py --fail-on-drift` → 声明 3/46、fresh 3、drifted 0、真值分 15.0/15、rc=0；`audit-doc-health.py`（warn）→ PASS；`--truth=require` → REJECTED（覆盖率 6.5% < 50%，符合设计）；`pytest skills/doc-governance/tests` → **182 passed**
 
 ---
 
@@ -96,6 +96,11 @@ python3 skills/doc-governance/scripts/check-doc-control-sync.py --root docs
 | **D-05** | 根级入口文档改为「仅未声明锚点时豁免」 | `GOVERNANCE.md` 声明了锚点却因文件名被排除，会让真值轴出现静默覆盖黑洞 | 已回写 RFC §4.2（V0.1.1） |
 | **D-06** | 门禁开关实现为 `--truth=require`，而非 RFC 初稿的 `--require-truth` | 与 `--truth` 三态（off/warn/require）合并为一个参数，避免两个开关互相矛盾 | 已回写 RFC §4.3（V0.1.1） |
 | **D-07** | 测试断言从「硬编码 ≥80 分」改为「开/关真值轴的 total_score 相等」 | 固件文档缺控制头时结构分本就 <80，硬编码阈值测的是夹具而非契约 | 已落 `test_ac1_zero_declared_scores_zero_without_touching_structure_score` |
+| **D-08** | 日期型 `复核于` 改按**当日末刻**起算 | R1-1：按 UTC 零点起算会让「同日复核 + 同日提交」必判漂移，本仓三处自证文档当场反转为 drifted | 已修 + 回归用例 |
+| **D-09** | require 模式新增 `--min-coverage`（默认 0.5） | R1-2：删掉失败文档的锚点声明可把真值分从 7.5 洗成 15.0，文字红线无法机械拦截 | 已修 + 回归用例 |
+| **D-10** | 浅克隆显式 fail-closed（rc=2） | R1-3：`--depth 1` 下 `git log -1 -- path` 返回克隆 tip，100% 假漂移；RFC 承诺的 rc=2 此前未实现 | 已修 + 回归用例 |
+| **D-11** | 真值阻断理由并入 `has_issues` 链 | R1-4：require 下会同时打印「完美」与 REJECTED（BK-0028 禁止的并存） | 已修，输出互斥 |
+| **D-12** | 锚点分隔符改为「逗号仅后接空白」才切分 | 加固：`src/a,b.py` 这类合法路径会被切碎（R1 未列，代码自检发现） | 已修 + 回归用例 |
 
 ## 7. 回滚方案
 

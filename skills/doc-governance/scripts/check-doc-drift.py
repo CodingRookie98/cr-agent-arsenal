@@ -34,7 +34,8 @@ ENTRY_DOC_NAMES = ("index.md", "README.md", "GOVERNANCE.md")
 FRESHNESS_MAX_SCORE = 15.0
 SECONDS_PER_DAY = 86400
 
-_ANCHOR_SPLIT = re.compile(r"[,，、;；]")
+# R1（加固）：英文逗号只在**后接空白**时视为分隔符，否则 `src/a,b.py` 这类合法路径会被切碎。
+_ANCHOR_SPLIT = re.compile(r"[，、;；]|,(?=\s)")
 _ANCHOR_LINE = re.compile(r"^(?P<path>[^:]+?)(?::(?P<start>\d+)(?:-(?P<end>\d+))?)?$")
 _DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 _COMMIT = re.compile(r"commit\s+([0-9a-fA-F]{7,40})")
@@ -152,6 +153,11 @@ def is_git_repo(repo: Path) -> bool:
     return _run_git(repo, ["rev-parse", "--is-inside-work-tree"]) == "true"
 
 
+def is_shallow_repo(repo: Path) -> bool:
+    """浅克隆下 `git log -1 -- path` 只返回克隆 tip，会把一切锚点判成漂移（R1-3）。"""
+    return _run_git(repo, ["rev-parse", "--is-shallow-repository"]) == "true"
+
+
 def git_resolve_commit_ts(repo: Path, sha: str) -> Optional[int]:
     out = _run_git(repo, ["show", "-s", "--format=%ct", sha])
     try:
@@ -180,7 +186,11 @@ def _verified_ts(fields: Dict, repo: Optional[Path]) -> Optional[int]:
     try:
         import datetime
 
-        dt = datetime.datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=datetime.timezone.utc)
+        # R1-1：日期型「复核于」必须按**当日末刻**起算。按 UTC 零点起算会把「今天复核、
+        # 今天提交锚点」判成漂移（同日复核必红），这是把复核语义读成了「当天开始前」。
+        dt = datetime.datetime.strptime(date_str, "%Y-%m-%d").replace(
+            tzinfo=datetime.timezone.utc
+        ) + datetime.timedelta(days=1, seconds=-1)
         return int(dt.timestamp())
     except ValueError:
         return None
@@ -303,6 +313,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     repo = Path(args.repo).resolve() if args.repo else root.parent
     if not is_git_repo(repo):
         print(f"❌ 错误: 不是 git 仓库（无法判定漂移）: {repo}", file=sys.stderr)
+        return 2
+    if is_shallow_repo(repo):
+        print(
+            "❌ 错误: 检测到浅克隆（shallow repository），历史提交时间不可得，无法判定漂移。"
+            "请使用 fetch-depth: 0 拉全历史后重试。",
+            file=sys.stderr,
+        )
         return 2
 
     res = analyze(root, repo=repo, max_age_days=args.max_age_days)

@@ -139,7 +139,7 @@ docs/
 2. **控制头与修订表版本一致性审计**：运行 `python3 scripts/check-doc-control-sync.py --root docs`，断言控制头版本号与修订表最新行版本号严格一致，杜绝版本漂移；
 3. **真值轴漂移审计**：运行 `python3 scripts/check-doc-drift.py --root docs --repo .`，对声明了 `代码锚点` 的文档判定 `drifted / missing_anchor / stale / unverified / fresh`；需要阻断时加 `--fail-on-drift`（退出码 1），环境错误退出码 2 属 fail-closed；
 4. **修订历史自动裁剪**：运行 `python3 scripts/trim-revision.py --root docs --fix --keep 5`，自动将所有文档的修订历史截断在最近 5 条；
-5. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档、Backlog 演进指标、版本一致性与基线合规评分；真值轴以 `--truth=warn|require` 并行报告（默认 warn，`require` 时低于 `--truth-threshold` 即 REJECT）；
+5. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档、Backlog 演进指标、版本一致性与基线合规评分；真值轴以 `--truth=warn|require` 并行报告（默认 warn；`require` 依次校验「未启用 → 覆盖率 < `--min-coverage`（默认 0.5）→ 真值分 < `--truth-threshold`」）；
 6. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt`，刷新供智能体消费的拓扑地图。
 
 ### 模式 3：脚手架与结晶归档 (Scaffold & Archive Mode)

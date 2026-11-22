@@ -98,7 +98,12 @@ def _is_safely_displayable(name: str) -> bool:
     return bool(name) and len(name) <= PROJECT_NAME_MAX_LEN and all(ch.isprintable() for ch in name)
 
 
-def evaluate_verdict(res: Dict, threshold: float, truth_threshold: float = 12.0) -> Tuple[bool, List[str]]:
+def evaluate_verdict(
+    res: Dict,
+    threshold: float,
+    truth_threshold: float = 12.0,
+    min_coverage: float = 0.5,
+) -> Tuple[bool, List[str]]:
     """PASS 条件与 REJECT 原因由**同一组判定**产生（BK-0028 D1-7）。
 
     此前 PASS 分支与 REJECT 分支各自重算同一批条件，两处漂移即出现「同一份体检结果既
@@ -118,10 +123,17 @@ def evaluate_verdict(res: Dict, threshold: float, truth_threshold: float = 12.0)
         reasons.append("机器地图不一致")
     # 真值轴（RFC-0005 §4.3）：默认 warn 不参与判定；require 模式下「未启用」同样阻断，
     # 否则一条都未声明的知识库会因为 enabled=False 而静默跳过真值门禁（等于自我豁免）。
+    # R1-2：require 模式下必须有**覆盖率下限**。否则只要删掉失败文档的锚点声明，
+    # 分子分母同时缩小即可把真值分洗成 15.0（7.5 → 15.0），门禁形同虚设。
     truth = res.get("truth") or {}
     if truth.get("mode") == "require":
         if not truth.get("enabled"):
             reasons.append("真值轴未启用（无文档声明代码锚点）")
+        elif truth.get("coverage", 0.0) < min_coverage:
+            reasons.append(
+                f"声明覆盖率 {truth.get('coverage', 0.0):.1%} < 下限 {min_coverage:.1%}"
+                "（删锚点不能替代修复漂移）"
+            )
         elif truth.get("freshness_score", 0.0) < truth_threshold:
             reasons.append(f"真值分 {truth.get('freshness_score')} < 门槛 {truth_threshold}")
     return (not reasons), reasons
@@ -686,6 +698,8 @@ def main():
     parser.add_argument("--truth", choices=["off", "warn", "require"], default="warn",
                         help="真值轴模式: off 不报告 / warn 只报告(默认) / require 低于门槛即 REJECT")
     parser.add_argument("--truth-threshold", type=float, default=12.0, help="真值分门槛，满分 15 (默认 12.0)")
+    parser.add_argument("--min-coverage", type=float, default=0.5,
+                        help="require 模式下的锚点声明覆盖率下限 (默认 0.5，防「删锚点洗绿」)")
     parser.add_argument("--max-age-days", type=int, default=180, help="复核时效上限（天，0 表示不检查）")
 
     args = parser.parse_args()
@@ -733,6 +747,11 @@ def main():
         )
         if not truth.get("enabled"):
             print("   ⚠️  未启用：无文档声明「代码锚点」，真值分不颁发（0.0/15 而非满分）")
+        if truth.get("mode") == "require":
+            print(
+                f"   * require 口径: 覆盖率下限 {args.min_coverage:.1%}"
+                f"｜真值分门槛 {args.truth_threshold}/15（仅当真值不达标时进入阻断理由，正常态不打印「完美」）"
+            )
         print(f"   * 真值分: {truth.get('freshness_score', 0.0)} / 15")
         for name in (truth.get("missing_anchor_docs") or [])[:5]:
             print(f"      - [missing_anchor] {name}")
@@ -820,11 +839,30 @@ def main():
         has_issues = True
         print(f"   ⛔ 机器地图一致性缺陷: {res['llms_map_issue']}")
 
+    # R1-4：真值轴的阻断理由必须与「完美/无缺陷」互斥，否则同一屏会同时出现
+    # PASS 文案与 REJECT 理由（BK-0028 明令禁止的自相矛盾）。
+    if truth.get("mode") == "require":
+        truth_reasons: List[str] = []
+        if not truth.get("enabled"):
+            truth_reasons.append("真值轴未启用（无文档声明代码锚点）")
+        elif truth.get("coverage", 0.0) < args.min_coverage:
+            truth_reasons.append(
+                f"声明覆盖率 {truth.get('coverage', 0.0):.1%} < 下限 {args.min_coverage:.1%}"
+            )
+        elif truth.get("freshness_score", 0.0) < args.truth_threshold:
+            truth_reasons.append(
+                f"真值分 {truth.get('freshness_score', 0.0)} < 门槛 {args.truth_threshold}"
+            )
+        if truth_reasons:
+            has_issues = True
+            for reason in truth_reasons:
+                print(f"   ⛔ 真值轴阻断: {reason}")
+
     if not has_issues:
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")
 
     print("\n" + "=" * 60)
-    passed, reasons = evaluate_verdict(res, args.threshold, args.truth_threshold)
+    passed, reasons = evaluate_verdict(res, args.threshold, args.truth_threshold, args.min_coverage)
     if passed:
         print("🏁 诊断结论: PASS (健康度达标，准予交付) ✅")
         sys.exit(0)
