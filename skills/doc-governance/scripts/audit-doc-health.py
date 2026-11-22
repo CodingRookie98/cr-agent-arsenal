@@ -241,9 +241,10 @@ _DATE_IN_ROW = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
 def _latest_revision_date(content: str) -> Optional[str]:
-    """取修订历史表格中最新一行的日期（用于 Contested 时效判定）。"""
+    """取修订历史表格中的**最新**日期（T-7：不能假定降序——RFC-0004 等真实文档是升序表）。"""
     lines = content.splitlines()
     in_rev = False
+    dates: List[str] = []
     for line in lines:
         if re.match(r"^#+\s*(?:修订历史(?:记录)?|Revision\s*History)", line.strip(), re.I):
             in_rev = True
@@ -252,13 +253,17 @@ def _latest_revision_date(content: str) -> Optional[str]:
             if line.strip().startswith("|"):
                 m = _DATE_IN_ROW.search(line)
                 if m:
-                    return m.group(1)
-            elif line.strip():
+                    dates.append(m.group(1))
+            elif line.strip() and dates:
                 break
-    return None
+    return max(dates) if dates else None
 
 
-def check_doc_status(root_dir: Path, now: Optional[str] = None) -> Dict:
+def check_doc_status(
+    root_dir: Path,
+    now: Optional[str] = None,
+    max_age_days: int = CONTESTED_MAX_AGE_DAYS,
+) -> Dict:
     """文档状态机门禁（RFC-0007）。
 
     C-1 取值非法 / C-2 Superseded 的「取代于」缺失·失效·自指 / C-3 Active 带「取代于」⇒ 阻断；
@@ -281,7 +286,12 @@ def check_doc_status(root_dir: Path, now: Optional[str] = None) -> Dict:
         and not in_evidence_archive(f, root_dir)
         and not in_generated_map(f, root_dir)
         and not is_router_file(f, root_dir)
-        and "backlog" not in f.parts  # 待办卡片有自己的 status 语义，不参与文档状态机
+        # T-10：只排除 project/backlog（待办卡片的 YAML status 是生命周期字段）；
+        # 此前按绝对路径分量判断，会把任何检出路径含 backlog 的仓库整道门禁归零
+        and not (
+            len(f.relative_to(root_dir).parts) >= 2
+            and f.relative_to(root_dir).parts[:2] == ("project", "backlog")
+        )
     ]
     status_map: Dict[Path, str] = {}
     for f in docs:
@@ -311,9 +321,14 @@ def check_doc_status(root_dir: Path, now: Optional[str] = None) -> Dict:
             if not pointer:
                 issues.append(f"{rel}: 状态为 Superseded 但缺少「取代于」")
             else:
-                target = (f.parent / pointer).resolve()
+                # T-5：允许锚点（./new.md#sec），与全库链接体系一致
+                pointer_path = pointer.split("#", 1)[0]
+                target = (f.parent / pointer_path).resolve()
                 if target == f.resolve():
                     issues.append(f"{rel}: 「取代于」指向自身")
+                elif pointer_path.startswith(("/", "\\")) or ".." in Path(pointer_path).parts:
+                    # T-6：RFC 要求「仓库内相对路径」，绝对路径与越界写法一律阻断
+                    issues.append(f"{rel}: 「取代于」必须是仓库内相对路径（{pointer}）")
                 elif not target.is_file() or target.suffix != ".md":
                     issues.append(f"{rel}: 「取代于」目标不存在或不是 .md（{pointer}）")
                 else:
@@ -449,8 +464,25 @@ def check_llms_map_consistency(root_dir: Path) -> str:
 
 
 
+def _iter_unfenced_lines(lines, limit: int):
+    """T-4：跳过围栏代码块内的行——示例/模板片段不得被当作真声明。"""
+    in_fence = False
+    for idx, line in enumerate(lines[:limit]):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        yield idx, line
+
+
 def parse_frontmatter(content: str) -> Dict[str, str]:
-    """解析文档头部的 Frontmatter 或文档控制信息块"""
+    """解析文档头部的 Frontmatter 或文档控制信息块。
+
+    T-2：YAML 与引用块**并存时两者都解析**（此前 YAML 命中即早退，引用块被整体遮蔽）。
+    T-4：围栏代码块内的行不参与解析。
+    """
     metadata = {}
     # 模式 A: YAML Frontmatter (--- ... ---)
     yaml_match = re.match(r"^---\s*\n(.*?)\n---\s*\n", content, re.DOTALL)
@@ -459,10 +491,9 @@ def parse_frontmatter(content: str) -> Dict[str, str]:
             if ":" in line:
                 k, v = line.split(":", 1)
                 metadata[k.strip().lower()] = v.strip()
-        return metadata
 
     # 模式 B: 引用块元数据 (支持 > **文档控制信息** 或直接 > **文档标识** / > **文档版本**)
-    for line in content.splitlines()[:50]:
+    for _, line in _iter_unfenced_lines(content.splitlines(), 80):
         trimmed = line.strip()
         if trimmed.startswith(">"):
             clean = re.sub(r"^[>\s\-*]+", "", trimmed).strip()
@@ -470,15 +501,22 @@ def parse_frontmatter(content: str) -> Dict[str, str]:
                 sep = ":" if ":" in clean else "："
                 k, v = clean.split(sep, 1)
                 k_clean = re.sub(r"[*_`]", "", k).strip().lower()
-                metadata[k_clean] = v.strip()
+                metadata.setdefault(k_clean, v.strip())
 
     # 模式 C: 表格型元数据 (| **文档标识** | DR-xxx | 或 | 文档标识 | ... |)
-    if "文档标识" in content or "当前版本" in content or "version" in content.lower() or "文档版本" in content:
+    # T-3：白名单补齐文档状态机三字段，否则表格形态的状态声明完全失明
+    if (
+        "文档标识" in content or "当前版本" in content or "version" in content.lower()
+        or "文档版本" in content or "文档状态" in content
+    ):
         for m in re.finditer(r"\|\s*(?:\*\*)?([^|\n*]+?)(?:\*\*)?\s*\|\s*([^|\n]+?)\s*\|", content):
             k_raw = m.group(1).strip().lower()
             v_raw = m.group(2).strip()
-            if k_raw in ("文档标识", "当前版本", "规范版本", "文档版本", "version", "id", "文档所有者", "生效日期"):
-                metadata[k_raw] = v_raw
+            if k_raw in (
+                "文档标识", "当前版本", "规范版本", "文档版本", "version", "id", "文档所有者", "生效日期",
+                "文档状态", "取代于", "争议点",
+            ):
+                metadata.setdefault(k_raw, v_raw)
 
     return metadata
 
@@ -1170,11 +1208,12 @@ def main():
         )
         for item in (doc_status.get("contested") or [])[:10]:
             age = f"{item['age_days']} 天" if item.get("age_days") is not None else "未知"
-            flag = "⚠️ 超期" if (item.get("age_days") or 0) > 90 else ""
+            flag = "⚠️ 超期" if (item.get("age_days") or 0) > CONTESTED_MAX_AGE_DAYS else ""
             print(f"   - [Contested] {item['doc']}（{age}{'，' + flag if flag else ''}）：{item['reason']}")
         for item in (doc_status.get("superseded") or [])[:10]:
             print(f"   - [Superseded] {item['doc']} → {item['by']}")
-        if not (doc_status.get("contested") or doc_status.get("superseded")):
+        # T-11：存在非法状态时不得宣称「全库 Active」（BK-0028 禁止的自相矛盾）
+        if not (doc_status.get("contested") or doc_status.get("superseded")) and not doc_status.get("issues"):
             print("   （无争议、无取代：全库 Active）")
 
     print("\n" + "=" * 60)
