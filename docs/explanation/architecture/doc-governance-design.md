@@ -2,9 +2,9 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-DOC-GOVERNANCE-2026
-> - **当前版本**: V1.4.1 (新增真值轴：代码锚点漂移检测与双轴健康报告)
+> - **当前版本**: V1.4.2 (新增真值轴：代码锚点漂移检测与双轴健康报告)
 > - **代码锚点**: skills/doc-governance/SKILL.md, skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
-> - **复核于**: 2026-11-22 / commit fb62d02
+> - **复核于**: 2026-11-22 / commit eb8a9c0
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-10
@@ -203,6 +203,7 @@ docs/
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.4.2** | 2026-11-22 | DSH AI Agent | 王辉 | 复核点跟随 Delta 修复提交 eb8a9c0 重钉（SKILL.md 已被改动） |
 | **V1.4.1** | 2026-11-22 | DSH AI Agent | 王辉 | 复核点升级为「日期 + commit `fb62d02`」，与锚点提交对齐（R2 残留风险 ②） |
 | **V1.4.0** | 2026-11-22 | DSH AI Agent | 王辉 | 新增真值轴（RFC-0005）：控制头三字段（来源/代码锚点/复核于）、`check-doc-drift.py` 五态判定与 `audit-doc-health.py --truth` 双轴报告；本设计书自身登记锚点与复核点 |
 | **V1.3.0** | 2026-10-09 | AI Agent | 王辉 | 详细描述本次修改的核心架构点、对应提交 SHA 与闭环状态。 |

@@ -2,11 +2,11 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-DOC-TRUTH-AXIS-2026
-> - **当前版本**: V1.2.0
+> - **当前版本**: V1.3.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 > - **代码锚点**: skills/doc-governance/scripts/check-doc-drift.py, skills/doc-governance/scripts/audit-doc-health.py
-> - **复核于**: 2026-11-22 / commit fb62d02
+> - **复核于**: 2026-11-22 / commit eb8a9c0
 
 > **目标元数据**
 > - **所属项目**: CR 公共技能库（cr-agent-arsenal）
