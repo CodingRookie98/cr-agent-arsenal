@@ -4,7 +4,7 @@
 > - **文档标识**: SKILL-DES-DOC-GOVERNANCE-2026
 > - **当前版本**: V1.4.2 (新增真值轴：代码锚点漂移检测与双轴健康报告)
 > - **代码锚点**: skills/doc-governance/SKILL.md, skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
-> - **复核于**: 2026-11-22 / commit eb8a9c0
+> - **复核于**: 2026-11-22 / commit bf4a5ae
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-10
