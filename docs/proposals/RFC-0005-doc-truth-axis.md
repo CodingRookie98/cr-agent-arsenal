@@ -2,9 +2,9 @@
 
 > **提案元数据**
 > - **标识**: RFC-2026-DOC-TRUTH-AXIS
-> - **当前状态**: In Review
+> - **当前状态**: Implemented
 > - **发起人**: DSH AI Agent
-> - **当前版本**: V0.1.6
+> - **当前版本**: V0.1.7
 > - **初次发起日期**: 2026-11-22
 > - **目标里程碑**: doc-governance V1.1.0（新增脚本 + 可选门禁；**不改变现有默认计分口径**）
 > - **关联前置**: [LLM-WIKI 社区实现调研](../explanation/analysis/llm-wiki-implementation-research.md)（§4.2 / §6.2 / §7）、[GOVERNANCE.md](../GOVERNANCE.md)、[doc-governance SKILL](../../skills/doc-governance/SKILL.md)
@@ -16,11 +16,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.1.7** | 2026-11-22 | DSH AI Agent | 王辉 | **状态流转 In Review → Implemented**：六轮独立审查（R1 → R2 → Delta → 放行确认 → 收口确认 2）最终 **Blockers=0 / 准予交付**；四项非阻断 P2/P3 登记于计划 §9。契约内容自 V0.1.6 起未变更 |
 | **V0.1.6** | 2026-11-22 | DSH AI Agent | 王辉 | **R2D-5/R2D-6 收口**：门禁改为「非 fresh 即阻断」（`--allow-unverified` 显式豁免）；glob/占位符锚点落 unverified、目录锚点可用；墓碑归属精确到自身声明下降的文档；审计新增 `--repo` 修正基准错位 |
 | **V0.1.5** | 2026-11-22 | DSH AI Agent | 王辉 | **放行确认 R2D2-1 收口**：空账本（docs 为空且已声明锚点）视同不可用 rc=2；warn 模式下 drifted/missing/stale/unverified 一并计入缺陷，不再与「完美」并存（R2D2-3） |
 | **V0.1.4** | 2026-11-22 | DSH AI Agent | 王辉 | **Delta 终审 R2D-1 收口**：账本缺席/损坏在门禁模式下 rc=2；墓碑判据换为全局锚点多重集（改名合法、删除违规）；未来日期落 unverified；修正「只读」表述与写账本并列的自相矛盾 |
 | **V0.1.3** | 2026-11-22 | DSH AI Agent | 王辉 | **R2 三项 Blockers 收口**：基线墓碑（删/缩锚点即违规）、未跟踪锚点落 unverified、missing_anchor 与 drifted 同权失败；围栏内示例不再被当真声明；判定梯收敛为 `truth_blockers()` 单点（BK-0028 口径） |
-| **V0.1.2** | 2026-11-22 | DSH AI Agent | 王辉 | **R1 阻断项收口**（4×P1）：同日复核按当日末刻、require 增覆盖率下限防「删锚点洗绿」、浅克隆 fail-closed（rc=2）、真值阻断理由与「完美」文案互斥；锚点分隔符不再切碎含逗号路径 |
 
 ---
 

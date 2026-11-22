@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-DOC-TRUTH-AXIS-2026
-> - **当前版本**: V1.4.0
+> - **当前版本**: V1.5.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 > - **代码锚点**: skills/doc-governance/scripts/check-doc-drift.py, skills/doc-governance/scripts/audit-doc-health.py
@@ -18,15 +18,15 @@
 > - **计划负责人**: DSH AI Agent
 > - **需求方**: 王辉
 > - **批准基线**: `feat/doc-truth-axis` @ `2360b32`
-> - **状态**: 进行中
+> - **状态**: 已完成（2026-11-22，终审 **Blockers=0 / 准予交付**）
 
 ---
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P4 Delta（R2 判 3 Blockers，已收口，待 Delta 终审）
-- **当前活跃子任务**: A-7 Delta 终审 + 归档
+- **当前活跃阶段**: P5 完成（六轮审查闭环：R1 → R2 → Delta → 放行确认 → 收口确认 2）
+- **当前活跃子任务**: 无（交付完成；后续非阻断项见 §9）
 - **当前子任务重试计数**: 0/3（无触发；R1 阻断项一轮修复，未触发 3-Tries）
 - **门禁基线（改动前实测）**: `check-doc-links` rc=0（93 文件）｜`check-doc-control-sync` rc=0｜`audit-doc-health` PASS 100/100｜`pytest skills/doc-governance/tests` 161 passed
 - **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅ / A-6 ✅ / A-7 ⏳
@@ -71,7 +71,7 @@
 - [x] **A-4** 模板与规程：`templates/doc-control-header.md` 增三字段与规则 6；`references/change-impact-matrix.md` 新增矩阵行 V1.3.0
 - [x] **A-5** 技能与治理文档同步：`SKILL.md`（模式 1/2 + 漂移步）、`GOVERNANCE.md` V1.7.0（§3 工具表 + §4 红线 7）
 - [x] **A-6** 自证：`GOVERNANCE.md`、`doc-governance-design.md` V1.4.0、本计划三处登记锚点，真值轴非空（3/46、15.0/15）
-- [ ] **A-7** P3.5/P4/P5：全量门禁 + 双轮对抗审查（Zero Blockers）+ 索引/llms.txt 归档
+- [x] **A-7** P3.5/P4/P5：全量门禁 + 六轮对抗审查（最终 **Zero Blockers**）+ 索引/llms.txt 归档
 
 ## 5. 验收命令
 
@@ -140,3 +140,16 @@ python3 skills/doc-governance/scripts/check-doc-control-sync.py --root docs
 ## 7. 回滚方案
 
 功能以「新增文件 + 新增可选开关」为主，回滚路径为：删除 `check-doc-drift.py` 与对应测试 + 撤销 `audit-doc-health.py` 中的 `truth` 块（`--truth=off` 亦可等价关闭）。**不动** `total_score` 与既有退出码语义，因此不存在数据迁移回滚。
+
+## 9. 后续待办（非阻断，交付后登记）
+
+以下缺陷由放行确认 2 判为 P2/P3（默认门禁下不构成阻断），未在本次交付内处理：
+
+| 编号 | 定级 | 现象 | 触发条件 | 建议动作 |
+| :--- | :--- | :--- | :--- | :--- |
+| R2D56-1 | P2 | classify_doc 的 unverifiable 短路在 missing/drifted 之前，glob 锚点可盖住同文档的真实漂移 | 仅当 --allow-unverified 进入常规门禁时升级 P1 | 把 unverifiable 降为「不参与漂移判定」，真实锚点单独判定 |
+| R2D56-3 | P2 | 加粗真实锚点（两端加星号）被任意 * 判为 glob → unverified 假红 | 手写控制头时使用加粗 | 只把「两端加粗且内部无 *」视为加粗 |
+| R2D56-4 | P2 | 散文锚点（如「见附录 A」）仍 missing_anchor 硬红 | 文档把锚点写成描述而非路径 | 定义非文件型锚点口径：登记为 invalid 并给修复提示 |
+| R2D56-2 | P3 | --allow-unverified 生效时零痕迹（stdout 逐字节相同） | 任何使用该参数的门禁 | 输出显式豁免行，并在 GOVERNANCE 写明使用边界 |
+
+建议：下次开启 backlog 批次时，为上述四项各建一张 BK 卡（本仓库 backlog 当前活跃 0 条）。
