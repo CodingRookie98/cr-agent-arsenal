@@ -21,7 +21,8 @@
 | 放行确认 | `eb8a9c0..baafa66` | DSH 原生 subagent（同步派发，无外部句柄） | [round-2-delta-confirm.md](./round-2-delta-confirm.md) | d416cc2bfcf0 | 🔴 阻断（Blockers=1：R2D2-1 空账本）→ 已修 `bf4a5ae` | direct（24,971 B；主智能体独立复算 sha256 一致） |
 | 收口确认 2 | `bf4a5ae..d388c22` | DSH 原生 subagent（同步派发，无外部句柄） | [round-2-delta-confirm-2.md](./round-2-delta-confirm-2.md) | 449e3e8289e7 | ✅ **Blockers=0，准予交付**（新增 4 条非阻断 P2/P3） | direct（34,820 B；主智能体独立复算 sha256 一致） |
 | §9 定向红队 | `49c6d55..5818d07` | DSH 原生 subagent（同步派发，无外部句柄） | [round-3-followup-light.md](./round-3-followup-light.md) | dc3a04f4ce8e | 🔴 阻断（Blockers=1：R3-1 invalid 过度矫正）→ 已修 `940b355` | direct（31,004 B；主智能体独立复算 sha256 一致） |
-| R3 Delta | `5818d07..73c262b` | DSH 原生 subagent（同步派发，无外部句柄） | round-3-delta.md | （待落盘） | ⏳ 进行中 | — |
+| R3 Delta | `5818d07..73c262b` | DSH 原生 subagent（同步派发，无外部句柄） | [round-3-delta.md](./round-3-delta.md) | d855ebee0ac1 | 🔴 阻断（Blockers=1：R3D-1 行区间锚点漏检，本次修复引入的回归）→ 已修 `51e7d6a` | direct（28,721 B；主智能体独立复算 sha256 一致） |
+| R3D 确认 | `73c262b..2180b95` | DSH 原生 subagent（同步派发，无外部句柄） | round-3-delta-confirm.md | （待落盘） | ⏳ 进行中 | — |
 
 ## 报告清单
 > 每轮归档后在此追加一行 markdown 链接，供人类与子智能体按路径直达：
@@ -32,7 +33,8 @@
 - [round-2-delta-confirm.md](./round-2-delta-confirm.md) — 放行确认（Blockers=1，已修）
 - [round-2-delta-confirm-2.md](./round-2-delta-confirm-2.md) — 收口确认 2（**Blockers=0，准予交付**）
 - [round-3-followup-light.md](./round-3-followup-light.md) — §9 四项定向红队（Blockers=1：R3-1 invalid 判据过度矫正）
-- round-3-delta.md — R3 修复 Delta 复核（进行中）
+- [round-3-delta.md](./round-3-delta.md) — R3 Delta 复核（Blockers=1：R3D-1）
+- round-3-delta-confirm.md — R3D-1 修复确认（进行中）
 
 ## 待办与后续轮次
 
@@ -47,4 +49,5 @@
 - [x] 收口确认 2：**0 Blockers，准予交付**（2026-11-22）
 - [x] 计划 §9 四项收口（`4545b55`）
 - [x] R3 红队 P1 收口（`940b355`）
-- [ ] R3 Delta 复核后的最终裁决
+- [x] R3 Delta 复核（R3D-1 已修 `51e7d6a`）
+- [ ] R3D-1 修复确认后的最终裁决
