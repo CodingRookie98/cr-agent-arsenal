@@ -69,7 +69,8 @@ def g02_rfc_has_plan(root: Path) -> Tuple[Status, str]:
         # B-10 / BD-4：接受「落地计划 / 实施计划」等写法，但必须伴随**链接**——
         # 裸「计划」子串会让任何提到该词的 RFC 恒真通过。
         text = _read(f)
-        if not re.search(r"(落地|实施|执行)?计划[^\n]{0,40}\]\(", text):
+        # 链接文本可能较长（如 RFC-0003 的「实施计划请查阅: [长文件名](...)」），窗口放宽到 200 字符
+        if not re.search(r"(落地|实施|执行)?计划[^\n]{0,200}\]\(", text):
             missing.append(f.name)
     return ("gap", f"{len(missing)} 篇 RFC 缺落地计划链接") if missing else ("pass", "全部 RFC 有落地计划")
 

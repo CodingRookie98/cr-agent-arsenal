@@ -8,6 +8,7 @@
 > - **当前版本**: V0.1.0
 > - **初次发起日期**: 2026-10-04
 > - **定案日期**: 2026-10-04
+> - **落地计划**: [2026-10-04-review-report-archive.md](../project/plans/2026-10-04-review-report-archive.md)
 
 > [!IMPORTANT]
 > **历史溯源备忘 (Archival Notice)**:

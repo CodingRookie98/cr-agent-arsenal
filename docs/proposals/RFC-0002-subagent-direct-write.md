@@ -8,6 +8,7 @@
 > - **当前版本**: V0.1.0
 > - **初次发起日期**: 2026-10-08
 > - **目标版本/里程碑**: `dual-round-review` V2.2.0（子智能体直写通道）
+> - **落地计划**: [2026-10-08-subagent-direct-write.md](../project/plans/2026-10-08-subagent-direct-write.md)
 
 > **文档控制信息**
 > - **需求方**: 王辉
