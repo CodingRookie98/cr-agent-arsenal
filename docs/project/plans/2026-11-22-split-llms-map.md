@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-SPLIT-LLMS-MAP-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.1.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 
@@ -19,11 +19,12 @@
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3（TDD 实现，A-1 起）
-- **当前活跃子任务**: A-1 生成器拆分为 `build_llms_map`（纯函数，先红后绿）
-- **当前子任务重试计数**: 0/3
+- **当前活跃阶段**: P4（A-1~A-6 已交付，定向红队审查进行中）
+- **当前活跃子任务**: A-7 审查 + 归档
+- **当前子任务重试计数**: 0/3（无触发）
 - **门禁基线（改动前实测）**: drift rc=0（3/46、15.0/15）｜audit PASS 100/100｜links rc=0｜sync rc=0｜pytest 217 passed｜`docs/llms.txt` 21,810 B / 92 条
-- **批次进度**: A-1 ☐ / A-2 ☐ / A-3 ☐ / A-4 ☐ / A-5 ☐ / A-6 ☐ / A-7 ☐
+- **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅ / A-6 ✅ / A-7 ⏳
+- **实测（交付时）**: 根 21,810 → **883 字节**；6 个子地图（explanation 4,618 / other 538 / project 15,060 / proposals 1,880 / reference 1,462）；pytest **229 passed**；四道门禁 rc=0 / PASS
 
 ---
 
@@ -58,12 +59,12 @@ docs/llms.txt（根，≈1-2 KB）       docs/_llms/<section>.md（全量条目�
 
 ## 4. 原子任务清单
 
-- [ ] **A-1** 生成器重构为纯函数 `build_llms_map(root, project_name, split) -> Dict[rel_path, content]`；`generate_llms_txt` 改为调用它后写盘（默认模式产物必须逐字节不变）
-- [ ] **A-2** 实现 split 渲染：根（象限节 + 篇数 + 子地图链接 + 可选象限索引）、子地图（H1 + 上级链接 + 全量条目）；空象限删子文件
-- [ ] **A-3** CLI：`--split`、`--max-root-bytes`（默认 8192）、`--check`（只校验不写盘）；体量超限不落盘 + exit 1
-- [ ] **A-4** `audit-doc-health.py` 一致性门禁改多文件比对（根 + 全部子地图；多余/缺失均判漂移）+ 根体量缺陷
-- [ ] **A-5** 新增 `docs/AGENTS.md`（≤30 行，只写读取顺序与硬约束）；audit 断言行数与必需小节
-- [ ] **A-6** 迁移：对真实 `docs/` 执行 `--split` 生成；`docs/index.md` 与 `llms.txt` 互链同步
+- [x] **A-1** 生成器重构为纯函数 `build_llms_map(root, project_name, split) -> Dict[rel_path, content]`；`generate_llms_txt` 改为调用它后写盘（默认模式产物必须逐字节不变）
+- [x] **A-2** 实现 split 渲染：根（象限节 + 篇数 + 子地图链接 + 可选象限索引）、子地图（H1 + 上级链接 + 全量条目）；空象限删子文件
+- [x] **A-3** CLI：`--split`、`--max-root-bytes`（默认 8192）、`--check`（只校验不写盘）；体量超限不落盘 + exit 1
+- [x] **A-4** `audit-doc-health.py` 一致性门禁改多文件比对（根 + 全部子地图；多余/缺失均判漂移）+ 根体量缺陷
+- [x] **A-5** 新增 `docs/AGENTS.md`（≤30 行，只写读取顺序与硬约束）；audit 断言行数与必需小节
+- [x] **A-6** 迁移：对真实 `docs/` 执行 `--split` 生成；`docs/index.md` 与 `llms.txt` 互链同步
 - [ ] **A-7** 规程同步（GOVERNANCE / SKILL / 变更矩阵 / 模板）+ P3.5/P4/P5 门禁与审查
 
 ## 5. 验收命令
