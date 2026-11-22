@@ -10,7 +10,8 @@ audit-doc-health.py - 知识库全面健康度体检引擎
   5. 探测孤儿文档（未被 index.md 或其他文档引用的孤立文件）；
   6. 审计 backlog.md 顶层条目 BK 编号合规（缺号/格式不合规/重号，违规直接阻断 PASS）；
   7. 支持 --compat 模式：探测既有瀑布老目录（requirements, design 等）并出具平滑迁移映射建议；
-  8. 综合计算健康评分 (0-100 分)，出具结构化诊断报告。
+  8. 综合计算健康评分 (0-100 分)，出具结构化诊断报告；
+  9. 真值轴（RFC-0005）：复用 check-doc-drift.py 的代码锚点漂移分析，输出独立 truth 分（默认 warn，不改变结构分语义）。
 """
 
 import argparse
@@ -57,6 +58,7 @@ _links_mod = _load_sibling("check-doc-links.py", "check_doc_links")
 _trim_mod = _load_sibling("trim-revision.py", "trim_revision")
 _sync_mod = _load_sibling("check-doc-control-sync.py", "check_doc_control_sync")
 _llms_mod = _load_sibling("generate-llms-txt.py", "generate_llms_txt")
+_drift_mod = _load_sibling("check-doc-drift.py", "check_doc_drift")
 
 scan_directory = _links_mod.scan_directory
 process_markdown_file = _trim_mod.process_markdown_file
@@ -96,7 +98,7 @@ def _is_safely_displayable(name: str) -> bool:
     return bool(name) and len(name) <= PROJECT_NAME_MAX_LEN and all(ch.isprintable() for ch in name)
 
 
-def evaluate_verdict(res: Dict, threshold: float) -> Tuple[bool, List[str]]:
+def evaluate_verdict(res: Dict, threshold: float, truth_threshold: float = 12.0) -> Tuple[bool, List[str]]:
     """PASS 条件与 REJECT 原因由**同一组判定**产生（BK-0028 D1-7）。
 
     此前 PASS 分支与 REJECT 分支各自重算同一批条件，两处漂移即出现「同一份体检结果既
@@ -114,6 +116,14 @@ def evaluate_verdict(res: Dict, threshold: float) -> Tuple[bool, List[str]]:
         reasons.append(f"{len(res['backlog_issues'])} 处 backlog 编号违规")
     if res.get("llms_map_issue"):
         reasons.append("机器地图不一致")
+    # 真值轴（RFC-0005 §4.3）：默认 warn 不参与判定；require 模式下「未启用」同样阻断，
+    # 否则一条都未声明的知识库会因为 enabled=False 而静默跳过真值门禁（等于自我豁免）。
+    truth = res.get("truth") or {}
+    if truth.get("mode") == "require":
+        if not truth.get("enabled"):
+            reasons.append("真值轴未启用（无文档声明代码锚点）")
+        elif truth.get("freshness_score", 0.0) < truth_threshold:
+            reasons.append(f"真值分 {truth.get('freshness_score')} < 门槛 {truth_threshold}")
     return (not reasons), reasons
 
 
@@ -479,7 +489,12 @@ def audit_backlog(root_dir: Path, all_md_files: List[Path]) -> Tuple[List[str], 
     return backlog_issues, backlog_warnings, metrics
 
 
-def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
+def audit_health(
+    root_dir: Path,
+    compat_mode: bool = False,
+    truth_mode: str = "warn",
+    max_age_days: int = 180,
+) -> Dict:
     """执行全面的健康度体检"""
     all_md_files = [
         f for f in root_dir.rglob("*.md")
@@ -611,6 +626,26 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
 
     total_score = round(link_score + meta_score + rev_score + orphan_score + arch_score, 1)
 
+    # 真值轴（RFC-0005 §4.3）：与结构分**并行**，不合并进 total_score。零声明时
+    # enabled=False 且分数为 0——「未启用」不得被读成「满分」。
+    truth_raw = _drift_mod.analyze(root_dir, repo=root_dir.parent, max_age_days=max_age_days)
+    truth_block = {
+        "mode": truth_mode,
+        "enabled": truth_raw["enabled"],
+        "declared": truth_raw["declared"],
+        "total_docs": truth_raw["total_docs"],
+        "coverage": truth_raw["coverage"],
+        "fresh": len(truth_raw["fresh"]),
+        "drifted": len(truth_raw["drifted"]),
+        "missing_anchor": len(truth_raw["missing_anchor"]),
+        "stale": len(truth_raw["stale"]),
+        "unverified": len(truth_raw["unverified"]),
+        "freshness_score": truth_raw["freshness_score"],
+        "max_age_days": truth_raw["max_age_days"],
+        "drift_docs": [item["doc"] for item in truth_raw["drifted"]],
+        "missing_anchor_docs": [item["doc"] for item in truth_raw["missing_anchor"]],
+    }
+
     return {
         "total_files": total_files,
         "total_score": total_score,
@@ -628,6 +663,7 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         "backlog_warnings": backlog_warnings,
         "backlog_metrics": backlog_metrics,
         "llms_map_issue": check_llms_map_consistency(root_dir),
+        "truth": truth_block,
         "scores": {
             "link_score": round(link_score, 1),
             "meta_score": round(meta_score, 1),
@@ -647,6 +683,10 @@ def main():
     parser.add_argument("--root", default="docs", help="文档根目录 (默认为 docs)")
     parser.add_argument("--compat", action="store_true", help="启用既有项目老目录兼容模式")
     parser.add_argument("--threshold", type=float, default=80.0, help="合格通过分数门槛 (默认 80.0)")
+    parser.add_argument("--truth", choices=["off", "warn", "require"], default="warn",
+                        help="真值轴模式: off 不报告 / warn 只报告(默认) / require 低于门槛即 REJECT")
+    parser.add_argument("--truth-threshold", type=float, default=12.0, help="真值分门槛，满分 15 (默认 12.0)")
+    parser.add_argument("--max-age-days", type=int, default=180, help="复核时效上限（天，0 表示不检查）")
 
     args = parser.parse_args()
     root_path = Path(args.root).resolve()
@@ -656,7 +696,12 @@ def main():
         sys.exit(1)
 
     print(f"🏥 启动知识库全面健康度体检: 根目录={root_path} ...")
-    res = audit_health(root_path, compat_mode=args.compat)
+    res = audit_health(
+        root_path,
+        compat_mode=args.compat,
+        truth_mode=args.truth,
+        max_age_days=args.max_age_days,
+    )
     if "error" in res:
         print(f"❌ {res['error']}", file=sys.stderr)
         sys.exit(1)
@@ -674,6 +719,25 @@ def main():
     print(f"   * 修订历史滑动窗口:   {scores['rev_score']} / 20 分 (超标文档: {len(res['overflow_rev_files'])}/{res['total_files']})")
     print(f"   * 孤儿文档引用度:     {scores['orphan_score']} / 10 分 (孤立文档: {len(res['orphan_docs'])}/{res['total_files']})")
     print(f"   * Diátaxis 架构规范:  {scores['arch_score']} / 10 分")
+
+    # 1.5 真值轴（独立双轴，不并入 total_score）
+    truth = res.get("truth") or {}
+    if truth.get("mode") != "off":
+        print("\n🎯 [真值轴 · 代码锚点漂移]:")
+        print(f"   * 模式: {truth.get('mode')}（结构分 {res['total_score']} 分不含真值分）")
+        print(
+            f"   * 声明覆盖: {truth.get('declared', 0)}/{truth.get('total_docs', 0)} 篇"
+            f" ({truth.get('coverage', 0.0):.1%})｜fresh {truth.get('fresh', 0)}"
+            f"｜drifted {truth.get('drifted', 0)}｜missing {truth.get('missing_anchor', 0)}"
+            f"｜stale {truth.get('stale', 0)}｜unverified {truth.get('unverified', 0)}"
+        )
+        if not truth.get("enabled"):
+            print("   ⚠️  未启用：无文档声明「代码锚点」，真值分不颁发（0.0/15 而非满分）")
+        print(f"   * 真值分: {truth.get('freshness_score', 0.0)} / 15")
+        for name in (truth.get("missing_anchor_docs") or [])[:5]:
+            print(f"      - [missing_anchor] {name}")
+        for name in (truth.get("drift_docs") or [])[:5]:
+            print(f"      - [drifted] {name}")
 
     # 2. 目录拓扑分布
     print("\n📂 [知识库拓扑分布]:")
@@ -760,7 +824,7 @@ def main():
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")
 
     print("\n" + "=" * 60)
-    passed, reasons = evaluate_verdict(res, args.threshold)
+    passed, reasons = evaluate_verdict(res, args.threshold, args.truth_threshold)
     if passed:
         print("🏁 诊断结论: PASS (健康度达标，准予交付) ✅")
         sys.exit(0)
