@@ -9,7 +9,7 @@
 - **交付单元**: doc-truth-axis
 - **归档根**: docs/project/reviews/2026-11-22-doc-truth-axis/
 - **审查模式**: full
-- **当前迭代计数**: 4 轮（R1 / R2 / Delta / 放行确认）——超出铁律 6 的 3 轮上限，**已升级人类裁决**，终审裁决保持「未定」直至人类签字
+- **当前迭代计数**: 5 轮（R1 / R2 / Delta / 放行确认 / R2D-5·6 收口确认）——人类裁决 **B（继续收口）** 后继续；终审裁决保持「未定」直至本轮确认返回
 - **终审裁决**: 未定（取值必须**精确**为 准予交付 / 阻断交付 / 未定 三者之一；禁止保留占位符方括号或附加解释）
 
 ## 轮次台账
@@ -19,6 +19,7 @@
 | R2 | `2360b32..3c26961` | DSH 原生 subagent（同步派发，无外部句柄） | [round-2-architect.md](./round-2-architect.md) | 2e27f9b1857b | 🔴 阻断（Blockers=3；⚪驳回 3 条） | direct（38,842 B；主智能体独立复算 sha256 一致） |
 | Delta | `3c26961..eef817d` | DSH 原生 subagent（同步派发，无外部句柄） | [round-2-delta.md](./round-2-delta.md) | a50e5952aae8 | 🔴 阻断（Blockers=1：R2D-1 账本 fail-closed） | direct（26,672 B；主智能体独立复算 sha256 一致） |
 | 放行确认 | `eb8a9c0..baafa66` | DSH 原生 subagent（同步派发，无外部句柄） | [round-2-delta-confirm.md](./round-2-delta-confirm.md) | d416cc2bfcf0 | 🔴 阻断（Blockers=1：R2D2-1 空账本）→ 已修 `bf4a5ae` | direct（24,971 B；主智能体独立复算 sha256 一致） |
+| 收口确认 2 | `bf4a5ae..405d93b` | DSH 原生 subagent（同步派发，无外部句柄） | round-2-delta-confirm-2.md | （待落盘） | ⏳ 进行中（R2D-5/6 + 归属 + --repo） | — |
 
 ## 报告清单
 > 每轮归档后在此追加一行 markdown 链接，供人类与子智能体按路径直达：
@@ -36,4 +37,6 @@
 - [x] R2 三项 Blockers 修复（提交 `fb62d02`）
 - [x] Delta 终审与归档（R2D-1）
 - [x] 放行确认与归档（R2D2-1 已修 `bf4a5ae`）
-- [ ] **人类裁决**（准予交付 / 继续收口 / 降级交付）——铁律 6 升级点
+- [x] **人类裁决：B（继续收口）**（2026-11-22）
+- [x] R2D-5 / R2D-6 / R2D2-2 / R2D-4 残留修复（提交 `3120d5a`）
+- [ ] 收口确认 2 返回后的最终裁决

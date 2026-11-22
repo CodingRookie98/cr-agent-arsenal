@@ -127,6 +127,8 @@ python3 skills/doc-governance/scripts/check-doc-control-sync.py --root docs
 3. **剩余 P2 未修**：--fail-on-drift 不覆盖 unverified（R2D-5）、glob/目录锚点会硬红（R2D-6）、墓碑归属计数失真（R2D2-2）。建议登记 Backlog，不在本次交付内。
 4. **是否合并计分**：当前真值轴与结构分并置（warn 默认），require 下本仓会因覆盖率 6.5% 被拒。是否在锚点覆盖率达到阈值后合并为单一分数？
 
+**人类裁决（2026-11-22）**：选择 **B 继续收口**。已执行：R2D-5（门禁非 fresh 即阻断，`--allow-unverified` 显式豁免）、R2D-6（glob/占位符锚点落 unverified、目录锚点受支持、修正 `src/**` 被当加粗抹掉）、R2D2-2（墓碑归属精确化）、R2D-4 残留（audit 增 `--repo`），提交 `3120d5a`；待放行确认 2。
+
 **可选裁决**：
 
 - **A 准予交付**：接受上述 4 条为已知边界，P2 项登记 Backlog；本次交付测试全绿、四轮审查凭据齐全。
