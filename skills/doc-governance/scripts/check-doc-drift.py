@@ -213,6 +213,11 @@ def classify_doc(
         return "drifted"
     if max_age_days > 0 and (now_ts - verified_ts) > max_age_days * SECONDS_PER_DAY:
         return "stale"
+    # R4-1：只要存在**不可核验**的锚点，即使其余锚点都新鲜，也不能判 fresh——
+    # 否则「加一条 glob/散文锚点 + 一条正常锚点」即可让无法核验的声明静默通过。
+    # 注意优先级：drifted/missing/stale 已在上方返回，真实漂移不会被本条掩盖。
+    if any(mask):
+        return "unverified"
     return "fresh"
 
 
@@ -360,12 +365,17 @@ def _removed_from_baseline(baseline: Dict[str, List[str]], current: Dict[str, Li
     """
     from collections import Counter
 
+    # R4-3：旧账本可能存的是带行区间的原始形态（"src/ok.py:2"），比对前两侧统一归一，
+    # 否则升级后会把「写法归一」误报成墓碑违规。
+    def _norm(p: str) -> str:
+        return _LINE_RANGE.sub("", p)
+
     base_counts: Counter = Counter()
     for anchors in baseline.values():
-        base_counts.update(anchors)
+        base_counts.update(_norm(a) for a in anchors)
     cur_counts: Counter = Counter()
     for anchors in current.values():
-        cur_counts.update(anchors)
+        cur_counts.update(_norm(a) for a in anchors)
     deficits = {path: n - cur_counts.get(path, 0) for path, n in base_counts.items() if cur_counts.get(path, 0) < n}
     if not deficits:
         return []
@@ -373,8 +383,8 @@ def _removed_from_baseline(baseline: Dict[str, List[str]], current: Dict[str, Li
     # 未改动却共享同一锚点的文档不再被列成缺失；同一路径只计一次。
     removed = []
     for doc, anchors in baseline.items():
-        base_c = Counter(anchors)
-        cur_c = Counter(current.get(doc, []))
+        base_c = Counter(_norm(a) for a in anchors)
+        cur_c = Counter(_norm(a) for a in current.get(doc, []))
         missing = [p for p, n in base_c.items() if p in deficits and cur_c.get(p, 0) < n]
         if missing:
             removed.append({
@@ -433,7 +443,12 @@ def analyze(
             # 存在性优先：文件/目录真的在，就一定是路径（哪怕含空格/中文/行区间）。
             probe = base_dir / _LINE_RANGE.sub("", anchor["path"]).strip("/")
             exists_on_disk = probe.is_file() or probe.is_dir()
-            if anchor.get("invalid") and (exists_on_disk or anchor["path"] in baseline_paths):
+            # R4-2：基线救回只对「像路径」的写法生效（含 / 或 无空格）——
+            # 否则散文锚点一旦被 --write-baseline 入账，就会翻转成 missing_anchor 硬红。
+            rescue_by_baseline = anchor["path"] in baseline_paths and (
+                "/" in anchor["path"] or " " not in anchor["path"]
+            )
+            if anchor.get("invalid") and (exists_on_disk or rescue_by_baseline):
                 anchor = {**anchor, "invalid": False, "unverifiable": False}
                 anchors[idx] = anchor
             if anchor.get("unverifiable"):

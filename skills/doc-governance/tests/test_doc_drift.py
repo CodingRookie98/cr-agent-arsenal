@@ -1187,5 +1187,139 @@ class TestR3DC1ExistenceFirst(unittest.TestCase):
         self.assertEqual(res["docs"][0]["invalid_anchors"], ["\u89c1\u9644\u5f55 A"])
 
 
+
+class TestR4Fixes(unittest.TestCase):
+    """R4-1/2/3 回归：invalid 不得被其他 fresh 锚点掩盖；基线救回与墓碑比对的边界"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_r4_"))
+        self.env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, env=self.env, capture_output=True, text=True)
+
+    def _run(self, docs, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), *extra],
+            capture_output=True, text=True,
+        )
+
+    def _repo(self, files):
+        self._git("init", "-q")
+        for rel, content in files.items():
+            target = self.root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir(exist_ok=True)
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        return docs, self._git("rev-parse", "--short", "HEAD").stdout.strip()
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r4_1_invalid_anchor_must_not_be_masked_by_fresh_anchor(self):
+        """场景 X：\u8bf4\u660e:3 与一条 fresh 锚点并存，删 \u8bf4\u660e 后不得判 fresh。"""
+        docs, sha = self._repo({"\u8bf4\u660e": "a\n", "src/ok.py": "x=1\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="\u8bf4\u660e:3, src/ok.py", verified="2026-11-22 / commit " + sha),
+            encoding="utf-8",
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        self.assertEqual(self._run(docs, "--write-baseline").returncode, 0)
+        self._git("rm", "-q", "\u8bf4\u660e")
+        self._git("commit", "-q", "-m", "remove")
+        payload = json.loads(self._run(docs, "--json", "--allow-unverified", "--fail-on-drift").stdout)
+        status = payload["docs"][0]["status"]
+        self.assertIn(status, ("missing_anchor", "unverified"), payload)
+        self.assertEqual(payload["summary"]["fresh"], 0)
+
+    def test_r4_1_prose_plus_fresh_anchor_is_not_fresh(self):
+        (self.root / "docs").mkdir()
+        (self.root / "docs" / "src").mkdir()
+        (self.root / "docs" / "src" / "ok.py").write_text("x=1\n", encoding="utf-8")
+        (self.root / "docs" / "a.md").write_text(
+            make_doc("body", anchors="see appendix A, src/ok.py", verified="2026-11-22"),
+            encoding="utf-8",
+        )
+        res = self.mod.analyze(self.root / "docs", now_ts=2000)
+        self.assertEqual(res["docs"][0]["status"], "unverified")
+        self.assertEqual(len(res["fresh"]), 0)
+
+    def test_r4_1_drifted_still_wins_over_invalid(self):
+        """R2D56-1 不得回退：真实锚点漂移必须仍判 drifted。"""
+        (self.root / "docs").mkdir()
+        (self.root / "docs" / "src").mkdir()
+        (self.root / "docs" / "src" / "ok.py").write_text("x=1\n", encoding="utf-8")
+        (self.root / "docs" / "a.md").write_text(
+            make_doc("body", anchors="see appendix A, src/ok.py", verified="2026-11-22"), encoding="utf-8"
+        )
+        status = self.mod.classify_doc(
+            anchor_paths=["see appendix A", "src/ok.py"],
+            anchor_exists=[True, True],
+            anchor_last_commits=[None, 2000],
+            verified_ts=1000,
+            now_ts=2100,
+            max_age_days=180,
+            anchor_unverifiable=[True, False],
+        )
+        self.assertEqual(status, "drifted")
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r4_1_unregistered_invalid_plus_fresh_must_not_be_fresh(self):
+        """报告场景 X：锚点从未入账本，invalid + fresh 并存时不得判 fresh（rc 必须非 0）。"""
+        docs, sha = self._repo({"\u8bf4\u660e": "a\n", "src/ok.py": "x=1\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="\u8bf4\u660e:3, src/ok.py", verified="2026-11-22 / commit " + sha),
+            encoding="utf-8",
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        # 故意不跑 --write-baseline：账本里没有该锚点
+        self._git("rm", "-q", "\u8bf4\u660e")
+        self._git("commit", "-q", "-m", "remove")
+        payload = json.loads(self._run(docs, "--json", "--allow-unverified").stdout)
+        self.assertEqual(payload["docs"][0]["status"], "unverified", payload)
+        self.assertEqual(payload["summary"]["fresh"], 0)
+
+    def test_r4_2_prose_registered_in_baseline_stays_invalid(self):
+        """散文锚点入账后不得翻转成 missing_anchor。"""
+        (self.root / "docs").mkdir()
+        (self.root / "docs" / "a.md").write_text(
+            make_doc("body", anchors="see appendix A", verified="2026-11-22"), encoding="utf-8"
+        )
+        baseline = self.root / "docs" / self.mod.DEFAULT_BASELINE_NAME
+        self.mod.write_baseline(baseline, self.mod.analyze(self.root / "docs", now_ts=2000, baseline_path=None)["docs"])
+        res = self.mod.analyze(self.root / "docs", now_ts=2000, baseline_path=baseline)
+        self.assertEqual(res["docs"][0]["status"], "unverified")
+        self.assertEqual(len(res["missing_anchor"]), 0)
+
+    def test_r4_3_legacy_baseline_with_line_range_is_not_a_tombstone_violation(self):
+        """旧账本存的是带行区间的原始形态，升级后不得误报墓碑违规。"""
+        (self.root / "docs").mkdir()
+        (self.root / "docs" / "src").mkdir()
+        (self.root / "docs" / "src" / "ok.py").write_text("x=1\n", encoding="utf-8")
+        (self.root / "docs" / "a.md").write_text(
+            make_doc("body", anchors="src/ok.py:2", verified="2026-11-22"), encoding="utf-8"
+        )
+        baseline = self.root / "docs" / self.mod.DEFAULT_BASELINE_NAME
+        baseline.write_text(
+            '{"version": 1, "docs": {"a.md": ["src/ok.py:2"]}}', encoding="utf-8"
+        )
+        res = self.mod.analyze(self.root / "docs", now_ts=2000, baseline_path=baseline)
+        self.assertEqual(res["removed_from_baseline"], [])
+
+
 if __name__ == "__main__":
     unittest.main()
