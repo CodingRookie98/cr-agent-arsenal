@@ -26,7 +26,12 @@
 | **前端页面、组件与设计 Token** | `src/components/*`<br>`src/styles/tokens.css`<br>`src/app/*` | 1. `docs/reference/ui/`<br>2. `docs/how-to/` (若涉及新页面操作流) | 设计 Token 变量名一致，组件 Props 与事件契约更新，无虚构组件。 |
 | **核心架构、框架与基础设施** | `src/core/*`<br>`package.json`<br>`docker-compose.yml` | 1. `docs/explanation/architecture/`<br>2. `docs/explanation/decisions/` (新建 MADR)<br>3. `docs/explanation/analysis/` | 记录架构分层演进、选型评估对比与 MADR 决策记录。 |
 | **部署配置、环境与调试脚本** | `.env.example`<br>`Dockerfile`<br>`scripts/deploy.sh` | 1. `docs/how-to/deployment.md`<br>2. `docs/how-to/local-setup.md` | 环境变量清单 100% 完整，部署与启动命令在干净环境中可复现。 |
-| **文档拓扑变动 (增/删/重命名)** | `docs/**/*.md` | 1. `docs/index.md` (全局人类索引)<br>2. `docs/llms.txt` (智能体机器地图)<br>3. 受影响目录的象限索引 `<dir>/index.md`（托管索引由 `manage-doc-index.py` 自动登记）<br>4. 所有上游引用文件相对路径 | 运行 `check-doc-links.py` 严格 Exit Code 0，全局零 404 断链；托管索引控制头版本与修订表联动一致。 |
+| **文档拓扑变动 (增/删/重命名)** | `docs/**/*.md` | 1. `docs/index.md` (全局人类索引)<br>2. `docs/llms.txt` + `docs/_llms/*.md`（分层机器地图，`--split` 重生成）<br>3. 受影响目录的象限索引 `<dir>/index.md`（托管索引由 `manage-doc-index.py` 自动登记）<br>4. 所有上游引用文件相对路径 | 运行 `check-doc-links.py` 严格 Exit Code 0，全局零 404 断链；托管索引控制头版本与修订表联动一致。 |
+| **文档代码锚点失效（被锚定路径改动/移动/删除）** | `代码锚点` 声明的任意路径（如 `src/**`、`skills/**`） | 1. 受影响文档本体（更新断言并刷新 `复核于`）<br>2. `docs/project/changelog.md`（若断言涉及对外契约） | 运行 `check-doc-drift.py --root docs --fail-on-drift` 严格 Exit Code 0（账本缺席/损坏按 rc=2 fail-closed，先 `--write-baseline` 重建并提交）；`audit-doc-health.py --truth=warn` 真值分不低于 12/15（未声明锚点的文档不计入分母）。 |
+
+---
+
+> **矩阵第 7 行的用法（真值轴，RFC-0005）**：`代码锚点` 是「文档断言所依赖的代码位置」。锚点文件一被改动，文档即进入 `drifted` 状态——这是**怀疑信号而非结论**：要么刷新内容并改 `复核于`，要么确认断言仍成立只更新复核点。禁止为了清零漂移而删掉锚点声明（那会让文档退出真值统计，等于自我豁免）。
 
 ---
 
@@ -63,6 +68,8 @@ python3 skills/doc-governance/scripts/check-doc-links.py --root docs
 
 | 版本 | 日期 | 变更摘要 |
 |:---|:---|:---|
+| V1.4.0 | 2026-11-22 | 机器地图改分层（RFC-0006）：拓扑变动须以 `--split` 重生成根 + 子地图，手改子地图即判漂移 |
+| V1.3.0 | 2026-11-22 | 新增「文档代码锚点失效」联动行与真值轴用法说明（RFC-0005）：锚点漂移进入机械门禁，禁用「删锚点清零」的自我豁免 |
 | V1.2.0 | 2026-10-04 | 对齐 Backlog V2.0.0 规范：待办闭环全面移入 `docs/project/archive/` 冷区，保持热区待办精炼 |
 | V1.1.0 | 2026-09-30 | 待办闭环对齐 backlog-specification.md：BK 编号引用、移入已关闭区、SHA 单一事实源归于 changelog |
 | V1.0.0 | 2026-09-10 | 初版发布：全向联动矩阵与 Sync SOP |

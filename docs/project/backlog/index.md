@@ -4,18 +4,18 @@
 > - **文档标识**: BK-INDEX-GOV
 > - **当前版本**: V2.0.0 (动态索引)
 > - **维护模式**: 机器脚本自动化生成 (请勿手写对账日记，运行 `manage-backlog.py sync-index` 自动刷新)
-> - **更新日期**: 2026-11-21
+> - **更新日期**: 2026-11-22
 
 ---
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **0** 项 (进行中: 0, 计划中: 0)
-- **历史已归档项**: **47** 项 (物理归档于 `archive/` 目录)
+- **现役活跃待办**: **5** 项 (进行中: 0, 计划中: 5)
+- **历史已归档项**: **49** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 0 | 0 | 0 | 0 |
+| **活跃数量** | 0 | 1 | 3 | 1 |
 
 ---
 
@@ -27,16 +27,24 @@
 
 ## 3. 📋 计划中待办 (Planned Backlog)
 
-*(计划待办池已清空)*
+| 编号 | 优先级 | 类型 | 标题 | 触发条件 | 卡片入口 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **BK-0052** | `P1` | `Feature` | 知识库缺口：how-to 与 tutorials 象限为空 | 下次需要写操作指南时 | [BK-0052](./active/BK-0052-知识库缺口-how-to-与-tutorials-象限为空.md) |
+| **BK-0050** | `P2` | `TechDebt` | 存量超限文档拆分（spec-evolution / skill-scripts） | 下次修改这两篇文档时 | [BK-0050](./active/BK-0050-存量超限文档拆分-spec-evolution-skill-scripts.md) |
+| **BK-0053** | `P2` | `Governance` | 知识库缺口：changelog 缺失与 3 篇 RFC 无落地计划链接 | 下次发布或 RFC 结项时 | [BK-0053](./active/BK-0053-知识库缺口-changelog-缺失与-3-篇-rfc-无落地计划链接.md) |
+| **BK-0054** | `P2` | `TechDebt` | 知识库缺口：taste-driven-designer 缺架构设计书 | 下次修改该技能时 | [BK-0054](./active/BK-0054-知识库缺口-taste-driven-designer-缺架构设计书.md) |
+| **BK-0051** | `P3` | `Governance` | 检索层决策：当前不引入 MCP（已评估） | 文档 >300 篇，或出现跨仓库检索需求，或出现非文件系统消费者 | [BK-0051](./active/BK-0051-检索层决策-当前不引入-mcp-已评估.md) |
 
 ---
 
 ## 4. 🗄️ 历史已结项归档 (Archive Summary)
 
-> 共收录 47 条已关闭历史条目，详情参见 `archive/` 各版本目录。
+> 共收录 49 条已关闭历史条目，详情参见 `archive/` 各版本目录。
 
 | 编号 | 类型 | 标题 | 结项日期 | 结论 | 交付去向 | 归档卡片 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **BK-0048** | `Governance` | 门禁自动化：pre-commit hook + 一键聚合脚本 | 2026-11-22 | delivered | check-all.py + .githooks/pre-commit + README 安装登记（提交 a0d5a4c 起） | [BK-0048](./archive/2026-Q4/BK-0048-门禁自动化-pre-commit-hook-一键聚合脚本.md) |
+| **BK-0049** | `Feature` | 知识库可用性评测：20 条 golden task | 2026-11-22 | delivered | check-golden-tasks.py（20 条断言）+ check-all 第 6 道门禁；GAP 5 项已转 BK-0052/0053/0054 | [BK-0049](./archive/2026-Q4/BK-0049-知识库可用性评测-20-条-golden-task.md) |
 | **BK-0005** | `Governance` | 豁免判定前执行路径根相对语义归一化 | 2026-11-19 | delivered | 78c73dc（--dir 作用域守卫 + 4 条回归 + GOVERNANCE 提示） | [BK-0005](./archive/2026-Q4/BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0006** | `TechDebt` | 四条审查护栏各补 1 条反证测试用例 | 2026-11-19 | delivered | e6fa6e6（豁免边界反证；其余三条复核已覆盖） | [BK-0006](./archive/2026-Q4/BK-0006-review-gates-negative-test-cases.md) |
 | **BK-0009** | `Bug` | resolve_archive_dir 增加交付单元与请求 slug 一致性校验 | 2026-11-19 | delivered | e238a1f（交付单元一致性校验 + 2 条回归） | [BK-0009](./archive/2026-Q4/BK-0009-resolve-archive-dir-slug-consistency.md) |
@@ -55,7 +63,5 @@
 | **BK-0041** | `TechDebt` | 存量技能交付面残余债务：agy 设计书缺失 / 两条 description 超建议值 / doc-governance 测试文件超行限 | 2026-11-12 | wontfix | C-02 交付：新增 docs/explanation/architecture/agy-delegation-workflow-design.md；C-04 两条 description 与 C-06 测试文件行限裁定接受偏离，不再立项（见卡 §4 裁定表） | [BK-0041](./archive/2026-Q4/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md) |
 | **BK-0046** | `Bug` | spec-evolution 门禁 pytest 超时阈值（GATE_TIMEOUT=300s）与实际套件时长临界导致 C-09 假 BLOCKER | 2026-11-12 | delivered | docs/project/backlog/archive/2026-Q4/BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo.md | [BK-0046](./archive/2026-Q4/BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo.md) |
 | **BK-0007** | `Governance` | GOVERNANCE.md 豁免表文本精确化 | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0007](./archive/2026-Q4/BK-0007-governance-doc-exemption-table-accuracy.md) |
-| **BK-0008** | `Governance` | 围栏奇偶告警文案补充嵌套演示规避提示 | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0008](./archive/2026-Q4/BK-0008-fence-parity-nested-block-guidance.md) |
-| **BK-0010** | `Security` | archive-root 空值与非法形态防御校验 | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0010](./archive/2026-Q4/BK-0010-archive-root-empty-or-illegal-guard.md) |
 
-*(其余 27 条历史记录已隐藏，可查看 archive/ 目录)*
+*(其余 29 条历史记录已隐藏，可查看 archive/ 目录)*

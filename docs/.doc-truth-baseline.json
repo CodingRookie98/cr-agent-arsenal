@@ -1,0 +1,18 @@
+{
+  "docs": {
+    "GOVERNANCE.md": [
+      "skills/doc-governance/scripts/audit-doc-health.py",
+      "skills/doc-governance/scripts/check-doc-drift.py"
+    ],
+    "explanation/architecture/doc-governance-design.md": [
+      "skills/doc-governance/SKILL.md",
+      "skills/doc-governance/scripts/audit-doc-health.py",
+      "skills/doc-governance/scripts/check-doc-drift.py"
+    ],
+    "project/plans/2026-11-22-doc-truth-axis.md": [
+      "skills/doc-governance/scripts/check-doc-drift.py",
+      "skills/doc-governance/scripts/audit-doc-health.py"
+    ]
+  },
+  "version": 1
+}

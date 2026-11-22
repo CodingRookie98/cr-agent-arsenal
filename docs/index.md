@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.37.1 (新增 §2 调研报告 `llm-wiki-implementation-research`：LLM-WIKI 社区实现与难点对标)
+> - **当前版本**: V1.39.0 (新增 §4 计划「分层机器地图」：根 llms.txt 降为象限入口 + 路由文件)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.39.0** | 2026-11-22 | DSH AI Agent | 王辉 | **分层机器地图登记**：§1 补路由文件与子地图入口；§4 新增「分层机器地图（RFC-0006）」计划行；根 `llms.txt` 21,810 → 883 字节 |
+| **V1.38.0** | 2026-11-22 | DSH AI Agent | 王辉 | **真值轴落地登记**：§4 新增「文档真值轴（RFC-0005）」计划行；同步 `GOVERNANCE.md` V1.7.0（工具表 + 红线 7）、`doc-governance-design.md` V1.4.0、`SKILL.md` 模式 1/2、控制头模板规则 6 与变更矩阵 V1.3.0 |
 | **V1.37.1** | 2026-11-21 | DSH AI Agent | 王辉 | **调研报告登记**：§2 新增《LLM-WIKI 社区实现全景与工程难点深度调研》（`explanation/analysis/llm-wiki-implementation-research.md` V1.0.0），含六条实现路线、十类难点、十二维 `doc-governance` 对照审计与八项改造建议 |
 | **V1.37.0** | 2026-11-19 | AI Agent | 核心架构组 | **规则成文**：§6 新增 `commit-evidence`（提交信息取证口径，BK-0044 闭环）；同步 `reference/rules/commit-evidence.md` V1.0.0 与象限索引 |
 | **V1.36.9** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 闭环交付登记**：四轮审查闭环（R1 红队 → R2 元审判 → delta-r1 定向复核 → delta-r2 终审），终审 **准予交付**（Blockers=0）、门禁 `--require-verdict=PASS` 通过；六卡 `close` 迁入 `archive/2026-Q4/`（index 活跃 21→15、归档 24→30）；计划行标注「已完成」并链接审查归档 |
-| **V1.36.8** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 闭环登记**：§4 新增计划行（BK-0045 未跟踪清单平台无关化 / BK-0010 `--archive-root` 防御 / BK-0008 围栏告警补嵌套提示 / BK-0016 象限索引幂等判据剥离锚点与查询串 / BK-0007 GOVERNANCE §4.1 豁免口径精确化 / BK-0014 作废轮次留痕）；同步 `GOVERNANCE.md` V1.6.2 与 `dual-round-review` SKILL.md 口径 |
-| **V1.36.7** | 2026-10-19 | DSH AI Agent | 王辉 | **技能脚本 Python 统一化注册**：§4 新增计划行（8 个自建技能脚本改为单一 Python 实现 + `.sh` POSIX 兼容壳；9 套契约测试运行时无关化；Windows 侧以 uv 隔离环境取证）；同步 `GOVERNANCE.md` V1.6.1 与 `docs/reference/rules/index.md` V1.0.7 的脚本主路径口径（`scaffold-doc.py` / `prepare-review-context.py`） |
 
 ---
 
@@ -25,7 +25,9 @@
 本项目为现代 AI 智能体（Claude Code / Antigravity / Cursor 等）研发与多智能体协作平台提供工业级可复用公共技能（Public Agent Skills）与工程规范体系。
 
 * 📋 **知识库治理标准**: [docs/GOVERNANCE.md](./GOVERNANCE.md)
-* 🤖 **智能体机器地图**: [docs/llms.txt](./llms.txt)
+* 🤖 **智能体机器地图**: [docs/llms.txt](./llms.txt)（象限级入口，≤8 KB）
+* 🧭 **智能体路由规则**: [docs/AGENTS.md](./AGENTS.md)（读取顺序与硬约束，≤30 行）
+* 🗂️ **分层子地图**: `docs/_llms/<象限>.md`（生成物，全量条目清单，禁手改）
 
 ---
 
@@ -94,6 +96,8 @@
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |
 | **P2 批次六项 backlog 卡片闭环** | 闭环 BK-0003/BK-0004/BK-0020/BK-0033/BK-0034/BK-0040：稳定 ID 按基线逐轮配对与终审裁决唯一性、修订表头章节作用域、非 UTF-8 输出硬化、baseline 损坏显式失败、嵌套类型逃逸收口（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-14-p2-six-backlog-items.md](./project/plans/2026-10-14-p2-six-backlog-items.md) |
 | **技能脚本 Python 统一化** | 8 个自建技能脚本改为**单一 Python 实现** + 同目录 `.sh` POSIX 兼容壳（形态 B，旧调用面零破坏）；9 套契约测试改为运行时无关（Windows 默认 `sys.executable`，POSIX 另验壳转发）；四注册面与技能内文档口径同步为 Python 主路径；Windows 侧以 uv 隔离环境取证（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-19-skill-scripts-python-unification.md](./project/plans/2026-10-19-skill-scripts-python-unification.md) |
+| **分层机器地图（RFC-0006）** | 根 `llms.txt` 降为象限入口（≤8 KB，实测 883 B），全量条目下沉 `_llms/<象限>.md`；新增路由文件 `docs/AGENTS.md`（≤30 行，只写读取顺序与硬约束）；生成器增 `--split` / `--check` / `--max-root-bytes`；audit 改多文件集合比对 | [2026-11-22-split-llms-map.md](./project/plans/2026-11-22-split-llms-map.md) |
+| **文档真值轴（RFC-0005）** | 控制头三字段（来源/代码锚点/复核于）+ `check-doc-drift.py` 五态漂移检测（退出码 0/1/2）+ `audit-doc-health.py --truth=warn|require` 双轴报告；结构分语义不变，零声明不颁发满分；红线 7「严禁删锚点清零」 | [2026-11-22-doc-truth-axis.md](./project/plans/2026-11-22-doc-truth-axis.md) |
 | **P3 批次六项 backlog 卡片闭环** | 闭环 BK-0045/BK-0010/BK-0008/BK-0016/BK-0007/BK-0014：未跟踪文件清单平台无关化（GNU BRE `\?` 缺陷 + `-z` 原样路径）、`--archive-root` 空值/根路径防御、围栏未闭合告警补嵌套演示提示、象限索引幂等判据剥离锚点与查询串（非法文件名 fail-closed）、GOVERNANCE §4.1 豁免口径精确化与可读性约定守卫边界、作废轮次版本库留痕口径（**已完成**：四轮审查（R1 → R2 → delta-r1 → delta-r2）闭环、终审准予交付、门禁 PASS；Heavy Track；六卡已迁入 `archive/2026-Q4/`，审查归档见 [2026-10-20-p3-six-backlog-batch](./project/reviews/2026-10-20-p3-six-backlog-batch/README.md)） | [2026-10-20-p3-six-backlog-batch.md](./project/plans/2026-10-20-p3-six-backlog-batch.md) |
 
 ---

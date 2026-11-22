@@ -1,0 +1,38 @@
+#!/usr/bin/env sh
+# 文档治理门禁 pre-commit hook（BK-0048）
+#
+# 安装（每个克隆执行一次）：
+#   git config core.hooksPath .githooks
+# 卸载：
+#   git config --unset core.hooksPath
+#
+# 跳过（不推荐；须在提交信息中登记原因）：
+#   git commit --no-verify
+
+set -e
+
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+
+# B-09：`true -c ...` 会返回 0，故必须验证解释器真的能执行并产出预期输出
+if [ "$("$PYTHON_BIN" -c 'print(1)' 2>/dev/null)" != "1" ]; then
+    echo "🚫 PYTHON_BIN 不是可用的 Python 3 解释器：$PYTHON_BIN" >&2
+    echo "   请安装 Python 3 或显式设置 PYTHON_BIN=/path/to/python3" >&2
+    exit 1
+fi
+
+# BD-2：门禁校验的是**工作树**，而提交的是**索引**。二者不一致时检查结果不可信，
+# 否则「git add 后再改工作树」可让超限内容随提交进入版本库而门禁全绿。
+UNSTAGED="$(git diff --name-only)"
+if [ -n "$UNSTAGED" ]; then
+    echo "🚫 工作树存在未暂存改动，pre-commit 校验结果不可信：" >&2
+    echo "$UNSTAGED" | sed 's/^/   /' >&2
+    echo "   请先 git add 使工作树与索引一致，再提交。" >&2
+    exit 1
+fi
+
+if ! "$PYTHON_BIN" skills/doc-governance/scripts/check-all.py --quiet; then
+    echo "" >&2
+    echo "🚫 提交被阻断：文档门禁未通过。" >&2
+    echo "   修复后重新提交；如确需跳过：git commit --no-verify（须在提交信息登记原因）" >&2
+    exit 1
+fi

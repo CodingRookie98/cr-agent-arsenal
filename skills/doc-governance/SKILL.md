@@ -57,7 +57,9 @@ graph TD
 ```text
 docs/
 ├── index.md                 # 【全局人类总入口】全景知识库拓扑与分类索引
-├── llms.txt                 # 【AI 智能体机器地图】精炼的机器可读知识拓扑与关键参考入口
+├── llms.txt                 # 【AI 智能体机器地图】象限级入口（≤8 KB），条目级清单在 _llms/ 下
+├── AGENTS.md                # 【路由规则】读取顺序与硬约束（≤30 行，不承载知识）
+├── _llms/                   # 分层子地图（生成物，禁手改）：<象限>.md 全量条目清单
 ├── GOVERNANCE.md            # 【知识库治理规程】文档分类、生命周期与 CI 门禁规则
 │
 ├── proposals/               # 💡 0. 需求与设计孵化层 (Inception / RFC Proposals)
@@ -131,15 +133,17 @@ docs/
    - 核心架构演化 ➔ 编写一条 MADR 决策追加至 `explanation/decisions/`；
 3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并将 `project/backlog.md` 中对应 **BK 编号**的待办移入 `project/archive/` 对应归档文件（置为 `[x]`，标注去向与日期，保持 backlog.md 热区纯粹精炼，规范见 [backlog-specification.md](./references/backlog-specification.md)）；
 4. **版本号与修订历史**：按语义化规范提升受影响文档版本，遵循 **5 条滑动窗口** 在修订表首行（标准降序）追加修订行，并同步更新控制头版本；
-5. **门禁校验**：运行 `check-doc-links.py` 与 `check-doc-control-sync.py` 确保零断链与零版本漂移。
+5. **门禁校验**：运行 `check-doc-links.py` 与 `check-doc-control-sync.py` 确保零断链与零版本漂移；若改动触及文档声明的 `代码锚点`，再跑 `check-doc-drift.py` 并刷新 `复核于`（见矩阵「文档代码锚点失效」行）。
 
 ### 模式 2：知识库全局巡检与自愈 (Audit & Heal Mode)
 在版本发布前、大型重构后或定期维护时执行：
 1. **断链静态审计**：运行 `python3 scripts/check-doc-links.py --root docs`，检查所有相对链接有效性、`.md` 后缀与锚点是否存在；
 2. **控制头与修订表版本一致性审计**：运行 `python3 scripts/check-doc-control-sync.py --root docs`，断言控制头版本号与修订表最新行版本号严格一致，杜绝版本漂移；
-3. **修订历史自动裁剪**：运行 `python3 scripts/trim-revision.py --root docs --fix --keep 5`，自动将所有文档的修订历史截断在最近 5 条；
-4. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档、Backlog 演进指标、版本一致性与基线合规评分；
-5. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt`，刷新供智能体消费的拓扑地图。
+3. **真值轴漂移审计**：运行 `python3 scripts/check-doc-drift.py --root docs --repo .`，对声明了 `代码锚点` 的文档判定 `drifted / missing_anchor / stale / unverified / fresh`；需要阻断时加 `--fail-on-drift`（**任何非 fresh 的已声明文档**——漂移/锚点缺失/墓碑违规/过期/未复核 → 1；`--allow-unverified` 显式豁免后两类；**账本缺席或损坏 → 2**，fail-closed）；首次启用或合法迁移（改名/拆分/归档）后运行 `--write-baseline` 刷新账本并在提交信息登记原因；
+4. **修订历史自动裁剪**：运行 `python3 scripts/trim-revision.py --root docs --fix --keep 5`，自动将所有文档的修订历史截断在最近 5 条；
+5. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档、Backlog 演进指标、版本一致性与基线合规评分；真值轴以 `--truth=warn|require` 并行报告（默认 warn；`require` 依次校验「未启用 → 覆盖率 < `--min-coverage`（默认 0.5）→ 真值分 < `--truth-threshold`」）；
+6. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt --split`，刷新分层机器地图（根=象限入口 ≤8 KB，全量条目下沉 `_llms/<象限>.md`）；CI 可用 `--check` 只校验不写盘，`--max-root-bytes` 控制根体量。
+7. **一键门禁（推荐）**：`python3 scripts/check-all.py` 一次跑完六道门禁（机器地图/断链/版本一致/真值轴/健康体检/可回答性），失败即非零退出；`--full` 追加 pytest。建议 `git config core.hooksPath .githooks` 安装 pre-commit。
 
 ### 模式 3：脚手架与结晶归档 (Scaffold & Archive Mode)
 1. **新建文档/提案**：运行 `python3 scripts/scaffold-doc.py <type> <name>`（如 `scaffold-doc.py rfc canvas-collab`），基于规范模板创建脚手架，自动填入合规控制头，并自动 ensure 象限索引与登记本文档（跨象限链接按目标索引是否存在自动降级，杜绝 404）；
@@ -156,7 +160,7 @@ docs/
 3. **⛔ 严禁断链与隐式概念引用**：文档间引用必须显式保留 `.md` 后缀相对路径（如 `[规则.md](./rules/rule.md)`），严禁使用无后缀的裸路由或绝对物理路径；
 4. **⛔ 严禁修订历史无限膨胀**：修订历史严格限制在最近 5 条之内，超额部分必须裁剪；
 5. **⛔ 严禁破坏工程语言连续性**：既有中文项目必须使用中文撰写正文与解释，严禁中英文混乱杂糅；初期文件命名优先遵循全小写 kebab-case；
-6. **⛔ 严禁单体巨石文档**：单份文档原则上不得超过 800 行，复杂系统必须采用“总纲-子册”拓扑分离；
+6. **⛔ 严禁单体巨石文档**：以**字节数（≤64 KB）与最长单行（≤1000 字符）**为阻断判据，行数（≤800）仅作提示——行数度量已被证明失效（399 行 / 201 KB 仍判合规）；存量超限登记于 `docs/.doc-size-baseline.json`（棘轮，只降不升），复杂系统必须采用「总纲-子册」拓扑分离；
 7. **⛔ 严禁 Backlog 堆积冷数据与手写对账**：`backlog.md` 为热区待办池，严禁堆积已关闭条目（必须随批次迁出至 `archive/`），严禁在 Backlog 记录历史成果实现细节（归 changelog.md），严禁手写自然语言算术对账日记（指标统计由 `audit-doc-health.py` 动态扫描输出）。
 
 ---
@@ -179,3 +183,4 @@ docs/
 |:---|:---|
 | [doc-control-header.md](./templates/doc-control-header.md) | 手写／迁移文档的控制头、修订历史与填写规则骨架（`scaffold-doc.py` 之外的手写文档） |
 | [change-registration.md](./templates/change-registration.md) | 变更联动登记骨架（影响面扫描 → 四类同步 → 门禁证据 → 未同步项） |
+

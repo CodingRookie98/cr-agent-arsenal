@@ -10,7 +10,8 @@ audit-doc-health.py - 知识库全面健康度体检引擎
   5. 探测孤儿文档（未被 index.md 或其他文档引用的孤立文件）；
   6. 审计 backlog.md 顶层条目 BK 编号合规（缺号/格式不合规/重号，违规直接阻断 PASS）；
   7. 支持 --compat 模式：探测既有瀑布老目录（requirements, design 等）并出具平滑迁移映射建议；
-  8. 综合计算健康评分 (0-100 分)，出具结构化诊断报告。
+  8. 综合计算健康评分 (0-100 分)，出具结构化诊断报告；
+  9. 真值轴（RFC-0005）：复用 check-doc-drift.py 的代码锚点漂移分析，输出独立 truth 分（默认 warn，不改变结构分语义）。
 """
 
 import argparse
@@ -22,7 +23,7 @@ import shlex
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import importlib.util
 
@@ -31,6 +32,22 @@ import importlib.util
 # 否则每次真实审查交付都会单调侵蚀知识库健康度（外推约 11 次交付即跌破 80 分门槛）。
 # 豁免语义登记见 docs/GOVERNANCE.md。
 EVIDENCE_ARCHIVE_PARTS = ("project", "reviews")
+# RFC-0006：分层机器地图的子地图是**生成物**（无控制头、无入链），路由文件是**规则**而非知识；
+# 二者都不参与元数据/孤儿/修订计分，但仍参与断链扫描（链接必须有效）。
+GENERATED_MAP_DIR = "_llms"
+ROUTER_FILE_NAME = "AGENTS.md"
+
+
+def in_generated_map(path: Path, root_dir: Path) -> bool:
+    try:
+        rel = path.relative_to(root_dir)
+    except ValueError:
+        return False
+    return rel.parts[:1] == (GENERATED_MAP_DIR,)
+
+
+def is_router_file(path: Path, root_dir: Path) -> bool:
+    return path.parent == root_dir and path.name == ROUTER_FILE_NAME
 
 
 def in_evidence_archive(path: Path, root_dir: Path) -> bool:
@@ -57,6 +74,7 @@ _links_mod = _load_sibling("check-doc-links.py", "check_doc_links")
 _trim_mod = _load_sibling("trim-revision.py", "trim_revision")
 _sync_mod = _load_sibling("check-doc-control-sync.py", "check_doc_control_sync")
 _llms_mod = _load_sibling("generate-llms-txt.py", "generate_llms_txt")
+_drift_mod = _load_sibling("check-doc-drift.py", "check_doc_drift")
 
 scan_directory = _links_mod.scan_directory
 process_markdown_file = _trim_mod.process_markdown_file
@@ -96,7 +114,43 @@ def _is_safely_displayable(name: str) -> bool:
     return bool(name) and len(name) <= PROJECT_NAME_MAX_LEN and all(ch.isprintable() for ch in name)
 
 
-def evaluate_verdict(res: Dict, threshold: float) -> Tuple[bool, List[str]]:
+def truth_blockers(truth: Dict, truth_threshold: float, min_coverage: float) -> List[str]:
+    """真值轴的唯一判定梯（BK-0028 口径：PASS 与 REJECT 由同一组判定产生）。
+
+    打印侧与裁决侧都调用本函数，禁止各自重算——R1-4/R2 均指出过「两处复制判定梯」
+    会导致同屏出现 PASS 文案与 REJECT 理由。
+    """
+    if truth.get("mode") != "require":
+        return []
+    if truth.get("unavailable"):
+        return [f"真值轴不可判定（{truth['unavailable']}）"]
+    reasons: List[str] = []
+    if not truth.get("enabled"):
+        reasons.append("真值轴未启用（无文档声明代码锚点）")
+        return reasons
+    # R2D-1：账本缺席/损坏 ⇒ 墓碑判据不成立，require 必须 fail-closed。
+    if truth.get("baseline_status") in ("missing", "corrupt"):
+        reasons.append(f"锚点基线不可用（{truth.get('baseline_status')}），墓碑判据不成立")
+    elif truth.get("baseline_status") == "empty":
+        reasons.append("锚点基线为空，墓碑判据不成立（保护不可得 ≠ 无违规）")
+    if truth.get("removed_from_baseline"):
+        reasons.append(f"锚点基线墓碑违规 {truth['removed_from_baseline']} 处（声明被删除/缩减）")
+    if truth.get("coverage", 0.0) < min_coverage:
+        reasons.append(
+            f"声明覆盖率 {truth.get('coverage', 0.0):.1%} < 下限 {min_coverage:.1%}"
+            "（删锚点不能替代修复漂移）"
+        )
+    if truth.get("freshness_score", 0.0) < truth_threshold:
+        reasons.append(f"真值分 {truth.get('freshness_score')} < 门槛 {truth_threshold}")
+    return reasons
+
+
+def evaluate_verdict(
+    res: Dict,
+    threshold: float,
+    truth_threshold: float = 12.0,
+    min_coverage: float = 0.5,
+) -> Tuple[bool, List[str]]:
     """PASS 条件与 REJECT 原因由**同一组判定**产生（BK-0028 D1-7）。
 
     此前 PASS 分支与 REJECT 分支各自重算同一批条件，两处漂移即出现「同一份体检结果既
@@ -114,6 +168,18 @@ def evaluate_verdict(res: Dict, threshold: float) -> Tuple[bool, List[str]]:
         reasons.append(f"{len(res['backlog_issues'])} 处 backlog 编号违规")
     if res.get("llms_map_issue"):
         reasons.append("机器地图不一致")
+    if res.get("agents_md_issue"):
+        reasons.append("路由文件不合规")
+    status_issues = (res.get("doc_status") or {}).get("issues") or []
+    if status_issues:
+        reasons.append(f"{len(status_issues)} 处文档状态违规")
+    size_issues = (res.get("doc_size") or {}).get("issues") or []
+    if size_issues:
+        reasons.append(f"{len(size_issues)} 处文档体量超限")
+    # 真值轴（RFC-0005 §4.3）：默认 warn 不参与判定；require 模式下「未启用」同样阻断，
+    # 否则一条都未声明的知识库会因为 enabled=False 而静默跳过真值门禁（等于自我豁免）。
+    truth = res.get("truth") or {}
+    reasons.extend(truth_blockers(truth, truth_threshold, min_coverage))
     return (not reasons), reasons
 
 
@@ -139,9 +205,361 @@ def _resolve_project_name(text: str) -> Tuple[str, bool]:
     return match.group(1), True
 
 
-def check_llms_map_consistency(root_dir: Path) -> str:
-    """机器地图一致性门禁（BK-0025）：以注册命令语义重生成并与 <root>/llms.txt 逐字节比对。
+AGENTS_MD_MAX_LINES = 30
+# 与 generate-llms-txt.py 的 --split 默认上限保持一致
+LLMS_ROOT_MAX_BYTES = 8192
+AGENTS_MD_REQUIRED = ("读取顺序", "硬约束")
 
+
+def check_agents_md(root_dir: Path) -> str:
+    """路由文件 docs/AGENTS.md 的门禁（RFC-0006 §4.4）。
+
+    不存在 ⇒ 不判缺陷（可选文件，存量项目零破坏）；
+    存在 ⇒ 行数 ≤ 30 且必须含「读取顺序」「硬约束」两个小节。
+    """
+    path = root_dir / "AGENTS.md"
+    if not path.exists():
+        return ""
+    if not path.is_file():
+        return f"路由文件落点不是常规文件（{path}）"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return f"路由文件读取失败: {exc}"
+    lines = text.splitlines()
+    if len(lines) > AGENTS_MD_MAX_LINES:
+        return (
+            f"路由文件 {path.name} 共 {len(lines)} 行 > 上限 {AGENTS_MD_MAX_LINES} 行"
+            "（路由文件只写读取顺序与硬约束，知识应下沉到文档）"
+        )
+    missing = [sec for sec in AGENTS_MD_REQUIRED if sec not in text]
+    if missing:
+        return f"路由文件 {path.name} 缺少必需小节: {', '.join(missing)}"
+    return ""
+
+
+DOC_STATUS_VALUES = ("Active", "Contested", "Superseded")
+CONTESTED_MAX_AGE_DAYS = 90
+_DATE_IN_ROW = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def _within_root(target: Path, root_dir: Path) -> bool:
+    """TD-1：解析后的目标是否仍在文档根之内（允许根内 ../，只拦越界）。"""
+    try:
+        target.relative_to(Path(root_dir).resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _latest_revision_date(content: str) -> Optional[str]:
+    """取修订历史表格中的**最新**日期（T-7：不能假定降序——RFC-0004 等真实文档是升序表）。"""
+    lines = content.splitlines()
+    in_rev = False
+    dates: List[str] = []
+    for line in lines:
+        if re.match(r"^#+\s*(?:修订历史(?:记录)?|Revision\s*History)", line.strip(), re.I):
+            in_rev = True
+            continue
+        if in_rev:
+            if line.strip().startswith("|"):
+                m = _DATE_IN_ROW.search(line)
+                if m:
+                    dates.append(m.group(1))
+            elif line.strip() and dates:
+                break
+    return max(dates) if dates else None
+
+
+SIZE_BASELINE_NAME = ".doc-size-baseline.json"
+SIZE_MAX_BYTES = 65536
+SIZE_MAX_LINE = 1000
+SIZE_MAX_LINES = 800
+
+
+def _measure_doc(path: Path) -> Dict:
+    """测量体量三指标。B-04：只按 \n 断行（splitlines 会在 U+2028 等处断行，
+    使超长单行绕过上限）；B-06：不可读文件 fail-closed（返回 unreadable 标记，
+    由调用方判为缺陷，而不是按 0 字节放行）。"""
+    try:
+        raw = path.read_bytes()
+        text = raw.decode("utf-8", errors="replace")
+    except OSError:
+        return {"bytes": 0, "longest_line": 0, "lines": 0, "unreadable": True}
+    lines = text.split("\n")
+    return {
+        "bytes": len(raw),
+        "longest_line": max((len(line) for line in lines), default=0),
+        "lines": len(lines),
+        "unreadable": False,
+    }
+
+
+def load_size_baseline(path: Optional[Path]) -> Dict[str, Dict]:
+    if path is None:
+        return {}
+    path = Path(path)
+    if not path.is_file():
+        return {}
+    try:
+        import json as _json
+
+        data = _json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    docs = data.get("docs") if isinstance(data, dict) else None
+    if not isinstance(docs, dict):
+        return {}
+    out: Dict[str, Dict] = {}
+    for doc, metrics in docs.items():
+        if isinstance(metrics, dict):
+            # B-05：基线值可能是任意类型（手改/损坏），非数值一律按 0 处理，不得崩溃
+            def _to_int(value) -> int:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    return 0
+
+            out[str(doc)] = {
+                "bytes": _to_int(metrics.get("bytes", 0)),
+                "longest_line": _to_int(metrics.get("longest_line", 0)),
+            }
+    return out
+
+
+MD_SUFFIXES = (".md", ".markdown")
+
+
+def _size_docs(root_dir: Path):
+    """B-03：按**小写后缀**匹配，避免 .MD / .markdown 改名逃逸扫描。"""
+    root_dir = Path(root_dir)
+    for f in sorted(root_dir.rglob("*")):
+        if not f.is_file() or f.suffix.lower() not in MD_SUFFIXES:
+            continue
+        if any(p in f.parts for p in ("node_modules", ".git", "dist", "build")):
+            continue
+        if in_evidence_archive(f, root_dir) or in_generated_map(f, root_dir) or is_router_file(f, root_dir):
+            continue
+        yield f
+
+
+def check_doc_size(
+    root_dir: Path,
+    baseline_path: Optional[Path] = None,
+    max_bytes: int = SIZE_MAX_BYTES,
+    max_line: int = SIZE_MAX_LINE,
+    max_lines: int = SIZE_MAX_LINES,
+) -> Dict:
+    """体量门禁（RFC-0008）：字节 + 最长单行阻断，行数仅警告；棘轮基线消化存量。"""
+    root_dir = Path(root_dir)
+    baseline_path = Path(baseline_path) if baseline_path else root_dir / SIZE_BASELINE_NAME
+    baseline = load_size_baseline(baseline_path)
+    docs: Dict[str, Dict] = {}
+    issues: List[str] = []
+    warnings: List[str] = []
+    seen_paths = set()
+
+    for f in _size_docs(root_dir):
+        rel = f.relative_to(root_dir).as_posix()
+        seen_paths.add(rel)
+        metrics = _measure_doc(f)
+        docs[rel] = metrics
+        if metrics.get("unreadable"):
+            issues.append(f"{rel}: 文件不可读，无法测量体量（fail-closed）")
+            continue
+        over_bytes = metrics["bytes"] > max_bytes
+        over_line = metrics["longest_line"] > max_line
+        over_lines = metrics["lines"] > max_lines
+        if over_lines:
+            warnings.append(f"{rel}: {metrics['lines']} 行 > 建议 {max_lines} 行（行数指标已证失效，仅提示）")
+        if not (over_bytes or over_line):
+            if rel in baseline:
+                warnings.append(f"{rel}: 已达标，可清理体量基线记录")
+            continue
+        detail = (
+            f"{rel}: "
+            + (f"{metrics['bytes']} 字节 > {max_bytes}" if over_bytes else "")
+            + ("，" if over_bytes and over_line else "")
+            + (f"最长单行 {metrics['longest_line']} > {max_line}" if over_line else "")
+        )
+        recorded = baseline.get(rel)
+        if recorded is None:
+            issues.append(f"{detail}（新增超限，无基线记录）")
+        elif metrics["bytes"] > recorded["bytes"] or metrics["longest_line"] > recorded["longest_line"]:
+            issues.append(f"{detail}（较基线恶化：{recorded['bytes']}→{metrics['bytes']} 字节）")
+        else:
+            warnings.append(f"{detail}（存量，基线内未恶化）")
+
+    # B-06：基线里指向「不存在的文档」的条目是投毒/残留——必须报告并忽略，
+    # 否则预置一个未来路径的巨值可让任意同名文档永久豁免。
+    stale_entries = sorted(set(baseline) - seen_paths)
+    for rel in stale_entries:
+        warnings.append(f"体量基线残留条目（文档不存在）: {rel} —— 建议 --write-size-baseline 重建")
+
+    return {
+        "docs": docs,
+        "issues": issues,
+        "warnings": warnings,
+        "baseline_status": "ok" if baseline else "empty",
+        "stale_baseline_entries": stale_entries,
+    }
+
+
+def write_size_baseline(
+    root_dir: Path,
+    max_bytes: int = SIZE_MAX_BYTES,
+    max_line: int = SIZE_MAX_LINE,
+) -> Path:
+    """把当前**超限**文档写为棘轮基线（仅在明确接受存量时执行）。"""
+    import json as _json
+
+    root_dir = Path(root_dir)
+    path = root_dir / SIZE_BASELINE_NAME
+    docs: Dict[str, Dict] = {}
+    for f in _size_docs(root_dir):
+        metrics = _measure_doc(f)
+        if metrics["bytes"] > max_bytes or metrics["longest_line"] > max_line:
+            docs[f.relative_to(root_dir).as_posix()] = {
+                "bytes": metrics["bytes"],
+                "longest_line": metrics["longest_line"],
+            }
+    path.write_text(
+        _json.dumps({"version": 1, "docs": docs}, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def check_doc_status(
+    root_dir: Path,
+    now: Optional[str] = None,
+    max_age_days: int = CONTESTED_MAX_AGE_DAYS,
+) -> Dict:
+    """文档状态机门禁（RFC-0007）。
+
+    C-1 取值非法 / C-2 Superseded 的「取代于」缺失·失效·自指 / C-3 Active 带「取代于」⇒ 阻断；
+    C-4（Active 引用 Superseded）/ C-5（Contested 超期）只进报告。
+    """
+    import datetime
+
+    root_dir = Path(root_dir)
+    today = datetime.date.fromisoformat(now) if now else datetime.date.today()
+    counts = {v: 0 for v in DOC_STATUS_VALUES}
+    contested: List[Dict] = []
+    superseded: List[Dict] = []
+    issues: List[str] = []
+    warnings: List[str] = []
+    active_docs: List[Path] = []
+
+    docs = [
+        f for f in sorted(root_dir.rglob("*.md"))
+        if not any(p in f.parts for p in ("node_modules", ".git", "dist", "build"))
+        and not in_evidence_archive(f, root_dir)
+        and not in_generated_map(f, root_dir)
+        and not is_router_file(f, root_dir)
+        # T-10：只排除 project/backlog（待办卡片的 YAML status 是生命周期字段）；
+        # 此前按绝对路径分量判断，会把任何检出路径含 backlog 的仓库整道门禁归零
+        and not (
+            len(f.relative_to(root_dir).parts) >= 2
+            and f.relative_to(root_dir).parts[:2] == ("project", "backlog")
+        )
+    ]
+    status_map: Dict[Path, str] = {}
+    for f in docs:
+        try:
+            content = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        meta = parse_frontmatter(content)
+        # 只认「文档状态」：backlog 卡片的 YAML `status: completed` 是生命周期字段，
+        # 与文档状态机语义无关，不得混用（否则 47 张卡片会被误判为非法状态）。
+        raw = (meta.get("文档状态") or "").strip()
+        rel = f.relative_to(root_dir).as_posix()
+        if not raw:
+            # TD-4：隐式 Active 也必须检查「取代于」——否则 C-3 存在语义空洞
+            pointer_implicit = (meta.get("取代于") or meta.get("superseded-by") or "").strip()
+            if pointer_implicit:
+                issues.append(
+                    f"{f.relative_to(root_dir).as_posix()}: 状态为 Active 却出现「取代于」（仅 Superseded 允许）"
+                )
+            status_map[f] = "Active"
+            counts["Active"] += 1
+            active_docs.append(f)
+            continue
+        if raw not in DOC_STATUS_VALUES:
+            counts.setdefault("Unknown", 0)
+            counts["Unknown"] = counts.get("Unknown", 0) + 1
+            issues.append(f"{rel}: 文档状态取值非法（{raw}），只允许 {'/'.join(DOC_STATUS_VALUES)}")
+            continue
+        status_map[f] = raw
+        counts[raw] += 1
+        pointer = (meta.get("取代于") or meta.get("superseded-by") or "").strip()
+        if raw == "Superseded":
+            if not pointer:
+                issues.append(f"{rel}: 状态为 Superseded 但缺少「取代于」")
+            else:
+                # T-5：允许锚点（./new.md#sec），与全库链接体系一致
+                pointer_path = pointer.split("#", 1)[0]
+                target = (f.parent / pointer_path).resolve()
+                if target == f.resolve():
+                    issues.append(f"{rel}: 「取代于」指向自身")
+                elif pointer_path.startswith(("/", "\\")) or not _within_root(target, root_dir):
+                    # T-6 / TD-1：要求「仓库内相对路径」——绝对路径与**越出仓库根**的写法阻断，
+                    # 但根内的 ../ 跨目录取代链必须可用（此前一刀切禁止，导致跨目录无法表达）
+                    issues.append(f"{rel}: 「取代于」必须是仓库内相对路径（{pointer}）")
+                elif not target.is_file() or target.suffix != ".md":
+                    issues.append(f"{rel}: 「取代于」目标不存在或不是 .md（{pointer}）")
+                else:
+                    superseded.append({"doc": rel, "by": pointer})
+        else:
+            if pointer:
+                issues.append(f"{rel}: 状态为 {raw} 却出现「取代于」（仅 Superseded 允许）")
+            if raw == "Contested":
+                reason = (meta.get("争议点") or "").strip() or "未填写"
+                revised = _latest_revision_date(content)
+                age_days = None
+                if revised:
+                    try:
+                        age_days = (today - datetime.date.fromisoformat(revised)).days
+                    except ValueError:
+                        age_days = None
+                contested.append({"doc": rel, "reason": reason, "age_days": age_days})
+            if raw == "Active":
+                active_docs.append(f)
+
+    # C-4：Active 文档引用 Superseded 文档 ⇒ 警告（不阻断）
+    superseded_paths = {p.resolve() for p, s in status_map.items() if s == "Superseded"}
+    for f in active_docs:
+        try:
+            content = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        # TD-3：C-4 必须覆盖内联（含 title）、引用式定义、大小写扩展名与无扩展名
+        candidates = []
+        for m in re.finditer(r'\]\(\s*([^)\s]+\.md)(?:\s+"[^"]*")?(?:#[^)]*)?\s*\)', content, re.I):
+            candidates.append(m.group(1))
+        for m in re.finditer(r"^\s*\[[^\]]+\]:\s*(\S+\.md)", content, re.M | re.I):
+            candidates.append(m.group(1))
+        for raw_link in candidates:
+            target = (f.parent / raw_link).resolve()
+            if target in superseded_paths:
+                warnings.append(
+                    f"{f.relative_to(root_dir).as_posix()}: Active 文档引用了已被取代的 {raw_link}"
+                )
+
+    return {
+        "counts": counts,
+        "contested": contested,
+        "superseded": superseded,
+        "issues": issues,
+        "warnings": warnings,
+    }
+
+
+def check_llms_map_consistency(root_dir: Path) -> str:
+    """机器地图一致性门禁（BK-0025 / RFC-0006）：以注册命令语义重生成并与磁盘逐字节比对。
+
+    split 模式（存在 _llms/ 目录）下比对根 + 全部子地图，多余/缺失均判漂移。
     返回缺陷描述；空串表示一致或本项不适用（未生成机器地图的项目不参与判定）。
     """
     llms_file = root_dir / "llms.txt"
@@ -154,6 +572,8 @@ def check_llms_map_consistency(root_dir: Path) -> str:
         snapshot = llms_file.read_bytes()   # BK-0028 D1-8：单次快照，后续判定不再重读
     except OSError as exc:
         return f"机器地图一致性检查无法完成: {exc}"
+    section_dir = root_dir / _llms_mod.SECTION_MAP_DIR
+    is_split = section_dir.is_dir()
     try:
         snapshot_text = snapshot.decode("utf-8")
     except UnicodeDecodeError:
@@ -161,44 +581,92 @@ def check_llms_map_consistency(root_dir: Path) -> str:
     else:
         project_name, name_resolved = _resolve_project_name(snapshot_text)
     try:
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_out = Path(tmp_dir) / "llms.txt"
-            buffer = io.StringIO()
-            with contextlib.redirect_stdout(buffer):
-                written = _llms_mod.generate_llms_txt(root_dir, tmp_out, project_name=project_name)
-            if written == 0:
-                # R1-1：无可收录文档时本项不适用——否则修复命令必然 rc=1，形成不可修复的死胡同
-                return ""
-            if tmp_out.read_bytes() != snapshot:
-                # R1-1：反解不可信或名字不可安全回显时，**绝不下发任何 --name 命令**
-                # （否则用户照做会把地图 H1 静默改写为占位名或截断名，项目身份在 SSOT 中丢失）
-                if not name_resolved:
-                    return (
-                        "机器地图与生成物不一致，且既有地图首行不符合标准 H1 格式"
-                        "（应形如 `# <项目名> Machine-Readable Knowledge Base Map`），无法反解项目名。"
-                        "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
-                        "如需重建，请**先移除既有地图文件**，再以显式 `--name` 重新生成后再提交"
-                    )
-                if not _is_safely_displayable(project_name):
-                    return (
-                        "机器地图与生成物不一致，且既有地图首行项目名不可安全回显（为空、含不可打印字符或超长）。"
-                        "既有首行格式合法，直接**以注册命令重新生成即可无损修复**"
-                        "（生成器会沿用既有身份，不会改写它）；无需移除地图。"
-                    )
-                # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
-                # D2-4：以 --name=<value> 赋值形式拼装，使 `-` 开头的名字同样可执行（否则 argparse rc=2）
-                quoted_name = shlex.quote(project_name)
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            built = _llms_mod.build_llms_map(root_dir, project_name=project_name, split=is_split)
+        if not built:
+            # R1-1：无可收录文档时本项不适用——否则修复命令必然 rc=1，形成不可修复的死胡同
+            return ""
+        # RFC-0006：split 模式下逐文件比对根 + 全部子地图；多余/缺失均判漂移
+        mismatched: List[str] = []
+        for rel, content in built.items():
+            target = root_dir / rel
+            try:
+                same = target.is_file() and target.read_bytes() == content.encode("utf-8")
+            except OSError:
+                same = False
+            if not same:
+                mismatched.append(rel)
+        if is_split:
+            # SD-6：根体量超限也计入缺陷（契约 §4.5 此前只在生成器侧实现）
+            if len(snapshot) > LLMS_ROOT_MAX_BYTES:
+                mismatched.append(f"根体量 {len(snapshot)} 字节 > {LLMS_ROOT_MAX_BYTES}")
+            expected = {
+                Path(rel).name for rel in built
+                if rel.startswith(_llms_mod.SECTION_MAP_DIR + "/")
+            }
+            # S-5：递归扫描——嵌套子目录里的 .md 同样是「多余」，否则 _llms/sub/ 会成为静默区
+            # SD-5：符号链接目录不会被 rglob 跟随，显式检测并判为多余（防静默区）
+            for link in sorted(section_dir.rglob("*")):
+                if link.is_symlink() and link.is_dir():
+                    mismatched.append(link.relative_to(root_dir).as_posix() + "（符号链接目录）")
+            for extra in sorted(section_dir.rglob("*.md")):
+                rel_extra = extra.relative_to(root_dir).as_posix()
+                if rel_extra not in {
+                    f"{_llms_mod.SECTION_MAP_DIR}/{name}" for name in expected
+                }:
+                    mismatched.append(rel_extra)
+        if mismatched:
+            detail = "、".join(mismatched[:5]) + ("…" if len(mismatched) > 5 else "")
+            # R1-1：反解不可信或名字不可安全回显时，**绝不下发任何 --name 命令**
+            # （否则用户照做会把地图 H1 静默改写为占位名或截断名，项目身份在 SSOT 中丢失）
+            if not name_resolved:
                 return (
-                    "机器地图与生成物不一致 —— 请以 --name=" + quoted_name + " 运行 "
-                    + REGEN_COMMAND + " 重新生成后再提交"
+                    f"机器地图与生成物不一致（{detail}），且既有地图首行不符合标准 H1 格式"
+                    "（应形如 `# <项目名> Machine-Readable Knowledge Base Map`），无法反解项目名。"
+                    "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
+                    "如需重建，请**先移除既有地图文件**，再以显式 --name 重新生成后再提交"
                 )
+            if not _is_safely_displayable(project_name):
+                return (
+                    f"机器地图与生成物不一致（{detail}），且既有地图首行项目名不可安全回显"
+                    "（为空、含不可打印字符或超长）。既有首行格式合法，直接**以注册命令重新生成即可无损修复**"
+                    "（生成器会沿用既有身份，不会改写它）；无需移除地图。"
+                )
+            # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
+            # D2-4：以 --name=<value> 赋值形式拼装，使 `-` 开头的名字同样可执行（否则 argparse rc=2）
+            quoted_name = shlex.quote(project_name)
+            split_flag = " --split" if is_split else ""
+            return (
+                f"机器地图与生成物不一致（{detail}）—— 请以 --name={quoted_name} 运行 "
+                + REGEN_COMMAND + split_flag + " 重新生成后再提交"
+            )
     except Exception as exc:  # noqa: BLE001 - 门禁不得因单点异常中断整体体检
         return f"机器地图一致性检查无法完成: {exc}"
     return ""
 
 
+
+
+def _iter_unfenced_lines(lines, limit: int):
+    """T-4：跳过围栏代码块内的行——示例/模板片段不得被当作真声明。"""
+    in_fence = False
+    for idx, line in enumerate(lines[:limit]):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        yield idx, line
+
+
 def parse_frontmatter(content: str) -> Dict[str, str]:
-    """解析文档头部的 Frontmatter 或文档控制信息块"""
+    """解析文档头部的 Frontmatter 或文档控制信息块。
+
+    T-2：YAML 与引用块**并存时两者都解析**（此前 YAML 命中即早退，引用块被整体遮蔽）。
+    T-4：围栏代码块内的行不参与解析。
+    """
     metadata = {}
     # 模式 A: YAML Frontmatter (--- ... ---)
     yaml_match = re.match(r"^---\s*\n(.*?)\n---\s*\n", content, re.DOTALL)
@@ -207,10 +675,9 @@ def parse_frontmatter(content: str) -> Dict[str, str]:
             if ":" in line:
                 k, v = line.split(":", 1)
                 metadata[k.strip().lower()] = v.strip()
-        return metadata
 
     # 模式 B: 引用块元数据 (支持 > **文档控制信息** 或直接 > **文档标识** / > **文档版本**)
-    for line in content.splitlines()[:50]:
+    for _, line in _iter_unfenced_lines(content.splitlines(), 80):
         trimmed = line.strip()
         if trimmed.startswith(">"):
             clean = re.sub(r"^[>\s\-*]+", "", trimmed).strip()
@@ -218,15 +685,43 @@ def parse_frontmatter(content: str) -> Dict[str, str]:
                 sep = ":" if ":" in clean else "："
                 k, v = clean.split(sep, 1)
                 k_clean = re.sub(r"[*_`]", "", k).strip().lower()
-                metadata[k_clean] = v.strip()
+                metadata.setdefault(k_clean, v.strip())
 
     # 模式 C: 表格型元数据 (| **文档标识** | DR-xxx | 或 | 文档标识 | ... |)
-    if "文档标识" in content or "当前版本" in content or "version" in content.lower() or "文档版本" in content:
-        for m in re.finditer(r"\|\s*(?:\*\*)?([^|\n*]+?)(?:\*\*)?\s*\|\s*([^|\n]+?)\s*\|", content):
+    # T-3：白名单补齐文档状态机三字段，否则表格形态的状态声明完全失明
+    # TD-2：只解析**控制头区域**内的表格——否则正文里的「字段说明表」会被当成真声明
+    #       （实测：RFC-0007 自己的取值表会让它被判 C-3）。
+    if (
+        "文档标识" in content or "当前版本" in content or "version" in content.lower()
+        or "文档版本" in content or "文档状态" in content
+    ):
+        # TD-2：控制头区域 = 控制信息标题之后的**连续**引用块/表格块（遇正文即停），
+        # 而不是「标题后 N 字符」——后者会把紧随其后的字段说明表一起吞进来。
+        all_lines = content.splitlines()
+        start_idx = None
+        for i, line in enumerate(all_lines):
+            if "文档控制信息" in line or "文档控制头" in line:
+                start_idx = i
+                break
+        if start_idx is None:
+            zone_lines = all_lines[:40]
+        else:
+            zone_lines = []
+            for line in all_lines[start_idx + 1 : start_idx + 40]:
+                stripped = line.strip()
+                if not stripped or stripped.startswith("|") or stripped.startswith(">"):
+                    zone_lines.append(line)
+                else:
+                    break
+        header_zone = "\n".join(zone_lines)
+        for m in re.finditer(r"\|\s*(?:\*\*)?([^|\n*]+?)(?:\*\*)?\s*\|\s*([^|\n]+?)\s*\|", header_zone):
             k_raw = m.group(1).strip().lower()
             v_raw = m.group(2).strip()
-            if k_raw in ("文档标识", "当前版本", "规范版本", "文档版本", "version", "id", "文档所有者", "生效日期"):
-                metadata[k_raw] = v_raw
+            if k_raw in (
+                "文档标识", "当前版本", "规范版本", "文档版本", "version", "id", "文档所有者", "生效日期",
+                "文档状态", "取代于", "争议点",
+            ):
+                metadata.setdefault(k_raw, v_raw)
 
     return metadata
 
@@ -479,12 +974,20 @@ def audit_backlog(root_dir: Path, all_md_files: List[Path]) -> Tuple[List[str], 
     return backlog_issues, backlog_warnings, metrics
 
 
-def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
+def audit_health(
+    root_dir: Path,
+    compat_mode: bool = False,
+    truth_mode: str = "warn",
+    max_age_days: int = 180,
+    repo_path: Optional[Path] = None,
+) -> Dict:
     """执行全面的健康度体检"""
     all_md_files = [
         f for f in root_dir.rglob("*.md")
         if not any(p in f.parts for p in ("node_modules", ".git", ".next", "dist", "build"))
         and not in_evidence_archive(f, root_dir)
+        and not in_generated_map(f, root_dir)
+        and not is_router_file(f, root_dir)
     ]
 
     total_files = len(all_md_files)
@@ -611,6 +1114,46 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
 
     total_score = round(link_score + meta_score + rev_score + orphan_score + arch_score, 1)
 
+    # 真值轴（RFC-0005 §4.3）：与结构分**并行**，不合并进 total_score。零声明时
+    # enabled=False 且分数为 0——「未启用」不得被读成「满分」。
+    truth_unavailable = None
+    repo_root = repo_path if repo_path is not None else root_dir.parent
+    try:
+        if _drift_mod.is_shallow_repo(repo_root):
+            truth_unavailable = "shallow repository（历史提交时间不可得，需 fetch-depth: 0）"
+    except Exception:
+        truth_unavailable = "git 探测失败"
+    truth_raw = _drift_mod.analyze(
+        root_dir,
+        repo=repo_root if truth_unavailable is None else None,
+        max_age_days=max_age_days,
+        baseline_path=root_dir / _drift_mod.DEFAULT_BASELINE_NAME,
+    )
+    truth_block = {
+        "mode": truth_mode,
+        "unavailable": truth_unavailable,
+        "removed_from_baseline": len(truth_raw.get("removed_from_baseline") or []),
+        "baseline_docs": truth_raw.get("baseline_docs", 0),
+        "baseline_status": truth_raw.get("baseline_status", "disabled"),
+        "enabled": truth_raw["enabled"],
+        "declared": truth_raw["declared"],
+        "total_docs": truth_raw["total_docs"],
+        "coverage": truth_raw["coverage"],
+        "fresh": len(truth_raw["fresh"]),
+        "drifted": len(truth_raw["drifted"]),
+        "missing_anchor": len(truth_raw["missing_anchor"]),
+        "stale": len(truth_raw["stale"]),
+        "unverified": len(truth_raw["unverified"]),
+        "freshness_score": truth_raw["freshness_score"],
+        "max_age_days": truth_raw["max_age_days"],
+        "drift_docs": [item["doc"] for item in truth_raw["drifted"]],
+        "missing_anchor_docs": [item["doc"] for item in truth_raw["missing_anchor"]],
+        # R3D-4：invalid 锚点（散文/无法核验）必须在 audit 的 truth 块可见，
+        # 否则「只看 audit 报告」的评审者看不到这类声明被静默排除。
+        "invalid": sum(1 for item in truth_raw["docs"] if item.get("invalid_anchors")),
+        "invalid_docs": [item["doc"] for item in truth_raw["docs"] if item.get("invalid_anchors")],
+    }
+
     return {
         "total_files": total_files,
         "total_score": total_score,
@@ -628,6 +1171,10 @@ def audit_health(root_dir: Path, compat_mode: bool = False) -> Dict:
         "backlog_warnings": backlog_warnings,
         "backlog_metrics": backlog_metrics,
         "llms_map_issue": check_llms_map_consistency(root_dir),
+        "agents_md_issue": check_agents_md(root_dir),
+        "doc_status": check_doc_status(root_dir),
+        "doc_size": check_doc_size(root_dir),
+        "truth": truth_block,
         "scores": {
             "link_score": round(link_score, 1),
             "meta_score": round(meta_score, 1),
@@ -647,6 +1194,18 @@ def main():
     parser.add_argument("--root", default="docs", help="文档根目录 (默认为 docs)")
     parser.add_argument("--compat", action="store_true", help="启用既有项目老目录兼容模式")
     parser.add_argument("--threshold", type=float, default=80.0, help="合格通过分数门槛 (默认 80.0)")
+    parser.add_argument("--truth", choices=["off", "warn", "require"], default="warn",
+                        help="真值轴模式: off 不报告 / warn 只报告(默认) / require 低于门槛即 REJECT")
+    parser.add_argument("--truth-threshold", type=float, default=12.0, help="真值分门槛，满分 15 (默认 12.0)")
+    parser.add_argument("--min-coverage", type=float, default=0.5,
+                        help="require 模式下的锚点声明覆盖率下限 (默认 0.5，防「删锚点洗绿」)")
+    parser.add_argument("--max-age-days", type=int, default=180, help="复核时效上限（天，0 表示不检查）")
+    parser.add_argument("--repo", default=None,
+                        help="仓库根（真值轴锚点基准；默认取 --root 的父目录）")
+    parser.add_argument("--write-size-baseline", action="store_true",
+                        help="把当前超限文档写为体量棘轮基线（仅在明确接受存量时执行）")
+    parser.add_argument("--max-doc-bytes", type=int, default=None, help="单文档字节上限（默认 65536）")
+    parser.add_argument("--max-doc-line", type=int, default=None, help="最长单行上限（默认 1000）")
 
     args = parser.parse_args()
     root_path = Path(args.root).resolve()
@@ -655,8 +1214,23 @@ def main():
         print(f"❌ 错误: 目标文档目录不存在: {root_path}", file=sys.stderr)
         sys.exit(1)
 
+    if args.write_size_baseline:
+        written = write_size_baseline(
+            root_path,
+            max_bytes=args.max_doc_bytes or SIZE_MAX_BYTES,
+            max_line=args.max_doc_line or SIZE_MAX_LINE,
+        )
+        print(f"🧱 已写入体量基线: {written}")
+        sys.exit(0)
+
     print(f"🏥 启动知识库全面健康度体检: 根目录={root_path} ...")
-    res = audit_health(root_path, compat_mode=args.compat)
+    res = audit_health(
+        root_path,
+        compat_mode=args.compat,
+        truth_mode=args.truth,
+        max_age_days=args.max_age_days,
+        repo_path=Path(args.repo).resolve() if args.repo else None,
+    )
     if "error" in res:
         print(f"❌ {res['error']}", file=sys.stderr)
         sys.exit(1)
@@ -674,6 +1248,39 @@ def main():
     print(f"   * 修订历史滑动窗口:   {scores['rev_score']} / 20 分 (超标文档: {len(res['overflow_rev_files'])}/{res['total_files']})")
     print(f"   * 孤儿文档引用度:     {scores['orphan_score']} / 10 分 (孤立文档: {len(res['orphan_docs'])}/{res['total_files']})")
     print(f"   * Diátaxis 架构规范:  {scores['arch_score']} / 10 分")
+
+    # 1.5 真值轴（独立双轴，不并入 total_score）
+    truth = res.get("truth") or {}
+    if truth.get("mode") != "off":
+        print("\n🎯 [真值轴 · 代码锚点漂移]:")
+        print(f"   * 模式: {truth.get('mode')}（结构分 {res['total_score']} 分不含真值分）")
+        print(
+            f"   * 声明覆盖: {truth.get('declared', 0)}/{truth.get('total_docs', 0)} 篇"
+            f" ({truth.get('coverage', 0.0):.1%})｜fresh {truth.get('fresh', 0)}"
+            f"｜drifted {truth.get('drifted', 0)}｜missing {truth.get('missing_anchor', 0)}"
+            f"｜stale {truth.get('stale', 0)}｜unverified {truth.get('unverified', 0)}"
+        )
+        if not truth.get("enabled"):
+            print("   ⚠️  未启用：无文档声明「代码锚点」，真值分不颁发（0.0/15 而非满分）")
+        if truth.get("unavailable"):
+            print(f"   ⛔ 不可判定：{truth['unavailable']}（不编造漂移数字）")
+        if truth.get("baseline_status") in ("missing", "corrupt"):
+            print(
+                f"   ⛔ 锚点基线不可用（{truth['baseline_status']}）：墓碑判据不成立，",
+                "请运行 check-doc-drift.py --write-baseline 重建并提交该账本",
+            )
+        if truth.get("mode") == "require":
+            print(
+                f"   * require 口径: 覆盖率下限 {args.min_coverage:.1%}"
+                f"｜真值分门槛 {args.truth_threshold}/15（仅当真值不达标时进入阻断理由，正常态不打印「完美」）"
+            )
+        print(f"   * 真值分: {truth.get('freshness_score', 0.0)} / 15")
+        for name in (truth.get("missing_anchor_docs") or [])[:5]:
+            print(f"      - [missing_anchor] {name}")
+        for name in (truth.get("drift_docs") or [])[:5]:
+            print(f"      - [drifted] {name}")
+        if truth.get("invalid"):
+            print(f"   * invalid 锚点文档: {truth['invalid']} 篇（无法机械核验，需改写为仓库内相对路径）")
 
     # 2. 目录拓扑分布
     print("\n📂 [知识库拓扑分布]:")
@@ -756,11 +1363,89 @@ def main():
         has_issues = True
         print(f"   ⛔ 机器地图一致性缺陷: {res['llms_map_issue']}")
 
+    if res.get("agents_md_issue"):
+        has_issues = True
+        print(f"   ⛔ 路由文件缺陷: {res['agents_md_issue']}")
+
+    # RFC-0007：文档状态机——阻断项进缺陷，未决冲突清单独立成节
+    doc_status = res.get("doc_status") or {}
+    for issue in (doc_status.get("issues") or [])[:10]:
+        has_issues = True
+        print(f"   ⛔ 文档状态违规: {issue}")
+    for warn in (doc_status.get("warnings") or [])[:5]:
+        has_issues = True
+        print(f"   ⚠️  文档状态警告: {warn}")
+
+    # RFC-0008：体量门禁
+    doc_size = res.get("doc_size") or {}
+    for issue in (doc_size.get("issues") or [])[:10]:
+        has_issues = True
+        print(f"   ⛔ 文档体量超限: {issue}")
+    for warn in (doc_size.get("warnings") or [])[:5]:
+        has_issues = True
+        print(f"   ⚠️  文档体量提示: {warn}")
+
+    # R1-4：真值轴的阻断理由必须与「完美/无缺陷」互斥，否则同一屏会同时出现
+    # PASS 文案与 REJECT 理由（BK-0028 明令禁止的自相矛盾）。
+    truth_reasons = truth_blockers(truth, args.truth_threshold, args.min_coverage)
+    if truth_reasons:
+        has_issues = True
+        for reason in truth_reasons:
+            print(f"   ⛔ 真值轴阻断: {reason}")
+    else:
+        # R2D-4：warn 模式也必须把「不可判定 / 账本不可用 / 墓碑违规」计入缺陷——
+        # 报告面不得在门禁已知有缺陷时打印「完美」。
+        if truth.get("unavailable"):
+            has_issues = True
+            print(f"   ⚠️  真值轴不可判定：{truth['unavailable']}")
+        if truth.get("baseline_status") in ("missing", "corrupt"):
+            has_issues = True
+            print(f"   ⚠️  锚点基线不可用（{truth['baseline_status']}）")
+        if truth.get("removed_from_baseline"):
+            has_issues = True
+            print(f"   ⚠️  锚点基线墓碑违规 {truth['removed_from_baseline']} 处（声明被删除/缩减）")
+        if truth.get("baseline_status") == "empty":
+            has_issues = True
+            print("   ⚠️  锚点基线为空，墓碑判据不成立")
+        # R2D2-3：warn 模式下的漂移/缺失同样属缺陷，不得与「完美」并存。
+        drift_total = (
+            truth.get("drifted", 0) + truth.get("missing_anchor", 0)
+            + truth.get("stale", 0) + truth.get("unverified", 0)
+        )
+        if drift_total:
+            has_issues = True
+            print(
+                "   ⚠️  真值轴未清零："
+                f"drifted {truth.get('drifted', 0)} / missing {truth.get('missing_anchor', 0)}"
+                f" / stale {truth.get('stale', 0)} / unverified {truth.get('unverified', 0)}"
+                "（warn 不阻断，但属缺陷）"
+            )
+
     if not has_issues:
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")
 
+    # RFC-0007：未决冲突清单——把「哪份该信」从读全文降级为看状态
+    doc_status = res.get("doc_status") or {}
+    if doc_status:
+        counts = doc_status.get("counts") or {}
+        print("\n📌 [文档状态机 · 未决冲突清单]:")
+        print(
+            f"   * 状态分布: Active {counts.get('Active', 0)}｜Contested {counts.get('Contested', 0)}"
+            f"｜Superseded {counts.get('Superseded', 0)}"
+            + (f"｜非法 {counts['Unknown']}" if counts.get("Unknown") else "")
+        )
+        for item in (doc_status.get("contested") or [])[:10]:
+            age = f"{item['age_days']} 天" if item.get("age_days") is not None else "未知"
+            flag = "⚠️ 超期" if (item.get("age_days") or 0) > CONTESTED_MAX_AGE_DAYS else ""
+            print(f"   - [Contested] {item['doc']}（{age}{'，' + flag if flag else ''}）：{item['reason']}")
+        for item in (doc_status.get("superseded") or [])[:10]:
+            print(f"   - [Superseded] {item['doc']} → {item['by']}")
+        # T-11：存在非法状态时不得宣称「全库 Active」（BK-0028 禁止的自相矛盾）
+        if not (doc_status.get("contested") or doc_status.get("superseded")) and not doc_status.get("issues"):
+            print("   （无争议、无取代：全库 Active）")
+
     print("\n" + "=" * 60)
-    passed, reasons = evaluate_verdict(res, args.threshold)
+    passed, reasons = evaluate_verdict(res, args.threshold, args.truth_threshold, args.min_coverage)
     if passed:
         print("🏁 诊断结论: PASS (健康度达标，准予交付) ✅")
         sys.exit(0)
