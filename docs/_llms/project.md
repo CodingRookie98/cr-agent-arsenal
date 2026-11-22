@@ -1,0 +1,75 @@
+# Project Governance (工程演进 / 发布日志与待办)
+
+> 本文件由 `generate-llms-txt.py --split` 生成，请勿手改。
+> 上级入口：[../llms.txt](../llms.txt)
+
+- [BK-0001-trim-revision-py-archive-exemption](../project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
+- [BK-0002-generate-llms-txt-archive-exemption](../project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
+- [BK-0003-stable-id-pair-by-filename](../project/backlog/archive/2026-Q4/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
+- [BK-0004-unique-verdict-in-review-index](../project/backlog/archive/2026-Q4/BK-0004-unique-verdict-in-review-index.md): id: BK-0004
+- [BK-0005-relative-to-root-path-normalization](../project/backlog/archive/2026-Q4/BK-0005-relative-to-root-path-normalization.md): id: BK-0005
+- [BK-0006-review-gates-negative-test-cases](../project/backlog/archive/2026-Q4/BK-0006-review-gates-negative-test-cases.md): id: BK-0006
+- [BK-0007-governance-doc-exemption-table-accuracy](../project/backlog/archive/2026-Q4/BK-0007-governance-doc-exemption-table-accuracy.md): id: BK-0007
+- [BK-0008-fence-parity-nested-block-guidance](../project/backlog/archive/2026-Q4/BK-0008-fence-parity-nested-block-guidance.md): id: BK-0008
+- [BK-0009-resolve-archive-dir-slug-consistency](../project/backlog/archive/2026-Q4/BK-0009-resolve-archive-dir-slug-consistency.md): id: BK-0009
+- [BK-0010-archive-root-empty-or-illegal-guard](../project/backlog/archive/2026-Q4/BK-0010-archive-root-empty-or-illegal-guard.md): id: BK-0010
+- [BK-0011-review-contract-weak-assertions](../project/backlog/archive/2026-Q4/BK-0011-review-contract-weak-assertions.md): id: BK-0011
+- [BK-0012-enumerate-unregistered-reports](../project/backlog/archive/2026-Q4/BK-0012-enumerate-unregistered-reports.md): id: BK-0012
+- [BK-0013-trailing-pipe-column-misparse](../project/backlog/archive/2026-Q4/BK-0013-trailing-pipe-column-misparse.md): id: BK-0013
+- [BK-0014-voided-round-repo-trace](../project/backlog/archive/2026-Q4/BK-0014-voided-round-repo-trace.md): id: BK-0014
+- [BK-0015-working-staged-naming-literal](../project/backlog/archive/2026-Q4/BK-0015-working-staged-naming-literal.md): id: BK-0015
+- [BK-0016-象限索引幂等判据精确匹配-剥离锚点与查询串](../project/backlog/archive/2026-Q4/BK-0016-象限索引幂等判据精确匹配-剥离锚点与查询串.md): id: BK-0016
+- [BK-0017-scaffold-adr-模板补控制头版本字段](../project/backlog/archive/2026-Q4/BK-0017-scaffold-adr-模板补控制头版本字段.md): id: BK-0017
+- [BK-0018-明确-skills-lock-json-computedhash-权威定义并评估](../project/backlog/archive/2026-Q4/BK-0018-明确-skills-lock-json-computedhash-权威定义并评估.md): id: BK-0018
+- [BK-0019-readme-入口象限的索引自愈与健康评分语义对齐](../project/backlog/archive/2026-Q4/BK-0019-readme-入口象限的索引自愈与健康评分语义对齐.md): id: BK-0019
+- [BK-0020-修订表头定位限定在修订历史章节作用域内](../project/backlog/archive/2026-Q4/BK-0020-修订表头定位限定在修订历史章节作用域内.md): id: BK-0020
+- [BK-0021-generate-llms-txt-py-的-root-与-output-落点解](../project/backlog/archive/2026-Q4/BK-0021-generate-llms-txt-py-的-root-与-output-落点解.md): id: BK-0021
+- [BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜](../project/backlog/archive/2026-Q4/BK-0022-strip_leading_noise-对未闭合-frontmatter-围栏兜.md): id: BK-0022
+- [BK-0023-机器地图写入侧安全加固-符号链接穿透与零覆盖守卫](../project/backlog/archive/2026-Q4/BK-0023-机器地图写入侧安全加固-符号链接穿透与零覆盖守卫.md): id: BK-0023
+- [BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染](../project/backlog/archive/2026-Q4/BK-0024-治理脚本契约细节四项-空范围返回契约-判定越界-归因顺序-表格渲染.md): id: BK-0024
+- [BK-0025-机器地图与生成物一致性需要门禁固化](../project/backlog/archive/2026-Q4/BK-0025-机器地图与生成物一致性需要门禁固化.md): id: BK-0025
+- [BK-0026-机器地图提示文案的终端注入面与畸形项目名](../project/backlog/archive/2026-Q4/BK-0026-机器地图提示文案的终端注入面与畸形项目名.md): id: BK-0026
+- [BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验](../project/backlog/archive/2026-Q4/BK-0027-零覆盖态机器地图无门禁兜底需显式登记或补校验.md): id: BK-0027
+- [BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约](../project/backlog/archive/2026-Q4/BK-0028-机器地图判定侧剩余缺口-用例承重与反解契约.md): id: BK-0028
+- [BK-0029-交付凭据写入侧历史残留-硬链接穿透与删除逃逸](../project/backlog/archive/2026-Q4/BK-0029-交付凭据写入侧历史残留-硬链接穿透与删除逃逸.md): id: BK-0029
+- [BK-0030-机器地图身份写保护闸门的完备性残余](../project/backlog/archive/2026-Q4/BK-0030-机器地图身份写保护闸门的完备性残余.md): id: BK-0030
+- [BK-0031-身份写保护契约登记与历史防护面残留](../project/backlog/archive/2026-Q4/BK-0031-身份写保护契约登记与历史防护面残留.md): id: BK-0031
+- [BK-0032-身份写保护闸门的权限与语义细节残余](../project/backlog/archive/2026-Q4/BK-0032-身份写保护闸门的权限与语义细节残余.md): id: BK-0032
+- [BK-0033-门禁子进程非-utf-8-输出导致裸-traceback](../project/backlog/archive/2026-Q4/BK-0033-门禁子进程非-utf-8-输出导致裸-traceback.md): id: BK-0033
+- [BK-0034-baseline-json-损坏静默降级导致-c-10-假阳性与假阴性](../project/backlog/archive/2026-Q4/BK-0034-baseline-json-损坏静默降级导致-c-10-假阳性与假阴性.md): id: BK-0034
+- [BK-0035-rfc-0004-的-gi-1-gi-3-不变式清单与实现未对齐](../project/backlog/archive/2026-Q4/BK-0035-rfc-0004-的-gi-1-gi-3-不变式清单与实现未对齐.md): id: BK-0035
+- [BK-0036-collect-facts-judge-输入范围与输出落点双守卫](../project/backlog/archive/2026-Q4/BK-0036-collect-facts-judge-输入范围与输出落点双守卫.md): id: BK-0036
+- [BK-0037-输出路径可静默覆盖仓库内被跟踪文件](../project/backlog/archive/2026-Q4/BK-0037-输出路径可静默覆盖仓库内被跟踪文件.md): id: BK-0037
+- [BK-0038-跨技能链接正则存在两份近似实现](../project/backlog/archive/2026-Q4/BK-0038-跨技能链接正则存在两份近似实现.md): id: BK-0038
+- [BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-](../project/backlog/archive/2026-Q4/BK-0039-存量技能交付面债务-agy-clarification-缺测试与-readme-.md): id: BK-0039
+- [BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存](../project/backlog/archive/2026-Q4/BK-0040-spec-evolution-judge-py-嵌套类型逃逸使退出码-1-与-存.md): id: BK-0040
+- [BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议](../project/backlog/archive/2026-Q4/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md): id: BK-0041
+- [BK-0042-manage-backlog-py-close-未收敛卡片-3-dod-勾选与-](../project/backlog/archive/2026-Q4/BK-0042-manage-backlog-py-close-未收敛卡片-3-dod-勾选与-.md): id: BK-0042
+- [BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约](../project/backlog/archive/2026-Q4/BK-0043-write-once-审查归档终审裁决字段不满足精确匹配契约.md): id: BK-0043
+- [BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断](../project/backlog/archive/2026-Q4/BK-0044-提交信息取证据口径-易失数字与工作区属性反复触发独立复核阻断.md): id: BK-0044
+- [BK-0045-prepare-review-context-未跟踪文件过滤正则失效](../project/backlog/archive/2026-Q4/BK-0045-prepare-review-context-未跟踪文件过滤正则失效.md): id: BK-0045
+- [BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo](../project/backlog/archive/2026-Q4/BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo.md): id: BK-0046
+- [BK-0047-windows-全量-pytest-95-例失败-控制台编码与夹具断言漂移两类归](../project/backlog/archive/2026-Q4/BK-0047-windows-全量-pytest-95-例失败-控制台编码与夹具断言漂移两类归.md): id: BK-0047
+- [项目待办与后续演进清单 (Backlog Index)](../project/backlog/index.md): *(当前暂无进行中的待办)*
+- [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](../project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。
+- [goal-loop 技能 V2.0 重构实施方案 (A → B → C)](../project/plans/2026-09-14-goal-loop-v2-refactor.md): 以下四项经用户确认，作为不可回退的实现约束：
+- [派发超时预算与人机契约字段 实施方案计划 (Implementation Plan)](../project/plans/2026-09-16-dispatch-budget-and-human-contract.md)
+- [术语先行与维护通道机制升级 实施方案计划 (Implementation Plan)](../project/plans/2026-09-16-terminology-first-and-maintenance-track.md)
+- [Critic 门禁加固（taste-driven-designer） 维护修复计划 (Maintenance-Patch Plan)](../project/plans/2026-09-20-critic-gate-hardening.md)
+- [taste-driven-designer 技能沉淀 实施方案计划 (Implementation Plan)](../project/plans/2026-09-20-taste-driven-designer.md): 1. 新技能 `skills/taste-driven-designer/` 存在且结构完整（SKILL.md + references + templates + scripts + tests）；
+- [frontend-qa-gate 前端产物验收技能 实施方案计划 (Implementation Plan)](../project/plans/2026-09-21-frontend-qa-gate.md): 1. 新技能 `skills/frontend-qa-gate/` 结构完整（SKILL.md + references + templates + tests），description 能在"前端验收 / 响应式是否完整 / 键盘能不能用...
+- [frontend-qa-gate 后续待办闭环 维护修复计划 (Maintenance-Patch Plan)](../project/plans/2026-09-21-qa-gate-followups.md): 复现脚本：`/tmp/fu_repro.py`、`/tmp/fu_scan2.py`（扫描剥离围栏，避免示例代码块误报）。
+- [dual-round-review 审查报告持久化归档实施方案计划 (Implementation Plan)](../project/plans/2026-10-04-review-report-archive.md): 1. 对一次真实双轮审查，归档目录以**被版本库跟踪**的新增文件出现在 `docs/project/reviews/` 下；
+- [dual-round-review 审查报告子智能体直写实施方案计划 (Implementation Plan)](../project/plans/2026-10-08-subagent-direct-write.md): 1. 对**本交付自身**跑一次真实双轮审查（dogfooding），R1 与 R2 报告均由**子智能体直写**落盘，文件中**不含**任何主智能体转录痕迹；
+- [批次 A 归档豁免与 llms 落点修复实施计划 (Implementation Plan)](../project/plans/2026-10-09-backlog-batch-a-archive-exemption.md): R1 判定：三项待办**技术内核均为本质根因修复**（经 git archive 隔离三树 A/B 反证：归档实扫 17 篇全跳过 / llms 归档条目 17→0 / `--output` 落点随 `--root` 派生），但**交付物层...
+- [批次 B 机器地图写入侧安全与一致性门禁实施计划 (Implementation Plan)](../project/plans/2026-10-09-backlog-batch-b-llms-integrity.md): **编排者加固（两轮，均以 TDD + 变异自验闭环）**：
+- [批次 C 机器地图提示文案净化和零覆盖口径登记实施计划 (Implementation Plan)](../project/plans/2026-10-09-backlog-batch-c-llms-hardening.md): **决定性转向**：前三轮修复都在「提示文案层」打补丁，第三轮 R1 指出根因后改为**双侧闸门**——① 生成器 CLI 落盘咽喉处的身份写保护（与提示内容无关，覆盖全部提示路径）；② fail-closed 分支删除可执行命令。测试判据...
+- [批次 D 机器地图身份写保护契约实施计划 (Implementation Plan)](../project/plans/2026-10-09-backlog-batch-d-identity-contract.md): **本轮最有价值的教训**：我的连续修复多次在**错误的层次**上打补丁 —— ① 把「身份保真」做成提示文案的正确性（应为生成器侧写保护）；② 把「原子落盘」直接拼固定 `.tmp` 名（绕过了既有的归档写保护闸门）；③ 用「统一处方」收...
+- [doc-governance 目录级索引约定与 scaffold 索引自愈实施方案计划 (Implementation Plan)](../project/plans/2026-10-09-quadrant-index-convention.md)
+- [全局提示词渐进披露重构实施计划 (AGENTS.md Progressive Disclosure)](../project/plans/2026-10-10-agents-md-progressive-disclosure.md): 2026-10-10，一次 **9 行**的全局提示词改动被挂载了 `dual-round-review` 完整流程：**6 轮**独立子智能体对抗审查、**6 份报告共 216KB**、6 次提交。用户判语：
+- [spec-evolution 机械化演进回路技能实现计划 (Implementation Plan)](../project/plans/2026-10-12-spec-evolution.md): Use when auditing delivery-surface completeness of this repository's skills and root prompt, or when a goal-loop P5 delivery re-checks the skills it touched. Runs a read-only fact collector and a deterministic exit-code judge (zero LLM, zero network) mapping facts to findings C-01 through C-10, emitting a report whose human-verdict section stays empty. Triggers on missing tests or design docs, incomplete skill surfaces, registration gaps, frontmatter length limits, oversized files, and root-prompt net growth.
+- [P2 批次六项 backlog 卡片闭环实施计划 (Implementation Plan)](../project/plans/2026-10-14-p2-six-backlog-items.md)
+- [自建技能脚本 Python 统一化实施计划 (Implementation Plan)](../project/plans/2026-10-19-skill-scripts-python-unification.md): 1. 8 个技能各自拥有 `<name>.py` 实现，在 **Windows 原生 Python** 与 **WSL/Linux Python** 上均可直接执行，行为与改造前 Bash 实现**逐字节一致**（stdout/stderr...
+- [P3 六项 Backlog 批次实施计划 (Implementation Plan)](../project/plans/2026-10-20-p3-six-backlog-batch.md): 1. **六张卡片 DoD 逐项达成**：BK-0045 / BK-0010 / BK-0008 / BK-0016 / BK-0007 / BK-0014 卡片 §3 所列验收条件全部满足。说明（R2 §1.2.5 反向发现）：BK-00...
+- [文档真值轴（来源/代码锚点/漂移检测）实施计划](../project/plans/2026-11-22-doc-truth-axis.md): **目标**：让知识库第一次具备**可机械测定的真值轴**——文档能声明自己依赖哪些代码、何时被复核过；工具能回答「哪些文档的依赖已经变了」，并在需要时阻断。
+- [分层机器地图（RFC-0006）实施计划](../project/plans/2026-11-22-split-llms-map.md): **目标**：根 `llms.txt` 从「全集清单」降为「象限入口」，体量恒定在 8 KB 以内；全量条目下沉 `_llms/`，并由门禁保证根与子地图逐字节同步。

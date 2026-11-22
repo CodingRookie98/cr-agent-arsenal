@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.7.11
+> - **当前版本**: V1.8.0
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-20
 > - **代码锚点**: skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
@@ -14,11 +14,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.8.0** | 2026-11-22 | DSH AI Agent | 王辉 | **分层机器地图（RFC-0006）**：根 `llms.txt` 降为象限入口（21,810 → 883 字节），全量条目下沉 `_llms/<象限>.md`；新增路由文件 `docs/AGENTS.md`（≤30 行）；§3 工具表与 §4.1 豁免表同步；§4 新增红线 8「禁手改生成物」 |
 | **V1.7.11** | 2026-11-22 | DSH AI Agent | 王辉 | **R3DC-1 根治**：锚点判据顺序改为「存在性 → 基线登记 → 形态」，`说明:3` 这类非 ASCII 文件名不再被判 invalid 静默放行 |
 | **V1.7.10** | 2026-11-22 | DSH AI Agent | 王辉 | **R3D-1 回归收口**：行区间锚点（`Makefile:2`）先剥行区间再判形态；audit truth 块增 invalid 可见性；漂移明细带锚点名 |
 | **V1.7.9** | 2026-11-22 | DSH AI Agent | 王辉 | **R3 红队收口**：invalid 锚点判据改为「不像路径」（含空格/中文的合法路径不再被静默丢弃）；跨分隔符加粗先剥离；invalid 在文本输出可见；豁免数入 JSON |
 | **V1.7.8** | 2026-11-22 | DSH AI Agent | 王辉 | **计划 §9 收口**：glob/散文锚点退出判定集但不得掩盖真实漂移、加粗锚点正确剥离、`--allow-unverified` 强制留痕；口径见 RFC-0005 V0.1.8 |
-| **V1.7.7** | 2026-11-22 | DSH AI Agent | 王辉 | **R2D-5/R2D-6 收口**：门禁口径非 fresh 即阻断（`--allow-unverified` 豁免）；glob/占位符锚点落 unverified、目录锚点受支持；墓碑归属精确化；审计支持 `--repo` |
 
 ---
 
@@ -87,7 +87,7 @@ docs/
 | **`trim-revision.py`** | 自动裁剪历史记录至最近 5 条滑动窗口 | 提交前 / 维护 | `python3 skills/doc-governance/scripts/trim-revision.py --root docs --fix --keep 5` |
 | **`audit-doc-health.py`** | 综合健康体检（打分 0-100 分，断链/元数据/孤儿/架构/**机器地图一致性**） | 交付验收 / 定期体检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs` |
 | **`check-doc-drift.py`** | 真值轴漂移检测（代码锚点存在性 + git 提交时间 vs `复核于`；五态输出；零声明不颁发满分） | 交付前 / 定期巡检 | `python3 skills/doc-governance/scripts/check-doc-drift.py --root docs --repo . [--fail-on-drift]` |
-| **`generate-llms-txt.py`** | 自动提取 Frontmatter 并刷新机器地图 `llms.txt` | 文档拓扑变动后 | `python3 skills/doc-governance/scripts/generate-llms-txt.py --root docs --output docs/llms.txt` |
+| **`generate-llms-txt.py`** | 自动提取 Frontmatter 并刷新机器地图；`--split` 分层（根=象限入口，全量下沉 `_llms/`），`--check` 只校验，`--max-root-bytes` 体量门禁 | 文档拓扑变动后 | `python3 skills/doc-governance/scripts/generate-llms-txt.py --root docs --output docs/llms.txt --split` |
 | **`manage-doc-index.py`** | 象限索引托管维护（ensure 骨架 / register 幂等登记 / 人工索引零改写） | 新建文档后 / 拓扑变动 | `python3 skills/doc-governance/scripts/manage-doc-index.py register --root docs --dir how-to --file deployment.md --title "部署 SOP" --kind HowTo` |
 | **`scaffold-doc.py`** | 快速生成符合 Diátaxis 规范的文档脚手架，并自动 ensure 象限索引与登记（跨象限链接按需降级；POSIX 下旧 `.sh` 兼容壳仍可用） | 新建文档时 | `python3 skills/doc-governance/scripts/scaffold-doc.py <type> <name>` |
 
@@ -109,7 +109,8 @@ docs/
 4. **⛔ 严禁修订历史无限膨胀**：每个文档修订历史表格最多保留 5 条最新记录，超过部分必须裁剪；
 5. **⛔ 严禁瀑布生命周期旧目录**：严禁创建 `docs/requirements/`、`docs/design/`、`docs/planning/` 等旧时代目录，必须归入对应 Diátaxis 象限；
 6. **⛔ 严禁文件命名随意混乱**：一律采用纯小写 `kebab-case` 命名风格（如 `goal-loop-design.md`），禁止驼峰与无规则空格；
-7. **⛔ 严禁「删锚点清零」自我豁免**：声明过 `代码锚点` 的文档，禁止为让 `check-doc-drift.py` 变绿而删除锚点声明或伪造 `复核于`——删除声明等于把文档移出真值统计（RFC-0005 §3 已点名此反模式）。正确动作是**复核断言**：内容仍成立则只刷新复核点，不成立则改文档。
+7. **⛔ 严禁手改生成物**：`docs/llms.txt` 与 `docs/_llms/*.md` 必须由 `generate-llms-txt.py --split` 逐字节生成；手改即触发「机器地图不一致」硬阻断（含子地图多余/缺失）；
+8. **⛔ 严禁「删锚点清零」自我豁免**：声明过 `代码锚点` 的文档，禁止为让 `check-doc-drift.py` 变绿而删除锚点声明或伪造 `复核于`——删除声明等于把文档移出真值统计（RFC-0005 §3 已点名此反模式）。正确动作是**复核断言**：内容仍成立则只刷新复核点，不成立则改文档。
 
 ---
 
@@ -124,6 +125,8 @@ docs/
 | `audit-doc-health.py` | 元数据控制头合规率、孤儿文档计分 | 报告不得添加控制头；报告无 markdown 入链 |
 | `trim-revision.py` | 修订历史裁剪（含 `--fix` 就地写入） | 报告逐字归档，任何写入都会破坏 SHA256 指纹（BK-0001） |
 | `generate-llms-txt.py` | 机器地图收录 | 逐字凭据不进入智能体引导地图，保持机器地图纯净（BK-0002） |
+
+**生成物与路由文件豁免（RFC-0006）**：`docs/_llms/**`（分层子地图，生成物）与 `docs/AGENTS.md`（路由规则）不参与元数据控制头、孤儿文档、修订历史计分——它们无控制头、无 markdown 入链是**设计使然**，计入即双重惩罚。但**断链扫描仍覆盖它们**（链接必须有效），机器地图一致性门禁亦覆盖全部子地图。宿主：`audit-doc-health.py` 的 `in_generated_map` / `is_router_file`。
 
 **判定实现**：只读消费者采用 root 锚定判定（`in_evidence_archive(path, root_dir)`）；**具备写能力的 `trim-revision.py` 与 `generate-llms-txt.py` 额外采用路径段扫描（`is_archive_path`）** —— 该判定**不依赖 `--root`**，凡路径中出现相邻的 `project/reviews` 段即视为交付凭据。它是有意为之的**保守超集**（比上方 `<docs 根>/project/reviews/**` 边界更宽：即使该段不位于 docs 根之下亦受保护），以换取「任何 `--root` 形态下都不写入交付凭据」的写入安全（BK-0001 / R1-2）；机器地图落点若解析落入归档则直接拒绝写入（`--output` 显式分支已解析后判定；**缺省落点分支的 `resolve()` 加固与零覆盖守卫见 BK-0023**）。
 
