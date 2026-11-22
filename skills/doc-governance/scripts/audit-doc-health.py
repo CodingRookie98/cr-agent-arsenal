@@ -170,6 +170,9 @@ def evaluate_verdict(
         reasons.append("机器地图不一致")
     if res.get("agents_md_issue"):
         reasons.append("路由文件不合规")
+    status_issues = (res.get("doc_status") or {}).get("issues") or []
+    if status_issues:
+        reasons.append(f"{len(status_issues)} 处文档状态违规")
     # 真值轴（RFC-0005 §4.3）：默认 warn 不参与判定；require 模式下「未启用」同样阻断，
     # 否则一条都未声明的知识库会因为 enabled=False 而静默跳过真值门禁（等于自我豁免）。
     truth = res.get("truth") or {}
@@ -230,6 +233,128 @@ def check_agents_md(root_dir: Path) -> str:
     if missing:
         return f"路由文件 {path.name} 缺少必需小节: {', '.join(missing)}"
     return ""
+
+
+DOC_STATUS_VALUES = ("Active", "Contested", "Superseded")
+CONTESTED_MAX_AGE_DAYS = 90
+_DATE_IN_ROW = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def _latest_revision_date(content: str) -> Optional[str]:
+    """取修订历史表格中最新一行的日期（用于 Contested 时效判定）。"""
+    lines = content.splitlines()
+    in_rev = False
+    for line in lines:
+        if re.match(r"^#+\s*(?:修订历史(?:记录)?|Revision\s*History)", line.strip(), re.I):
+            in_rev = True
+            continue
+        if in_rev:
+            if line.strip().startswith("|"):
+                m = _DATE_IN_ROW.search(line)
+                if m:
+                    return m.group(1)
+            elif line.strip():
+                break
+    return None
+
+
+def check_doc_status(root_dir: Path, now: Optional[str] = None) -> Dict:
+    """文档状态机门禁（RFC-0007）。
+
+    C-1 取值非法 / C-2 Superseded 的「取代于」缺失·失效·自指 / C-3 Active 带「取代于」⇒ 阻断；
+    C-4（Active 引用 Superseded）/ C-5（Contested 超期）只进报告。
+    """
+    import datetime
+
+    root_dir = Path(root_dir)
+    today = datetime.date.fromisoformat(now) if now else datetime.date.today()
+    counts = {v: 0 for v in DOC_STATUS_VALUES}
+    contested: List[Dict] = []
+    superseded: List[Dict] = []
+    issues: List[str] = []
+    warnings: List[str] = []
+    active_docs: List[Path] = []
+
+    docs = [
+        f for f in sorted(root_dir.rglob("*.md"))
+        if not any(p in f.parts for p in ("node_modules", ".git", "dist", "build"))
+        and not in_evidence_archive(f, root_dir)
+        and not in_generated_map(f, root_dir)
+        and not is_router_file(f, root_dir)
+        and "backlog" not in f.parts  # 待办卡片有自己的 status 语义，不参与文档状态机
+    ]
+    status_map: Dict[Path, str] = {}
+    for f in docs:
+        try:
+            content = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        meta = parse_frontmatter(content)
+        # 只认「文档状态」：backlog 卡片的 YAML `status: completed` 是生命周期字段，
+        # 与文档状态机语义无关，不得混用（否则 47 张卡片会被误判为非法状态）。
+        raw = (meta.get("文档状态") or "").strip()
+        rel = f.relative_to(root_dir).as_posix()
+        if not raw:
+            status_map[f] = "Active"
+            counts["Active"] += 1
+            active_docs.append(f)
+            continue
+        if raw not in DOC_STATUS_VALUES:
+            counts.setdefault("Unknown", 0)
+            counts["Unknown"] = counts.get("Unknown", 0) + 1
+            issues.append(f"{rel}: 文档状态取值非法（{raw}），只允许 {'/'.join(DOC_STATUS_VALUES)}")
+            continue
+        status_map[f] = raw
+        counts[raw] += 1
+        pointer = (meta.get("取代于") or meta.get("superseded-by") or "").strip()
+        if raw == "Superseded":
+            if not pointer:
+                issues.append(f"{rel}: 状态为 Superseded 但缺少「取代于」")
+            else:
+                target = (f.parent / pointer).resolve()
+                if target == f.resolve():
+                    issues.append(f"{rel}: 「取代于」指向自身")
+                elif not target.is_file() or target.suffix != ".md":
+                    issues.append(f"{rel}: 「取代于」目标不存在或不是 .md（{pointer}）")
+                else:
+                    superseded.append({"doc": rel, "by": pointer})
+        else:
+            if pointer:
+                issues.append(f"{rel}: 状态为 {raw} 却出现「取代于」（仅 Superseded 允许）")
+            if raw == "Contested":
+                reason = (meta.get("争议点") or "").strip() or "未填写"
+                revised = _latest_revision_date(content)
+                age_days = None
+                if revised:
+                    try:
+                        age_days = (today - datetime.date.fromisoformat(revised)).days
+                    except ValueError:
+                        age_days = None
+                contested.append({"doc": rel, "reason": reason, "age_days": age_days})
+            if raw == "Active":
+                active_docs.append(f)
+
+    # C-4：Active 文档引用 Superseded 文档 ⇒ 警告（不阻断）
+    superseded_paths = {p.resolve() for p, s in status_map.items() if s == "Superseded"}
+    for f in active_docs:
+        try:
+            content = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for m in re.finditer(r"\]\(([^)\s#]+\.md)(?:#[^)]*)?\)", content):
+            target = (f.parent / m.group(1)).resolve()
+            if target in superseded_paths:
+                warnings.append(
+                    f"{f.relative_to(root_dir).as_posix()}: Active 文档引用了已被取代的 {m.group(1)}"
+                )
+
+    return {
+        "counts": counts,
+        "contested": contested,
+        "superseded": superseded,
+        "issues": issues,
+        "warnings": warnings,
+    }
 
 
 def check_llms_map_consistency(root_dir: Path) -> str:
@@ -804,6 +929,7 @@ def audit_health(
         "backlog_metrics": backlog_metrics,
         "llms_map_issue": check_llms_map_consistency(root_dir),
         "agents_md_issue": check_agents_md(root_dir),
+        "doc_status": check_doc_status(root_dir),
         "truth": truth_block,
         "scores": {
             "link_score": round(link_score, 1),
@@ -984,6 +1110,15 @@ def main():
         has_issues = True
         print(f"   ⛔ 路由文件缺陷: {res['agents_md_issue']}")
 
+    # RFC-0007：文档状态机——阻断项进缺陷，未决冲突清单独立成节
+    doc_status = res.get("doc_status") or {}
+    for issue in (doc_status.get("issues") or [])[:10]:
+        has_issues = True
+        print(f"   ⛔ 文档状态违规: {issue}")
+    for warn in (doc_status.get("warnings") or [])[:5]:
+        has_issues = True
+        print(f"   ⚠️  文档状态警告: {warn}")
+
     # R1-4：真值轴的阻断理由必须与「完美/无缺陷」互斥，否则同一屏会同时出现
     # PASS 文案与 REJECT 理由（BK-0028 明令禁止的自相矛盾）。
     truth_reasons = truth_blockers(truth, args.truth_threshold, args.min_coverage)
@@ -1022,6 +1157,25 @@ def main():
 
     if not has_issues:
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")
+
+    # RFC-0007：未决冲突清单——把「哪份该信」从读全文降级为看状态
+    doc_status = res.get("doc_status") or {}
+    if doc_status:
+        counts = doc_status.get("counts") or {}
+        print("\n📌 [文档状态机 · 未决冲突清单]:")
+        print(
+            f"   * 状态分布: Active {counts.get('Active', 0)}｜Contested {counts.get('Contested', 0)}"
+            f"｜Superseded {counts.get('Superseded', 0)}"
+            + (f"｜非法 {counts['Unknown']}" if counts.get("Unknown") else "")
+        )
+        for item in (doc_status.get("contested") or [])[:10]:
+            age = f"{item['age_days']} 天" if item.get("age_days") is not None else "未知"
+            flag = "⚠️ 超期" if (item.get("age_days") or 0) > 90 else ""
+            print(f"   - [Contested] {item['doc']}（{age}{'，' + flag if flag else ''}）：{item['reason']}")
+        for item in (doc_status.get("superseded") or [])[:10]:
+            print(f"   - [Superseded] {item['doc']} → {item['by']}")
+        if not (doc_status.get("contested") or doc_status.get("superseded")):
+            print("   （无争议、无取代：全库 Active）")
 
     print("\n" + "=" * 60)
     passed, reasons = evaluate_verdict(res, args.threshold, args.truth_threshold, args.min_coverage)

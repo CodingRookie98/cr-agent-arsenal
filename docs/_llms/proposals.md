@@ -9,3 +9,4 @@
 - [RFC-0004: spec-evolution 技能 —— 面向提示词与技能的机械化演进回路](../proposals/RFC-0004-spec-evolution.md): 2026-10-12 在 `master`（HEAD `10359c2`）实测既有三道机械门禁，**全部 PASS**：
 - [RFC-0005: 文档真值轴 —— 来源/代码锚点、漂移检测与真值分维度](../proposals/RFC-0005-doc-truth-axis.md): 调研报告给出三条硬证据，指向同一个缺口——**我们测得到「文档写得规不规范」，测不到「文档还对不对」**：
 - [RFC-0006: 分层机器地图 —— 根 llms.txt 降为象限入口，全量条目下沉 llms/](../proposals/RFC-0006-split-llms-map.md): `docs/llms.txt` 当前 **21,810 字节 / 92 条**（实测），已从「精炼入口」退化为「全集清单」：
+- [RFC-0007: 文档状态机 —— 把「有争议」与「已被取代」升为一等公民](../proposals/RFC-0007-doc-status-contested.md): 调研报告 §4.3 的核心判断：**LLM 写的内容会静默腐化，而「有争议」这件事目前没有任何机械位置可放**。

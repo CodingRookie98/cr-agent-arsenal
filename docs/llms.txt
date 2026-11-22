@@ -4,7 +4,7 @@
 > 读取顺序：本文件 → `_llms/<象限>.md` → 该象限 `index.md` → 正文。
 > 严禁凭空猜测路径；条目级清单在各象限子地图中。
 
-## Proposals & RFCs (需求与设计孵化层) — 6 篇
+## Proposals & RFCs (需求与设计孵化层) — 7 篇
 
 - 全量清单：[proposals.md](./_llms/proposals.md)
 
@@ -16,7 +16,7 @@
 
 - 全量清单：[explanation.md](./_llms/explanation.md)
 
-## Project Governance (工程演进 / 发布日志与待办) — 70 篇
+## Project Governance (工程演进 / 发布日志与待办) — 71 篇
 
 - 全量清单：[project.md](./_llms/project.md)
 

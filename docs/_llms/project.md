@@ -71,5 +71,6 @@
 - [P2 批次六项 backlog 卡片闭环实施计划 (Implementation Plan)](../project/plans/2026-10-14-p2-six-backlog-items.md)
 - [自建技能脚本 Python 统一化实施计划 (Implementation Plan)](../project/plans/2026-10-19-skill-scripts-python-unification.md): 1. 8 个技能各自拥有 `<name>.py` 实现，在 **Windows 原生 Python** 与 **WSL/Linux Python** 上均可直接执行，行为与改造前 Bash 实现**逐字节一致**（stdout/stderr...
 - [P3 六项 Backlog 批次实施计划 (Implementation Plan)](../project/plans/2026-10-20-p3-six-backlog-batch.md): 1. **六张卡片 DoD 逐项达成**：BK-0045 / BK-0010 / BK-0008 / BK-0016 / BK-0007 / BK-0014 卡片 §3 所列验收条件全部满足。说明（R2 §1.2.5 反向发现）：BK-00...
+- [文档状态机（RFC-0007）实施计划](../project/plans/2026-11-22-doc-status-machine.md): **目标**：控制头的 `文档状态` 从装饰性字段变为**有机械后果**的三态状态机；审计能输出「未决冲突清单」，让「哪份该信」从读全文降级为看状态。
 - [文档真值轴（来源/代码锚点/漂移检测）实施计划](../project/plans/2026-11-22-doc-truth-axis.md): **目标**：让知识库第一次具备**可机械测定的真值轴**——文档能声明自己依赖哪些代码、何时被复核过；工具能回答「哪些文档的依赖已经变了」，并在需要时阻断。
 - [分层机器地图（RFC-0006）实施计划](../project/plans/2026-11-22-split-llms-map.md): **目标**：根 `llms.txt` 从「全集清单」降为「象限入口」，体量恒定在 8 KB 以内；全量条目下沉 `_llms/`，并由门禁保证根与子地图逐字节同步。
