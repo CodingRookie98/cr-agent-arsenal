@@ -9,7 +9,7 @@
 - **交付单元**: doc-truth-axis
 - **归档根**: docs/project/reviews/2026-11-22-doc-truth-axis/
 - **审查模式**: full
-- **当前迭代计数**: 2/3（R1 / R2 各一轮；R1 收口 4×P1，R2 判 3 Blockers 并已收口，Delta 终审进行中）
+- **当前迭代计数**: 3/3（R1 / R2 / Delta；Delta 判 1 P1 已收口，放行确认进行中——按铁律 6 已达循环上限，若再阻断须升级人类裁决）
 - **终审裁决**: 未定（取值必须**精确**为 准予交付 / 阻断交付 / 未定 三者之一；禁止保留占位符方括号或附加解释）
 
 ## 轮次台账
@@ -17,13 +17,15 @@
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | R1 | `2360b32..3a922c2` | DSH 原生 subagent（同步派发，无外部句柄） | [round-1-red-team.md](./round-1-red-team.md) | d13b891f154c | 🔴 阻断（4×P1 / 7×P2 / 5×P3） | direct（26,257 B；主智能体独立复算 sha256 一致） |
 | R2 | `2360b32..3c26961` | DSH 原生 subagent（同步派发，无外部句柄） | [round-2-architect.md](./round-2-architect.md) | 2e27f9b1857b | 🔴 阻断（Blockers=3；⚪驳回 3 条） | direct（38,842 B；主智能体独立复算 sha256 一致） |
+| Delta | `3c26961..eef817d` | DSH 原生 subagent（同步派发，无外部句柄） | [round-2-delta.md](./round-2-delta.md) | a50e5952aae8 | 🔴 阻断（Blockers=1：R2D-1 账本 fail-closed） | direct（26,672 B；主智能体独立复算 sha256 一致） |
 
 ## 报告清单
 > 每轮归档后在此追加一行 markdown 链接，供人类与子智能体按路径直达：
 
 - [round-1-red-team.md](./round-1-red-team.md) — R1 红队穿透（4×P1 阻断）
 - [round-2-architect.md](./round-2-architect.md) — R2 元审判（Blockers=3）
-- round-2-delta.md — Delta 终审（进行中）
+- [round-2-delta.md](./round-2-delta.md) — Delta 终审（Blockers=1）
+- round-2-delta-confirm.md — 放行确认（进行中）
 
 ## 待办与后续轮次
 
