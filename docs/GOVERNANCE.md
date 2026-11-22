@@ -6,7 +6,7 @@
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-20
 > - **代码锚点**: skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
-> - **复核于**: 2026-11-22 / commit bf4a5ae
+> - **复核于**: 2026-11-22 / commit 3120d5a
 
 ---
 
