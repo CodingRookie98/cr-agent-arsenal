@@ -843,6 +843,7 @@ class TestFollowupP2P3(unittest.TestCase):
         )
         self._git("add", "-A")
         self._git("commit", "-q", "-m", "doc")
+        time.sleep(1)  # 提交时间按秒计，同秒提交无法体现先后
         (self.root / "src" / "x.py").write_text("x=2\n", encoding="utf-8")
         self._git("add", "-A")
         self._git("commit", "-q", "-m", "change code")
@@ -888,12 +889,13 @@ class TestFollowupP2P3(unittest.TestCase):
 
 
 
-class TestFollowupP2P3(unittest.TestCase):
-    """计划 9 后续四项回归：R2D56-1 / R2D56-3 / R2D56-4 / R2D56-2"""
+
+class TestR3Fixes(unittest.TestCase):
+    """R3-1/2/3/5 回归：合法路径不得被 invalid 判据吞掉"""
 
     def setUp(self):
         self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
-        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_p2p3_"))
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_r3_"))
         self.env = {
             **os.environ,
             "GIT_AUTHOR_NAME": "t",
@@ -908,7 +910,14 @@ class TestFollowupP2P3(unittest.TestCase):
     def _git(self, *args):
         return subprocess.run(["git", *args], cwd=self.root, check=True, env=self.env, capture_output=True, text=True)
 
-    def _init(self, files):
+    def _run(self, docs, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), *extra],
+            capture_output=True, text=True,
+        )
+
+    def _repo(self, files):
         self._git("init", "-q")
         for rel, content in files.items():
             target = self.root / rel
@@ -920,65 +929,82 @@ class TestFollowupP2P3(unittest.TestCase):
         self._git("commit", "-q", "-m", "init")
         return docs, self._git("rev-parse", "--short", "HEAD").stdout.strip()
 
-    def _run(self, docs, *extra):
-        return subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
-             "--repo", str(self.root), *extra],
-            capture_output=True, text=True,
-        )
-
     @unittest.skipUnless(shutil.which("git"), "env has no git")
-    def test_r2d56_1_glob_anchor_must_not_mask_real_drift(self):
-        docs, sha = self._init({"src/x.py": "x=1\n"})
+    def test_r3_1_deleted_path_with_space_is_missing_anchor(self):
+        """含空格的合法路径被删后必须 missing_anchor，不得静默 fresh。"""
+        docs, sha = self._repo({"docs2/my file.md": "x\n"})
         (docs / "a.md").write_text(
-            make_doc("body", anchors="src/x.py, src/**", verified="2026-11-22 / commit " + sha),
+            make_doc("body", anchors="docs2/my file.md", verified="2026-11-22 / commit " + sha),
             encoding="utf-8",
         )
         self._git("add", "-A")
         self._git("commit", "-q", "-m", "doc")
-        time.sleep(1)  # 提交时间按秒计，同秒提交无法体现先后
-        (self.root / "src" / "x.py").write_text("x=2\n", encoding="utf-8")
-        self._git("add", "-A")
-        self._git("commit", "-q", "-m", "change code")
-        payload = json.loads(self._run(docs, "--json", "--allow-unverified").stdout)
-        self.assertEqual(payload["docs"][0]["status"], "drifted")
-        self.assertEqual(payload["summary"]["drifted"], 1)
+        ok = self._run(docs, "--json", "--allow-unverified")
+        self.assertEqual(json.loads(ok.stdout)["docs"][0]["status"], "fresh", ok.stdout)
+
+        self.assertEqual(self._run(docs, "--write-baseline").returncode, 0)
+        self._git("rm", "-q", "docs2/my file.md")
+        self._git("commit", "-q", "-m", "remove")
+        gone = self._run(docs, "--json", "--allow-unverified", "--fail-on-drift")
+        self.assertEqual(gone.returncode, 1, gone.stdout + gone.stderr)
+        self.assertEqual(json.loads(gone.stdout)["docs"][0]["status"], "missing_anchor")
 
     @unittest.skipUnless(shutil.which("git"), "env has no git")
-    def test_r2d56_3_bold_wrapped_real_anchor_is_not_glob(self):
-        docs, sha = self._init({"src/pkg/x.py": "x=1\n"})
+    def test_r3_1_cjk_and_at_sign_paths_are_paths(self):
+        docs, sha = self._repo({"src/\u6587\u6863/x@y+1.md": "x\n"})
         (docs / "a.md").write_text(
-            make_doc("body", anchors="**src/pkg/x.py**", verified="2026-11-22 / commit " + sha),
+            make_doc("body", anchors="src/\u6587\u6863/x@y+1.md", verified="2026-11-22 / commit " + sha),
             encoding="utf-8",
         )
         self._git("add", "-A")
         self._git("commit", "-q", "-m", "doc")
         payload = json.loads(self._run(docs, "--json", "--allow-unverified").stdout)
         self.assertEqual(payload["docs"][0]["status"], "fresh")
-        self.assertEqual(payload["docs"][0]["anchors"][0]["path"], "src/pkg/x.py")
+        self.assertEqual(payload["docs"][0]["invalid_anchors"], [])
 
-    def test_r2d56_4_prose_anchor_is_invalid_not_missing(self):
+    def test_r3_1_prose_without_slash_is_still_invalid(self):
         (self.root / "docs").mkdir()
         (self.root / "docs" / "a.md").write_text(
             make_doc("body", anchors="see appendix A", verified="2026-11-22"), encoding="utf-8"
         )
         res = self.mod.analyze(self.root / "docs", now_ts=2000)
-        self.assertEqual(res["declared"], 1)
-        self.assertEqual(len(res["missing_anchor"]), 0)
         self.assertEqual(res["docs"][0]["status"], "unverified")
         self.assertEqual(res["docs"][0]["invalid_anchors"], ["see appendix A"])
 
     @unittest.skipUnless(shutil.which("git"), "env has no git")
-    def test_r2d56_2_allow_unverified_leaves_a_trace(self):
-        docs, _ = self._init({"src/x.py": "x=1\n"})
+    def test_r3_2_bold_spanning_multiple_anchors(self):
+        docs, sha = self._repo({"src/a.py": "a\n", "src/b.py": "b\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="**src/a.py, src/b.py**", verified="2026-11-22 / commit " + sha),
+            encoding="utf-8",
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        payload = json.loads(self._run(docs, "--json", "--allow-unverified").stdout)
+        self.assertEqual([a["path"] for a in payload["docs"][0]["anchors"]], ["src/a.py", "src/b.py"])
+        self.assertEqual(payload["docs"][0]["status"], "fresh")
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r3_5_waiver_is_recorded_in_json_and_not_reported_when_zero(self):
+        docs, _ = self._repo({"src/x.py": "x\n"})
         (docs / "a.md").write_text(make_doc("body", anchors="src/x.py"), encoding="utf-8")
         self._git("add", "-A")
         self._git("commit", "-q", "-m", "doc")
         self.assertEqual(self._run(docs, "--write-baseline").returncode, 0)
-        proc = self._run(docs, "--fail-on-drift", "--allow-unverified")
+        payload = json.loads(self._run(docs, "--json", "--fail-on-drift", "--allow-unverified").stdout)
+        self.assertIn("waived", payload["summary"])
+        self.assertEqual(payload["summary"]["waived"], 1)
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r3_3_invalid_anchor_is_announced_in_text_output(self):
+        docs, _ = self._repo({"seed.txt": "seed\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="see appendix A", verified="2026-11-22"), encoding="utf-8"
+        )
+        proc = self._run(docs, "--allow-unverified")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertIn("--allow-unverified", proc.stdout)
-        self.assertIn("\u8c41\u514d", proc.stdout)
+        self.assertIn("invalid", proc.stdout)
+        self.assertIn("see appendix A", proc.stdout)
 
 
 if __name__ == "__main__":

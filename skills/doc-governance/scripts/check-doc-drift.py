@@ -37,8 +37,11 @@ SECONDS_PER_DAY = 86400
 # R1（加固）：英文逗号只在**后接空白**时视为分隔符，否则 `src/a,b.py` 这类合法路径会被切碎。
 _ANCHOR_SPLIT = re.compile(r"[，、;；]|,(?=\s)")
 _ANCHOR_LINE = re.compile(r"^(?P<path>[^:]+?)(?::(?P<start>\d+)(?:-(?P<end>\d+))?)?$")
-# 路径形态：ASCII 字母数字与 . _ / - 及行区间冒号；不含空格、中文、标点。
-_PATH_SHAPE = re.compile(r"[A-Za-z0-9._/\-]+(?::\d+(?:-\d+)?)?")
+# R3-1：路径形态判据**不能**用「只允许 ASCII 无空格」——那会把含空格/中文/@/+ 的
+# 合法路径一并判 invalid 并静默丢弃（漂移漏检且 rc=0）。判据改为「像路径」：
+# 含分隔符 / 、含扩展名点、或纯标识符形态。散文（无 / 无 . 且非标识符）才判 invalid。
+_PATH_TOKEN = re.compile(r"[A-Za-z0-9._@+~\-]+")
+_PROSE_HINT = re.compile(r"[\s\u4e00-\u9fff]")
 _DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 _COMMIT = re.compile(r"commit\s+([0-9a-fA-F]{7,40})")
 
@@ -58,6 +61,16 @@ def _clean_value(raw: str, strip_bold: bool = True) -> str:
     return text.replace("**", "").strip() if strip_bold else text
 
 
+def _looks_like_path(text: str) -> bool:
+    """像路径 ⇔ 含分隔符、含扩展名点、或整体是标识符形态。
+
+    反例（散文）：`见附录 A`、`see appendix A` —— 无分隔符、无点、含空白/中文。
+    """
+    if "/" in text or "." in text:
+        return True
+    return bool(_PATH_TOKEN.fullmatch(text))
+
+
 def normalize_anchor(raw: str) -> Optional[Dict]:
     """把一条锚点声明归一为 {"path", "line_start", "line_end"}；越界/绝对路径返回 None。"""
     text = _clean_value(raw, strip_bold=False)
@@ -65,6 +78,8 @@ def normalize_anchor(raw: str) -> Optional[Dict]:
         return None
     if text.startswith("/") or text.startswith("\\") or re.match(r"^[A-Za-z]:[\\/]", text):
         return None
+    # R3-1：先归一化分隔符，再走后续判据（否则 src\a.py 的形态判断与路径解析会分叉）。
+    text = text.replace("\\", "/")
     # R2D56-3：先剥「整体加粗」（两端 ** 且内部无 *），再判 glob——
     # 否则 **src/pkg/x.py** 会被任意 * 误判成 glob，真实锚点假红。
     bold = re.fullmatch(r"\*\*(.+)\*\*", text)
@@ -76,9 +91,9 @@ def normalize_anchor(raw: str) -> Optional[Dict]:
         clean = text.replace("\\", "/").strip("/")
         return {"path": clean or text, "line_start": None, "line_end": None,
                 "unverifiable": True, "invalid": False}
-    # R2D56-4：散文锚点（含空格/中文标点，不是路径形态）不是「路径不存在」，
-    # 归为 invalid 并给修复提示，而不是 missing_anchor 硬红。
-    if not _PATH_SHAPE.fullmatch(text):
+    # R2D56-4：散文锚点不是「路径不存在」，归为 invalid 并给修复提示。
+    # R3-1：判据必须是「不像路径」而非「含空格/中文」——后者会吞掉合法路径。
+    if not _looks_like_path(text):
         return {"path": text, "line_start": None, "line_end": None,
                 "unverifiable": True, "invalid": True}
     body = text
@@ -128,6 +143,11 @@ def parse_truth_fields(content: str) -> Dict:
             fields["sources"] = [v for v in (_clean_value(x) for x in _ANCHOR_SPLIT.split(value)) if v]
         elif key_clean in ("代码锚点", "锚点", "anchors", "code-anchors"):
             anchors = []
+            # R3-2：整体加粗可能**跨多个锚点**（**src/a.py, src/b.py**），
+            # 必须在分割前剥离，否则两端星号会让两个锚点都落 glob。
+            whole_bold = re.fullmatch(r"\*\*(.+)\*\*", value)
+            if whole_bold and "**" not in whole_bold.group(1):
+                value = whole_bold.group(1).strip()
             for chunk in _ANCHOR_SPLIT.split(value):
                 anchor = normalize_anchor(_clean_value(chunk, strip_bold=False))
                 if anchor is not None:
@@ -511,7 +531,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "removed_from_baseline": len(res["removed_from_baseline"]),
         "baseline_docs": res["baseline_docs"],
         "baseline_status": res["baseline_status"],
+        "waived": 0,
+        "waiver_flag": None,
     }
+
+    # R2D56-2 / R3-5：豁免必须在**产物**里留痕（JSON 可读），且 waived=0 时不得谎报已生效。
+    if args.allow_unverified:
+        summary["waived"] = summary["stale"] + summary["unverified"]
+        summary["waiver_flag"] = "--allow-unverified"
+        if summary["waived"]:
+            print(
+                f"⚠️  --allow-unverified 已生效：豁免 stale {summary['stale']} + unverified "
+                f"{summary['unverified']}（共 {summary['waived']} 篇不阻断；drifted/missing/墓碑仍阻断）",
+                file=sys.stderr if args.json else sys.stdout,
+            )
 
     if args.json:
         print(json.dumps({"summary": summary, "docs": res["docs"]}, ensure_ascii=False, indent=2))
@@ -532,6 +565,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print("   ⛔ 基线墓碑违规（声明被删除/缩减）:")
             for item in res["removed_from_baseline"]:
                 print(f"      - {item['doc']} 缺失: {', '.join(item['missing']) or '全部锚点'}")
+        # R3-3：invalid 锚点必须在文本输出可见并给修复提示，不能只藏在 --json 里。
+        invalid_docs = [d for d in res["docs"] if d.get("invalid_anchors")]
+        if invalid_docs:
+            print("   ⚠️  invalid 锚点（不像路径，无法机械核验；请改写为仓库内相对路径）:")
+            for item in invalid_docs:
+                print(f"      - {item['doc']}: {', '.join(item['invalid_anchors'])}")
 
     # R2D-1：「保护不可得」不得与「无违规」同形。门禁模式下账本缺席/损坏 ⇒ rc=2。
     baseline_unusable = summary["baseline_status"] in ("missing", "corrupt") or (
@@ -551,16 +590,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         summary["drifted"] + summary["missing_anchor"] + summary["removed_from_baseline"]
         + summary["stale"] + summary["unverified"]
     )
-    if args.allow_unverified:
-        # R2D56-2：豁免必须留痕——零痕迹的豁免等于永久免检的人因通道。
-        waived = summary["stale"] + summary["unverified"]
-        blocking -= waived
-        # --json 时提示走 stderr，避免污染机器可读输出。
-        print(
-            f"⚠️  --allow-unverified 已生效：豁免 stale {summary['stale']} + unverified "
-            f"{summary['unverified']}（共 {waived} 篇不阻断；drifted/missing/墓碑仍阻断）",
-            file=sys.stderr if args.json else sys.stdout,
-        )
+    blocking -= summary["waived"]
     if args.fail_on_drift and blocking:
         return 1
     return 0
