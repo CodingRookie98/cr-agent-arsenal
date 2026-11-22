@@ -10,12 +10,12 @@
 
 ## 1. 待办健康度仪表盘 (Metrics Dashboard)
 
-- **现役活跃待办**: **4** 项 (进行中: 0, 计划中: 4)
-- **历史已归档项**: **47** 项 (物理归档于 `archive/` 目录)
+- **现役活跃待办**: **3** 项 (进行中: 0, 计划中: 3)
+- **历史已归档项**: **48** 项 (物理归档于 `archive/` 目录)
 
 | 优先级 | P0 (阻断级) | P1 (高优) | P2 (中优) | P3 (低优) |
 | :--- | :--- | :--- | :--- | :--- |
-| **活跃数量** | 1 | 1 | 1 | 1 |
+| **活跃数量** | 0 | 1 | 1 | 1 |
 
 ---
 
@@ -29,7 +29,6 @@
 
 | 编号 | 优先级 | 类型 | 标题 | 触发条件 | 卡片入口 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BK-0048** | `P0` | `Governance` | 门禁自动化：pre-commit hook + 一键聚合脚本 | 每次 commit 前 / 交付前 | [BK-0048](./active/BK-0048-门禁自动化-pre-commit-hook-一键聚合脚本.md) |
 | **BK-0049** | `P1` | `Feature` | 知识库可用性评测：20 条 golden task | 文档体系稳定后 / 需要向他人证明价值时 | [BK-0049](./active/BK-0049-知识库可用性评测-20-条-golden-task.md) |
 | **BK-0050** | `P2` | `TechDebt` | 存量超限文档拆分（spec-evolution / skill-scripts） | 下次修改这两篇文档时 | [BK-0050](./active/BK-0050-存量超限文档拆分-spec-evolution-skill-scripts.md) |
 | **BK-0051** | `P3` | `Governance` | 检索层决策：当前不引入 MCP（已评估） | 文档 >300 篇，或出现跨仓库检索需求，或出现非文件系统消费者 | [BK-0051](./active/BK-0051-检索层决策-当前不引入-mcp-已评估.md) |
@@ -38,10 +37,11 @@
 
 ## 4. 🗄️ 历史已结项归档 (Archive Summary)
 
-> 共收录 47 条已关闭历史条目，详情参见 `archive/` 各版本目录。
+> 共收录 48 条已关闭历史条目，详情参见 `archive/` 各版本目录。
 
 | 编号 | 类型 | 标题 | 结项日期 | 结论 | 交付去向 | 归档卡片 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **BK-0048** | `Governance` | 门禁自动化：pre-commit hook + 一键聚合脚本 | 2026-11-22 | delivered | check-all.py + .githooks/pre-commit + README 安装登记（提交 a0d5a4c 起） | [BK-0048](./archive/2026-Q4/BK-0048-门禁自动化-pre-commit-hook-一键聚合脚本.md) |
 | **BK-0005** | `Governance` | 豁免判定前执行路径根相对语义归一化 | 2026-11-19 | delivered | 78c73dc（--dir 作用域守卫 + 4 条回归 + GOVERNANCE 提示） | [BK-0005](./archive/2026-Q4/BK-0005-relative-to-root-path-normalization.md) |
 | **BK-0006** | `TechDebt` | 四条审查护栏各补 1 条反证测试用例 | 2026-11-19 | delivered | e6fa6e6（豁免边界反证；其余三条复核已覆盖） | [BK-0006](./archive/2026-Q4/BK-0006-review-gates-negative-test-cases.md) |
 | **BK-0009** | `Bug` | resolve_archive_dir 增加交付单元与请求 slug 一致性校验 | 2026-11-19 | delivered | e238a1f（交付单元一致性校验 + 2 条回归） | [BK-0009](./archive/2026-Q4/BK-0009-resolve-archive-dir-slug-consistency.md) |
@@ -61,6 +61,5 @@
 | **BK-0046** | `Bug` | spec-evolution 门禁 pytest 超时阈值（GATE_TIMEOUT=300s）与实际套件时长临界导致 C-09 假 BLOCKER | 2026-11-12 | delivered | docs/project/backlog/archive/2026-Q4/BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo.md | [BK-0046](./archive/2026-Q4/BK-0046-spec-evolution-门禁-pytest-超时阈值-gate_timeo.md) |
 | **BK-0007** | `Governance` | GOVERNANCE.md 豁免表文本精确化 | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0007](./archive/2026-Q4/BK-0007-governance-doc-exemption-table-accuracy.md) |
 | **BK-0008** | `Governance` | 围栏奇偶告警文案补充嵌套演示规避提示 | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0008](./archive/2026-Q4/BK-0008-fence-parity-nested-block-guidance.md) |
-| **BK-0010** | `Security` | archive-root 空值与非法形态防御校验 | 2026-10-20 | delivered | docs/project/plans/2026-10-20-p3-six-backlog-batch.md | [BK-0010](./archive/2026-Q4/BK-0010-archive-root-empty-or-illegal-guard.md) |
 
-*(其余 27 条历史记录已隐藏，可查看 archive/ 目录)*
+*(其余 28 条历史记录已隐藏，可查看 archive/ 目录)*
