@@ -278,16 +278,20 @@ SIZE_MAX_LINES = 800
 
 
 def _measure_doc(path: Path) -> Dict:
+    """测量体量三指标。B-04：只按 \n 断行（splitlines 会在 U+2028 等处断行，
+    使超长单行绕过上限）；B-06：不可读文件 fail-closed（返回 unreadable 标记，
+    由调用方判为缺陷，而不是按 0 字节放行）。"""
     try:
         raw = path.read_bytes()
         text = raw.decode("utf-8", errors="replace")
     except OSError:
-        return {"bytes": 0, "longest_line": 0, "lines": 0}
-    lines = text.splitlines()
+        return {"bytes": 0, "longest_line": 0, "lines": 0, "unreadable": True}
+    lines = text.split("\n")
     return {
         "bytes": len(raw),
         "longest_line": max((len(line) for line in lines), default=0),
         "lines": len(lines),
+        "unreadable": False,
     }
 
 
@@ -309,16 +313,29 @@ def load_size_baseline(path: Optional[Path]) -> Dict[str, Dict]:
     out: Dict[str, Dict] = {}
     for doc, metrics in docs.items():
         if isinstance(metrics, dict):
+            # B-05：基线值可能是任意类型（手改/损坏），非数值一律按 0 处理，不得崩溃
+            def _to_int(value) -> int:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    return 0
+
             out[str(doc)] = {
-                "bytes": int(metrics.get("bytes", 0) or 0),
-                "longest_line": int(metrics.get("longest_line", 0) or 0),
+                "bytes": _to_int(metrics.get("bytes", 0)),
+                "longest_line": _to_int(metrics.get("longest_line", 0)),
             }
     return out
 
 
+MD_SUFFIXES = (".md", ".markdown")
+
+
 def _size_docs(root_dir: Path):
+    """B-03：按**小写后缀**匹配，避免 .MD / .markdown 改名逃逸扫描。"""
     root_dir = Path(root_dir)
-    for f in sorted(root_dir.rglob("*.md")):
+    for f in sorted(root_dir.rglob("*")):
+        if not f.is_file() or f.suffix.lower() not in MD_SUFFIXES:
+            continue
         if any(p in f.parts for p in ("node_modules", ".git", "dist", "build")):
             continue
         if in_evidence_archive(f, root_dir) or in_generated_map(f, root_dir) or is_router_file(f, root_dir):
@@ -345,6 +362,9 @@ def check_doc_size(
         rel = f.relative_to(root_dir).as_posix()
         metrics = _measure_doc(f)
         docs[rel] = metrics
+        if metrics.get("unreadable"):
+            issues.append(f"{rel}: 文件不可读，无法测量体量（fail-closed）")
+            continue
         over_bytes = metrics["bytes"] > max_bytes
         over_line = metrics["longest_line"] > max_line
         over_lines = metrics["lines"] > max_lines

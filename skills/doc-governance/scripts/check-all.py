@@ -61,8 +61,9 @@ def main() -> int:
         ),
         (
             "真值轴",
-            [py, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", root, "--repo", ".", "--fail-on-drift"],
-            "复核锚点断言并刷新「复核于」；禁止删除锚点声明",
+            [py, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", root, "--repo", ".",
+             "--fail-on-drift", "--staged"],
+            "复核锚点断言并刷新「复核于」（锚点与文档须在同一次提交）；禁止删除锚点声明",
         ),
         (
             "健康体检",

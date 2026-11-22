@@ -184,6 +184,8 @@ def classify_doc(
     max_age_days: int,
     anchor_tracked: Optional[Sequence[bool]] = None,
     anchor_unverifiable: Optional[Sequence[bool]] = None,
+    anchor_shas: Optional[Sequence[Optional[str]]] = None,
+    doc_sha: Optional[str] = None,
 ) -> str:
     """五态判定，优先级：missing_anchor > drifted > stale > unverified > fresh。
 
@@ -209,7 +211,14 @@ def classify_doc(
     # R2D-3：未来日期的「复核于」不是复核。容忍 1 天时区漂移，超出即视为无效声明。
     if verified_ts > now_ts + SECONDS_PER_DAY:
         return "unverified"
-    if any(ts is not None and ts > verified_ts for ts in commits):
+    # B-02：锚点与文档在**同一次提交**中被改动 ⇒ 视为同步处理（复核点只能指向已存在的提交，
+    # 若不做此豁免，任何「改锚点 + 刷新复核点」的提交都会立刻把文档判成漂移）。
+    stale_indices = [
+        i for i, ts in enumerate(commits)
+        if ts is not None and ts > verified_ts
+        and not (anchor_shas is not None and doc_sha is not None and anchor_shas[i] == doc_sha)
+    ]
+    if stale_indices:
         return "drifted"
     if max_age_days > 0 and (now_ts - verified_ts) > max_age_days * SECONDS_PER_DAY:
         return "stale"
@@ -252,6 +261,11 @@ def git_resolve_commit_ts(repo: Path, sha: str) -> Optional[int]:
         return int(out) if out else None
     except ValueError:
         return None
+
+
+def git_last_commit_sha(repo: Path, rel_path: str) -> Optional[str]:
+    """B-02：锚点与文档是否在**同一次提交**中被改动（同步处理的判据）。"""
+    return _run_git(repo, ["log", "-1", "--format=%H", "--", rel_path])
 
 
 def git_last_commit_ts(repo: Path, rel_path: str) -> Optional[int]:
@@ -397,12 +411,23 @@ def _removed_from_baseline(baseline: Dict[str, List[str]], current: Dict[str, Li
     return removed
 
 
+def staged_paths(repo: Optional[Path]) -> Optional[set]:
+    """B-02：返回暂存区变更路径集合；非 git 或无暂存区时返回 None。"""
+    if repo is None:
+        return None
+    out = _run_git(repo, ["diff", "--cached", "--name-only"])
+    if out is None:
+        return None
+    return {line.strip() for line in out.splitlines() if line.strip()}
+
+
 def analyze(
     root: Path,
     repo: Optional[Path] = None,
     now_ts: Optional[int] = None,
     max_age_days: int = 180,
     baseline_path: Optional[Path] = None,
+    staged: Optional[set] = None,
 ) -> Dict:
     """只读分析，返回 {'enabled', 'total_docs', 'declared', 'coverage', 'freshness_score', ...}。"""
     import time as _time
@@ -477,7 +502,25 @@ def analyze(
             max_age_days=max_age_days,
             anchor_tracked=tracked if repo_path is not None else None,
             anchor_unverifiable=unverifiable,
+            anchor_shas=(
+                [git_last_commit_sha(repo_path, a["path"]) for a in anchors]
+                if repo_path is not None else None
+            ),
+            doc_sha=(
+                git_last_commit_sha(repo_path, doc_path.relative_to(repo_path).as_posix())
+                if repo_path is not None else None
+            ),
         )
+        # B-02：pre-commit 场景——锚点被暂存而文档未同步，即为「本次提交引入的漂移」。
+        # git log 对未提交改动不可见，因此必须显式比对暂存区。
+        if staged is not None and status != "drifted":
+            touched = [a["path"] for a in anchors if a["path"] in staged]
+            # 暂存区路径相对**仓库根**，文档路径需按同一基准比对
+            doc_repo_rel = (
+                doc_path.relative_to(repo_path).as_posix() if repo_path is not None else rel_doc
+            )
+            if touched and doc_repo_rel not in staged:
+                status = "drifted"
         record = {
             "doc": rel_doc,
             "status": status,
@@ -526,6 +569,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                         help=f"锚点基线（墓碑）路径，默认 <root>/{DEFAULT_BASELINE_NAME}")
     parser.add_argument("--write-baseline", action="store_true",
                         help="把当前声明写为基线（阻断「删锚点洗绿」的机械依据）")
+    parser.add_argument("--staged", action="store_true",
+                        help="额外把「暂存区已改动但文档未同步」视为漂移（pre-commit 用）")
     parser.add_argument("--allow-unverified", action="store_true",
                         help="豁免 unverified / stale 的阻断（默认与 drifted 同权）")
     args = parser.parse_args(argv)
@@ -554,7 +599,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"🧱 已写入锚点基线: {baseline_path}（{written} 篇声明）")
         return 0
 
-    res = analyze(root, repo=repo, max_age_days=args.max_age_days, baseline_path=baseline_path)
+    staged = staged_paths(repo) if args.staged else None
+    res = analyze(
+        root,
+        repo=repo,
+        max_age_days=args.max_age_days,
+        baseline_path=baseline_path,
+        staged=staged,
+    )
     summary = {
         "enabled": res["enabled"],
         "total_docs": res["total_docs"],

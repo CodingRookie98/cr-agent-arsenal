@@ -183,3 +183,4 @@ docs/
 |:---|:---|
 | [doc-control-header.md](./templates/doc-control-header.md) | 手写／迁移文档的控制头、修订历史与填写规则骨架（`scaffold-doc.py` 之外的手写文档） |
 | [change-registration.md](./templates/change-registration.md) | 变更联动登记骨架（影响面扫描 → 四类同步 → 门禁证据 → 未同步项） |
+

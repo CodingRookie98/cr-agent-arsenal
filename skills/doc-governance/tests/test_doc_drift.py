@@ -1321,5 +1321,90 @@ class TestR4Fixes(unittest.TestCase):
         self.assertEqual(res["removed_from_baseline"], [])
 
 
+
+class TestStagedDrift(unittest.TestCase):
+    """B-02：pre-commit 场景下「本次提交引入的漂移」必须可见"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_staged_"))
+        self.env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, env=self.env, capture_output=True, text=True)
+
+    def test_staged_anchor_change_without_doc_update_is_drifted(self):
+        """锚点被暂存、文档未同步 ⇒ 提交前即判 drifted（否则 hook 结构性失明）。"""
+        self._git("init", "-q")
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x=1\n", encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir()
+        sha = self._git("rev-parse", "--short", "HEAD").stdout.strip() if False else None
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        sha = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="src/a.py", verified="2026-11-22 / commit " + sha), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        self.assertEqual(
+            subprocess.run([sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+                            "--repo", str(self.root), "--write-baseline"], capture_output=True).returncode, 0
+        )
+        # 只暂存锚点改动，不动文档
+        (self.root / "src" / "a.py").write_text("x=2\n", encoding="utf-8")
+        self._git("add", "src/a.py")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--staged", "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("drifted", proc.stdout)
+
+    def test_same_commit_sync_is_not_drifted(self):
+        """锚点与文档在**同一次提交**中改动 ⇒ 视为同步处理，提交后不得判漂移。"""
+        self._git("init", "-q")
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x=1\n", encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir()
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        sha = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="src/a.py", verified="2026-11-22 / commit " + sha), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        subprocess.run([sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+                        "--repo", str(self.root), "--write-baseline"], capture_output=True)
+        doc_sha = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        # 同一次提交里改锚点 + 刷新复核点
+        (self.root / "src" / "a.py").write_text("x=2\n", encoding="utf-8")
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="src/a.py", verified="2026-11-22 / commit " + doc_sha), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "sync anchor and doc")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

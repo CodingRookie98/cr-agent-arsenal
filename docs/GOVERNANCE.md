@@ -2,11 +2,11 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.11.0
+> - **当前版本**: V1.11.1
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-20
 > - **代码锚点**: skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
-> - **复核于**: 2026-11-22 / commit a5686f2
+> - **复核于**: 2026-11-22 / commit 
 
 ---
 
@@ -14,11 +14,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.11.1** | 2026-11-22 | DSH AI Agent | 王辉 | **红队 B 项收口**：真值轴新增 `--staged`（pre-commit 下「锚点已暂存而文档未同步」即判漂移）与「同一次提交视为同步」豁免；体量门禁后缀大小写不敏感、U+2028 不再绕过、不可读 fail-closed；§4.1 登记 `reference/articles` 豁免；可回答性 GAP 口径细化 |
 | **V1.11.0** | 2026-11-22 | DSH AI Agent | 王辉 | **门禁自动化与可回答性评测（BK-0048/BK-0049）**：§3 新增 `check-all.py`（六道门禁聚合，1.5 s，pre-commit 入口）与 `check-golden-tasks.py`（20 条可回答性断言，三态 PASS/GAP/FAIL）；§5 登记 pre-commit 安装方式与 GAP 处置口径 |
 | **V1.10.0** | 2026-11-22 | DSH AI Agent | 王辉 | **体量度量换挡（RFC-0008）**：新增 `check_doc_size`（字节 ≤64 KB、最长单行 ≤1000 阻断；行数仅警告），棘轮基线 `.doc-size-baseline.json` 消化 2 篇存量；§3 工具表与红线 10 同步；废弃「800 行」作为阻断判据 |
 | **V1.9.1** | 2026-11-22 | DSH AI Agent | 王辉 | **状态机 TD 收口**：`取代于` 允许根内 `../` 跨目录链、只拦越界；表格形态只解析控制头连续块（字段说明表不再被误读）；C-4 覆盖引用式/带 title/大写扩展名；隐式 Active 携带指针亦阻断；§4.1 登记 backlog 豁免 |
 | **V1.9.0** | 2026-11-22 | DSH AI Agent | 王辉 | **文档状态机（RFC-0007）**：控制头 `文档状态` 扩为 Active/Contested/Superseded 三态，新增 `取代于`（Superseded 必填）与 `争议点`；§3 工具表补 `check_doc_status`；§4 新增红线 9「禁 Active 带取代于」；审计输出新增「未决冲突清单」 |
-| **V1.8.1** | 2026-11-22 | DSH AI Agent | 王辉 | **R4 收口**：不可核验锚点不得被其余 fresh 锚点掩盖（否则加一条 glob 即可静默通过）；基线救回限定为像路径写法；墓碑比对归一化行区间 |
 
 ---
 
@@ -135,6 +135,8 @@ docs/
 **门禁执行口径（BK-0048）**：六道门禁由 `check-all.py` 聚合，推荐以 `git config core.hooksPath .githooks` 安装 pre-commit hook；临时跳过用 `git commit --no-verify`，**须在提交信息登记原因**。CI 环境直接调用同一入口即可（无需另写脚本）。
 
 **可回答性评测的 GAP 口径（BK-0049）**：`check-golden-tasks.py` 的 GAP 表示「知识库确实缺这块内容」，**不得**为消除 GAP 而当场补写文档——应登记 backlog 卡片，按优先级排期。FAIL 才是结构缺陷，必须立即修复。
+
+**外部文献豁免（RFC-0008）**：`docs/reference/articles/**` 为外部文章逐字转载，无控制头、原文不可改写，不参与体量三指标与可回答性 G-20 的控制头断言（其余文档照常受检）。
 
 **待办卡片豁免（RFC-0007）**：`docs/project/backlog/**` 不参与文档状态机——卡片的 YAML `status` 是**生命周期字段**（planned/in-progress/completed），与文档状态（Active/Contested/Superseded）语义不同，混用会把 48 张卡片误判为非法状态。宿主：`check_doc_status` 的目录判定（按 `project/backlog` 相对路径，不按绝对路径分量）。
 

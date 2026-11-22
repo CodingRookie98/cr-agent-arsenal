@@ -103,5 +103,83 @@ class TestDocSize(unittest.TestCase):
         self.assertIn("reference/big.md", data["docs"])
 
 
+
+class TestSizeRobustness(unittest.TestCase):
+    """B-03~B-06：体量门禁的健壮性"""
+
+    def setUp(self):
+        self.mod = load_module("audit_doc_health", SCRIPTS_DIR / "audit-doc-health.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_size_rb_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _check(self, **kw):
+        return self.mod.check_doc_size(self.root, **kw)
+
+    def test_b03_uppercase_and_markdown_suffix_are_scanned(self):
+        """.MD / .markdown 不得逃逸扫描。"""
+        (self.root / "reference").mkdir()
+        (self.root / "reference" / "BIG.MD").write_text("x" * 5000, encoding="utf-8")
+        (self.root / "reference" / "big.markdown").write_text("y" * 5000, encoding="utf-8")
+        res = self._check(max_bytes=1000, max_line=10_000)
+        self.assertEqual(len(res["issues"]), 2, res)
+
+    def test_b04_u2028_does_not_break_longest_line(self):
+        """U+2028 不是换行符：不得用它绕过最长单行上限。"""
+        (self.root / "reference").mkdir()
+        (self.root / "reference" / "a.md").write_text("x" * 600 + "\u2028" + "y" * 600, encoding="utf-8")
+        res = self._check(max_bytes=10_000_000, max_line=1000)
+        self.assertTrue(res["issues"], res)
+
+    def test_b05_non_numeric_baseline_values_do_not_crash(self):
+        (self.root / "reference").mkdir()
+        (self.root / "reference" / "a.md").write_text("x" * 5000, encoding="utf-8")
+        baseline = self.root / self.mod.SIZE_BASELINE_NAME
+        baseline.write_text('{"version":1,"docs":{"reference/a.md":{"bytes":"abc","longest_line":null}}}', encoding="utf-8")
+        res = self._check(max_bytes=1000, max_line=10_000, baseline_path=baseline)
+        self.assertTrue(res["issues"], res)
+
+    def test_b06_unreadable_file_is_fail_closed(self):
+        """不可读文件不得按 0 字节放行。"""
+        import os
+        (self.root / "reference").mkdir()
+        target = self.root / "reference" / "secret.md"
+        target.write_text("x" * 5000, encoding="utf-8")
+        os.chmod(target, 0)
+        try:
+            res = self._check(max_bytes=1000, max_line=10_000)
+            self.assertTrue(res["issues"], res)
+        finally:
+            os.chmod(target, 0o644)
+
+
+
+
+class TestAssertionFixes(unittest.TestCase):
+    """B-10 / B-14：断言层修正"""
+
+    def setUp(self):
+        self.mod = load_module("check_golden_tasks", SCRIPTS_DIR / "check-golden-tasks.py")
+        self.root = Path(tempfile.mkdtemp(prefix="golden_fix_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def test_b10_g02_accepts_shixian_jihua(self):
+        (self.root / "proposals").mkdir()
+        (self.root / "proposals" / "RFC-1.md").write_text(
+            "# RFC-1\n\n> - **当前状态**: In Review\n\n实施计划：[x](../project/plans/x.md)\n",
+            encoding="utf-8",
+        )
+        status, detail = self.mod.g02_rfc_has_plan(self.root)
+        self.assertEqual(status, "pass", detail)
+
+    def test_b14_g14_empty_active_dir_is_reported(self):
+        (self.root / "project" / "backlog" / "active").mkdir(parents=True)
+        status, detail = self.mod.g14_backlog_acceptance(self.root)
+        self.assertEqual(status, "gap", detail)
+
+
 if __name__ == "__main__":
     unittest.main()
