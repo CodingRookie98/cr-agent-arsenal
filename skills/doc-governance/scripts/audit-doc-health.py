@@ -173,6 +173,9 @@ def evaluate_verdict(
     status_issues = (res.get("doc_status") or {}).get("issues") or []
     if status_issues:
         reasons.append(f"{len(status_issues)} 处文档状态违规")
+    size_issues = (res.get("doc_size") or {}).get("issues") or []
+    if size_issues:
+        reasons.append(f"{len(size_issues)} 处文档体量超限")
     # 真值轴（RFC-0005 §4.3）：默认 warn 不参与判定；require 模式下「未启用」同样阻断，
     # 否则一条都未声明的知识库会因为 enabled=False 而静默跳过真值门禁（等于自我豁免）。
     truth = res.get("truth") or {}
@@ -266,6 +269,131 @@ def _latest_revision_date(content: str) -> Optional[str]:
             elif line.strip() and dates:
                 break
     return max(dates) if dates else None
+
+
+SIZE_BASELINE_NAME = ".doc-size-baseline.json"
+SIZE_MAX_BYTES = 65536
+SIZE_MAX_LINE = 1000
+SIZE_MAX_LINES = 800
+
+
+def _measure_doc(path: Path) -> Dict:
+    try:
+        raw = path.read_bytes()
+        text = raw.decode("utf-8", errors="replace")
+    except OSError:
+        return {"bytes": 0, "longest_line": 0, "lines": 0}
+    lines = text.splitlines()
+    return {
+        "bytes": len(raw),
+        "longest_line": max((len(line) for line in lines), default=0),
+        "lines": len(lines),
+    }
+
+
+def load_size_baseline(path: Optional[Path]) -> Dict[str, Dict]:
+    if path is None:
+        return {}
+    path = Path(path)
+    if not path.is_file():
+        return {}
+    try:
+        import json as _json
+
+        data = _json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    docs = data.get("docs") if isinstance(data, dict) else None
+    if not isinstance(docs, dict):
+        return {}
+    out: Dict[str, Dict] = {}
+    for doc, metrics in docs.items():
+        if isinstance(metrics, dict):
+            out[str(doc)] = {
+                "bytes": int(metrics.get("bytes", 0) or 0),
+                "longest_line": int(metrics.get("longest_line", 0) or 0),
+            }
+    return out
+
+
+def _size_docs(root_dir: Path):
+    root_dir = Path(root_dir)
+    for f in sorted(root_dir.rglob("*.md")):
+        if any(p in f.parts for p in ("node_modules", ".git", "dist", "build")):
+            continue
+        if in_evidence_archive(f, root_dir) or in_generated_map(f, root_dir) or is_router_file(f, root_dir):
+            continue
+        yield f
+
+
+def check_doc_size(
+    root_dir: Path,
+    baseline_path: Optional[Path] = None,
+    max_bytes: int = SIZE_MAX_BYTES,
+    max_line: int = SIZE_MAX_LINE,
+    max_lines: int = SIZE_MAX_LINES,
+) -> Dict:
+    """体量门禁（RFC-0008）：字节 + 最长单行阻断，行数仅警告；棘轮基线消化存量。"""
+    root_dir = Path(root_dir)
+    baseline_path = Path(baseline_path) if baseline_path else root_dir / SIZE_BASELINE_NAME
+    baseline = load_size_baseline(baseline_path)
+    docs: Dict[str, Dict] = {}
+    issues: List[str] = []
+    warnings: List[str] = []
+
+    for f in _size_docs(root_dir):
+        rel = f.relative_to(root_dir).as_posix()
+        metrics = _measure_doc(f)
+        docs[rel] = metrics
+        over_bytes = metrics["bytes"] > max_bytes
+        over_line = metrics["longest_line"] > max_line
+        over_lines = metrics["lines"] > max_lines
+        if over_lines:
+            warnings.append(f"{rel}: {metrics['lines']} 行 > 建议 {max_lines} 行（行数指标已证失效，仅提示）")
+        if not (over_bytes or over_line):
+            if rel in baseline:
+                warnings.append(f"{rel}: 已达标，可清理体量基线记录")
+            continue
+        detail = (
+            f"{rel}: "
+            + (f"{metrics['bytes']} 字节 > {max_bytes}" if over_bytes else "")
+            + ("，" if over_bytes and over_line else "")
+            + (f"最长单行 {metrics['longest_line']} > {max_line}" if over_line else "")
+        )
+        recorded = baseline.get(rel)
+        if recorded is None:
+            issues.append(f"{detail}（新增超限，无基线记录）")
+        elif metrics["bytes"] > recorded["bytes"] or metrics["longest_line"] > recorded["longest_line"]:
+            issues.append(f"{detail}（较基线恶化：{recorded['bytes']}→{metrics['bytes']} 字节）")
+        else:
+            warnings.append(f"{detail}（存量，基线内未恶化）")
+
+    return {"docs": docs, "issues": issues, "warnings": warnings, "baseline_status": "ok" if baseline else "empty"}
+
+
+def write_size_baseline(
+    root_dir: Path,
+    max_bytes: int = SIZE_MAX_BYTES,
+    max_line: int = SIZE_MAX_LINE,
+) -> Path:
+    """把当前**超限**文档写为棘轮基线（仅在明确接受存量时执行）。"""
+    import json as _json
+
+    root_dir = Path(root_dir)
+    path = root_dir / SIZE_BASELINE_NAME
+    docs: Dict[str, Dict] = {}
+    for f in _size_docs(root_dir):
+        metrics = _measure_doc(f)
+        if metrics["bytes"] > max_bytes or metrics["longest_line"] > max_line:
+            docs[f.relative_to(root_dir).as_posix()] = {
+                "bytes": metrics["bytes"],
+                "longest_line": metrics["longest_line"],
+            }
+    path.write_text(
+        _json.dumps({"version": 1, "docs": docs}, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return path
 
 
 def check_doc_status(
@@ -1011,6 +1139,7 @@ def audit_health(
         "llms_map_issue": check_llms_map_consistency(root_dir),
         "agents_md_issue": check_agents_md(root_dir),
         "doc_status": check_doc_status(root_dir),
+        "doc_size": check_doc_size(root_dir),
         "truth": truth_block,
         "scores": {
             "link_score": round(link_score, 1),
@@ -1039,6 +1168,10 @@ def main():
     parser.add_argument("--max-age-days", type=int, default=180, help="复核时效上限（天，0 表示不检查）")
     parser.add_argument("--repo", default=None,
                         help="仓库根（真值轴锚点基准；默认取 --root 的父目录）")
+    parser.add_argument("--write-size-baseline", action="store_true",
+                        help="把当前超限文档写为体量棘轮基线（仅在明确接受存量时执行）")
+    parser.add_argument("--max-doc-bytes", type=int, default=None, help="单文档字节上限（默认 65536）")
+    parser.add_argument("--max-doc-line", type=int, default=None, help="最长单行上限（默认 1000）")
 
     args = parser.parse_args()
     root_path = Path(args.root).resolve()
@@ -1046,6 +1179,15 @@ def main():
     if not root_path.exists():
         print(f"❌ 错误: 目标文档目录不存在: {root_path}", file=sys.stderr)
         sys.exit(1)
+
+    if args.write_size_baseline:
+        written = write_size_baseline(
+            root_path,
+            max_bytes=args.max_doc_bytes or SIZE_MAX_BYTES,
+            max_line=args.max_doc_line or SIZE_MAX_LINE,
+        )
+        print(f"🧱 已写入体量基线: {written}")
+        sys.exit(0)
 
     print(f"🏥 启动知识库全面健康度体检: 根目录={root_path} ...")
     res = audit_health(
@@ -1199,6 +1341,15 @@ def main():
     for warn in (doc_status.get("warnings") or [])[:5]:
         has_issues = True
         print(f"   ⚠️  文档状态警告: {warn}")
+
+    # RFC-0008：体量门禁
+    doc_size = res.get("doc_size") or {}
+    for issue in (doc_size.get("issues") or [])[:10]:
+        has_issues = True
+        print(f"   ⛔ 文档体量超限: {issue}")
+    for warn in (doc_size.get("warnings") or [])[:5]:
+        has_issues = True
+        print(f"   ⚠️  文档体量提示: {warn}")
 
     # R1-4：真值轴的阻断理由必须与「完美/无缺陷」互斥，否则同一屏会同时出现
     # PASS 文案与 REJECT 理由（BK-0028 明令禁止的自相矛盾）。

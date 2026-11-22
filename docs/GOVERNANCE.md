@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.9.1
+> - **当前版本**: V1.10.0
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-20
 > - **代码锚点**: skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
@@ -14,11 +14,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.10.0** | 2026-11-22 | DSH AI Agent | 王辉 | **体量度量换挡（RFC-0008）**：新增 `check_doc_size`（字节 ≤64 KB、最长单行 ≤1000 阻断；行数仅警告），棘轮基线 `.doc-size-baseline.json` 消化 2 篇存量；§3 工具表与红线 10 同步；废弃「800 行」作为阻断判据 |
 | **V1.9.1** | 2026-11-22 | DSH AI Agent | 王辉 | **状态机 TD 收口**：`取代于` 允许根内 `../` 跨目录链、只拦越界；表格形态只解析控制头连续块（字段说明表不再被误读）；C-4 覆盖引用式/带 title/大写扩展名；隐式 Active 携带指针亦阻断；§4.1 登记 backlog 豁免 |
 | **V1.9.0** | 2026-11-22 | DSH AI Agent | 王辉 | **文档状态机（RFC-0007）**：控制头 `文档状态` 扩为 Active/Contested/Superseded 三态，新增 `取代于`（Superseded 必填）与 `争议点`；§3 工具表补 `check_doc_status`；§4 新增红线 9「禁 Active 带取代于」；审计输出新增「未决冲突清单」 |
 | **V1.8.1** | 2026-11-22 | DSH AI Agent | 王辉 | **R4 收口**：不可核验锚点不得被其余 fresh 锚点掩盖（否则加一条 glob 即可静默通过）；基线救回限定为像路径写法；墓碑比对归一化行区间 |
 | **V1.8.0** | 2026-11-22 | DSH AI Agent | 王辉 | **分层机器地图（RFC-0006）**：根 `llms.txt` 降为象限入口（21,810 → 883 字节），全量条目下沉 `_llms/<象限>.md`；新增路由文件 `docs/AGENTS.md`（≤30 行）；§3 工具表与 §4.1 豁免表同步；§4 新增红线 8「禁手改生成物」 |
-| **V1.7.11** | 2026-11-22 | DSH AI Agent | 王辉 | **R3DC-1 根治**：锚点判据顺序改为「存在性 → 基线登记 → 形态」，`说明:3` 这类非 ASCII 文件名不再被判 invalid 静默放行 |
 
 ---
 
@@ -86,6 +86,7 @@ docs/
 | **`check-doc-links.py`** | 静态扫描物理文件超链接与 `#anchor` 锚点（根扫描含机器地图 `llms.txt`） | 提交前 / CI 门禁 | `python3 skills/doc-governance/scripts/check-doc-links.py --root docs` |
 | **`trim-revision.py`** | 自动裁剪历史记录至最近 5 条滑动窗口 | 提交前 / 维护 | `python3 skills/doc-governance/scripts/trim-revision.py --root docs --fix --keep 5` |
 | **`audit-doc-health.py`** | 综合健康体检（打分 0-100 分，断链/元数据/孤儿/架构/**机器地图一致性**） | 交付验收 / 定期体检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs` |
+| **`check_doc_size`**（audit 内置） | 文档体量门禁：字节数 / 最长单行（阻断）、行数（警告）；棘轮基线 `--write-size-baseline` 登记存量 | 交付前 / 巡检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs --repo .` |
 | **`check_doc_status`**（audit 内置） | 文档状态机门禁：取值合法性、`取代于` 必填与有效性、`Active` 携带指针；输出「未决冲突清单」 | 交付前 / 巡检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs --repo .` |
 | **`check-doc-drift.py`** | 真值轴漂移检测（代码锚点存在性 + git 提交时间 vs `复核于`；五态输出；零声明不颁发满分） | 交付前 / 定期巡检 | `python3 skills/doc-governance/scripts/check-doc-drift.py --root docs --repo . [--fail-on-drift]` |
 | **`generate-llms-txt.py`** | 自动提取 Frontmatter 并刷新机器地图；`--split` 分层（根=象限入口，全量下沉 `_llms/`），`--check` 只校验，`--max-root-bytes` 体量门禁 | 文档拓扑变动后 | `python3 skills/doc-governance/scripts/generate-llms-txt.py --root docs --output docs/llms.txt --split` |
@@ -112,7 +113,8 @@ docs/
 6. **⛔ 严禁文件命名随意混乱**：一律采用纯小写 `kebab-case` 命名风格（如 `goal-loop-design.md`），禁止驼峰与无规则空格；
 7. **⛔ 严禁手改生成物**：`docs/llms.txt` 与 `docs/_llms/*.md` 必须由 `generate-llms-txt.py --split` 逐字节生成；手改即触发「机器地图不一致」硬阻断（含子地图多余/缺失）；
 8. **⛔ 严禁伪造文档状态**：`Superseded` 必须给出真实接替者（`取代于` 指向存在且非自身），`Active` 不得携带 `取代于`；状态取值只允许 `Active`/`Contested`/`Superseded`，其余一律阻断（RFC-0007）；
-9. **⛔ 严禁「删锚点清零」自我豁免**：声明过 `代码锚点` 的文档，禁止为让 `check-doc-drift.py` 变绿而删除锚点声明或伪造 `复核于`——删除声明等于把文档移出真值统计（RFC-0005 §3 已点名此反模式）。正确动作是**复核断言**：内容仍成立则只刷新复核点，不成立则改文档。
+9. **⛔ 严禁文档体量失控**：单文档 >64 KB 或最长单行 >1000 字符即阻断；行数 >800 仅警告（行数指标已证失效）。存量超限登记于 `docs/.doc-size-baseline.json`（棘轮：只降不升，恶化即阻断）；
+10. **⛔ 严禁「删锚点清零」自我豁免**：声明过 `代码锚点` 的文档，禁止为让 `check-doc-drift.py` 变绿而删除锚点声明或伪造 `复核于`——删除声明等于把文档移出真值统计（RFC-0005 §3 已点名此反模式）。正确动作是**复核断言**：内容仍成立则只刷新复核点，不成立则改文档。
 
 ---
 
