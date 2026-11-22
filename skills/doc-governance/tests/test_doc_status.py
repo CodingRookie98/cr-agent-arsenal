@@ -244,5 +244,84 @@ class TestStatusRedTeamFixes(unittest.TestCase):
         self.assertLess(loose["contested"][0]["age_days"], 90)
 
 
+
+class TestStatusDeltaFixes(unittest.TestCase):
+    """Delta 复核 TD-1~TD-9 回归"""
+
+    def setUp(self):
+        self.mod = load_module("audit_doc_health", SCRIPTS_DIR / "audit-doc-health.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_status_td_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _check(self, **kw):
+        return self.mod.check_doc_status(self.root, **kw)
+
+    def test_td1_parent_relative_within_root_is_allowed(self):
+        """TD-1：根内的 ../ 跨目录取代链必须可用，只有越界才阻断。"""
+        write_doc(self.root, "reference/new.md", status="Active")
+        write_doc(self.root, "how-to/old.md", status="Superseded", superseded_by="../reference/new.md")
+        res = self._check()
+        self.assertEqual(res["issues"], [], res["issues"])
+
+    def test_td1_escaping_parent_still_blocked(self):
+        write_doc(self.root, "reference/old.md", status="Superseded", superseded_by="../../outside.md")
+        res = self._check()
+        self.assertTrue(any("仓库内" in i for i in res["issues"]), res["issues"])
+
+    def test_td2_field_explanation_table_is_not_a_declaration(self):
+        """TD-2：字段说明表（如 RFC 里的取值表）不得被当成状态声明。"""
+        (self.root / "reference").mkdir()
+        (self.root / "reference" / "a.md").write_text(
+            "# A\n\n> **文档控制信息**\n> - **文档状态**: Active\n\n"
+            "## 字段说明\n\n| 字段 | 说明 |\n| :--- | :--- |\n| 文档状态 | Active/Contested/Superseded |\n"
+            "| 取代于 | 仅 Superseded 填 |\n",
+            encoding="utf-8",
+        )
+        res = self._check()
+        self.assertEqual(res["issues"], [], res["issues"])
+        self.assertEqual(res["counts"]["Active"], 1)
+
+    def test_td3_c4_detects_reference_style_and_case_variants(self):
+        """TD-3：C-4 必须覆盖引用式链接、带 title、大写扩展名与无扩展名。"""
+        write_doc(self.root, "reference/new.md", status="Active")
+        write_doc(self.root, "reference/old.md", status="Superseded", superseded_by="./new.md")
+        user = write_doc(self.root, "reference/user.md", status="Active")
+        user.write_text(
+            user.read_text(encoding="utf-8")
+            + "\n[ref]: ./old.md\n"
+            + "\n[带标题](./old.md \"t\")\n"
+            + "\n[大写](./OLD.MD)\n",
+            encoding="utf-8",
+        )
+        res = self._check()
+        self.assertGreaterEqual(len(res["warnings"]), 2, res["warnings"])
+
+    def test_td4_implicit_active_with_pointer_is_blocked(self):
+        """TD-4：未写状态（隐式 Active）却带「取代于」也必须阻断。"""
+        (self.root / "reference").mkdir()
+        (self.root / "reference" / "new.md").write_text("# new\n\n正文\n", encoding="utf-8")
+        (self.root / "reference" / "a.md").write_text(
+            "# A\n\n> **文档控制信息**\n> - **取代于**: ./new.md\n", encoding="utf-8"
+        )
+        res = self._check()
+        self.assertTrue(any("取代于" in i for i in res["issues"]), res["issues"])
+
+    def test_td8_placeholder_revision_row_is_not_counted(self):
+        """TD-8：修订表里的「待补」行不得被当成日期来源。"""
+        (self.root / "reference").mkdir()
+        (self.root / "reference" / "a.md").write_text(
+            "# A\n\n> **文档控制信息**\n> - **文档状态**: Contested\n> - **争议点**: x\n\n"
+            "### 修订历史记录 (Revision History)\n\n"
+            "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n| :--- | :--- | :--- | :--- | :--- |\n"
+            "| **V1.1.0** | 2026-11-20 | t | t | 更新 |\n"
+            "| **V1.2.0** | 待补 | t | t | 占位 |\n",
+            encoding="utf-8",
+        )
+        res = self._check(now="2026-11-22")
+        self.assertEqual(res["contested"][0]["age_days"], 2, res["contested"])
+
+
 if __name__ == "__main__":
     unittest.main()

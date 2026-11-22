@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.9.0
+> - **当前版本**: V1.9.1
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-20
 > - **代码锚点**: skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
@@ -14,11 +14,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.9.1** | 2026-11-22 | DSH AI Agent | 王辉 | **状态机 TD 收口**：`取代于` 允许根内 `../` 跨目录链、只拦越界；表格形态只解析控制头连续块（字段说明表不再被误读）；C-4 覆盖引用式/带 title/大写扩展名；隐式 Active 携带指针亦阻断；§4.1 登记 backlog 豁免 |
 | **V1.9.0** | 2026-11-22 | DSH AI Agent | 王辉 | **文档状态机（RFC-0007）**：控制头 `文档状态` 扩为 Active/Contested/Superseded 三态，新增 `取代于`（Superseded 必填）与 `争议点`；§3 工具表补 `check_doc_status`；§4 新增红线 9「禁 Active 带取代于」；审计输出新增「未决冲突清单」 |
 | **V1.8.1** | 2026-11-22 | DSH AI Agent | 王辉 | **R4 收口**：不可核验锚点不得被其余 fresh 锚点掩盖（否则加一条 glob 即可静默通过）；基线救回限定为像路径写法；墓碑比对归一化行区间 |
 | **V1.8.0** | 2026-11-22 | DSH AI Agent | 王辉 | **分层机器地图（RFC-0006）**：根 `llms.txt` 降为象限入口（21,810 → 883 字节），全量条目下沉 `_llms/<象限>.md`；新增路由文件 `docs/AGENTS.md`（≤30 行）；§3 工具表与 §4.1 豁免表同步；§4 新增红线 8「禁手改生成物」 |
 | **V1.7.11** | 2026-11-22 | DSH AI Agent | 王辉 | **R3DC-1 根治**：锚点判据顺序改为「存在性 → 基线登记 → 形态」，`说明:3` 这类非 ASCII 文件名不再被判 invalid 静默放行 |
-| **V1.7.10** | 2026-11-22 | DSH AI Agent | 王辉 | **R3D-1 回归收口**：行区间锚点（`Makefile:2`）先剥行区间再判形态；audit truth 块增 invalid 可见性；漂移明细带锚点名 |
 
 ---
 
@@ -127,6 +127,8 @@ docs/
 | `audit-doc-health.py` | 元数据控制头合规率、孤儿文档计分 | 报告不得添加控制头；报告无 markdown 入链 |
 | `trim-revision.py` | 修订历史裁剪（含 `--fix` 就地写入） | 报告逐字归档，任何写入都会破坏 SHA256 指纹（BK-0001） |
 | `generate-llms-txt.py` | 机器地图收录 | 逐字凭据不进入智能体引导地图，保持机器地图纯净（BK-0002） |
+
+**待办卡片豁免（RFC-0007）**：`docs/project/backlog/**` 不参与文档状态机——卡片的 YAML `status` 是**生命周期字段**（planned/in-progress/completed），与文档状态（Active/Contested/Superseded）语义不同，混用会把 48 张卡片误判为非法状态。宿主：`check_doc_status` 的目录判定（按 `project/backlog` 相对路径，不按绝对路径分量）。
 
 **生成物与路由文件豁免（RFC-0006）**：`docs/_llms/**`（分层子地图，生成物）与 `docs/AGENTS.md`（路由规则）不参与元数据控制头、孤儿文档、修订历史计分——它们无控制头、无 markdown 入链是**设计使然**，计入即双重惩罚。但**断链扫描仍覆盖它们**（链接必须有效），机器地图一致性门禁亦覆盖全部子地图。宿主：`audit-doc-health.py` 的 `in_generated_map` / `is_router_file`。
 

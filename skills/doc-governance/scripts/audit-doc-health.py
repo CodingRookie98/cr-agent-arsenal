@@ -240,6 +240,15 @@ CONTESTED_MAX_AGE_DAYS = 90
 _DATE_IN_ROW = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
+def _within_root(target: Path, root_dir: Path) -> bool:
+    """TD-1：解析后的目标是否仍在文档根之内（允许根内 ../，只拦越界）。"""
+    try:
+        target.relative_to(Path(root_dir).resolve())
+        return True
+    except ValueError:
+        return False
+
+
 def _latest_revision_date(content: str) -> Optional[str]:
     """取修订历史表格中的**最新**日期（T-7：不能假定降序——RFC-0004 等真实文档是升序表）。"""
     lines = content.splitlines()
@@ -305,6 +314,12 @@ def check_doc_status(
         raw = (meta.get("文档状态") or "").strip()
         rel = f.relative_to(root_dir).as_posix()
         if not raw:
+            # TD-4：隐式 Active 也必须检查「取代于」——否则 C-3 存在语义空洞
+            pointer_implicit = (meta.get("取代于") or meta.get("superseded-by") or "").strip()
+            if pointer_implicit:
+                issues.append(
+                    f"{f.relative_to(root_dir).as_posix()}: 状态为 Active 却出现「取代于」（仅 Superseded 允许）"
+                )
             status_map[f] = "Active"
             counts["Active"] += 1
             active_docs.append(f)
@@ -326,8 +341,9 @@ def check_doc_status(
                 target = (f.parent / pointer_path).resolve()
                 if target == f.resolve():
                     issues.append(f"{rel}: 「取代于」指向自身")
-                elif pointer_path.startswith(("/", "\\")) or ".." in Path(pointer_path).parts:
-                    # T-6：RFC 要求「仓库内相对路径」，绝对路径与越界写法一律阻断
+                elif pointer_path.startswith(("/", "\\")) or not _within_root(target, root_dir):
+                    # T-6 / TD-1：要求「仓库内相对路径」——绝对路径与**越出仓库根**的写法阻断，
+                    # 但根内的 ../ 跨目录取代链必须可用（此前一刀切禁止，导致跨目录无法表达）
                     issues.append(f"{rel}: 「取代于」必须是仓库内相对路径（{pointer}）")
                 elif not target.is_file() or target.suffix != ".md":
                     issues.append(f"{rel}: 「取代于」目标不存在或不是 .md（{pointer}）")
@@ -356,11 +372,17 @@ def check_doc_status(
             content = f.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        for m in re.finditer(r"\]\(([^)\s#]+\.md)(?:#[^)]*)?\)", content):
-            target = (f.parent / m.group(1)).resolve()
+        # TD-3：C-4 必须覆盖内联（含 title）、引用式定义、大小写扩展名与无扩展名
+        candidates = []
+        for m in re.finditer(r'\]\(\s*([^)\s]+\.md)(?:\s+"[^"]*")?(?:#[^)]*)?\s*\)', content, re.I):
+            candidates.append(m.group(1))
+        for m in re.finditer(r"^\s*\[[^\]]+\]:\s*(\S+\.md)", content, re.M | re.I):
+            candidates.append(m.group(1))
+        for raw_link in candidates:
+            target = (f.parent / raw_link).resolve()
             if target in superseded_paths:
                 warnings.append(
-                    f"{f.relative_to(root_dir).as_posix()}: Active 文档引用了已被取代的 {m.group(1)}"
+                    f"{f.relative_to(root_dir).as_posix()}: Active 文档引用了已被取代的 {raw_link}"
                 )
 
     return {
@@ -505,11 +527,32 @@ def parse_frontmatter(content: str) -> Dict[str, str]:
 
     # 模式 C: 表格型元数据 (| **文档标识** | DR-xxx | 或 | 文档标识 | ... |)
     # T-3：白名单补齐文档状态机三字段，否则表格形态的状态声明完全失明
+    # TD-2：只解析**控制头区域**内的表格——否则正文里的「字段说明表」会被当成真声明
+    #       （实测：RFC-0007 自己的取值表会让它被判 C-3）。
     if (
         "文档标识" in content or "当前版本" in content or "version" in content.lower()
         or "文档版本" in content or "文档状态" in content
     ):
-        for m in re.finditer(r"\|\s*(?:\*\*)?([^|\n*]+?)(?:\*\*)?\s*\|\s*([^|\n]+?)\s*\|", content):
+        # TD-2：控制头区域 = 控制信息标题之后的**连续**引用块/表格块（遇正文即停），
+        # 而不是「标题后 N 字符」——后者会把紧随其后的字段说明表一起吞进来。
+        all_lines = content.splitlines()
+        start_idx = None
+        for i, line in enumerate(all_lines):
+            if "文档控制信息" in line or "文档控制头" in line:
+                start_idx = i
+                break
+        if start_idx is None:
+            zone_lines = all_lines[:40]
+        else:
+            zone_lines = []
+            for line in all_lines[start_idx + 1 : start_idx + 40]:
+                stripped = line.strip()
+                if not stripped or stripped.startswith("|") or stripped.startswith(">"):
+                    zone_lines.append(line)
+                else:
+                    break
+        header_zone = "\n".join(zone_lines)
+        for m in re.finditer(r"\|\s*(?:\*\*)?([^|\n*]+?)(?:\*\*)?\s*\|\s*([^|\n]+?)\s*\|", header_zone):
             k_raw = m.group(1).strip().lower()
             v_raw = m.group(2).strip()
             if k_raw in (
