@@ -115,6 +115,8 @@ def truth_blockers(truth: Dict, truth_threshold: float, min_coverage: float) -> 
     # R2D-1：账本缺席/损坏 ⇒ 墓碑判据不成立，require 必须 fail-closed。
     if truth.get("baseline_status") in ("missing", "corrupt"):
         reasons.append(f"锚点基线不可用（{truth.get('baseline_status')}），墓碑判据不成立")
+    elif truth.get("baseline_status") == "empty":
+        reasons.append("锚点基线为空，墓碑判据不成立（保护不可得 ≠ 无违规）")
     if truth.get("removed_from_baseline"):
         reasons.append(f"锚点基线墓碑违规 {truth['removed_from_baseline']} 处（声明被删除/缩减）")
     if truth.get("coverage", 0.0) < min_coverage:
@@ -898,6 +900,22 @@ def main():
         if truth.get("removed_from_baseline"):
             has_issues = True
             print(f"   ⚠️  锚点基线墓碑违规 {truth['removed_from_baseline']} 处（声明被删除/缩减）")
+        if truth.get("baseline_status") == "empty":
+            has_issues = True
+            print("   ⚠️  锚点基线为空，墓碑判据不成立")
+        # R2D2-3：warn 模式下的漂移/缺失同样属缺陷，不得与「完美」并存。
+        drift_total = (
+            truth.get("drifted", 0) + truth.get("missing_anchor", 0)
+            + truth.get("stale", 0) + truth.get("unverified", 0)
+        )
+        if drift_total:
+            has_issues = True
+            print(
+                "   ⚠️  真值轴未清零："
+                f"drifted {truth.get('drifted', 0)} / missing {truth.get('missing_anchor', 0)}"
+                f" / stale {truth.get('stale', 0)} / unverified {truth.get('unverified', 0)}"
+                "（warn 不阻断，但属缺陷）"
+            )
 
     if not has_issues:
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")

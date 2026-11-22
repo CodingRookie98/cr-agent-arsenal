@@ -4,7 +4,7 @@
 > - **标识**: RFC-2026-DOC-TRUTH-AXIS
 > - **当前状态**: In Review
 > - **发起人**: DSH AI Agent
-> - **当前版本**: V0.1.4
+> - **当前版本**: V0.1.5
 > - **初次发起日期**: 2026-11-22
 > - **目标里程碑**: doc-governance V1.1.0（新增脚本 + 可选门禁；**不改变现有默认计分口径**）
 > - **关联前置**: [LLM-WIKI 社区实现调研](../explanation/analysis/llm-wiki-implementation-research.md)（§4.2 / §6.2 / §7）、[GOVERNANCE.md](../GOVERNANCE.md)、[doc-governance SKILL](../../skills/doc-governance/SKILL.md)
@@ -16,11 +16,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.1.5** | 2026-11-22 | DSH AI Agent | 王辉 | **放行确认 R2D2-1 收口**：空账本（docs 为空且已声明锚点）视同不可用 rc=2；warn 模式下 drifted/missing/stale/unverified 一并计入缺陷，不再与「完美」并存（R2D2-3） |
 | **V0.1.4** | 2026-11-22 | DSH AI Agent | 王辉 | **Delta 终审 R2D-1 收口**：账本缺席/损坏在门禁模式下 rc=2；墓碑判据换为全局锚点多重集（改名合法、删除违规）；未来日期落 unverified；修正「只读」表述与写账本并列的自相矛盾 |
 | **V0.1.3** | 2026-11-22 | DSH AI Agent | 王辉 | **R2 三项 Blockers 收口**：基线墓碑（删/缩锚点即违规）、未跟踪锚点落 unverified、missing_anchor 与 drifted 同权失败；围栏内示例不再被当真声明；判定梯收敛为 `truth_blockers()` 单点（BK-0028 口径） |
 | **V0.1.2** | 2026-11-22 | DSH AI Agent | 王辉 | **R1 阻断项收口**（4×P1）：同日复核按当日末刻、require 增覆盖率下限防「删锚点洗绿」、浅克隆 fail-closed（rc=2）、真值阻断理由与「完美」文案互斥；锚点分隔符不再切碎含逗号路径 |
 | **V0.1.1** | 2026-11-22 | DSH AI Agent | 王辉 | 实现期修正：① 判定五态补 `stale` 并按优先级排序；② 根级入口文档改为「仅未声明锚点时豁免」（避免 GOVERNANCE 声明了却不在统计内）；③ 门禁开关与实现对齐为 `--truth=require` |
-| **V0.1.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初稿：以调研报告 P0 三项为输入，给出「双轴并置」方案、三字段语法、漂移检测契约与验收用例；记录 D-1~D-6 决策台账 |
 
 ---
 
@@ -88,6 +88,7 @@
 | 豁免 | `project/reviews/**`（逐字凭据）、`archive/**`；根级入口文档（index/README/GOVERNANCE）**仅在未声明锚点时**不计入分母——声明了却排除会造成静默覆盖黑洞 |
 | 幂等 | 默认路径**只读**；唯一写操作是显式的 --write-baseline（只写 <root>/.doc-truth-baseline.json） |
 | 账本可用性 | 门禁模式（--fail-on-drift）下账本 missing/corrupt ⇒ **rc=2** fail-closed（「保护不可得」不得与「无违规」同形）；非门禁模式降级报告 |
+| 空账本 | 结构合法但 docs 为空且存在已声明锚点 ⇒ 视同不可用（rc=2）——`{"docs":{}}` 一次编辑即可让墓碑失效，成本与删账本相同 |
 | 改名/迁移 | 墓碑判据为**全局锚点多重集不减少**：纯改名/拆分合法；删文档、删锚点、缩减多锚点均违规。合法迁移用 --write-baseline 显式刷新并在提交信息登记 |
 | 未来日期 | 「复核于」超前当前时间 1 天以上 ⇒ unverified（未来日期不是复核） |
 

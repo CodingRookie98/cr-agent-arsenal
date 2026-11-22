@@ -620,5 +620,84 @@ class TestR2DeltaBlockers(unittest.TestCase):
         self.assertEqual(status, "unverified")
 
 
+
+class TestR2D2Blockers(unittest.TestCase):
+    """放行确认 R2D2-1/R2D2-3 回归：空账本与 warn 报告诚实度"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.audit = load_module("audit_doc_health", SCRIPTS_DIR / "audit-doc-health.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_r2d2_"))
+        self.env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, env=self.env, capture_output=True, text=True)
+
+    def _make_repo(self):
+        self._git("init", "-q")
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir()
+        (docs / "a.md").write_text(make_doc("正文", anchors="src/a.py", verified="2026-11-22"), encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        return docs
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2d2_1_empty_baseline_fails_closed(self):
+        docs = self._make_repo()
+        (docs / self.mod.DEFAULT_BASELINE_NAME).write_text('{"version": 1, "docs": {}}', encoding="utf-8")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+        self.assertIn("empty", proc.stderr)
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2d2_1_empty_baseline_without_declarations_is_not_an_error(self):
+        self._git("init", "-q")
+        docs = self.root / "docs"
+        docs.mkdir()
+        (docs / "a.md").write_text("# A\n\n无锚点\n", encoding="utf-8")
+        (docs / self.mod.DEFAULT_BASELINE_NAME).write_text('{"version": 1, "docs": {}}', encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2d2_3_warn_mode_never_says_perfect_when_drifted(self):
+        docs = self._make_repo()
+        self.mod.write_baseline(
+            docs / self.mod.DEFAULT_BASELINE_NAME,
+            self.mod.analyze(docs, repo=self.root, baseline_path=None)["docs"],
+        )
+        (self.root / "src" / "a.py").write_text("x = 2\n", encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "change anchor")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", str(docs), "--truth=warn"],
+            capture_output=True, text=True,
+        )
+        self.assertIn("drifted", proc.stdout)
+        self.assertNotIn("完美", proc.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

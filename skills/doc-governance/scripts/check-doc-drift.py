@@ -262,6 +262,10 @@ def load_baseline(path: Optional[Path]) -> Tuple[Dict[str, List[str]], str]:
         for doc, anchors in docs.items()
         if isinstance(anchors, list)
     }
+    # R2D2-1：结构合法但**为空**的账本同样是「保护不可得」——`{"docs":{}}` 只需一次
+    # 文件编辑即可让墓碑整体失效，成本与删除账本相同。
+    if not parsed:
+        return {}, "empty"
     return parsed, "ok"
 
 
@@ -481,7 +485,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 print(f"      - {item['doc']} 缺失: {', '.join(item['missing']) or '全部锚点'}")
 
     # R2D-1：「保护不可得」不得与「无违规」同形。门禁模式下账本缺席/损坏 ⇒ rc=2。
-    if args.fail_on_drift and summary["baseline_status"] in ("missing", "corrupt"):
+    baseline_unusable = summary["baseline_status"] in ("missing", "corrupt") or (
+        summary["baseline_status"] == "empty" and summary["declared"] > 0
+    )
+    if args.fail_on_drift and baseline_unusable:
         print(
             f"❌ 错误: 锚点基线不可用（{summary['baseline_status']}）：{baseline_path}。"
             "墓碑判据无法成立，按 fail-closed 处理；首次启用请先运行 --write-baseline 并提交该账本。",
