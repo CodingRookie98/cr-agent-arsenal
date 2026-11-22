@@ -69,6 +69,11 @@ def main() -> int:
             [py, str(SCRIPTS_DIR / "audit-doc-health.py"), "--root", root, "--repo", "."],
             "按体检报告逐项修复",
         ),
+        (
+            "可回答性",
+            [py, str(SCRIPTS_DIR / "check-golden-tasks.py"), "--root", root, "--quiet"],
+            "FAIL 项按输出修复；GAP 项为真实知识缺口，登记 backlog 而非当场补写",
+        ),
     ]
     if args.full:
         checks.append(
