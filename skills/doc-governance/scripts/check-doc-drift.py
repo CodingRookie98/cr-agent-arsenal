@@ -50,17 +50,24 @@ def in_evidence_archive(path: Path, root_dir: Path) -> bool:
     return rel.parts[:2] == EVIDENCE_ARCHIVE_PARTS
 
 
-def _clean_value(raw: str) -> str:
-    return raw.replace("**", "").replace("`", "").strip()
+def _clean_value(raw: str, strip_bold: bool = True) -> str:
+    """清洗控制头值。**锚点必须 strip_bold=False**：`src/**` 的 `**` 是 glob，不是加粗。"""
+    text = raw.replace("`", "").strip()
+    return text.replace("**", "").strip() if strip_bold else text
 
 
 def normalize_anchor(raw: str) -> Optional[Dict]:
     """把一条锚点声明归一为 {"path", "line_start", "line_end"}；越界/绝对路径返回 None。"""
-    text = _clean_value(raw)
+    text = _clean_value(raw, strip_bold=False)
     if not text:
         return None
     if text.startswith("/") or text.startswith("\\") or re.match(r"^[A-Za-z]:[\\/]", text):
         return None
+    # R2D-6：glob / 占位符锚点不是可 stat 的路径，标记为不可机械核验（后续落 unverified），
+    # 而不是一律判 missing_anchor 硬红。
+    if any(ch in text for ch in "*?[]{}<>"):
+        clean = text.replace("\\", "/").strip("/")
+        return {"path": clean or text, "line_start": None, "line_end": None, "unverifiable": True}
     body = text
     line_start = line_end = None
     m = _ANCHOR_LINE.match(text)
@@ -72,7 +79,7 @@ def normalize_anchor(raw: str) -> Optional[Dict]:
     parts = [p for p in body.replace("\\", "/").split("/") if p not in ("", ".")]
     if not parts or any(p == ".." for p in parts):
         return None
-    return {"path": "/".join(parts), "line_start": line_start, "line_end": line_end}
+    return {"path": "/".join(parts), "line_start": line_start, "line_end": line_end, "unverifiable": False}
 
 
 def parse_truth_fields(content: str) -> Dict:
@@ -99,7 +106,8 @@ def parse_truth_fields(content: str) -> Dict:
             continue
         key, value = clean.split(sep, 1)
         key_clean = _clean_value(key).lower()
-        value = _clean_value(value)
+        # 值不做全局去加粗：锚点里的 ** 是 glob。各分支按自身语义清洗。
+        value = value.strip()
         if not value:
             continue
         if key_clean in ("来源", "sources", "source"):
@@ -107,11 +115,12 @@ def parse_truth_fields(content: str) -> Dict:
         elif key_clean in ("代码锚点", "锚点", "anchors", "code-anchors"):
             anchors = []
             for chunk in _ANCHOR_SPLIT.split(value):
-                anchor = normalize_anchor(chunk)
+                anchor = normalize_anchor(_clean_value(chunk, strip_bold=False))
                 if anchor is not None:
                     anchors.append(anchor)
             fields["anchors"] = anchors
         elif key_clean in ("复核于", "复核", "verified", "verified-at"):
+            value = _clean_value(value)
             date_m = _DATE.search(value)
             commit_m = _COMMIT.search(value)
             fields["verified_at"] = date_m.group(1) if date_m else None
@@ -127,12 +136,15 @@ def classify_doc(
     now_ts: int,
     max_age_days: int,
     anchor_tracked: Optional[Sequence[bool]] = None,
+    anchor_unverifiable: Optional[Sequence[bool]] = None,
 ) -> str:
     """五态判定，优先级：missing_anchor > drifted > stale > unverified > fresh。
 
     R2-1（R1-5 升级）：锚点文件存在但**未被版本控制**时没有提交时间可用，
     既不能判漂移也不能判新鲜——必须落 unverified，否则「未提交的改动」会被当成 fresh。
     """
+    if anchor_unverifiable is not None and any(anchor_unverifiable):
+        return "unverified"
     if any(not exists for exists in anchor_exists):
         return "missing_anchor"
     if anchor_tracked is not None and any(exists and not tracked for exists, tracked in zip(anchor_exists, anchor_tracked)):
@@ -302,13 +314,17 @@ def _removed_from_baseline(baseline: Dict[str, List[str]], current: Dict[str, Li
     deficits = {path: n - cur_counts.get(path, 0) for path, n in base_counts.items() if cur_counts.get(path, 0) < n}
     if not deficits:
         return []
+    # R2D2-2：归属精确化——只把「该文档自身声明数下降」的路径算到它头上，
+    # 未改动却共享同一锚点的文档不再被列成缺失；同一路径只计一次。
     removed = []
     for doc, anchors in baseline.items():
-        missing = [a for a in anchors if a in deficits]
+        base_c = Counter(anchors)
+        cur_c = Counter(current.get(doc, []))
+        missing = [p for p, n in base_c.items() if p in deficits and cur_c.get(p, 0) < n]
         if missing:
             removed.append({
                 "doc": doc,
-                "missing": missing,
+                "missing": sorted(set(missing)),
                 "declared_now": current.get(doc, []),
             })
     if not removed:  # 防御：deficit 存在但无 doc 可归因（手改账本）
@@ -352,11 +368,19 @@ def analyze(
         exists: List[bool] = []
         commits: List[Optional[int]] = []
         tracked: List[bool] = []
+        unverifiable: List[bool] = []
         for anchor in anchors:
-            if repo_path is not None:
-                anchor_exists = (repo_path / anchor["path"]).is_file()
-            else:
-                anchor_exists = (root / anchor["path"]).is_file()
+            if anchor.get("unverifiable"):
+                unverifiable.append(True)
+                exists.append(True)
+                commits.append(None)
+                tracked.append(False)
+                continue
+            unverifiable.append(False)
+            # R2D-6：目录锚点（如 skills/doc-governance）按「存在」对待，git log 对目录有效。
+            base = repo_path if repo_path is not None else root
+            candidate = base / anchor["path"]
+            anchor_exists = candidate.is_file() or candidate.is_dir()
             exists.append(anchor_exists)
             commit_ts = (
                 git_last_commit_ts(repo_path, anchor["path"]) if (repo_path is not None and anchor_exists) else None
@@ -371,6 +395,7 @@ def analyze(
             now_ts=now,
             max_age_days=max_age_days,
             anchor_tracked=tracked if repo_path is not None else None,
+            anchor_unverifiable=unverifiable,
         )
         record = {
             "doc": rel_doc,
@@ -418,8 +443,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                         help=f"锚点基线（墓碑）路径，默认 <root>/{DEFAULT_BASELINE_NAME}")
     parser.add_argument("--write-baseline", action="store_true",
                         help="把当前声明写为基线（阻断「删锚点洗绿」的机械依据）")
-    parser.add_argument("--fail-on-unverified", action="store_true",
-                        help="连 unverified / stale 一并视为失败（默认只对 drifted 与 missing_anchor 失败）")
+    parser.add_argument("--allow-unverified", action="store_true",
+                        help="豁免 unverified / stale 的阻断（默认与 drifted 同权）")
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
@@ -496,11 +521,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
         return 2
     # R2-2（R1-6 升级）：missing_anchor 是硬断裂（锚点被删除/移动），必须与 drifted 同权。
-    if args.fail_on_drift and (
-        summary["drifted"] or summary["missing_anchor"] or summary["removed_from_baseline"]
-    ):
-        return 1
-    if args.fail_on_unverified and (summary["unverified"] or summary["stale"]):
+    # R2D-5：门禁口径改为「任何非 fresh 的已声明文档都阻断」——unverified 与 stale 不再是
+    # 免检通道（否则「声明锚点但永不复核」可长期绿灯）。
+    blocking = (
+        summary["drifted"] + summary["missing_anchor"] + summary["removed_from_baseline"]
+        + summary["stale"] + summary["unverified"]
+    )
+    if args.allow_unverified:
+        blocking -= summary["stale"] + summary["unverified"]
+    if args.fail_on_drift and blocking:
         return 1
     return 0
 

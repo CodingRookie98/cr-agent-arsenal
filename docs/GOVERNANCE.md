@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.7.6
+> - **当前版本**: V1.7.7
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-20
 > - **代码锚点**: skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
@@ -14,11 +14,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.7.7** | 2026-11-22 | DSH AI Agent | 王辉 | **R2D-5/R2D-6 收口**：门禁口径非 fresh 即阻断（`--allow-unverified` 豁免）；glob/占位符锚点落 unverified、目录锚点受支持；墓碑归属精确化；审计支持 `--repo` |
 | **V1.7.6** | 2026-11-22 | DSH AI Agent | 王辉 | **放行确认收口**：空账本视同不可用（rc=2）；warn 模式把 drifted/missing/stale/unverified 计入缺陷，禁止与「完美」并存 |
 | **V1.7.5** | 2026-11-22 | DSH AI Agent | 王辉 | 复核点跟随 Delta 修复提交 eb8a9c0 重钉（锚点文件已被 eb8a9c0 改动） |
 | **V1.7.4** | 2026-11-22 | DSH AI Agent | 王辉 | **Delta 收口**：账本缺席/损坏 ⇒ 门禁 rc=2；墓碑判据改全局锚点多重集（改名合法、删除违规）；未来日期 unverified；warn 报告面不再在账本异常时打印「完美」 |
 | **V1.7.3** | 2026-11-22 | DSH AI Agent | 王辉 | 复核点由「仅日期」升级为「日期 + commit」：自证不再依赖当日末刻的宽口径（R2 残留风险 ②） |
-| **V1.7.2** | 2026-11-22 | DSH AI Agent | 王辉 | **R2 三项 Blockers 收口**：真值门口径改为「基线墓碑 + 覆盖率下限 + 真值分」三重；未跟踪锚点落 unverified；`--fail-on-drift` 覆盖 missing_anchor 与墓碑违规；判定梯单一出口 `truth_blockers()` |
 
 ---
 

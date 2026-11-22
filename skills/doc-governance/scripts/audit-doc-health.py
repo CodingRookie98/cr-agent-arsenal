@@ -23,7 +23,7 @@ import shlex
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import importlib.util
 
@@ -526,6 +526,7 @@ def audit_health(
     compat_mode: bool = False,
     truth_mode: str = "warn",
     max_age_days: int = 180,
+    repo_path: Optional[Path] = None,
 ) -> Dict:
     """执行全面的健康度体检"""
     all_md_files = [
@@ -661,14 +662,15 @@ def audit_health(
     # 真值轴（RFC-0005 §4.3）：与结构分**并行**，不合并进 total_score。零声明时
     # enabled=False 且分数为 0——「未启用」不得被读成「满分」。
     truth_unavailable = None
+    repo_root = repo_path if repo_path is not None else root_dir.parent
     try:
-        if _drift_mod.is_shallow_repo(root_dir.parent):
+        if _drift_mod.is_shallow_repo(repo_root):
             truth_unavailable = "shallow repository（历史提交时间不可得，需 fetch-depth: 0）"
     except Exception:
         truth_unavailable = "git 探测失败"
     truth_raw = _drift_mod.analyze(
         root_dir,
-        repo=root_dir.parent if truth_unavailable is None else None,
+        repo=repo_root if truth_unavailable is None else None,
         max_age_days=max_age_days,
         baseline_path=root_dir / _drift_mod.DEFAULT_BASELINE_NAME,
     )
@@ -736,6 +738,8 @@ def main():
     parser.add_argument("--min-coverage", type=float, default=0.5,
                         help="require 模式下的锚点声明覆盖率下限 (默认 0.5，防「删锚点洗绿」)")
     parser.add_argument("--max-age-days", type=int, default=180, help="复核时效上限（天，0 表示不检查）")
+    parser.add_argument("--repo", default=None,
+                        help="仓库根（真值轴锚点基准；默认取 --root 的父目录）")
 
     args = parser.parse_args()
     root_path = Path(args.root).resolve()
@@ -750,6 +754,7 @@ def main():
         compat_mode=args.compat,
         truth_mode=args.truth,
         max_age_days=args.max_age_days,
+        repo_path=Path(args.repo).resolve() if args.repo else None,
     )
     if "error" in res:
         print(f"❌ {res['error']}", file=sys.stderr)

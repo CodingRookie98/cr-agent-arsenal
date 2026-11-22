@@ -464,6 +464,11 @@ class TestR2Blockers(unittest.TestCase):
         (docs / "a.md").write_text(
             make_doc("正文", anchors="src/a.py", verified="2026-11-22"), encoding="utf-8"
         )
+        subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(repo), "--write-baseline"],
+            capture_output=True, text=True, check=True,
+        )
         proc = subprocess.run(
             [
                 sys.executable,
@@ -472,7 +477,7 @@ class TestR2Blockers(unittest.TestCase):
                 str(docs),
                 "--repo",
                 str(repo),
-                "--fail-on-unverified",
+                "--fail-on-drift",
             ],
             capture_output=True,
             text=True,
@@ -697,6 +702,96 @@ class TestR2D2Blockers(unittest.TestCase):
         )
         self.assertIn("drifted", proc.stdout)
         self.assertNotIn("完美", proc.stdout)
+
+
+
+class TestR2D56AnchorsAndGate(unittest.TestCase):
+    """R2D-5（非 fresh 即阻断）/ R2D-6（glob 与目录锚点）/ R2D2-2（墓碑归属）"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_r2d56_"))
+        self.env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, env=self.env, capture_output=True, text=True)
+
+    def _repo_with(self, files):
+        self._git("init", "-q")
+        for rel, content in files.items():
+            target = self.root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir(exist_ok=True)
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        return docs
+
+    def _run(self, docs, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), *extra],
+            capture_output=True, text=True,
+        )
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2d6_glob_anchor_is_unverified_not_missing(self):
+        docs = self._repo_with({"src/a.py": "x=1\n"})
+        (docs / "a.md").write_text(
+            make_doc("正文", anchors="src/**", verified="2026-11-22"), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        payload = json.loads(self._run(docs, "--json", "--allow-unverified").stdout)
+        self.assertEqual(payload["docs"][0]["status"], "unverified")
+        self.assertEqual(payload["summary"]["missing_anchor"], 0)
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2d6_directory_anchor_is_accepted(self):
+        docs = self._repo_with({"src/a.py": "x=1\n"})
+        sha = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        (docs / "a.md").write_text(
+            make_doc("正文", anchors="src", verified=f"2026-11-22 / commit {sha}"), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        payload = json.loads(self._run(docs, "--json", "--fail-on-drift").stdout)
+        self.assertEqual(payload["docs"][0]["status"], "fresh")
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2d5_unverified_blocks_gate_by_default(self):
+        docs = self._repo_with({"src/a.py": "x=1\n"})
+        (docs / "a.md").write_text(make_doc("正文", anchors="src/a.py"), encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        self.assertEqual(self._run(docs, "--write-baseline").returncode, 0)
+        blocked = self._run(docs, "--fail-on-drift")
+        self.assertEqual(blocked.returncode, 1, blocked.stdout + blocked.stderr)
+        allowed = self._run(docs, "--fail-on-drift", "--allow-unverified")
+        self.assertEqual(allowed.returncode, 0, allowed.stdout + allowed.stderr)
+
+    def test_r2d2_2_tombstone_attribution_only_hits_shrinking_doc(self):
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x=1\n", encoding="utf-8")
+        self._write_ok = True
+        (self.root / "a.md").write_text(make_doc("甲", anchors="src/a.py", verified="2026-11-22"), encoding="utf-8")
+        (self.root / "b.md").write_text(make_doc("乙", anchors="src/a.py", verified="2026-11-22"), encoding="utf-8")
+        baseline = self.root / self.mod.DEFAULT_BASELINE_NAME
+        self.mod.write_baseline(baseline, self.mod.analyze(self.root, now_ts=2000, baseline_path=None)["docs"])
+        (self.root / "a.md").write_text(make_doc("甲", verified="2026-11-22"), encoding="utf-8")
+        res = self.mod.analyze(self.root, now_ts=2000, baseline_path=baseline)
+        self.assertEqual([item["doc"] for item in res["removed_from_baseline"]], ["a.md"])
+        self.assertEqual(res["removed_from_baseline"][0]["missing"], ["src/a.py"])
 
 
 if __name__ == "__main__":
