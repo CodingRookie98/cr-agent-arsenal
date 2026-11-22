@@ -2,7 +2,9 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-DOC-GOVERNANCE-2026
-> - **当前版本**: V1.3.0 (新增目录级索引约定：象限索引托管化、托管标记契约与 scaffold 索引自愈)
+> - **当前版本**: V1.4.0 (新增真值轴：代码锚点漂移检测与双轴健康报告)
+> - **代码锚点**: skills/doc-governance/SKILL.md, skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
+> - **复核于**: 2026-11-22
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-10
@@ -201,6 +203,7 @@ docs/
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.4.0** | 2026-11-22 | DSH AI Agent | 王辉 | 新增真值轴（RFC-0005）：控制头三字段（来源/代码锚点/复核于）、`check-doc-drift.py` 五态判定与 `audit-doc-health.py --truth` 双轴报告；本设计书自身登记锚点与复核点 |
 | **V1.3.0** | 2026-10-09 | AI Agent | 王辉 | 详细描述本次修改的核心架构点、对应提交 SHA 与闭环状态。 |
 ```
 

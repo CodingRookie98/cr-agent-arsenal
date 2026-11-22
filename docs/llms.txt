@@ -9,6 +9,7 @@
 - [RFC-0002: dual-round-review 审查报告子智能体直写契约](proposals/RFC-0002-subagent-direct-write.md): RFC-0001 解决了「报告全文从未落盘」，但其选定方案把写盘动作判给了**主智能体**（[RFC-0001 §3.7](proposals/RFC-0001-review-report-archive.md)）：
 - [RFC-0003: 目录级索引约定与 scaffold 索引自愈](proposals/RFC-0003-quadrant-index-convention.md): `doc-governance` 的脚手架生成器 `scaffold-doc.sh` 在 `tutorial` 分支的产物模板中硬编码了一条跨象限链接：
 - [RFC-0004: spec-evolution 技能 —— 面向提示词与技能的机械化演进回路](proposals/RFC-0004-spec-evolution.md): 2026-10-12 在 `master`（HEAD `10359c2`）实测既有三道机械门禁，**全部 PASS**：
+- [RFC-0005: 文档真值轴 —— 来源/代码锚点、漂移检测与真值分维度](proposals/RFC-0005-doc-truth-axis.md): 调研报告给出三条硬证据，指向同一个缺口——**我们测得到「文档写得规不规范」，测不到「文档还对不对」**：
 
 ## Reference (技术参考 / 机器事实唯一真相源)
 
@@ -103,6 +104,7 @@
 - [P2 批次六项 backlog 卡片闭环实施计划 (Implementation Plan)](project/plans/2026-10-14-p2-six-backlog-items.md)
 - [自建技能脚本 Python 统一化实施计划 (Implementation Plan)](project/plans/2026-10-19-skill-scripts-python-unification.md): 1. 8 个技能各自拥有 `<name>.py` 实现，在 **Windows 原生 Python** 与 **WSL/Linux Python** 上均可直接执行，行为与改造前 Bash 实现**逐字节一致**（stdout/stderr...
 - [P3 六项 Backlog 批次实施计划 (Implementation Plan)](project/plans/2026-10-20-p3-six-backlog-batch.md): 1. **六张卡片 DoD 逐项达成**：BK-0045 / BK-0010 / BK-0008 / BK-0016 / BK-0007 / BK-0014 卡片 §3 所列验收条件全部满足。说明（R2 §1.2.5 反向发现）：BK-00...
+- [文档真值轴（来源/代码锚点/漂移检测）实施计划](project/plans/2026-11-22-doc-truth-axis.md): **目标**：让知识库第一次具备**可机械测定的真值轴**——文档能声明自己依赖哪些代码、何时被复核过；工具能回答「哪些文档的依赖已经变了」，并在需要时阻断。
 
 ## Other Documentation (其他文档)
 

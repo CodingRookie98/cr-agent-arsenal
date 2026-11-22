@@ -2,9 +2,11 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.6.2
+> - **当前版本**: V1.7.0
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-20
+> - **代码锚点**: skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
+> - **复核于**: 2026-11-22
 
 ---
 
@@ -12,11 +14,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.7.0** | 2026-11-22 | DSH AI Agent | 王辉 | **真值轴接入（RFC-0005）**：§3 新增 `check-doc-drift.py`（代码锚点漂移五态 + 退出码 0/1/2），`audit-doc-health.py` 增 `--truth=warn|require` 双轴报告；§4 新增「严禁删锚点清零」红线；控制头登记本规程自身的代码锚点与复核点 |
 | **V1.6.2** | 2026-10-20 | DSH AI Agent | 王辉 | BK-0007 豁免口径精确化：§4.1 主句由「豁免以下扫描」改为「**不参与任何计分维度扫描**」；显式声明归档索引 `README.md` 的控制头与报告清单互链属**无门禁守卫的可读性约定**（人工维护，不参与一致性/断链/健康扫描） |
 | **V1.6.1** | 2026-10-19 | DSH AI Agent | 王辉 | 技能脚本 Python 统一化同步：`scaffold-doc` 与 `prepare-review-context` 的现行主路径命令改为 `.py` 实现（`.sh` 退为 POSIX 兼容壳，旧调用仍可用），§2 目录级索引约定与 §3 工具链表、§4.1 边界行同步 |
 | **V1.6.0** | 2026-10-13 | DSH AI Agent | 王辉 | 断链扫描域扩容：`check-doc-links.py` 根扫描显式纳入 `<docs 根>/llms.txt`（此前 `.txt` 不在 `*.md` 扫描域，其相对链接游离于门禁外）⇒ §4.1 零覆盖态豁免中「死链不受任何门禁覆盖」的代价不再成立，同步收敛该段口径 |
 | **V1.5.0** | 2026-10-09 | DSH AI Agent | 王辉 | 补「目录级索引约定」：根级人类入口唯一、象限索引按需托管（`<!-- doc-index:managed -->` 标记 + 幂等登记 + 人工索引零改写），新增工具 `manage-doc-index.py` 与 `scaffold-doc.sh` 索引自愈 |
-| **V1.4.0** | 2026-10-04 | DSH AI Agent | 王辉 | 目录拓扑补 `docs/project/reviews/`（交付凭据归档：审查报告全文进版本库）与 `docs/project/plans/`；归档根遵循「推荐默认 + 宿主优先」 |
 
 ---
 
@@ -84,6 +86,7 @@ docs/
 | **`check-doc-links.py`** | 静态扫描物理文件超链接与 `#anchor` 锚点（根扫描含机器地图 `llms.txt`） | 提交前 / CI 门禁 | `python3 skills/doc-governance/scripts/check-doc-links.py --root docs` |
 | **`trim-revision.py`** | 自动裁剪历史记录至最近 5 条滑动窗口 | 提交前 / 维护 | `python3 skills/doc-governance/scripts/trim-revision.py --root docs --fix --keep 5` |
 | **`audit-doc-health.py`** | 综合健康体检（打分 0-100 分，断链/元数据/孤儿/架构/**机器地图一致性**） | 交付验收 / 定期体检 | `python3 skills/doc-governance/scripts/audit-doc-health.py --root docs` |
+| **`check-doc-drift.py`** | 真值轴漂移检测（代码锚点存在性 + git 提交时间 vs `复核于`；五态输出；零声明不颁发满分） | 交付前 / 定期巡检 | `python3 skills/doc-governance/scripts/check-doc-drift.py --root docs --repo . [--fail-on-drift]` |
 | **`generate-llms-txt.py`** | 自动提取 Frontmatter 并刷新机器地图 `llms.txt` | 文档拓扑变动后 | `python3 skills/doc-governance/scripts/generate-llms-txt.py --root docs --output docs/llms.txt` |
 | **`manage-doc-index.py`** | 象限索引托管维护（ensure 骨架 / register 幂等登记 / 人工索引零改写） | 新建文档后 / 拓扑变动 | `python3 skills/doc-governance/scripts/manage-doc-index.py register --root docs --dir how-to --file deployment.md --title "部署 SOP" --kind HowTo` |
 | **`scaffold-doc.py`** | 快速生成符合 Diátaxis 规范的文档脚手架，并自动 ensure 象限索引与登记（跨象限链接按需降级；POSIX 下旧 `.sh` 兼容壳仍可用） | 新建文档时 | `python3 skills/doc-governance/scripts/scaffold-doc.py <type> <name>` |
@@ -101,7 +104,8 @@ docs/
 3. **⛔ 严禁机器地图与生成物不一致**：`docs/llms.txt` 必须是注册命令 `generate-llms-txt.py --root docs --output docs/llms.txt` 在该树上的**逐字节产物**（先定稿全部文档、最后重生成）；`audit-doc-health.py` 已将其固化为硬阻断项，漂移即 REJECT；
 4. **⛔ 严禁修订历史无限膨胀**：每个文档修订历史表格最多保留 5 条最新记录，超过部分必须裁剪；
 5. **⛔ 严禁瀑布生命周期旧目录**：严禁创建 `docs/requirements/`、`docs/design/`、`docs/planning/` 等旧时代目录，必须归入对应 Diátaxis 象限；
-6. **⛔ 严禁文件命名随意混乱**：一律采用纯小写 `kebab-case` 命名风格（如 `goal-loop-design.md`），禁止驼峰与无规则空格。
+6. **⛔ 严禁文件命名随意混乱**：一律采用纯小写 `kebab-case` 命名风格（如 `goal-loop-design.md`），禁止驼峰与无规则空格；
+7. **⛔ 严禁「删锚点清零」自我豁免**：声明过 `代码锚点` 的文档，禁止为让 `check-doc-drift.py` 变绿而删除锚点声明或伪造 `复核于`——删除声明等于把文档移出真值统计（RFC-0005 §3 已点名此反模式）。正确动作是**复核断言**：内容仍成立则只刷新复核点，不成立则改文档。
 
 ---
 
