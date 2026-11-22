@@ -99,7 +99,15 @@ def normalize_anchor(raw: str) -> Optional[Dict]:
     # R2D56-4：散文锚点不是「路径不存在」，归为 invalid 并给修复提示。
     # R3-1：判据必须是「不像路径」而非「含空格/中文」——后者会吞掉合法路径。
     if not _looks_like_path(text):
-        return {"path": text, "line_start": None, "line_end": None,
+        # R3DC-1：invalid 分支也要把行区间拆出来，path 只留主体——
+        # 否则存在性探测与基线比对会拿 "说明:3" 去 stat。
+        body = _LINE_RANGE.sub("", text)
+        m_invalid = _ANCHOR_LINE.match(text)
+        start = end = None
+        if m_invalid and m_invalid.group("start"):
+            start = int(m_invalid.group("start"))
+            end = int(m_invalid.group("end")) if m_invalid.group("end") else start
+        return {"path": body, "line_start": start, "line_end": end,
                 "unverifiable": True, "invalid": True}
     body = text
     line_start = line_end = None
@@ -393,6 +401,10 @@ def analyze(
     repo_path = Path(repo).resolve() if repo is not None else None
     now = int(now_ts if now_ts is not None else _time.time())
     current_anchors: Dict[str, List[str]] = {}
+    # R3DC-1：存在性与「基线登记过」都必须**先于**形态判断生效——
+    # 形态白名单已三次同族误伤（R3-1 → R3D-1 → R3DC-1），单靠字符类无法穷举合法文件名。
+    baseline_preload, _ = load_baseline(baseline_path)
+    baseline_paths = {p for anchors in baseline_preload.values() for p in anchors}
 
     docs: List[Dict] = []
     total_docs = 0
@@ -416,7 +428,14 @@ def analyze(
         commits: List[Optional[int]] = []
         tracked: List[bool] = []
         unverifiable: List[bool] = []
-        for anchor in anchors:
+        base_dir = repo_path if repo_path is not None else root
+        for idx, anchor in enumerate(anchors):
+            # 存在性优先：文件/目录真的在，就一定是路径（哪怕含空格/中文/行区间）。
+            probe = base_dir / _LINE_RANGE.sub("", anchor["path"]).strip("/")
+            exists_on_disk = probe.is_file() or probe.is_dir()
+            if anchor.get("invalid") and (exists_on_disk or anchor["path"] in baseline_paths):
+                anchor = {**anchor, "invalid": False, "unverifiable": False}
+                anchors[idx] = anchor
             if anchor.get("unverifiable"):
                 unverifiable.append(True)
                 exists.append(True)

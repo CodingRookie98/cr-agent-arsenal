@@ -1106,5 +1106,86 @@ class TestR3DFixes(unittest.TestCase):
         self.assertIn("src/gone.py", proc.stdout)
 
 
+
+class TestR3DC1ExistenceFirst(unittest.TestCase):
+    """R3DC-1 根治：存在性优先于形态判断（同族事故第三次）"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_r3dc_"))
+        self.env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, env=self.env, capture_output=True, text=True)
+
+    def _run(self, docs, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), *extra],
+            capture_output=True, text=True,
+        )
+
+    def _repo(self, files):
+        self._git("init", "-q")
+        for rel, content in files.items():
+            target = self.root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir(exist_ok=True)
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        return docs, self._git("rev-parse", "--short", "HEAD").stdout.strip()
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r3dc_1_existing_cjk_file_with_line_range_is_a_path(self):
+        """\u8bf4\u660e:3 对应文件存在时必须是路径，不得判 invalid。"""
+        docs, sha = self._repo({"\u8bf4\u660e": "line1\nline2\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="\u8bf4\u660e:3", verified="2026-11-22 / commit " + sha),
+            encoding="utf-8",
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        payload = json.loads(self._run(docs, "--json", "--allow-unverified").stdout)
+        self.assertEqual(payload["docs"][0]["invalid_anchors"], [])
+        self.assertEqual(payload["docs"][0]["status"], "fresh")
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r3dc_1_baseline_registered_prose_like_path_is_missing_not_invalid(self):
+        """基线登记过的锚点被删除后必须 missing_anchor，不得退化成 invalid 静默放行。"""
+        docs, sha = self._repo({"\u8bf4\u660e": "line1\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="\u8bf4\u660e:3", verified="2026-11-22 / commit " + sha),
+            encoding="utf-8",
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        self.assertEqual(self._run(docs, "--write-baseline").returncode, 0)
+        self._git("rm", "-q", "\u8bf4\u660e")
+        self._git("commit", "-q", "-m", "remove")
+        payload = json.loads(self._run(docs, "--json", "--allow-unverified", "--fail-on-drift").stdout)
+        self.assertEqual(payload["docs"][0]["status"], "missing_anchor")
+        self.assertEqual(payload["docs"][0]["invalid_anchors"], [])
+
+    def test_r3dc_1_prose_still_invalid_when_never_existed(self):
+        (self.root / "docs").mkdir()
+        (self.root / "docs" / "a.md").write_text(
+            make_doc("body", anchors="\u89c1\u9644\u5f55 A", verified="2026-11-22"), encoding="utf-8"
+        )
+        res = self.mod.analyze(self.root / "docs", now_ts=2000)
+        self.assertEqual(res["docs"][0]["status"], "unverified")
+        self.assertEqual(res["docs"][0]["invalid_anchors"], ["\u89c1\u9644\u5f55 A"])
+
+
 if __name__ == "__main__":
     unittest.main()

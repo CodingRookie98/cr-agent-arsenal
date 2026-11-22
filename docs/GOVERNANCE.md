@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.7.10
+> - **当前版本**: V1.7.11
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-20
 > - **代码锚点**: skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
@@ -14,11 +14,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.7.11** | 2026-11-22 | DSH AI Agent | 王辉 | **R3DC-1 根治**：锚点判据顺序改为「存在性 → 基线登记 → 形态」，`说明:3` 这类非 ASCII 文件名不再被判 invalid 静默放行 |
 | **V1.7.10** | 2026-11-22 | DSH AI Agent | 王辉 | **R3D-1 回归收口**：行区间锚点（`Makefile:2`）先剥行区间再判形态；audit truth 块增 invalid 可见性；漂移明细带锚点名 |
 | **V1.7.9** | 2026-11-22 | DSH AI Agent | 王辉 | **R3 红队收口**：invalid 锚点判据改为「不像路径」（含空格/中文的合法路径不再被静默丢弃）；跨分隔符加粗先剥离；invalid 在文本输出可见；豁免数入 JSON |
 | **V1.7.8** | 2026-11-22 | DSH AI Agent | 王辉 | **计划 §9 收口**：glob/散文锚点退出判定集但不得掩盖真实漂移、加粗锚点正确剥离、`--allow-unverified` 强制留痕；口径见 RFC-0005 V0.1.8 |
 | **V1.7.7** | 2026-11-22 | DSH AI Agent | 王辉 | **R2D-5/R2D-6 收口**：门禁口径非 fresh 即阻断（`--allow-unverified` 豁免）；glob/占位符锚点落 unverified、目录锚点受支持；墓碑归属精确化；审计支持 `--repo` |
-| **V1.7.6** | 2026-11-22 | DSH AI Agent | 王辉 | **放行确认收口**：空账本视同不可用（rc=2）；warn 模式把 drifted/missing/stale/unverified 计入缺陷，禁止与「完美」并存 |
 
 ---
 
