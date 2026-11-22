@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-DOC-TRUTH-AXIS-2026
-> - **当前版本**: V1.1.0
+> - **当前版本**: V1.2.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 > - **代码锚点**: skills/doc-governance/scripts/check-doc-drift.py, skills/doc-governance/scripts/audit-doc-health.py
@@ -25,8 +25,8 @@
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P4（R1 已返回并收口 4×P1，待 R2 元审判）
-- **当前活跃子任务**: A-7 双轮审查（R2 终审）+ 归档
+- **当前活跃阶段**: P4 Delta（R2 判 3 Blockers，已收口，待 Delta 终审）
+- **当前活跃子任务**: A-7 Delta 终审 + 归档
 - **当前子任务重试计数**: 0/3（无触发；R1 阻断项一轮修复，未触发 3-Tries）
 - **门禁基线（改动前实测）**: `check-doc-links` rc=0（93 文件）｜`check-doc-control-sync` rc=0｜`audit-doc-health` PASS 100/100｜`pytest skills/doc-governance/tests` 161 passed
 - **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅ / A-6 ✅ / A-7 ⏳
@@ -101,6 +101,11 @@ python3 skills/doc-governance/scripts/check-doc-control-sync.py --root docs
 | **D-10** | 浅克隆显式 fail-closed（rc=2） | R1-3：`--depth 1` 下 `git log -1 -- path` 返回克隆 tip，100% 假漂移；RFC 承诺的 rc=2 此前未实现 | 已修 + 回归用例 |
 | **D-11** | 真值阻断理由并入 `has_issues` 链 | R1-4：require 下会同时打印「完美」与 REJECTED（BK-0028 禁止的并存） | 已修，输出互斥 |
 | **D-12** | 锚点分隔符改为「逗号仅后接空白」才切分 | 加固：`src/a,b.py` 这类合法路径会被切碎（R1 未列，代码自检发现） | 已修 + 回归用例 |
+| **D-13** | 新增锚点基线（墓碑）`<root>/.doc-truth-baseline.json` | R2-1：覆盖率下限只挡住「跌破阈值」，12 篇夹具删 2 条锚点后覆盖率恰为 0.5000 即可放行；墓碑改为「登记过就不许消失」 | 已修 + 2 条回归用例 |
+| **D-14** | 未跟踪锚点落 `unverified`，不再算 fresh | R2-2：`git log` 对未跟踪文件返回空 → 旧实现判 fresh，提交同一内容后立刻 drifted | 已修 + 回归用例 |
+| **D-15** | `--fail-on-drift` 同时覆盖 `missing_anchor` 与墓碑违规 | R2-3：锚点被删除/移动（矩阵第 7 行标题场景）在旧实现里 rc=0 | 已修 + 回归用例 |
+| **D-16** | 判定梯收敛为 `truth_blockers()` 单点 | R2：`main()` 复制了 `evaluate_verdict` 的判定链，违背 BK-0028「单一判定出口」 | 已修，两处共用 |
+| **D-17** | 围栏内示例不再被解析为声明 | R2-3（文档即输入）：教程/模板里的控制头骨架会被当成真登记 | 已修 + 回归用例 |
 
 ## 7. 回滚方案
 

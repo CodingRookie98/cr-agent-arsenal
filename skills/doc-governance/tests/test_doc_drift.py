@@ -399,3 +399,119 @@ class TestReviewFixes(unittest.TestCase):
         passed, reasons = self.audit.evaluate_verdict(res, 70.0, 12.0, 0.5)
         self.assertFalse(passed)
         self.assertTrue(any("覆盖率" in r for r in reasons), reasons)
+
+class TestR2Blockers(unittest.TestCase):
+    """R2 终审判定的 3 个 Blockers 回归（基线墓碑 / 未跟踪锚点 / missing_anchor 硬断裂）"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_r2_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _write(self, rel, text):
+        target = self.root / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+        return target
+
+    def test_r2_1_deleting_anchor_is_a_tombstone_violation(self):
+        """删掉锚点声明必须被基线墓碑捕获，否则 7.5 → 15.0 的洗绿通道仍然敞开。"""
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x=1\n", encoding="utf-8")
+        doc = self._write("a.md", make_doc("正文", anchors="src/a.py", verified="2026-11-22"))
+        baseline = self.root / self.mod.DEFAULT_BASELINE_NAME
+        first = self.mod.analyze(self.root, now_ts=2000, baseline_path=None)
+        self.mod.write_baseline(baseline, first["docs"])
+
+        doc.write_text(make_doc("正文", verified="2026-11-22"), encoding="utf-8")
+        res = self.mod.analyze(self.root, now_ts=2000, baseline_path=baseline)
+        self.assertFalse(res["enabled"])
+        self.assertEqual(len(res["removed_from_baseline"]), 1)
+        self.assertEqual(res["removed_from_baseline"][0]["doc"], "a.md")
+
+    def test_r2_1_baseline_survives_partial_shrink(self):
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x=1\n", encoding="utf-8")
+        (self.root / "src" / "b.py").write_text("y=2\n", encoding="utf-8")
+        doc = self._write("a.md", make_doc("正文", anchors="src/a.py, src/b.py", verified="2026-11-22"))
+        baseline = self.root / self.mod.DEFAULT_BASELINE_NAME
+        self.mod.write_baseline(baseline, self.mod.analyze(self.root, now_ts=2000, baseline_path=None)["docs"])
+        doc.write_text(make_doc("正文", anchors="src/a.py", verified="2026-11-22"), encoding="utf-8")
+        res = self.mod.analyze(self.root, now_ts=2000, baseline_path=baseline)
+        self.assertEqual(res["removed_from_baseline"][0]["missing"], ["src/b.py"])
+
+    def test_fenced_examples_are_not_declarations(self):
+        body = "# 教程\n\n```markdown\n> - **代码锚点**: src/demo.py\n> - **复核于**: 2026-11-22\n```\n"
+        fields = self.mod.parse_truth_fields(body)
+        self.assertEqual(fields["anchors"], [])
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2_2_untracked_anchor_is_unverified_not_fresh(self):
+        repo = self.root
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True, env=env)
+        (repo / "src").mkdir()
+        (repo / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")  # 故意不 add：未跟踪
+        docs = repo / "docs"
+        docs.mkdir()
+        (docs / "a.md").write_text(
+            make_doc("正文", anchors="src/a.py", verified="2026-11-22"), encoding="utf-8"
+        )
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / "check-doc-drift.py"),
+                "--root",
+                str(docs),
+                "--repo",
+                str(repo),
+                "--fail-on-unverified",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("unverified", proc.stdout)
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2_2_missing_anchor_fails_on_drift_flag(self):
+        repo = self.root
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True, env=env)
+        (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True, env=env)
+        subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=repo, check=True, env=env)
+        docs = repo / "docs"
+        docs.mkdir()
+        (docs / "a.md").write_text(
+            make_doc("正文", anchors="src/gone.py", verified="2026-11-22"), encoding="utf-8"
+        )
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / "check-doc-drift.py"),
+                "--root",
+                str(docs),
+                "--repo",
+                str(repo),
+                "--fail-on-drift",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("missing_anchor", proc.stdout)

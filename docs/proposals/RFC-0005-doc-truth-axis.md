@@ -4,7 +4,7 @@
 > - **标识**: RFC-2026-DOC-TRUTH-AXIS
 > - **当前状态**: In Review
 > - **发起人**: DSH AI Agent
-> - **当前版本**: V0.1.2
+> - **当前版本**: V0.1.3
 > - **初次发起日期**: 2026-11-22
 > - **目标里程碑**: doc-governance V1.1.0（新增脚本 + 可选门禁；**不改变现有默认计分口径**）
 > - **关联前置**: [LLM-WIKI 社区实现调研](../explanation/analysis/llm-wiki-implementation-research.md)（§4.2 / §6.2 / §7）、[GOVERNANCE.md](../GOVERNANCE.md)、[doc-governance SKILL](../../skills/doc-governance/SKILL.md)
@@ -16,6 +16,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.1.3** | 2026-11-22 | DSH AI Agent | 王辉 | **R2 三项 Blockers 收口**：基线墓碑（删/缩锚点即违规）、未跟踪锚点落 unverified、missing_anchor 与 drifted 同权失败；围栏内示例不再被当真声明；判定梯收敛为 `truth_blockers()` 单点（BK-0028 口径） |
 | **V0.1.2** | 2026-11-22 | DSH AI Agent | 王辉 | **R1 阻断项收口**（4×P1）：同日复核按当日末刻、require 增覆盖率下限防「删锚点洗绿」、浅克隆 fail-closed（rc=2）、真值阻断理由与「完美」文案互斥；锚点分隔符不再切碎含逗号路径 |
 | **V0.1.1** | 2026-11-22 | DSH AI Agent | 王辉 | 实现期修正：① 判定五态补 `stale` 并按优先级排序；② 根级入口文档改为「仅未声明锚点时豁免」（避免 GOVERNANCE 声明了却不在统计内）；③ 门禁开关与实现对齐为 `--truth=require` |
 | **V0.1.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初稿：以调研报告 P0 三项为输入，给出「双轴并置」方案、三字段语法、漂移检测契约与验收用例；记录 D-1~D-6 决策台账 |
@@ -78,9 +79,11 @@
 
 | 项 | 契约 |
 | :--- | :--- |
-| 入参 | `--root docs`、`--repo .`、`--json`、`--fail-on-drift`、`--max-age-days N`（默认 180） |
+| 入参 | `--root docs`、`--repo .`、`--json`、`--fail-on-drift`、`--fail-on-unverified`、`--max-age-days N`（默认 180）、`--baseline`、`--write-baseline` |
 | 判定 | 对每个文档：锚点存在性 → 锚点文件最近提交时间 vs `复核于` → 输出 `drifted / missing_anchor / stale / unverified / fresh`（优先级即此序） |
-| 退出码 | `0` 无漂移（或未加 `--fail-on-drift`）；`1` 存在漂移；`2` 入参/环境错误（非 git 仓库、**浅克隆**等，fail-closed） |
+| 退出码 | `0` 无漂移（或未加 `--fail-on-drift`）；`1` 存在 drifted / **missing_anchor** / 基线墓碑违规（`--fail-on-unverified` 时再加 unverified / stale）；`2` 入参/环境错误（非 git 仓库、**浅克隆**等，fail-closed） |
+| 未跟踪锚点 | 锚点文件存在但未被版本控制 ⇒ `unverified`（无提交时间可用，不得当 fresh） |
+| 基线墓碑 | `--write-baseline` 把当前声明写入 `<root>/.doc-truth-baseline.json`；此后**删除或缩减**声明即违规——这是「删锚点洗绿」的唯一机械拦截（覆盖率下限只是辅助） |
 | 豁免 | `project/reviews/**`（逐字凭据）、`archive/**`；根级入口文档（index/README/GOVERNANCE）**仅在未声明锚点时**不计入分母——声明了却排除会造成静默覆盖黑洞 |
 | 幂等 | 只读，不写任何文件 |
 

@@ -98,6 +98,32 @@ def _is_safely_displayable(name: str) -> bool:
     return bool(name) and len(name) <= PROJECT_NAME_MAX_LEN and all(ch.isprintable() for ch in name)
 
 
+def truth_blockers(truth: Dict, truth_threshold: float, min_coverage: float) -> List[str]:
+    """真值轴的唯一判定梯（BK-0028 口径：PASS 与 REJECT 由同一组判定产生）。
+
+    打印侧与裁决侧都调用本函数，禁止各自重算——R1-4/R2 均指出过「两处复制判定梯」
+    会导致同屏出现 PASS 文案与 REJECT 理由。
+    """
+    if truth.get("mode") != "require":
+        return []
+    if truth.get("unavailable"):
+        return [f"真值轴不可判定（{truth['unavailable']}）"]
+    reasons: List[str] = []
+    if not truth.get("enabled"):
+        reasons.append("真值轴未启用（无文档声明代码锚点）")
+        return reasons
+    if truth.get("removed_from_baseline"):
+        reasons.append(f"锚点基线墓碑违规 {truth['removed_from_baseline']} 处（声明被删除/缩减）")
+    if truth.get("coverage", 0.0) < min_coverage:
+        reasons.append(
+            f"声明覆盖率 {truth.get('coverage', 0.0):.1%} < 下限 {min_coverage:.1%}"
+            "（删锚点不能替代修复漂移）"
+        )
+    if truth.get("freshness_score", 0.0) < truth_threshold:
+        reasons.append(f"真值分 {truth.get('freshness_score')} < 门槛 {truth_threshold}")
+    return reasons
+
+
 def evaluate_verdict(
     res: Dict,
     threshold: float,
@@ -123,19 +149,8 @@ def evaluate_verdict(
         reasons.append("机器地图不一致")
     # 真值轴（RFC-0005 §4.3）：默认 warn 不参与判定；require 模式下「未启用」同样阻断，
     # 否则一条都未声明的知识库会因为 enabled=False 而静默跳过真值门禁（等于自我豁免）。
-    # R1-2：require 模式下必须有**覆盖率下限**。否则只要删掉失败文档的锚点声明，
-    # 分子分母同时缩小即可把真值分洗成 15.0（7.5 → 15.0），门禁形同虚设。
     truth = res.get("truth") or {}
-    if truth.get("mode") == "require":
-        if not truth.get("enabled"):
-            reasons.append("真值轴未启用（无文档声明代码锚点）")
-        elif truth.get("coverage", 0.0) < min_coverage:
-            reasons.append(
-                f"声明覆盖率 {truth.get('coverage', 0.0):.1%} < 下限 {min_coverage:.1%}"
-                "（删锚点不能替代修复漂移）"
-            )
-        elif truth.get("freshness_score", 0.0) < truth_threshold:
-            reasons.append(f"真值分 {truth.get('freshness_score')} < 门槛 {truth_threshold}")
+    reasons.extend(truth_blockers(truth, truth_threshold, min_coverage))
     return (not reasons), reasons
 
 
@@ -640,9 +655,23 @@ def audit_health(
 
     # 真值轴（RFC-0005 §4.3）：与结构分**并行**，不合并进 total_score。零声明时
     # enabled=False 且分数为 0——「未启用」不得被读成「满分」。
-    truth_raw = _drift_mod.analyze(root_dir, repo=root_dir.parent, max_age_days=max_age_days)
+    truth_unavailable = None
+    try:
+        if _drift_mod.is_shallow_repo(root_dir.parent):
+            truth_unavailable = "shallow repository（历史提交时间不可得，需 fetch-depth: 0）"
+    except Exception:
+        truth_unavailable = "git 探测失败"
+    truth_raw = _drift_mod.analyze(
+        root_dir,
+        repo=root_dir.parent if truth_unavailable is None else None,
+        max_age_days=max_age_days,
+        baseline_path=root_dir / _drift_mod.DEFAULT_BASELINE_NAME,
+    )
     truth_block = {
         "mode": truth_mode,
+        "unavailable": truth_unavailable,
+        "removed_from_baseline": len(truth_raw.get("removed_from_baseline") or []),
+        "baseline_docs": truth_raw.get("baseline_docs", 0),
         "enabled": truth_raw["enabled"],
         "declared": truth_raw["declared"],
         "total_docs": truth_raw["total_docs"],
@@ -841,22 +870,11 @@ def main():
 
     # R1-4：真值轴的阻断理由必须与「完美/无缺陷」互斥，否则同一屏会同时出现
     # PASS 文案与 REJECT 理由（BK-0028 明令禁止的自相矛盾）。
-    if truth.get("mode") == "require":
-        truth_reasons: List[str] = []
-        if not truth.get("enabled"):
-            truth_reasons.append("真值轴未启用（无文档声明代码锚点）")
-        elif truth.get("coverage", 0.0) < args.min_coverage:
-            truth_reasons.append(
-                f"声明覆盖率 {truth.get('coverage', 0.0):.1%} < 下限 {args.min_coverage:.1%}"
-            )
-        elif truth.get("freshness_score", 0.0) < args.truth_threshold:
-            truth_reasons.append(
-                f"真值分 {truth.get('freshness_score', 0.0)} < 门槛 {args.truth_threshold}"
-            )
-        if truth_reasons:
-            has_issues = True
-            for reason in truth_reasons:
-                print(f"   ⛔ 真值轴阻断: {reason}")
+    truth_reasons = truth_blockers(truth, args.truth_threshold, args.min_coverage)
+    if truth_reasons:
+        has_issues = True
+        for reason in truth_reasons:
+            print(f"   ⛔ 真值轴阻断: {reason}")
 
     if not has_issues:
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")

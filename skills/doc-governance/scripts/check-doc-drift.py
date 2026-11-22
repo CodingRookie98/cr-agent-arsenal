@@ -83,9 +83,15 @@ def parse_truth_fields(content: str) -> Dict:
         "verified_at": None,
         "verified_commit": None,
     }
+    in_fence = False
     for line in content.splitlines()[:60]:
         trimmed = line.strip()
-        if not trimmed.startswith(">"):
+        # R2-3（文档即输入）：围栏内的示例（模板/教程里的控制头骨架）不是真声明，
+        # 未加围栏感知会把「讲解」当成「登记」。
+        if trimmed.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence or not trimmed.startswith(">"):
             continue
         clean = re.sub(r"^[>\s\-*]+", "", trimmed).strip()
         sep = ":" if ":" in clean else ("：" if "：" in clean else None)
@@ -120,10 +126,17 @@ def classify_doc(
     verified_ts: Optional[int],
     now_ts: int,
     max_age_days: int,
+    anchor_tracked: Optional[Sequence[bool]] = None,
 ) -> str:
-    """五态判定，优先级：missing_anchor > drifted > stale > unverified > fresh。"""
+    """五态判定，优先级：missing_anchor > drifted > stale > unverified > fresh。
+
+    R2-1（R1-5 升级）：锚点文件存在但**未被版本控制**时没有提交时间可用，
+    既不能判漂移也不能判新鲜——必须落 unverified，否则「未提交的改动」会被当成 fresh。
+    """
     if any(not exists for exists in anchor_exists):
         return "missing_anchor"
+    if anchor_tracked is not None and any(exists and not tracked for exists, tracked in zip(anchor_exists, anchor_tracked)):
+        return "unverified"
     if verified_ts is None:
         return "unverified"
     if any(ts is not None and ts > verified_ts for ts in anchor_last_commits):
@@ -218,11 +231,63 @@ def _declares_anchor(path: Path) -> bool:
         return False
 
 
+DEFAULT_BASELINE_NAME = ".doc-truth-baseline.json"
+
+
+def load_baseline(path: Optional[Path]) -> Dict[str, List[str]]:
+    """读取锚点基线（墓碑），返回 {doc: [anchor_path, ...]}；缺失/损坏一律降级为空。"""
+    if path is None:
+        return {}
+    try:
+        if not Path(path).is_file():
+            return {}
+        import json as _json
+
+        data = _json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    docs = data.get("docs") if isinstance(data, dict) else None
+    if not isinstance(docs, dict):
+        return {}
+    return {
+        str(doc): [str(a) for a in anchors]
+        for doc, anchors in docs.items()
+        if isinstance(anchors, list)
+    }
+
+
+def write_baseline(path: Path, docs_records: Sequence[Dict]) -> int:
+    """把当前声明写为基线（墓碑）。返回登记的文档数。"""
+    import json as _json
+
+    manifest = {
+        "version": 1,
+        "docs": {rec["doc"]: [a["path"] for a in rec["anchors"]] for rec in docs_records},
+    }
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return len(manifest["docs"])
+
+
+def _removed_from_baseline(baseline: Dict[str, List[str]], current: Dict[str, List[str]]) -> List[Dict]:
+    """R2-1（R1-2 维持）：锚点声明一旦登记为基线，删除/缩减即视为违规——
+    否则「删掉失败文档的锚点」可以同时缩小分子与分母把真值分洗白。"""
+    removed = []
+    for doc, anchors in baseline.items():
+        now_anchors = current.get(doc, [])
+        missing = [a for a in anchors if a not in now_anchors]
+        if missing or not now_anchors:
+            removed.append({"doc": doc, "missing": missing, "declared_now": now_anchors})
+    return removed
+
+
 def analyze(
     root: Path,
     repo: Optional[Path] = None,
     now_ts: Optional[int] = None,
     max_age_days: int = 180,
+    baseline_path: Optional[Path] = None,
 ) -> Dict:
     """只读分析，返回 {'enabled', 'total_docs', 'declared', 'coverage', 'freshness_score', ...}。"""
     import time as _time
@@ -230,6 +295,7 @@ def analyze(
     root = Path(root).resolve()
     repo_path = Path(repo).resolve() if repo is not None else None
     now = int(now_ts if now_ts is not None else _time.time())
+    current_anchors: Dict[str, List[str]] = {}
 
     docs: List[Dict] = []
     total_docs = 0
@@ -248,17 +314,21 @@ def analyze(
             continue
         declared += 1
         rel_doc = doc_path.relative_to(root).as_posix()
+        current_anchors[rel_doc] = [a["path"] for a in anchors]
         exists: List[bool] = []
         commits: List[Optional[int]] = []
+        tracked: List[bool] = []
         for anchor in anchors:
             if repo_path is not None:
                 anchor_exists = (repo_path / anchor["path"]).is_file()
             else:
                 anchor_exists = (root / anchor["path"]).is_file()
             exists.append(anchor_exists)
-            commits.append(
+            commit_ts = (
                 git_last_commit_ts(repo_path, anchor["path"]) if (repo_path is not None and anchor_exists) else None
             )
+            commits.append(commit_ts)
+            tracked.append(commit_ts is not None)
         status = classify_doc(
             anchor_paths=[a["path"] for a in anchors],
             anchor_exists=exists,
@@ -266,6 +336,7 @@ def analyze(
             verified_ts=_verified_ts(fields, repo_path),
             now_ts=now,
             max_age_days=max_age_days,
+            anchor_tracked=tracked if repo_path is not None else None,
         )
         record = {
             "doc": rel_doc,
@@ -279,7 +350,11 @@ def analyze(
 
     fresh_count = len(buckets["fresh"])
     score = round(FRESHNESS_MAX_SCORE * fresh_count / declared, 1) if declared else 0.0
+    baseline = load_baseline(baseline_path)
+    removed = _removed_from_baseline(baseline, current_anchors) if baseline else []
     return {
+        "removed_from_baseline": removed,
+        "baseline_docs": len(baseline),
         "enabled": declared > 0,
         "total_docs": total_docs,
         "declared": declared,
@@ -304,6 +379,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--json", action="store_true", help="输出 JSON")
     parser.add_argument("--fail-on-drift", action="store_true", help="存在漂移时退出码 1")
     parser.add_argument("--max-age-days", type=int, default=180, help="复核时效上限（天，0 表示不检查）")
+    parser.add_argument("--baseline", default=None,
+                        help=f"锚点基线（墓碑）路径，默认 <root>/{DEFAULT_BASELINE_NAME}")
+    parser.add_argument("--write-baseline", action="store_true",
+                        help="把当前声明写为基线（阻断「删锚点洗绿」的机械依据）")
+    parser.add_argument("--fail-on-unverified", action="store_true",
+                        help="连 unverified / stale 一并视为失败（默认只对 drifted 与 missing_anchor 失败）")
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
@@ -322,7 +403,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
         return 2
 
-    res = analyze(root, repo=repo, max_age_days=args.max_age_days)
+    baseline_path = Path(args.baseline).resolve() if args.baseline else root / DEFAULT_BASELINE_NAME
+
+    if args.write_baseline:
+        res = analyze(root, repo=repo, max_age_days=args.max_age_days, baseline_path=None)
+        written = write_baseline(baseline_path, res["docs"])
+        print(f"🧱 已写入锚点基线: {baseline_path}（{written} 篇声明）")
+        return 0
+
+    res = analyze(root, repo=repo, max_age_days=args.max_age_days, baseline_path=baseline_path)
     summary = {
         "enabled": res["enabled"],
         "total_docs": res["total_docs"],
@@ -335,6 +424,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "fresh": len(res["fresh"]),
         "freshness_score": res["freshness_score"],
         "max_age_days": res["max_age_days"],
+        "removed_from_baseline": len(res["removed_from_baseline"]),
+        "baseline_docs": res["baseline_docs"],
     }
 
     if args.json:
@@ -352,8 +443,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         for bucket in ("missing_anchor", "drifted", "stale", "unverified"):
             for item in res[bucket]:
                 print(f"   - [{bucket}] {item['doc']}")
+        if res["removed_from_baseline"]:
+            print("   ⛔ 基线墓碑违规（声明被删除/缩减）:")
+            for item in res["removed_from_baseline"]:
+                print(f"      - {item['doc']} 缺失: {', '.join(item['missing']) or '全部锚点'}")
 
-    if args.fail_on_drift and summary["drifted"]:
+    # R2-2（R1-6 升级）：missing_anchor 是硬断裂（锚点被删除/移动），必须与 drifted 同权。
+    if args.fail_on_drift and (
+        summary["drifted"] or summary["missing_anchor"] or summary["removed_from_baseline"]
+    ):
+        return 1
+    if args.fail_on_unverified and (summary["unverified"] or summary["stale"]):
         return 1
     return 0
 
