@@ -577,10 +577,14 @@ def analyze(
                 doc_path.relative_to(repo_path).as_posix() if repo_path is not None else rel_doc
             )
             if touched:
-                if doc_repo_rel in staged and _verified_line_changed_staged(repo_path, doc_repo_rel):
-                    # BD-1：本次提交内同时改锚点并刷新复核点 ⇒ 视为已同步处理
-                    status = "fresh"
-                elif doc_repo_rel not in staged:
+                refreshed = doc_repo_rel in staged and _verified_line_changed_staged(repo_path, doc_repo_rel)
+                if refreshed:
+                    # BD-1：本次提交内同时改锚点并刷新复核点 ⇒ 视为已同步处理。
+                    # 但**不得**覆盖 missing_anchor（锚点目标不存在是硬断裂）。
+                    if status != "missing_anchor":
+                        status = "fresh"
+                else:
+                    # BD-1-R：文档未暂存，或已暂存但「复核于」未刷新 ⇒ 仍是漂移
                     status = "drifted"
         record = {
             "doc": rel_doc,

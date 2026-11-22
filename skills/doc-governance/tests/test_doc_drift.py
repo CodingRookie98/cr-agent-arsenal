@@ -1459,5 +1459,76 @@ class TestBD1BD2(unittest.TestCase):
         self.assertIn("drifted", proc.stdout)
 
 
+
+class TestBD1Staged(unittest.TestCase):
+    """BD-1-R：--staged 口径的补充回归"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_bd1r_"))
+        self.env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, env=self.env, capture_output=True, text=True)
+
+    def _setup(self):
+        self._git("init", "-q")
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x=1\n", encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir()
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        sha = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="src/a.py", verified="2026-11-22 / commit " + sha), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        subprocess.run([sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+                        "--repo", str(self.root), "--write-baseline"], capture_output=True)
+        return docs
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_bd1r_staged_doc_without_refreshing_verified_is_drifted(self):
+        docs = self._setup()
+        time.sleep(1)
+        (self.root / "src" / "a.py").write_text("x=2\n", encoding="utf-8")
+        (docs / "a.md").write_text((docs / "a.md").read_text(encoding="utf-8") + "\n注释\n", encoding="utf-8")
+        self._git("add", "-A")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--staged", "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("drifted", proc.stdout)
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_bd1r_missing_anchor_not_masked_by_staged_refresh(self):
+        docs = self._setup()
+        (self.root / "src" / "a.py").unlink()
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="src/a.py", verified="2026-11-22 / commit deadbee"), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--staged", "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("missing_anchor", proc.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
