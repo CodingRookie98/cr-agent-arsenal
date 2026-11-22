@@ -143,6 +143,7 @@ docs/
 4. **修订历史自动裁剪**：运行 `python3 scripts/trim-revision.py --root docs --fix --keep 5`，自动将所有文档的修订历史截断在最近 5 条；
 5. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档、Backlog 演进指标、版本一致性与基线合规评分；真值轴以 `--truth=warn|require` 并行报告（默认 warn；`require` 依次校验「未启用 → 覆盖率 < `--min-coverage`（默认 0.5）→ 真值分 < `--truth-threshold`」）；
 6. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt --split`，刷新分层机器地图（根=象限入口 ≤8 KB，全量条目下沉 `_llms/<象限>.md`）；CI 可用 `--check` 只校验不写盘，`--max-root-bytes` 控制根体量。
+7. **一键门禁（推荐）**：`python3 scripts/check-all.py` 一次跑完六道门禁（机器地图/断链/版本一致/真值轴/健康体检/可回答性），失败即非零退出；`--full` 追加 pytest。建议 `git config core.hooksPath .githooks` 安装 pre-commit。
 
 ### 模式 3：脚手架与结晶归档 (Scaffold & Archive Mode)
 1. **新建文档/提案**：运行 `python3 scripts/scaffold-doc.py <type> <name>`（如 `scaffold-doc.py rfc canvas-collab`），基于规范模板创建脚手架，自动填入合规控制头，并自动 ensure 象限索引与登记本文档（跨象限链接按目标索引是否存在自动降级，杜绝 404）；
