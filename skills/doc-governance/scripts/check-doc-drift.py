@@ -24,7 +24,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 _scripts_dir = Path(__file__).resolve().parent
 
@@ -139,6 +139,9 @@ def classify_doc(
         return "unverified"
     if verified_ts is None:
         return "unverified"
+    # R2D-3：未来日期的「复核于」不是复核。容忍 1 天时区漂移，超出即视为无效声明。
+    if verified_ts > now_ts + SECONDS_PER_DAY:
+        return "unverified"
     if any(ts is not None and ts > verified_ts for ts in anchor_last_commits):
         return "drifted"
     if max_age_days > 0 and (now_ts - verified_ts) > max_age_days * SECONDS_PER_DAY:
@@ -234,26 +237,32 @@ def _declares_anchor(path: Path) -> bool:
 DEFAULT_BASELINE_NAME = ".doc-truth-baseline.json"
 
 
-def load_baseline(path: Optional[Path]) -> Dict[str, List[str]]:
-    """读取锚点基线（墓碑），返回 {doc: [anchor_path, ...]}；缺失/损坏一律降级为空。"""
+def load_baseline(path: Optional[Path]) -> Tuple[Dict[str, List[str]], str]:
+    """读取锚点基线（墓碑），返回 ({doc: [anchor_path, ...]}, status)。
+
+    status ∈ {ok, missing, corrupt, disabled}。R2D-1：**「保护不可得」必须与「无违规」
+    在退出码上可区分**——账本缺席/损坏时 fail-closed（rc=2），不得静默当成零违规。
+    """
     if path is None:
-        return {}
+        return {}, "disabled"
+    path = Path(path)
+    if not path.exists():
+        return {}, "missing"
     try:
-        if not Path(path).is_file():
-            return {}
         import json as _json
 
-        data = _json.loads(Path(path).read_text(encoding="utf-8"))
+        data = _json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return {}
+        return {}, "corrupt"
     docs = data.get("docs") if isinstance(data, dict) else None
     if not isinstance(docs, dict):
-        return {}
-    return {
+        return {}, "corrupt"
+    parsed = {
         str(doc): [str(a) for a in anchors]
         for doc, anchors in docs.items()
         if isinstance(anchors, list)
     }
+    return parsed, "ok"
 
 
 def write_baseline(path: Path, docs_records: Sequence[Dict]) -> int:
@@ -271,14 +280,35 @@ def write_baseline(path: Path, docs_records: Sequence[Dict]) -> int:
 
 
 def _removed_from_baseline(baseline: Dict[str, List[str]], current: Dict[str, List[str]]) -> List[Dict]:
-    """R2-1（R1-2 维持）：锚点声明一旦登记为基线，删除/缩减即视为违规——
-    否则「删掉失败文档的锚点」可以同时缩小分子与分母把真值分洗白。"""
+    """锚点墓碑判据：**全局多重集不得减少**（R2D-2）。
+
+    早期版本按 doc 名逐条比对，导致「纯 git mv 改名」= 永远违规，而唯一出路
+    `--write-baseline` 恰好也是能洗掉真实删除的命令。改为全局计数后：
+    - 改名/拆分（锚点集合不变）→ 合法；
+    - 删除文档、删锚点、缩减多锚点 → 计数下降 → 违规。
+    """
+    from collections import Counter
+
+    base_counts: Counter = Counter()
+    for anchors in baseline.values():
+        base_counts.update(anchors)
+    cur_counts: Counter = Counter()
+    for anchors in current.values():
+        cur_counts.update(anchors)
+    deficits = {path: n - cur_counts.get(path, 0) for path, n in base_counts.items() if cur_counts.get(path, 0) < n}
+    if not deficits:
+        return []
     removed = []
     for doc, anchors in baseline.items():
-        now_anchors = current.get(doc, [])
-        missing = [a for a in anchors if a not in now_anchors]
-        if missing or not now_anchors:
-            removed.append({"doc": doc, "missing": missing, "declared_now": now_anchors})
+        missing = [a for a in anchors if a in deficits]
+        if missing:
+            removed.append({
+                "doc": doc,
+                "missing": missing,
+                "declared_now": current.get(doc, []),
+            })
+    if not removed:  # 防御：deficit 存在但无 doc 可归因（手改账本）
+        removed.append({"doc": "<unknown>", "missing": sorted(deficits), "declared_now": []})
     return removed
 
 
@@ -350,10 +380,11 @@ def analyze(
 
     fresh_count = len(buckets["fresh"])
     score = round(FRESHNESS_MAX_SCORE * fresh_count / declared, 1) if declared else 0.0
-    baseline = load_baseline(baseline_path)
+    baseline, baseline_status = load_baseline(baseline_path)
     removed = _removed_from_baseline(baseline, current_anchors) if baseline else []
     return {
         "removed_from_baseline": removed,
+        "baseline_status": baseline_status,
         "baseline_docs": len(baseline),
         "enabled": declared > 0,
         "total_docs": total_docs,
@@ -426,6 +457,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "max_age_days": res["max_age_days"],
         "removed_from_baseline": len(res["removed_from_baseline"]),
         "baseline_docs": res["baseline_docs"],
+        "baseline_status": res["baseline_status"],
     }
 
     if args.json:
@@ -448,6 +480,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             for item in res["removed_from_baseline"]:
                 print(f"      - {item['doc']} 缺失: {', '.join(item['missing']) or '全部锚点'}")
 
+    # R2D-1：「保护不可得」不得与「无违规」同形。门禁模式下账本缺席/损坏 ⇒ rc=2。
+    if args.fail_on_drift and summary["baseline_status"] in ("missing", "corrupt"):
+        print(
+            f"❌ 错误: 锚点基线不可用（{summary['baseline_status']}）：{baseline_path}。"
+            "墓碑判据无法成立，按 fail-closed 处理；首次启用请先运行 --write-baseline 并提交该账本。",
+            file=sys.stderr,
+        )
+        return 2
     # R2-2（R1-6 升级）：missing_anchor 是硬断裂（锚点被删除/移动），必须与 drifted 同权。
     if args.fail_on_drift and (
         summary["drifted"] or summary["missing_anchor"] or summary["removed_from_baseline"]

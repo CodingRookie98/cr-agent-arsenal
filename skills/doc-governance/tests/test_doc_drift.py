@@ -215,6 +215,8 @@ class TestCliIntegration(unittest.TestCase):
         )
         self._git("add", "-A")
         self._commit("doc")
+        written = self._run("--write-baseline")
+        self.assertEqual(written.returncode, 0, written.stderr)
         ok = self._run("--json")
         self.assertEqual(ok.returncode, 0, ok.stderr)
         first = json.loads(ok.stdout)
@@ -245,9 +247,6 @@ class TestCliIntegration(unittest.TestCase):
         finally:
             shutil.rmtree(plain, ignore_errors=True)
 
-
-if __name__ == "__main__":
-    unittest.main()
 
 class TestAuditTruthIntegration(unittest.TestCase):
     """AC-1 / AC-5：真值块接入 audit-doc-health 的契约"""
@@ -500,6 +499,11 @@ class TestR2Blockers(unittest.TestCase):
         (docs / "a.md").write_text(
             make_doc("正文", anchors="src/gone.py", verified="2026-11-22"), encoding="utf-8"
         )
+        subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(repo), "--write-baseline"],
+            capture_output=True, text=True, check=True,
+        )
         proc = subprocess.run(
             [
                 sys.executable,
@@ -515,3 +519,106 @@ class TestR2Blockers(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
         self.assertIn("missing_anchor", proc.stdout)
+
+
+class TestR2DeltaBlockers(unittest.TestCase):
+    """Delta 终审 R2D-1/R2D-2/R2D-3 回归"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_delta_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _write(self, rel, text):
+        target = self.root / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+        return target
+
+    def _git(self, args, env):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, env=env, capture_output=True, text=True)
+
+    def _init_repo(self):
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+        self._git(["init", "-q"], env)
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir()
+        self._git(["add", "-A"], env)
+        self._git(["commit", "-q", "-m", "init"], env)
+        return env, docs
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2d_1_missing_baseline_fails_closed(self):
+        env, docs = self._init_repo()
+        (docs / "a.md").write_text(make_doc("正文", anchors="src/a.py", verified="2026-11-22"), encoding="utf-8")
+        self._git(["add", "-A"], env)
+        self._git(["commit", "-q", "-m", "doc"], env)
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+        self.assertIn("基线不可用", proc.stderr)
+
+    @unittest.skipUnless(shutil.which("git"), "环境无 git")
+    def test_r2d_1_corrupt_baseline_fails_closed(self):
+        env, docs = self._init_repo()
+        (docs / "a.md").write_text(make_doc("正文", anchors="src/a.py", verified="2026-11-22"), encoding="utf-8")
+        (docs / self.mod.DEFAULT_BASELINE_NAME).write_text("{not json", encoding="utf-8")
+        self._git(["add", "-A"], env)
+        self._git(["commit", "-q", "-m", "doc"], env)
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+        self.assertIn("corrupt", proc.stderr)
+
+    def test_r2d_2_renaming_doc_keeps_anchor_multiset(self):
+        """纯改名（锚点集合不变）不得触发墓碑违规。"""
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")
+        doc = self._write("old.md", make_doc("正文", anchors="src/a.py", verified="2026-11-22"))
+        baseline = self.root / self.mod.DEFAULT_BASELINE_NAME
+        self.mod.write_baseline(baseline, self.mod.analyze(self.root, now_ts=2000, baseline_path=None)["docs"])
+        doc.rename(self.root / "new.md")
+        res = self.mod.analyze(self.root, now_ts=2000, baseline_path=baseline)
+        self.assertEqual(res["removed_from_baseline"], [])
+        self.assertEqual(res["baseline_status"], "ok")
+
+    def test_r2d_2_deleting_anchor_still_violates_after_multiset_switch(self):
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")
+        doc = self._write("a.md", make_doc("正文", anchors="src/a.py", verified="2026-11-22"))
+        baseline = self.root / self.mod.DEFAULT_BASELINE_NAME
+        self.mod.write_baseline(baseline, self.mod.analyze(self.root, now_ts=2000, baseline_path=None)["docs"])
+        doc.write_text(make_doc("正文", verified="2026-11-22"), encoding="utf-8")
+        res = self.mod.analyze(self.root, now_ts=2000, baseline_path=baseline)
+        self.assertEqual(res["removed_from_baseline"][0]["missing"], ["src/a.py"])
+
+    def test_r2d_3_future_verification_date_is_unverified(self):
+        status = self.mod.classify_doc(
+            anchor_paths=["src/a.py"],
+            anchor_exists=[True],
+            anchor_last_commits=[1000],
+            verified_ts=10 ** 11,
+            now_ts=1000,
+            max_age_days=180,
+        )
+        self.assertEqual(status, "unverified")
+
+
+if __name__ == "__main__":
+    unittest.main()

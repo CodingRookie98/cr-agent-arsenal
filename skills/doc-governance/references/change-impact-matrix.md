@@ -27,7 +27,7 @@
 | **核心架构、框架与基础设施** | `src/core/*`<br>`package.json`<br>`docker-compose.yml` | 1. `docs/explanation/architecture/`<br>2. `docs/explanation/decisions/` (新建 MADR)<br>3. `docs/explanation/analysis/` | 记录架构分层演进、选型评估对比与 MADR 决策记录。 |
 | **部署配置、环境与调试脚本** | `.env.example`<br>`Dockerfile`<br>`scripts/deploy.sh` | 1. `docs/how-to/deployment.md`<br>2. `docs/how-to/local-setup.md` | 环境变量清单 100% 完整，部署与启动命令在干净环境中可复现。 |
 | **文档拓扑变动 (增/删/重命名)** | `docs/**/*.md` | 1. `docs/index.md` (全局人类索引)<br>2. `docs/llms.txt` (智能体机器地图)<br>3. 受影响目录的象限索引 `<dir>/index.md`（托管索引由 `manage-doc-index.py` 自动登记）<br>4. 所有上游引用文件相对路径 | 运行 `check-doc-links.py` 严格 Exit Code 0，全局零 404 断链；托管索引控制头版本与修订表联动一致。 |
-| **文档代码锚点失效（被锚定路径改动/移动/删除）** | `代码锚点` 声明的任意路径（如 `src/**`、`skills/**`） | 1. 受影响文档本体（更新断言并刷新 `复核于`）<br>2. `docs/project/changelog.md`（若断言涉及对外契约） | 运行 `check-doc-drift.py --root docs --fail-on-drift` 严格 Exit Code 0；`audit-doc-health.py --truth=warn` 真值分不低于 12/15（未声明锚点的文档不计入分母）。 |
+| **文档代码锚点失效（被锚定路径改动/移动/删除）** | `代码锚点` 声明的任意路径（如 `src/**`、`skills/**`） | 1. 受影响文档本体（更新断言并刷新 `复核于`）<br>2. `docs/project/changelog.md`（若断言涉及对外契约） | 运行 `check-doc-drift.py --root docs --fail-on-drift` 严格 Exit Code 0（账本缺席/损坏按 rc=2 fail-closed，先 `--write-baseline` 重建并提交）；`audit-doc-health.py --truth=warn` 真值分不低于 12/15（未声明锚点的文档不计入分母）。 |
 
 ---
 

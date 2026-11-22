@@ -112,6 +112,9 @@ def truth_blockers(truth: Dict, truth_threshold: float, min_coverage: float) -> 
     if not truth.get("enabled"):
         reasons.append("真值轴未启用（无文档声明代码锚点）")
         return reasons
+    # R2D-1：账本缺席/损坏 ⇒ 墓碑判据不成立，require 必须 fail-closed。
+    if truth.get("baseline_status") in ("missing", "corrupt"):
+        reasons.append(f"锚点基线不可用（{truth.get('baseline_status')}），墓碑判据不成立")
     if truth.get("removed_from_baseline"):
         reasons.append(f"锚点基线墓碑违规 {truth['removed_from_baseline']} 处（声明被删除/缩减）")
     if truth.get("coverage", 0.0) < min_coverage:
@@ -672,6 +675,7 @@ def audit_health(
         "unavailable": truth_unavailable,
         "removed_from_baseline": len(truth_raw.get("removed_from_baseline") or []),
         "baseline_docs": truth_raw.get("baseline_docs", 0),
+        "baseline_status": truth_raw.get("baseline_status", "disabled"),
         "enabled": truth_raw["enabled"],
         "declared": truth_raw["declared"],
         "total_docs": truth_raw["total_docs"],
@@ -776,6 +780,13 @@ def main():
         )
         if not truth.get("enabled"):
             print("   ⚠️  未启用：无文档声明「代码锚点」，真值分不颁发（0.0/15 而非满分）")
+        if truth.get("unavailable"):
+            print(f"   ⛔ 不可判定：{truth['unavailable']}（不编造漂移数字）")
+        if truth.get("baseline_status") in ("missing", "corrupt"):
+            print(
+                f"   ⛔ 锚点基线不可用（{truth['baseline_status']}）：墓碑判据不成立，",
+                "请运行 check-doc-drift.py --write-baseline 重建并提交该账本",
+            )
         if truth.get("mode") == "require":
             print(
                 f"   * require 口径: 覆盖率下限 {args.min_coverage:.1%}"
@@ -875,6 +886,18 @@ def main():
         has_issues = True
         for reason in truth_reasons:
             print(f"   ⛔ 真值轴阻断: {reason}")
+    else:
+        # R2D-4：warn 模式也必须把「不可判定 / 账本不可用 / 墓碑违规」计入缺陷——
+        # 报告面不得在门禁已知有缺陷时打印「完美」。
+        if truth.get("unavailable"):
+            has_issues = True
+            print(f"   ⚠️  真值轴不可判定：{truth['unavailable']}")
+        if truth.get("baseline_status") in ("missing", "corrupt"):
+            has_issues = True
+            print(f"   ⚠️  锚点基线不可用（{truth['baseline_status']}）")
+        if truth.get("removed_from_baseline"):
+            has_issues = True
+            print(f"   ⚠️  锚点基线墓碑违规 {truth['removed_from_baseline']} 处（声明被删除/缩减）")
 
     if not has_issues:
         print("   🌟 完美！未检测到任何健康缺陷，知识库处于极佳健康状态！")
