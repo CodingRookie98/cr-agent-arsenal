@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-DOC-TRUTH-AXIS-2026
-> - **当前版本**: V1.7.0
+> - **当前版本**: V1.8.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 > - **代码锚点**: skills/doc-governance/scripts/check-doc-drift.py, skills/doc-governance/scripts/audit-doc-health.py
@@ -152,4 +152,4 @@ python3 skills/doc-governance/scripts/check-doc-control-sync.py --root docs
 | R2D56-4 | P2 | 散文锚点（如「见附录 A」）仍 missing_anchor 硬红 | 文档把锚点写成描述而非路径 | **已修**：非路径形态归 `invalid` 并落 unverified，不计 missing |
 | R2D56-2 | P3 | --allow-unverified 生效时零痕迹（stdout 逐字节相同） | 任何使用该参数的门禁 | **已修**：强制打印豁免行（JSON 走 stderr） |
 
-**状态（2026-11-22 追加）**：四项均已修复并带回归测试（`TestFollowupP2P3` 4 条）。**随后定向红队（Light）判定 1 个 P1**：R2D56-4 的 invalid 判据过度矫正（含空格/中文的合法路径被静默丢弃，删文件后仍 rc=0）——已改为「不像路径」判据并补 6 条回归（`TestR3Fixes`），全量 209 passed。R3-2/3/5 同批收口；`TestFollowupP2P3` 重复定义（4 条从未被收集）已删。剩余已知边界见 §8 争议焦点第 1、2 条（账本滞后不可自检、`--write-baseline` 属流程约束），属设计固有上限，不再单独立项。
+**状态（2026-11-22 追加）**：四项均已修复并带回归测试（`TestFollowupP2P3` 4 条）。**随后定向红队（Light）判定 1 个 P1**：R2D56-4 的 invalid 判据过度矫正（含空格/中文的合法路径被静默丢弃，删文件后仍 rc=0）——已改为「不像路径」判据并补 6 条回归（`TestR3Fixes`），全量 209 passed。R3-2/3/5 同批收口；`TestFollowupP2P3` 重复定义（4 条从未被收集）已删。**R3 Delta 复核再判 1 个 P1（R3D-1，本次修复引入的回归）**：`Makefile:2` 这类「根级无扩展名文件 + 行区间」被新判据误判 invalid 而漏检——已改为「先剥行区间再判形态」，并同批收 R3D-3/4 与明细可定位性，全量 214 passed。R3D-2（`A/B 测试` 类散文含 `/` 被判路径 → 硬红）按有意假红接受并登记。剩余已知边界见 §8 争议焦点第 1、2 条（账本滞后不可自检、`--write-baseline` 属流程约束），属设计固有上限，不再单独立项。

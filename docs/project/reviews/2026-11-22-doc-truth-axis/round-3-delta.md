@@ -6,14 +6,14 @@
 > - **当前版本**: V1.0.0
 > - **维护负责人**: Delta 复核审查者（独立上下文，Reviewer ≠ Author）
 > - **生效日期**: 2026-11-22
-> - **审查对象**: `940b355`（fix(doc-governance): 收口 R3 红队 P1（invalid 判据过度矫正））；HEAD 即该提交，其后无新提交
+> - **审查对象**: `940b355`（fix(doc-governance): 收口 R3 红队 P1（invalid 判据过度矫正））。会话期间 HEAD 推进至 `9eb4c63`（另有 `73c262b` 文档重钉），二者均只动 `docs/`：`git diff --stat 940b355..HEAD -- skills/` 为空 ⇒ 行为基线未变
 > - **审查基线**: `5818d07`（上一轮定向红队报告所审 HEAD）／缺陷来源 `round-3-followup-light.md`（31,004 B，sha256 `dc3a04f4…` 实测一致）
 > - **契约依据**: RFC-0005 V0.1.9、GOVERNANCE V1.7.9、实施计划 V1.7.0 §9
 > - **审查模式**: Delta 复核 · Light（只验四项：R3-1 正解 / R3-1 反向风险 / R3-2·3·5 / 回归面）
-> - **取证方式**: 全部为本机实跑。夹具建于 `/tmp/r3d_*`（本轮新建 20 个临时 git 仓库），提交时间用 `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` 钉死（`2026-11-01 / 11-20 / 11-21`）
-> - **唯一写入面**: 本报告文件（未提交）。仓库内零写：开工与收工 `git status --porcelain` 均为空
+> - **取证方式**: 全部为本机实跑。夹具建于 `/tmp/r3d_*`（6 个夹具脚本、40 个临时 git 仓库，清单见 §7），提交时间用 `GIT_AUTHOR_DATE`/`GIT_COMMITTER_DATE` 钉死（`2026-11-01 / 11-20 / 11-21`）
+> - **唯一写入面**: 本报告文件。本会话无任何 git 写操作；报告在撰写期间被主调度提交 `9eb4c63`（docs(review): 登记 §9 定向红队报告与 R3 轮次）顺带纳入，其后两处数字订正（夹具数、numstat）为未暂存改动
 > - **git 写操作**: 无（`init/add/commit/rm` 全部发生在 `/tmp/r3d_*` 夹具仓库）
-> - **环境**: Linux / Python 3.12.3 / git 2.56.1 / HEAD = `940b35571fd79108ffb60510b7dd359c5dce7ea9`
+> - **环境**: Linux / Python 3.12.3 / git 2.56.1 / 审定提交 `940b35571fd79108ffb60510b7dd359c5dce7ea9`（收工时 HEAD = `9eb4c638f4572f125a3750746dd59db6d65ddeb5`）
 > - **未验证项**: Windows 真实文件系统下反斜杠锚点的 stat 行为（本轮以 POSIX 夹具 + `:82` 归一化路径静态推演）；CI 流水线（仓库无 `.github`，门禁全为人工触发）；千篇级文档逐锚点 `git log` 的性能
 
 ---
@@ -33,8 +33,8 @@
 | 项 | 值 |
 | :--- | :--- |
 | 分支 | `feat/doc-truth-axis` |
-| 开工 / 收工 HEAD | `940b355`（会话期间无新提交；`git status --porcelain` 开工 0 行、收工 0 行） |
-| 审定增量（skills/） | `940b355`：`check-doc-drift.py` +60/-15、`test_doc_drift.py` +50/-42（删重复类 93 行、增 `TestR3Fixes` 6 条） |
+| 开工 / 收工 HEAD | 开工 `940b355` → 收工 `9eb4c63`（含 `73c262b` 文档重钉）；`git diff --stat 940b355..HEAD -- skills/` 为空，审定行为面未变 |
+| 审定增量（skills/） | `940b355`：`check-doc-drift.py` +45/-15、`test_doc_drift.py` +59/-33（删重复类 93 行、增 `TestR3Fixes` 6 条） |
 | 审定增量（docs/，仅作契约依据，不单独判定） | `GOVERNANCE.md` V1.7.8→V1.7.9、`RFC-0005` V0.1.8→V0.1.9、计划 V1.6.0→V1.7.0 |
 | 受控文件改动 | 无（本报告为唯一写入，且不提交） |
 
@@ -208,6 +208,8 @@ $ python3 skills/doc-governance/scripts/audit-doc-health.py
 🏁 诊断结论: PASS (健康度达标，准予交付) ✅
 rc=0
 ```
+
+> 上述四条门禁在本报告入库前（`940b355`）与入库后（`9eb4c63`）各跑一次，输出**逐字段一致**：报告落在 `docs/project/reviews/**`，属证据归档（`check-doc-drift.py:30` 的 `EVIDENCE_ARCHIVE_PARTS`），不计入 46 篇统计，故门禁不受本报告影响。
 
 **重复测试类是否彻底删除**（三种计数必须相等）：
 

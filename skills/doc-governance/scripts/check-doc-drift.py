@@ -41,7 +41,6 @@ _ANCHOR_LINE = re.compile(r"^(?P<path>[^:]+?)(?::(?P<start>\d+)(?:-(?P<end>\d+))
 # 合法路径一并判 invalid 并静默丢弃（漂移漏检且 rc=0）。判据改为「像路径」：
 # 含分隔符 / 、含扩展名点、或纯标识符形态。散文（无 / 无 . 且非标识符）才判 invalid。
 _PATH_TOKEN = re.compile(r"[A-Za-z0-9._@+~\-]+")
-_PROSE_HINT = re.compile(r"[\s\u4e00-\u9fff]")
 _DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 _COMMIT = re.compile(r"commit\s+([0-9a-fA-F]{7,40})")
 
@@ -61,14 +60,20 @@ def _clean_value(raw: str, strip_bold: bool = True) -> str:
     return text.replace("**", "").strip() if strip_bold else text
 
 
-def _looks_like_path(text: str) -> bool:
-    """像路径 ⇔ 含分隔符、含扩展名点、或整体是标识符形态。
+_LINE_RANGE = re.compile(r":\d+(?:-\d+)?$")
 
+
+def _looks_like_path(text: str) -> bool:
+    """像路径 ⇔ 剥掉行区间后，含分隔符、含扩展名点、或整体是标识符形态。
+
+    R3D-1：行区间必须先剥——`Makefile:2` / `LICENSE:3` 是「根级无扩展名文件 + 行区间」，
+    不剥会被判 invalid 并静默退出判定集（漂移漏检且 rc=0）。
     反例（散文）：`见附录 A`、`see appendix A` —— 无分隔符、无点、含空白/中文。
     """
-    if "/" in text or "." in text:
+    body = _LINE_RANGE.sub("", text)
+    if "/" in body or "." in body:
         return True
-    return bool(_PATH_TOKEN.fullmatch(text))
+    return bool(_PATH_TOKEN.fullmatch(body))
 
 
 def normalize_anchor(raw: str) -> Optional[Dict]:
@@ -558,9 +563,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             f"stale {summary['stale']}｜unverified {summary['unverified']}"
         )
         print(f"🎯 真值分: {summary['freshness_score']} / {FRESHNESS_MAX_SCORE:g}")
+        # R3D：明细必须带锚点名，否则 missing/drifted 只能靠 --json 定位。
         for bucket in ("missing_anchor", "drifted", "stale", "unverified"):
             for item in res[bucket]:
-                print(f"   - [{bucket}] {item['doc']}")
+                paths = ", ".join(a["path"] for a in item["anchors"]) or "-"
+                print(f"   - [{bucket}] {item['doc']}  ←  {paths}")
         if res["removed_from_baseline"]:
             print("   ⛔ 基线墓碑违规（声明被删除/缩减）:")
             for item in res["removed_from_baseline"]:

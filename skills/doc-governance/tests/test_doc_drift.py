@@ -1007,5 +1007,104 @@ class TestR3Fixes(unittest.TestCase):
         self.assertIn("see appendix A", proc.stdout)
 
 
+
+class TestR3DFixes(unittest.TestCase):
+    """R3D-1/3/4 回归：行区间锚点、死代码、audit 的 invalid 可见性"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.audit = load_module("audit_doc_health", SCRIPTS_DIR / "audit-doc-health.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_r3d_"))
+        self.env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, env=self.env, capture_output=True, text=True)
+
+    def _run(self, docs, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), *extra],
+            capture_output=True, text=True,
+        )
+
+    def _repo(self, files):
+        self._git("init", "-q")
+        for rel, content in files.items():
+            target = self.root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir(exist_ok=True)
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        return docs, self._git("rev-parse", "--short", "HEAD").stdout.strip()
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r3d_1_root_level_file_with_line_range_is_a_path(self):
+        """Makefile:2 是「根级无扩展名文件 + 行区间」，不得判 invalid。"""
+        docs, sha = self._repo({"Makefile": "all:\n\techo hi\n", "LICENSE": "MIT\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="Makefile:2, LICENSE:1", verified="2026-11-22 / commit " + sha),
+            encoding="utf-8",
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        payload = json.loads(self._run(docs, "--json", "--allow-unverified").stdout)
+        self.assertEqual(payload["docs"][0]["invalid_anchors"], [])
+        self.assertEqual(payload["docs"][0]["status"], "fresh")
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r3d_1_line_range_anchor_still_detects_drift(self):
+        docs, sha = self._repo({"Makefile": "all:\n\techo hi\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="Makefile:2", verified="2026-11-22 / commit " + sha),
+            encoding="utf-8",
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        time.sleep(1)
+        (self.root / "Makefile").write_text("all:\n\techo bye\n", encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "change")
+        payload = json.loads(self._run(docs, "--json", "--allow-unverified").stdout)
+        self.assertEqual(payload["docs"][0]["status"], "drifted")
+
+    def test_r3d_3_prose_hint_dead_code_removed(self):
+        self.assertFalse(hasattr(self.mod, "_PROSE_HINT"))
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r3d_4_audit_truth_block_exposes_invalid(self):
+        docs, _ = self._repo({"seed.txt": "seed\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="see appendix A", verified="2026-11-22"), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        res = self.audit.audit_health(docs, repo_path=self.root)
+        self.assertIn("invalid", res["truth"])
+        self.assertEqual(res["truth"]["invalid"], 1)
+        self.assertEqual(res["truth"]["invalid_docs"], ["a.md"])
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_r3d_missing_detail_names_the_anchor(self):
+        docs, _ = self._repo({"seed.txt": "seed\n"})
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="src/gone.py", verified="2026-11-22"), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        proc = self._run(docs, "--allow-unverified")
+        self.assertIn("src/gone.py", proc.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

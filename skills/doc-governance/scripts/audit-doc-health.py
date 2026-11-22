@@ -693,6 +693,10 @@ def audit_health(
         "max_age_days": truth_raw["max_age_days"],
         "drift_docs": [item["doc"] for item in truth_raw["drifted"]],
         "missing_anchor_docs": [item["doc"] for item in truth_raw["missing_anchor"]],
+        # R3D-4：invalid 锚点（散文/无法核验）必须在 audit 的 truth 块可见，
+        # 否则「只看 audit 报告」的评审者看不到这类声明被静默排除。
+        "invalid": sum(1 for item in truth_raw["docs"] if item.get("invalid_anchors")),
+        "invalid_docs": [item["doc"] for item in truth_raw["docs"] if item.get("invalid_anchors")],
     }
 
     return {
@@ -804,6 +808,8 @@ def main():
             print(f"      - [missing_anchor] {name}")
         for name in (truth.get("drift_docs") or [])[:5]:
             print(f"      - [drifted] {name}")
+        if truth.get("invalid"):
+            print(f"   * invalid 锚点文档: {truth['invalid']} 篇（无法机械核验，需改写为仓库内相对路径）")
 
     # 2. 目录拓扑分布
     print("\n📂 [知识库拓扑分布]:")
