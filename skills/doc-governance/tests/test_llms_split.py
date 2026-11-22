@@ -51,17 +51,29 @@ class TestBuildMap(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)
 
-    def test_ac1_default_mode_is_single_file_and_matches_legacy(self):
-        """AC-1：默认模式产物必须与既有 generate_llms_txt 逐字节一致。"""
+    def test_ac1_default_mode_matches_independent_oracle(self):
+        """AC-1：默认模式产物与**独立 oracle**（硬编码期望全文）逐字节一致。
+
+        SD-2：原用例比较「新 build_llms_map」与「已改为调用新函数的 generate_llms_txt」，
+        属同义反复——渲染层回归时两边同时变，用例仍绿。此处改为对照固定夹具的期望全文。
+        """
+        expected = (
+            "# Demo Machine-Readable Knowledge Base Map\n"
+            "\n"
+            "> 本文件遵循 llmstxt.org 规范，为 AI 智能体提供全景知识拓扑与物理文件导航地图。\n"
+            "> 严禁凭空猜测路径，查阅具体模块前请通过下述相对链接精准索引对应文件。\n"
+            "\n"
+            "## Proposals & RFCs (需求与设计孵化层)\n"
+            "\n"
+            "- [RFC-0001 A](proposals/RFC-0001-a.md): 提案一\n"
+            "\n"
+            "## Reference (技术参考 / 机器事实唯一真相源)\n"
+            "\n"
+            "- [规则 X](reference/rules/x.md): 规则说明\n"
+        )
         built = self.mod.build_llms_map(self.root, project_name="Demo", split=False)
         self.assertEqual(list(built.keys()), ["llms.txt"])
-
-        out = Path(tempfile.mkdtemp(prefix="llms_legacy_")) / "llms.txt"
-        try:
-            self.mod.generate_llms_txt(self.root, out, project_name="Demo")
-            self.assertEqual(built["llms.txt"], out.read_text(encoding="utf-8"))
-        finally:
-            shutil.rmtree(out.parent, ignore_errors=True)
+        self.assertEqual(built["llms.txt"], expected)
 
     def test_ac2_split_creates_root_and_section_maps(self):
         built = self.mod.build_llms_map(self.root, project_name="Demo", split=True)
@@ -261,6 +273,73 @@ class TestS1S3S4S5(unittest.TestCase):
         (self.root / "_llms" / "proposals.md").write_text("# 手改\n", encoding="utf-8")
         issue = self.audit.check_llms_map_consistency(self.root)
         self.assertIn("--split", issue)
+
+
+
+class TestSD1SD3SD5SD6(unittest.TestCase):
+    """Delta 复核 SD-1/3/5/6 回归：检测面与清理面同口径"""
+
+    def setUp(self):
+        self.mod = load_module("generate_llms_txt", SCRIPTS_DIR / "generate-llms-txt.py")
+        self.audit = load_module("audit_doc_health", SCRIPTS_DIR / "audit-doc-health.py")
+        self.root = Path(tempfile.mkdtemp(prefix="llms_sd_"))
+        write_doc(self.root, "proposals/a.md", "A", desc="d")
+        write_doc(self.root, "index.md", "Index")
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _run(self, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.root), *extra],
+            capture_output=True, text=True,
+        )
+
+    def _split(self):
+        self.assertEqual(self._run("--split").returncode, 0)
+
+    def test_sd1_nested_stray_makes_check_red_and_regen_converges(self):
+        self._split()
+        nested = self.root / "_llms" / "sub"
+        nested.mkdir()
+        (nested / "sneaky.md").write_text("# 私藏\n", encoding="utf-8")
+        # 检测面（--check）必须与 audit 同口径判红
+        self.assertEqual(self._run("--split", "--check").returncode, 1)
+        self.assertIn("不一致", self.audit.check_llms_map_consistency(self.root))
+        # 清理面必须收敛：重生成后 check 绿、audit 绿
+        self.assertEqual(self._run("--split").returncode, 0)
+        self.assertEqual(self._run("--split", "--check").returncode, 0)
+        self.assertEqual(self.audit.check_llms_map_consistency(self.root), "")
+        self.assertFalse((nested / "sneaky.md").exists())
+
+    def test_sd3_check_reports_actual_basename(self):
+        self.assertEqual(self._run("--split").returncode, 0)
+        custom = self.root / "map.txt"
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
+             "--root", str(self.root), "--output", str(custom), "--split", "--check"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("map.txt", proc.stderr)
+        self.assertNotIn("不一致: llms.txt", proc.stderr)
+
+    def test_sd6_root_byte_budget_is_enforced_by_audit(self):
+        self._split()
+        big = self.root / "llms.txt"
+        big.write_text(big.read_text(encoding="utf-8") + "\n" + "x" * 9000, encoding="utf-8")
+        self.assertIn("根体量", self.audit.check_llms_map_consistency(self.root))
+
+    def test_sd5_symlinked_section_subdir_is_detected(self):
+        self._split()
+        target = self.root / "elsewhere"
+        target.mkdir()
+        link = self.root / "_llms" / "linked"
+        try:
+            link.symlink_to(target, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("平台不支持目录符号链接")
+        self.assertIn("符号链接", self.audit.check_llms_map_consistency(self.root))
 
 
 if __name__ == "__main__":

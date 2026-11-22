@@ -200,6 +200,8 @@ def _resolve_project_name(text: str) -> Tuple[str, bool]:
 
 
 AGENTS_MD_MAX_LINES = 30
+# 与 generate-llms-txt.py 的 --split 默认上限保持一致
+LLMS_ROOT_MAX_BYTES = 8192
 AGENTS_MD_REQUIRED = ("读取顺序", "硬约束")
 
 
@@ -272,11 +274,18 @@ def check_llms_map_consistency(root_dir: Path) -> str:
             if not same:
                 mismatched.append(rel)
         if is_split:
+            # SD-6：根体量超限也计入缺陷（契约 §4.5 此前只在生成器侧实现）
+            if len(snapshot) > LLMS_ROOT_MAX_BYTES:
+                mismatched.append(f"根体量 {len(snapshot)} 字节 > {LLMS_ROOT_MAX_BYTES}")
             expected = {
                 Path(rel).name for rel in built
                 if rel.startswith(_llms_mod.SECTION_MAP_DIR + "/")
             }
             # S-5：递归扫描——嵌套子目录里的 .md 同样是「多余」，否则 _llms/sub/ 会成为静默区
+            # SD-5：符号链接目录不会被 rglob 跟随，显式检测并判为多余（防静默区）
+            for link in sorted(section_dir.rglob("*")):
+                if link.is_symlink() and link.is_dir():
+                    mismatched.append(link.relative_to(root_dir).as_posix() + "（符号链接目录）")
             for extra in sorted(section_dir.rglob("*.md")):
                 rel_extra = extra.relative_to(root_dir).as_posix()
                 if rel_extra not in {

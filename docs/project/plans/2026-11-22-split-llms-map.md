@@ -88,6 +88,11 @@ python3 -m pytest skills/doc-governance/tests -q
 | D-03 | 删除 `audit-doc-health.py` 中重复定义的三个函数 | 红队 S-2：`check_llms_map_consistency` 定义两次，后者覆盖前者导致提示缺 `--split`、split 地图不可收敛 | 已修 + 回归用例 |
 | D-04 | 描述链接排除任意 scheme 与 `//host` | 红队 S-4：`tel:`/`ftp:`/协议相对 URL 被改写为静默断链 | 已修 + 回归用例 |
 | D-05 | `_llms/` 递归检测嵌套多余文件 | 红队 S-5：嵌套子目录成为免检静默区 | 已修 + 回归用例 |
+| D-06 | `--check`/清理改 `rglob`，与 audit 同口径 | Delta SD-1：检测面递归而清理面单层 ⇒ audit 常红、`--check` 常绿，提示不收敛 | 已修 + 回归用例 |
+| D-07 | AC-1 改用独立 oracle（硬编码期望全文） | Delta SD-2：原用例比较「新函数」与「已改为调用新函数的旧入口」，同义反复 | 已修，变异测试可打红 |
+| D-08 | `--check` 回显实际基名 | Delta SD-3：自定义 `--output` 时提示错位 | 已修 |
+| D-09 | audit 补根体量判据 + 符号链接目录检测 | Delta SD-5/SD-6：契约 §4.5 未实现；symlink 子目录绕过 rglob | 已修 + 回归用例 |
+| D-10 | RFC 登记 S-4 对默认模式产物的有意偏差 | Delta SD-4：`//host` 描述下默认模式产物差 2 字节，「逐字节同产物」需限定 | 已登记 |
 
 ## 7. 回滚方案
 

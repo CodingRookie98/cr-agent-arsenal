@@ -490,11 +490,14 @@ def main():
             section_dir = base / SECTION_MAP_DIR
             if section_dir.is_dir():
                 expected = {Path(rel).name for rel in built if rel.startswith(SECTION_MAP_DIR + "/")}
-                for extra in sorted(section_dir.glob("*.md")):
-                    if extra.name not in expected:
-                        mismatched.append(f"{SECTION_MAP_DIR}/{extra.name}")
+                # SD-1：与 audit 同口径用 rglob——单层 glob 会让嵌套多余文件「audit 红 / --check 绿」
+                for extra in sorted(section_dir.rglob("*.md")):
+                    if extra.relative_to(section_dir).as_posix() not in expected:
+                        mismatched.append(extra.relative_to(base).as_posix())
         if mismatched:
-            print("❌ 机器地图与生成物不一致: " + ", ".join(mismatched), file=sys.stderr)
+            # SD-3：回显实际基名，避免自定义 --output 时提示错位
+            shown = [out_path.name if m == "llms.txt" else m for m in mismatched]
+            print("❌ 机器地图与生成物不一致: " + ", ".join(shown), file=sys.stderr)
             sys.exit(1)
         print(f"✅ 机器地图校验通过（{len(built)} 个文件，根 {root_bytes} 字节）")
         sys.exit(0)
@@ -513,9 +516,12 @@ def main():
         section_dir = base / SECTION_MAP_DIR
         if section_dir.is_dir():
             expected = {Path(rel).name for rel in built if rel.startswith(SECTION_MAP_DIR + "/")}
-            for extra in sorted(section_dir.glob("*.md")):
-                if extra.name not in expected:
+            # SD-1：清理面同样递归，保证「照提示重生成」一定收敛
+            for extra in sorted(section_dir.rglob("*.md")):
+                if extra.relative_to(section_dir).as_posix() not in expected:
                     extra.unlink()
+                    with contextlib.suppress(OSError):
+                        extra.parent.rmdir()  # 顺手清理已空的嵌套目录（非空会抛，忽略）
     print(
         f"✅ 机器可读地图成功生成至: {out_path} "
         f"(根 {root_bytes} 字节；共 {len(written_files)} 个文件)"
