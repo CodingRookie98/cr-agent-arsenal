@@ -186,6 +186,7 @@ def classify_doc(
     anchor_unverifiable: Optional[Sequence[bool]] = None,
     anchor_shas: Optional[Sequence[Optional[str]]] = None,
     doc_sha: Optional[str] = None,
+    verified_refreshed: bool = False,
 ) -> str:
     """五态判定，优先级：missing_anchor > drifted > stale > unverified > fresh。
 
@@ -216,7 +217,10 @@ def classify_doc(
     stale_indices = [
         i for i, ts in enumerate(commits)
         if ts is not None and ts > verified_ts
-        and not (anchor_shas is not None and doc_sha is not None and anchor_shas[i] == doc_sha)
+        and not (
+            anchor_shas is not None and doc_sha is not None and anchor_shas[i] == doc_sha
+            and verified_refreshed
+        )
     ]
     if stale_indices:
         return "drifted"
@@ -266,6 +270,49 @@ def git_resolve_commit_ts(repo: Path, sha: str) -> Optional[int]:
 def git_last_commit_sha(repo: Path, rel_path: str) -> Optional[str]:
     """B-02：锚点与文档是否在**同一次提交**中被改动（同步处理的判据）。"""
     return _run_git(repo, ["log", "-1", "--format=%H", "--", rel_path])
+
+
+def _verified_line_changed_staged(repo: Optional[Path], rel_path: str) -> bool:
+    """BD-1（pre-commit 口径）：暂存区的「复核于」行是否与 HEAD 不同。"""
+    if repo is None:
+        return False
+
+    def _line(text: Optional[str]) -> str:
+        if not text:
+            return ""
+        for line in text.split("\n"):
+            if "复核于" in line:
+                return line.strip()
+        return ""
+
+    prev = _run_git(repo, ["show", f"HEAD:{rel_path}"])
+    cur = _run_git(repo, ["show", f":{rel_path}"])
+    if prev is None or cur is None:
+        return True
+    return _line(prev) != _line(cur)
+
+
+def _verified_line_changed(repo: Path, rel_path: str, commit_sha: Optional[str]) -> bool:
+    """BD-1：该提交是否真的改过文档的「复核于」行（而非只加注释/空行）。
+
+    同提交豁免的证据不能只是「SHA 相同」，必须是**复核点确实被刷新**。
+    """
+    if not commit_sha:
+        return False
+
+    def _line(text: Optional[str]) -> str:
+        if not text:
+            return ""
+        for line in text.split("\n"):
+            if "复核于" in line:
+                return line.strip()
+        return ""
+
+    prev = _run_git(repo, ["show", f"{commit_sha}^:{rel_path}"])
+    cur = _run_git(repo, ["show", f"{commit_sha}:{rel_path}"])
+    if prev is None or cur is None:
+        return True  # 新增文件：视为已处理
+    return _line(prev) != _line(cur)
 
 
 def git_last_commit_ts(repo: Path, rel_path: str) -> Optional[int]:
@@ -510,17 +557,31 @@ def analyze(
                 git_last_commit_sha(repo_path, doc_path.relative_to(repo_path).as_posix())
                 if repo_path is not None else None
             ),
+            # BD-1：同提交豁免还要求「复核于」行确实被改过——
+            # 否则改锚点 + 加一行注释（复核点不动）也能蒙混过关。
+            verified_refreshed=(
+                _verified_line_changed(
+                    repo_path,
+                    doc_path.relative_to(repo_path).as_posix(),
+                    git_last_commit_sha(repo_path, doc_path.relative_to(repo_path).as_posix()),
+                )
+                if repo_path is not None else False
+            ),
         )
         # B-02：pre-commit 场景——锚点被暂存而文档未同步，即为「本次提交引入的漂移」。
         # git log 对未提交改动不可见，因此必须显式比对暂存区。
-        if staged is not None and status != "drifted":
+        if staged is not None:
             touched = [a["path"] for a in anchors if a["path"] in staged]
             # 暂存区路径相对**仓库根**，文档路径需按同一基准比对
             doc_repo_rel = (
                 doc_path.relative_to(repo_path).as_posix() if repo_path is not None else rel_doc
             )
-            if touched and doc_repo_rel not in staged:
-                status = "drifted"
+            if touched:
+                if doc_repo_rel in staged and _verified_line_changed_staged(repo_path, doc_repo_rel):
+                    # BD-1：本次提交内同时改锚点并刷新复核点 ⇒ 视为已同步处理
+                    status = "fresh"
+                elif doc_repo_rel not in staged:
+                    status = "drifted"
         record = {
             "doc": rel_doc,
             "status": status,

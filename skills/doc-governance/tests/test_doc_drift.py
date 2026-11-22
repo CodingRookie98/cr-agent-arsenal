@@ -1406,5 +1406,58 @@ class TestStagedDrift(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
 
 
+
+class TestBD1BD2(unittest.TestCase):
+    """BD-1/BD-2：同提交豁免的内容校验 + pre-commit 索引一致性"""
+
+    def setUp(self):
+        self.mod = load_module("check_doc_drift", SCRIPTS_DIR / "check-doc-drift.py")
+        self.root = Path(tempfile.mkdtemp(prefix="doc_drift_bd_"))
+        self.env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@example.com",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@example.com",
+        }
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.root, check=True, env=self.env, capture_output=True, text=True)
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_bd1_same_commit_without_refreshing_verified_date_is_drifted(self):
+        """同一提交里改锚点 + 给文档加注释（未刷新复核日期）⇒ 仍应 drifted。"""
+        self._git("init", "-q")
+        (self.root / "src").mkdir()
+        (self.root / "src" / "a.py").write_text("x=1\n", encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir()
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        sha = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        doc = docs / "a.md"
+        doc.write_text(make_doc("body", anchors="src/a.py", verified="2026-11-22 / commit " + sha), encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        subprocess.run([sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+                        "--repo", str(self.root), "--write-baseline"], capture_output=True)
+        time.sleep(1)
+        # 改锚点 + 文档只加一行注释（复核点不动）
+        (self.root / "src" / "a.py").write_text("x=2\n", encoding="utf-8")
+        doc.write_text(doc.read_text(encoding="utf-8") + "\n补充说明\n", encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "sneaky")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("drifted", proc.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
