@@ -5,7 +5,6 @@
 
 - [BK-0050-存量超限文档拆分-spec-evolution-skill-scripts](../project/backlog/active/BK-0050-存量超限文档拆分-spec-evolution-skill-scripts.md): id: BK-0050
 - [BK-0051-检索层决策-当前不引入-mcp-已评估](../project/backlog/active/BK-0051-检索层决策-当前不引入-mcp-已评估.md): id: BK-0051
-- [BK-0052-知识库缺口-how-to-与-tutorials-象限为空](../project/backlog/active/BK-0052-知识库缺口-how-to-与-tutorials-象限为空.md): id: BK-0052
 - [BK-0053-知识库缺口-changelog-缺失与-3-篇-rfc-无落地计划链接](../project/backlog/active/BK-0053-知识库缺口-changelog-缺失与-3-篇-rfc-无落地计划链接.md): id: BK-0053
 - [BK-0054-知识库缺口-taste-driven-designer-缺架构设计书](../project/backlog/active/BK-0054-知识库缺口-taste-driven-designer-缺架构设计书.md): id: BK-0054
 - [BK-0001-trim-revision-py-archive-exemption](../project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
@@ -57,6 +56,7 @@
 - [BK-0047-windows-全量-pytest-95-例失败-控制台编码与夹具断言漂移两类归](../project/backlog/archive/2026-Q4/BK-0047-windows-全量-pytest-95-例失败-控制台编码与夹具断言漂移两类归.md): id: BK-0047
 - [BK-0048-门禁自动化-pre-commit-hook-一键聚合脚本](../project/backlog/archive/2026-Q4/BK-0048-门禁自动化-pre-commit-hook-一键聚合脚本.md): id: BK-0048
 - [BK-0049-知识库可用性评测-20-条-golden-task](../project/backlog/archive/2026-Q4/BK-0049-知识库可用性评测-20-条-golden-task.md): id: BK-0049
+- [BK-0052-知识库缺口-how-to-与-tutorials-象限为空](../project/backlog/archive/2026-Q4/BK-0052-知识库缺口-how-to-与-tutorials-象限为空.md): id: BK-0052
 - [项目待办与后续演进清单 (Backlog Index)](../project/backlog/index.md): *(当前暂无进行中的待办)*
 - [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](../project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。
 - [goal-loop 技能 V2.0 重构实施方案 (A → B → C)](../project/plans/2026-09-14-goal-loop-v2-refactor.md): 以下四项经用户确认，作为不可回退的实现约束：

@@ -8,6 +8,16 @@
 
 - 全量清单：[proposals.md](./_llms/proposals.md)
 
+## Tutorials (学习导向 / 新手上手教程) — 2 篇
+
+- 全量清单：[tutorials.md](./_llms/tutorials.md)
+- 象限索引：[index.md](./tutorials/index.md)
+
+## How-To Guides (操作指南 / 问题与任务 SOP) — 4 篇
+
+- 全量清单：[how-to.md](./_llms/how-to.md)
+- 象限索引：[index.md](./how-to/index.md)
+
 ## Reference (技术参考 / 机器事实唯一真相源) — 5 篇
 
 - 全量清单：[reference.md](./_llms/reference.md)

@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.39.0 (新增 §4 计划「分层机器地图」：根 llms.txt 降为象限入口 + 路由文件)
+> - **当前版本**: V1.40.0 (新增 §2.5 上手与操作指南：4 篇 Tutorial/How-To，补齐 BK-0052 缺口)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,6 +12,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.40.0** | 2026-11-22 | DSH AI Agent | 王辉 | **补齐上手/操作象限（BK-0052）**：§2.5 新增 1 篇 Tutorial（5 分钟上手）+ 3 篇 How-To（安装技能 / 执行门禁 / 故障排查）；可回答性 G-12/G-13 由 GAP 转 PASS |
 | **V1.39.0** | 2026-11-22 | DSH AI Agent | 王辉 | **分层机器地图登记**：§1 补路由文件与子地图入口；§4 新增「分层机器地图（RFC-0006）」计划行；根 `llms.txt` 21,810 → 883 字节 |
 | **V1.38.0** | 2026-11-22 | DSH AI Agent | 王辉 | **真值轴落地登记**：§4 新增「文档真值轴（RFC-0005）」计划行；同步 `GOVERNANCE.md` V1.7.0（工具表 + 红线 7）、`doc-governance-design.md` V1.4.0、`SKILL.md` 模式 1/2、控制头模板规则 6 与变更矩阵 V1.3.0 |
 | **V1.37.1** | 2026-11-21 | DSH AI Agent | 王辉 | **调研报告登记**：§2 新增《LLM-WIKI 社区实现全景与工程难点深度调研》（`explanation/analysis/llm-wiki-implementation-research.md` V1.0.0），含六条实现路线、十类难点、十二维 `doc-governance` 对照审计与八项改造建议 |
@@ -50,6 +51,22 @@
 
 ---
 
+---
+
+## 2.5 🎓 上手与操作指南 (Tutorials & How-To)
+
+面向**第一次使用**与**遇到具体问题**的两类读者。教程按学习路径组织（跟着做即可），How-To 按任务组织（直奔步骤）。
+
+| 文档 | 类型 | 解决什么问题 |
+| :--- | :--- | :--- |
+| [5 分钟上手：装技能 / 跑门禁 / 定位文档](./tutorials/quick-start.md) | Tutorial | 完全没接触过本仓库，想最短路径跑通一次 |
+| [把技能安装到宿主 Agent](./how-to/install-skills.md) | How-To | 本仓库开发 vs 外部项目安装的选型、命令、验证与卸载 |
+| [执行文档门禁并解读失败](./how-to/run-doc-gates.md) | How-To | 六道门禁各查什么、红了怎么改、pre-commit 与 CI 怎么接 |
+| [文档治理故障排查](./how-to/troubleshoot-doc-governance.md) | How-To | 按症状索引的 12 类真实故障：浅克隆 rc=2、同提交漂移、墓碑违规、目录断链等 |
+
+> 象限索引：[tutorials/index.md](./tutorials/index.md) · [how-to/index.md](./how-to/index.md)
+
+---
 ## 3. 📖 技能工程落地规程 (Skill Specifications & References)
 
 各技能的独立安装规范与执行规程如下：
