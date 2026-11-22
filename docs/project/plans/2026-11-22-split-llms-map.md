@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-SPLIT-LLMS-MAP-2026
-> - **当前版本**: V1.1.0
+> - **当前版本**: V1.2.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 
@@ -12,18 +12,18 @@
 > - **需求源**: [RFC-0006](../../proposals/RFC-0006-split-llms-map.md)（In Review）+ [调研报告](../../explanation/analysis/llm-wiki-implementation-research.md) §7 P1-5
 > - **执行后端**: 当前会话内联
 > - **批准基线**: `feat/doc-truth-axis` @ `9ca589f`
-> - **状态**: 进行中
+> - **状态**: 已完成（2026-11-22，Delta 复核 **Blockers=0 / 准予交付**）
 
 ---
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P4（A-1~A-6 已交付，定向红队审查进行中）
-- **当前活跃子任务**: A-7 审查 + 归档
+- **当前活跃阶段**: P5 完成（Light 红队 3×P1 → Delta 复核 0 Blockers）
+- **当前活跃子任务**: 无（交付完成）
 - **当前子任务重试计数**: 0/3（无触发）
 - **门禁基线（改动前实测）**: drift rc=0（3/46、15.0/15）｜audit PASS 100/100｜links rc=0｜sync rc=0｜pytest 217 passed｜`docs/llms.txt` 21,810 B / 92 条
-- **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅ / A-6 ✅ / A-7 ⏳
+- **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅ / A-6 ✅ / A-7 ✅
 - **实测（交付时）**: 根 21,810 → **883 字节**；6 个子地图（explanation 4,618 / other 538 / project 15,060 / proposals 1,880 / reference 1,462）；pytest **229 passed**；四道门禁 rc=0 / PASS
 
 ---
@@ -65,7 +65,7 @@ docs/llms.txt（根，≈1-2 KB）       docs/_llms/<section>.md（全量条目�
 - [x] **A-4** `audit-doc-health.py` 一致性门禁改多文件比对（根 + 全部子地图；多余/缺失均判漂移）+ 根体量缺陷
 - [x] **A-5** 新增 `docs/AGENTS.md`（≤30 行，只写读取顺序与硬约束）；audit 断言行数与必需小节
 - [x] **A-6** 迁移：对真实 `docs/` 执行 `--split` 生成；`docs/index.md` 与 `llms.txt` 互链同步
-- [ ] **A-7** 规程同步（GOVERNANCE / SKILL / 变更矩阵 / 模板）+ P3.5/P4/P5 门禁与审查
+- [x] **A-7** 规程同步（GOVERNANCE / SKILL / 变更矩阵 / 模板）+ P3.5/P4/P5 门禁与审查
 
 ## 5. 验收命令
 

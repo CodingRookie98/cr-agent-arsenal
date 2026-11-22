@@ -2,9 +2,9 @@
 
 > **提案元数据**
 > - **标识**: RFC-2026-SPLIT-LLMS-MAP
-> - **当前状态**: In Review
+> - **当前状态**: Implemented
 > - **发起人**: DSH AI Agent
-> - **当前版本**: V0.1.2
+> - **当前版本**: V1.0.0
 > - **初次发起日期**: 2026-11-22
 > - **目标里程碑**: doc-governance V1.2.0（新增生成器 `--split` 模式 + 体量门禁 + 路由文件；**默认行为不变**）
 > - **关联前置**: [LLM-WIKI 调研报告](../explanation/analysis/llm-wiki-implementation-research.md) §4.6 / §7 P1-5、[RFC-0005](./RFC-0005-doc-truth-axis.md)
@@ -16,6 +16,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-11-22 | DSH AI Agent | 王辉 | **状态流转 In Review → Implemented**：两轮独立审查（Light 红队 3×P1 + Delta 复核 0 Blockers）闭环；根 21,810 → **883 字节**，6 个子地图；245 测试全绿 |
 | **V0.1.2** | 2026-11-22 | DSH AI Agent | 王辉 | **Delta 复核 SD 收口**：`--check`/清理改递归（检测面与清理面同口径，消除「audit 红 / check 绿」分裂）；`--check` 回显实际基名；audit 补根体量判据与符号链接目录检测；AC-1 用例改用独立 oracle；登记 S-4 对默认模式产物的有意偏差 |
 | **V0.1.1** | 2026-11-22 | DSH AI Agent | 王辉 | **红队 S-1~S-5 收口**：根文件落 `--output` 完整路径（此前基名被丢弃且身份闸门读 A 写 B）；体量上限只在 split 下默认生效（此前默认模式被 8192 接管，回滚命令失效）；`check_llms_map_consistency` 删除重复定义并补 `--split` 提示；描述链接排除任意 scheme 与 `//host`；`_llms/` 递归检测嵌套多余文件 |
 | **V0.1.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初稿：给出 A/B/C 三方案对比与裁决、根/子文件契约、体量门禁与 8 条验收用例 |
