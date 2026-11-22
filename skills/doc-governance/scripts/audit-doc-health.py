@@ -276,9 +276,13 @@ def check_llms_map_consistency(root_dir: Path) -> str:
                 Path(rel).name for rel in built
                 if rel.startswith(_llms_mod.SECTION_MAP_DIR + "/")
             }
-            for extra in sorted(section_dir.glob("*.md")):
-                if extra.name not in expected:
-                    mismatched.append(f"{_llms_mod.SECTION_MAP_DIR}/{extra.name}")
+            # S-5：递归扫描——嵌套子目录里的 .md 同样是「多余」，否则 _llms/sub/ 会成为静默区
+            for extra in sorted(section_dir.rglob("*.md")):
+                rel_extra = extra.relative_to(root_dir).as_posix()
+                if rel_extra not in {
+                    f"{_llms_mod.SECTION_MAP_DIR}/{name}" for name in expected
+                }:
+                    mismatched.append(rel_extra)
         if mismatched:
             detail = "、".join(mismatched[:5]) + ("…" if len(mismatched) > 5 else "")
             # R1-1：反解不可信或名字不可安全回显时，**绝不下发任何 --name 命令**
@@ -286,9 +290,9 @@ def check_llms_map_consistency(root_dir: Path) -> str:
             if not name_resolved:
                 return (
                     f"机器地图与生成物不一致（{detail}），且既有地图首行不符合标准 H1 格式"
-                    "（应形如 " + B + "# <项目名> Machine-Readable Knowledge Base Map" + B + "），无法反解项目名。"
+                    "（应形如 `# <项目名> Machine-Readable Knowledge Base Map`），无法反解项目名。"
                     "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
-                    "如需重建，请**先移除既有地图文件**，再以显式 " + B + "--name" + B + " 重新生成后再提交"
+                    "如需重建，请**先移除既有地图文件**，再以显式 --name 重新生成后再提交"
                 )
             if not _is_safely_displayable(project_name):
                 return (
@@ -297,11 +301,11 @@ def check_llms_map_consistency(root_dir: Path) -> str:
                     "（生成器会沿用既有身份，不会改写它）；无需移除地图。"
                 )
             # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
-            # D2-4：以 --name=<value> 赋值形式拼装，使 " + B + "-" + B + " 开头的名字同样可执行（否则 argparse rc=2）
+            # D2-4：以 --name=<value> 赋值形式拼装，使 `-` 开头的名字同样可执行（否则 argparse rc=2）
             quoted_name = shlex.quote(project_name)
             split_flag = " --split" if is_split else ""
             return (
-                f"机器地图与生成物不一致（{detail}）—— 请以 --name=" + B + quoted_name + B + " 运行 "
+                f"机器地图与生成物不一致（{detail}）—— 请以 --name={quoted_name} 运行 "
                 + REGEN_COMMAND + split_flag + " 重新生成后再提交"
             )
     except Exception as exc:  # noqa: BLE001 - 门禁不得因单点异常中断整体体检
@@ -309,127 +313,6 @@ def check_llms_map_consistency(root_dir: Path) -> str:
     return ""
 
 
-def _resolve_project_name(text: str) -> Tuple[str, bool]:
-    """反解既有机器地图首行的项目名。
-
-    返回 `(name, resolved)`：`resolved=False` 表示首行不符合标准 H1 格式，**名字不可信**
-    （此时调用方不得据此下发任何 `--name` 命令 —— 否则会把地图身份静默改写为回落占位名，R1-1）。
-
-    判定路径必须使用本函数返回的**未净化原名**（生成物 H1 用的就是它），保证逐字同源。
-    """
-    try:
-        # BK-0031：严格解码已在调用方完成（非法 UTF-8 不得被 errors="replace" 归一化后
-        # 当作可信身份）；此处只取首行。
-        first_line = text.splitlines()[0]
-    except IndexError:
-        return PROJECT_NAME_FALLBACK, False
-    # fullmatch + 贪婪捕获：名中含契约短语时不得被非贪婪截断（R1-3）；
-    # 不 strip：与生成器同语义，避免审计下发一个生成器必然拒绝的 --name（DR1-2）
-    match = re.fullmatch(r"# (.*) Machine-Readable Knowledge Base Map", first_line)
-    if match is None:
-        return PROJECT_NAME_FALLBACK, False
-    return match.group(1), True
-
-
-AGENTS_MD_MAX_LINES = 30
-AGENTS_MD_REQUIRED = ("读取顺序", "硬约束")
-
-
-def check_agents_md(root_dir: Path) -> str:
-    """路由文件 docs/AGENTS.md 的门禁（RFC-0006 §4.4）。
-
-    不存在 ⇒ 不判缺陷（可选文件，存量项目零破坏）；
-    存在 ⇒ 行数 ≤ 30 且必须含「读取顺序」「硬约束」两个小节。
-    """
-    path = root_dir / "AGENTS.md"
-    if not path.exists():
-        return ""
-    if not path.is_file():
-        return f"路由文件落点不是常规文件（{path}）"
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as exc:
-        return f"路由文件读取失败: {exc}"
-    lines = text.splitlines()
-    if len(lines) > AGENTS_MD_MAX_LINES:
-        return (
-            f"路由文件 {path.name} 共 {len(lines)} 行 > 上限 {AGENTS_MD_MAX_LINES} 行"
-            "（路由文件只写读取顺序与硬约束，知识应下沉到文档）"
-        )
-    missing = [sec for sec in AGENTS_MD_REQUIRED if sec not in text]
-    if missing:
-        return f"路由文件 {path.name} 缺少必需小节: {', '.join(missing)}"
-    return ""
-
-
-def check_llms_map_consistency(root_dir: Path) -> str:
-    """机器地图一致性门禁（BK-0025 / RFC-0006）：以注册命令语义重生成并与磁盘逐字节比对。
-
-    split 模式（存在 _llms/ 目录）下比对根 + 全部子地图，多余/缺失均判漂移。
-    返回缺陷描述；空串表示一致或本项不适用（未生成机器地图的项目不参与判定）。
-    """
-    llms_file = root_dir / "llms.txt"
-    if not llms_file.exists():
-        return ""
-    if not llms_file.is_file():
-        # R1-4：非规则文件（FIFO/字符设备/目录）不得进入无界读取面
-        return f"机器地图落点不是常规文件（{llms_file}），无法安全比对"
-    try:
-        snapshot = llms_file.read_bytes()   # BK-0028 D1-8：单次快照，后续判定不再重读
-    except OSError as exc:
-        return f"机器地图一致性检查无法完成: {exc}"
-    section_dir = root_dir / _llms_mod.SECTION_MAP_DIR
-    is_split = section_dir.is_dir()
-    try:
-        snapshot_text = snapshot.decode("utf-8")
-    except UnicodeDecodeError:
-        project_name, name_resolved = PROJECT_NAME_FALLBACK, False
-    else:
-        project_name, name_resolved = _resolve_project_name(snapshot_text)
-    try:
-        buffer = io.StringIO()
-        with contextlib.redirect_stdout(buffer):
-            built = _llms_mod.build_llms_map(root_dir, project_name=project_name, split=is_split)
-        if not built:
-            # R1-1：无可收录文档时本项不适用——否则修复命令必然 rc=1，形成不可修复的死胡同
-            return ""
-        # RFC-0006：split 模式下逐文件比对根 + 全部子地图；多余/缺失均判漂移
-        mismatched: List[str] = []
-        for rel, content in built.items():
-            target = root_dir / rel
-            if not target.is_file() or target.read_bytes() != content.encode("utf-8"):
-                mismatched.append(rel)
-        if is_split:
-            expected = {Path(rel).name for rel in built if rel.startswith(_llms_mod.SECTION_MAP_DIR + "/")}
-            for extra in sorted(section_dir.glob("*.md")):
-                if extra.name not in expected:
-                    mismatched.append(f"{_llms_mod.SECTION_MAP_DIR}/{extra.name}")
-        if mismatched:
-                # R1-1：反解不可信或名字不可安全回显时，**绝不下发任何 --name 命令**
-                # （否则用户照做会把地图 H1 静默改写为占位名或截断名，项目身份在 SSOT 中丢失）
-                if not name_resolved:
-                    return (
-                        "机器地图与生成物不一致，且既有地图首行不符合标准 H1 格式"
-                        "（应形如 `# <项目名> Machine-Readable Knowledge Base Map`），无法反解项目名。"
-                        "**请勿直接重新生成**：缺省项目名会把地图身份静默改写；"
-                        "如需重建，请**先移除既有地图文件**，再以显式 `--name` 重新生成后再提交"
-                    )
-                if not _is_safely_displayable(project_name):
-                    return (
-                        "机器地图与生成物不一致，且既有地图首行项目名不可安全回显（为空、含不可打印字符或超长）。"
-                        "既有首行格式合法，直接**以注册命令重新生成即可无损修复**"
-                        "（生成器会沿用既有身份，不会改写它）；无需移除地图。"
-                    )
-                # D1-4：项目名源自仓库可控内容，须 shell 转义后再拼入提示命令（防命令注入）
-                # D2-4：以 --name=<value> 赋值形式拼装，使 `-` 开头的名字同样可执行（否则 argparse rc=2）
-                quoted_name = shlex.quote(project_name)
-                return (
-                    "机器地图与生成物不一致 —— 请以 --name=" + quoted_name + " 运行 "
-                    + REGEN_COMMAND + " 重新生成后再提交"
-                )
-    except Exception as exc:  # noqa: BLE001 - 门禁不得因单点异常中断整体体检
-        return f"机器地图一致性检查无法完成: {exc}"
-    return ""
 
 
 def parse_frontmatter(content: str) -> Dict[str, str]:

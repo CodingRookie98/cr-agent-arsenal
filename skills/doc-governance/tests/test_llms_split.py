@@ -184,5 +184,84 @@ class TestAuditMultiFile(unittest.TestCase):
         self.assertIn("行", self.audit.check_agents_md(self.root))
 
 
+
+class TestS1S3S4S5(unittest.TestCase):
+    """红队 S-1/S-2/S-3/S-4/S-5 回归"""
+
+    def setUp(self):
+        self.mod = load_module("generate_llms_txt", SCRIPTS_DIR / "generate-llms-txt.py")
+        self.audit = load_module("audit_doc_health", SCRIPTS_DIR / "audit-doc-health.py")
+        self.root = Path(tempfile.mkdtemp(prefix="llms_s_"))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _run(self, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"), "--root", str(self.root), *extra],
+            capture_output=True, text=True,
+        )
+
+    def test_s1_custom_output_basename_is_honoured(self):
+        write_doc(self.root, "proposals/a.md", "A", desc="d")
+        out = self.root / "custom-map.txt"
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "generate-llms-txt.py"),
+             "--root", str(self.root), "--output", str(out)],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(out.is_file(), "custom basename must be written")
+        self.assertFalse((self.root / "llms.txt").exists(), "must not write default name")
+
+    def test_s3_default_mode_has_no_byte_limit(self):
+        for i in range(40):
+            write_doc(self.root, f"proposals/doc-{i}.md", f"Doc {i}", desc="x" * 200)
+        proc = self._run()
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertGreater((self.root / "llms.txt").stat().st_size, 8192)
+
+    def test_s3_split_mode_still_enforces_limit(self):
+        for i in range(40):
+            write_doc(self.root, f"proposals/doc-{i}.md", f"Doc {i}", desc="x" * 200)
+        proc = self._run("--split", "--max-root-bytes", "200")
+        self.assertEqual(proc.returncode, 1)
+        self.assertFalse((self.root / "llms.txt").exists())
+
+    def test_s4_non_http_schemes_are_not_rebased(self):
+        write_doc(self.root, "proposals/a.md", "A", desc="[tel](tel:123) [cdn](//cdn.example/x.md) [ok](./b.md)")
+        built = self.mod.build_llms_map(self.root, project_name="Demo", split=True)
+        section = built["_llms/proposals.md"]
+        self.assertIn("](tel:123)", section)
+        self.assertIn("](//cdn.example/x.md)", section)
+        self.assertIn("](../proposals/b.md)", section)
+
+    def test_s5_nested_stray_under_section_dir_is_detected(self):
+        write_doc(self.root, "proposals/a.md", "A", desc="d")
+        write_doc(self.root, "index.md", "Index")
+        built = self.mod.build_llms_map(self.root, project_name="System", split=True)
+        for rel, content in built.items():
+            target = self.root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+        self.assertEqual(self.audit.check_llms_map_consistency(self.root), "")
+        nested = self.root / "_llms" / "sub"
+        nested.mkdir()
+        (nested / "sneaky.md").write_text("# 私藏\n", encoding="utf-8")
+        self.assertIn("不一致", self.audit.check_llms_map_consistency(self.root))
+
+    def test_s2_regen_hint_mentions_split(self):
+        write_doc(self.root, "proposals/a.md", "A", desc="d")
+        write_doc(self.root, "index.md", "Index")
+        built = self.mod.build_llms_map(self.root, project_name="System", split=True)
+        for rel, content in built.items():
+            target = self.root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+        (self.root / "_llms" / "proposals.md").write_text("# 手改\n", encoding="utf-8")
+        issue = self.audit.check_llms_map_consistency(self.root)
+        self.assertIn("--split", issue)
+
+
 if __name__ == "__main__":
     unittest.main()

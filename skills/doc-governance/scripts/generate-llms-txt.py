@@ -27,7 +27,8 @@ HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->", re.DOTALL)
 # D2：描述内 Markdown 链接/图片：[text](target "title")、![alt](target)
 DESCRIPTION_LINK_PATTERN = re.compile(r"(!?)\[([^\]]*)\]\(\s*([^)\s]+)(\s+\"[^\"]*\")?\s*\)")
 # D2：绝对协议链接（http(s)/mailto/…）保持原样，不参与 docs 根相对重写
-ABSOLUTE_LINK_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
+# S-4：协议相对 URL（//host/path）同样是绝对地址，必须一并排除，否则会被改写成断链
+ABSOLUTE_LINK_PATTERN = re.compile(r"^(?:[A-Za-z][A-Za-z0-9+.\-]*:|//)")
 
 
 def in_evidence_archive(path: Path, root_dir: Path) -> bool:
@@ -230,7 +231,9 @@ def _render_single(project_name: str, sections, other_docs) -> str:
     return "\n".join(output_lines)
 
 
-_MD_LINK = re.compile(r"\]\((?!https?://|mailto:|#)([^)\s]+)")
+# S-4：除 http(s)/mailto/锚点外，任何 scheme（tel:/ftp:/data:…）与协议相对 URL（//host）
+# 都不是仓库内相对路径，rebase 会把它们改写成静默断链。
+_MD_LINK = re.compile(r"\]\((?!//|[a-zA-Z][a-zA-Z0-9+.-]*:|#)([^)\s]+)")
 
 
 def _rebase_desc_links(desc: str) -> str:
@@ -438,8 +441,8 @@ def main():
     parser.add_argument("--name", default=None, help="项目名称 (缺省：沿用既有地图身份；无既有地图时为 System)")
     parser.add_argument("--split", action="store_true",
                         help="分层输出（RFC-0006）：根只含象限入口，全量条目下沉 _llms/<section>.md")
-    parser.add_argument("--max-root-bytes", type=int, default=8192,
-                        help="根机器地图字节上限（默认 8192）；超限不落盘并 exit 1")
+    parser.add_argument("--max-root-bytes", type=int, default=None,
+                        help="根机器地图字节上限（--split 下默认 8192；显式给 0 表示不限制）；超限不落盘并 exit 1")
     parser.add_argument("--check", action="store_true",
                         help="只校验磁盘内容与生成物是否一致，不写盘（一致 rc=0，不一致 rc=1）")
 
@@ -462,11 +465,14 @@ def main():
         print(f"❌ 机器地图收录 0 篇文档，拒绝落盘（零覆盖守卫，避免覆盖既有 SSOT 地图）: {out_path}", file=sys.stderr)
         sys.exit(1)
 
-    # AC-5：根体量门禁——超限不落盘，避免「精炼入口」再次退化为全集清单
+    # AC-5：根体量门禁——超限不落盘，避免「精炼入口」再次退化为全集清单。
+    # S-3：默认模式（无 --split）**不设限**，保持旧命令语义与 RFC §7 的回滚路径；
+    # 分层模式默认 8192，显式传 0 可关闭。
     root_bytes = len(built["llms.txt"].encode("utf-8"))
-    if args.max_root_bytes and root_bytes > args.max_root_bytes:
+    root_limit = args.max_root_bytes if args.max_root_bytes is not None else (8192 if args.split else 0)
+    if root_limit and root_bytes > root_limit:
         print(
-            f"❌ 根机器地图 {root_bytes} 字节 > 上限 {args.max_root_bytes} 字节，拒绝落盘。"
+            f"❌ 根机器地图 {root_bytes} 字节 > 上限 {root_limit} 字节，拒绝落盘。"
             "请使用 --split 把条目下沉到 _llms/ 子地图。",
             file=sys.stderr,
         )
@@ -477,7 +483,7 @@ def main():
         base = out_path.parent
         mismatched = []
         for rel, content in built.items():
-            target = base / rel
+            target = out_path if rel == "llms.txt" else base / rel
             if not target.is_file() or target.read_bytes() != content.encode("utf-8"):
                 mismatched.append(rel)
         if args.split:
@@ -494,13 +500,15 @@ def main():
         sys.exit(0)
 
     # 写盘：根 + 子地图；split 模式下删除不再需要的子地图（空象限）
+    # S-1：根文件必须落在 --output 指定的**完整路径**上（含自定义基名），
+    # 不能恒写 <dir>/llms.txt —— 否则 --output 基名被静默丢弃，且身份闸门会读 A 写 B。
     base = out_path.parent
     written_files = []
     for rel, content in built.items():
-        target = base / rel
+        target = out_path if rel == "llms.txt" else base / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         _atomic_write(target, content)
-        written_files.append(rel)
+        written_files.append(str(target))
     if args.split:
         section_dir = base / SECTION_MAP_DIR
         if section_dir.is_dir():
