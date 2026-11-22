@@ -5,7 +5,6 @@
 
 - [BK-0050-存量超限文档拆分-spec-evolution-skill-scripts](../project/backlog/active/BK-0050-存量超限文档拆分-spec-evolution-skill-scripts.md): id: BK-0050
 - [BK-0051-检索层决策-当前不引入-mcp-已评估](../project/backlog/active/BK-0051-检索层决策-当前不引入-mcp-已评估.md): id: BK-0051
-- [BK-0054-知识库缺口-taste-driven-designer-缺架构设计书](../project/backlog/active/BK-0054-知识库缺口-taste-driven-designer-缺架构设计书.md): id: BK-0054
 - [BK-0001-trim-revision-py-archive-exemption](../project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](../project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0003-stable-id-pair-by-filename](../project/backlog/archive/2026-Q4/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
@@ -57,6 +56,7 @@
 - [BK-0049-知识库可用性评测-20-条-golden-task](../project/backlog/archive/2026-Q4/BK-0049-知识库可用性评测-20-条-golden-task.md): id: BK-0049
 - [BK-0052-知识库缺口-how-to-与-tutorials-象限为空](../project/backlog/archive/2026-Q4/BK-0052-知识库缺口-how-to-与-tutorials-象限为空.md): id: BK-0052
 - [BK-0053-知识库缺口-changelog-缺失与-3-篇-rfc-无落地计划链接](../project/backlog/archive/2026-Q4/BK-0053-知识库缺口-changelog-缺失与-3-篇-rfc-无落地计划链接.md): id: BK-0053
+- [BK-0054-知识库缺口-taste-driven-designer-缺架构设计书](../project/backlog/archive/2026-Q4/BK-0054-知识库缺口-taste-driven-designer-缺架构设计书.md): id: BK-0054
 - [项目待办与后续演进清单 (Backlog Index)](../project/backlog/index.md): *(当前暂无进行中的待办)*
 - [变更日志 (Changelog)](../project/changelog.md): 本文件记录**已交付**的成果。进行中的工作在 [backlog](../project/backlog/index.md)，逐日过程在 git log。
 - [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](../project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。

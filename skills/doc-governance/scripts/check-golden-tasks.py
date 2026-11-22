@@ -112,7 +112,12 @@ def g07_commit_evidence(root: Path) -> Tuple[Status, str]:
 def g08_skill_design_docs(root: Path) -> Tuple[Status, str]:
     skills_dir = REPO_ROOT / "skills"
     skills = [d.name for d in skills_dir.iterdir() if (d / "SKILL.md").is_file()] if skills_dir.is_dir() else []
-    designs = {f.stem.replace("-design", "") for f in _md_files(root, "explanation/architecture")}
+    # 注意：必须用 removesuffix 而非 replace——"taste-driven-designer-design" 里的
+    # "-designer" 也含 "-design"，replace 会把它误删成 "taste-drivener"
+    designs = {
+        f.stem[: -len("-design")] if f.stem.endswith("-design") else f.stem
+        for f in _md_files(root, "explanation/architecture")
+    }
     missing = [s for s in skills if s not in designs]
     return ("gap", f"缺设计书: {', '.join(missing[:4])}") if missing else ("pass", f"{len(skills)} 个技能均有设计书")
 
