@@ -6,7 +6,7 @@
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 > - **代码锚点**: skills/doc-governance/scripts/check-doc-drift.py, skills/doc-governance/scripts/audit-doc-health.py
-> - **复核于**: 2026-11-22
+> - **复核于**: 2026-11-22 / commit fb62d02
 
 > **目标元数据**
 > - **所属项目**: CR 公共技能库（cr-agent-arsenal）
