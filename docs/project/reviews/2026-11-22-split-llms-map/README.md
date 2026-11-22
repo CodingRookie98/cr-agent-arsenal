@@ -27,3 +27,14 @@
 - [x] S-1/S-2/S-3（P1）与 S-4/S-5（P2）修复
 - [x] Delta 复核：**0 Blockers，准予交付**
 - [x] SD-1/2/3/5/6 收口（`aee6bbe`）、SD-4 契约登记
+
+## 已知边界：与 check-review-report.py 的关系
+
+本归档的 R1/Delta 报告按 `dual-round-review` 的 **Light 模式**规程产出（R1 红队正文 + 轻量裁决表），
+而 `check-review-report.py` 校验的是 **Full 模式**的 R1 模板区块（如「## 5. 第一轮结论概要」）。
+因此该脚本对本归档返回 rc=1 属**预期结果**，不代表凭据缺失：
+
+- 报告全文已逐字落盘（字节数与 sha256 均经主智能体独立复算一致）；
+- 轮次台账的「写入形态」「轮次标记」两列已按脚本口径对齐（r1 / delta-r1）；
+- 若后续要把 Light 归档纳入该门禁，应先在 `dual-round-review` 侧增加 light schema，
+  而不是改写已归档的报告正文（逐字归档红线）。
