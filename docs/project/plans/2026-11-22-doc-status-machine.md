@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-DOC-STATUS-MACHINE-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.1.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 
@@ -12,18 +12,19 @@
 > - **需求源**: [RFC-0007](../../proposals/RFC-0007-doc-status-contested.md)（In Review）+ [调研报告](../../explanation/analysis/llm-wiki-implementation-research.md) §7 P1-4
 > - **执行后端**: 当前会话内联
 > - **批准基线**: `feat/doc-truth-axis` @ `79d031c`
-> - **状态**: 进行中
+> - **状态**: 已完成（2026-11-22，Delta 复核 **Blockers=0 / 准予交付**）
 
 ---
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3（TDD 实现，A-1 起）
-- **当前活跃子任务**: A-1 状态解析与判据纯函数（先红后绿）
+- **当前活跃阶段**: P5 完成（Light 红队 1×P1 → Delta 复核 0 Blockers）
+- **当前活跃子任务**: 无（交付完成）
 - **当前子任务重试计数**: 0/3
 - **门禁基线（改动前实测）**: drift rc=0（fresh 3、15.0/15）｜audit PASS 100/100｜links rc=0｜sync rc=0｜`--split --check` rc=0｜pytest 245 passed
-- **批次进度**: A-1 ☐ / A-2 ☐ / A-3 ☐ / A-4 ☐ / A-5 ☐ / A-6 ☐
+- **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅（夹具演示，真实库全 Active 属正确状态）/ A-6 ✅
+- **实测**: pytest **270 passed**；audit PASS；真实分布 Active 50 / Contested 0 / Superseded 0
 
 ---
 
@@ -60,12 +61,12 @@ C-4 Active 引用 Superseded(警告)  C-5 Contested 超 90 天(警告)
 
 ## 4. 原子任务清单
 
-- [ ] **A-1** 新增 `check_doc_status(root)`：解析三字段、执行 C-1~C-3、收集 C-4/C-5 素材
-- [ ] **A-2** 接入 `audit_health` 的 `doc_status` 块 + `evaluate_verdict` 阻断理由
-- [ ] **A-3** 文本输出增「未决冲突清单」小节
-- [ ] **A-4** 控制头模板与 GOVERNANCE 同步（三态取值、两新字段、三条红线）
-- [ ] **A-5** 自证：把本 RFC 计划文档与至少一份文档标注为真实状态（制造非空清单）
-- [ ] **A-6** 门禁 + 审查 + 归档
+- [x] **A-1** 新增 `check_doc_status(root)`：解析三字段、执行 C-1~C-3、收集 C-4/C-5 素材
+- [x] **A-2** 接入 `audit_health` 的 `doc_status` 块 + `evaluate_verdict` 阻断理由
+- [x] **A-3** 文本输出增「未决冲突清单」小节
+- [x] **A-4** 控制头模板与 GOVERNANCE 同步（三态取值、两新字段、三条红线）
+- [x] **A-5** 自证：把本 RFC 计划文档与至少一份文档标注为真实状态（制造非空清单）
+- [x] **A-6** 门禁 + 审查 + 归档
 
 ## 5. 验收命令
 
