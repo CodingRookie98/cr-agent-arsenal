@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-DOC-TRUTH-AXIS-2026
-> - **当前版本**: V1.5.0
+> - **当前版本**: V1.6.0
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 > - **代码锚点**: skills/doc-governance/scripts/check-doc-drift.py, skills/doc-governance/scripts/audit-doc-health.py
@@ -147,9 +147,9 @@ python3 skills/doc-governance/scripts/check-doc-control-sync.py --root docs
 
 | 编号 | 定级 | 现象 | 触发条件 | 建议动作 |
 | :--- | :--- | :--- | :--- | :--- |
-| R2D56-1 | P2 | classify_doc 的 unverifiable 短路在 missing/drifted 之前，glob 锚点可盖住同文档的真实漂移 | 仅当 --allow-unverified 进入常规门禁时升级 P1 | 把 unverifiable 降为「不参与漂移判定」，真实锚点单独判定 |
-| R2D56-3 | P2 | 加粗真实锚点（两端加星号）被任意 * 判为 glob → unverified 假红 | 手写控制头时使用加粗 | 只把「两端加粗且内部无 *」视为加粗 |
-| R2D56-4 | P2 | 散文锚点（如「见附录 A」）仍 missing_anchor 硬红 | 文档把锚点写成描述而非路径 | 定义非文件型锚点口径：登记为 invalid 并给修复提示 |
-| R2D56-2 | P3 | --allow-unverified 生效时零痕迹（stdout 逐字节相同） | 任何使用该参数的门禁 | 输出显式豁免行，并在 GOVERNANCE 写明使用边界 |
+| R2D56-1 | P2 | classify_doc 的 unverifiable 短路在 missing/drifted 之前，glob 锚点可盖住同文档的真实漂移 | 仅当 --allow-unverified 进入常规门禁时升级 P1 | **已修**：不可核验锚点只退出判定集，不短路整篇；同文档真实锚点照常判 drifted |
+| R2D56-3 | P2 | 加粗真实锚点（两端加星号）被任意 * 判为 glob → unverified 假红 | 手写控制头时使用加粗 | **已修**：两端 `**` 且内部无 `*` 先剥离加粗，再判 glob |
+| R2D56-4 | P2 | 散文锚点（如「见附录 A」）仍 missing_anchor 硬红 | 文档把锚点写成描述而非路径 | **已修**：非路径形态归 `invalid` 并落 unverified，不计 missing |
+| R2D56-2 | P3 | --allow-unverified 生效时零痕迹（stdout 逐字节相同） | 任何使用该参数的门禁 | **已修**：强制打印豁免行（JSON 走 stderr） |
 
-建议：下次开启 backlog 批次时，为上述四项各建一张 BK 卡（本仓库 backlog 当前活跃 0 条）。
+**状态（2026-11-22 追加）**：四项均已修复并带回归测试（`TestFollowupP2P3` 4 条），全量 203 passed。剩余已知边界见 §8 争议焦点第 1、2 条（账本滞后不可自检、`--write-baseline` 属流程约束），属设计固有上限，不再单独立项。

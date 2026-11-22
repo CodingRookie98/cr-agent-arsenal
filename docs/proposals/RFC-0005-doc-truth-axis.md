@@ -4,7 +4,7 @@
 > - **标识**: RFC-2026-DOC-TRUTH-AXIS
 > - **当前状态**: Implemented
 > - **发起人**: DSH AI Agent
-> - **当前版本**: V0.1.7
+> - **当前版本**: V0.1.8
 > - **初次发起日期**: 2026-11-22
 > - **目标里程碑**: doc-governance V1.1.0（新增脚本 + 可选门禁；**不改变现有默认计分口径**）
 > - **关联前置**: [LLM-WIKI 社区实现调研](../explanation/analysis/llm-wiki-implementation-research.md)（§4.2 / §6.2 / §7）、[GOVERNANCE.md](../GOVERNANCE.md)、[doc-governance SKILL](../../skills/doc-governance/SKILL.md)
@@ -16,11 +16,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.1.8** | 2026-11-22 | DSH AI Agent | 王辉 | **计划 §9 四项收口**（R2D56-1/3/4/2）：不可核验锚点退出判定集但不短路整篇、加粗真实锚点不再被误判 glob、散文锚点归 invalid 而非 missing_anchor、`--allow-unverified` 强制留痕 |
 | **V0.1.7** | 2026-11-22 | DSH AI Agent | 王辉 | **状态流转 In Review → Implemented**：六轮独立审查（R1 → R2 → Delta → 放行确认 → 收口确认 2）最终 **Blockers=0 / 准予交付**；四项非阻断 P2/P3 登记于计划 §9。契约内容自 V0.1.6 起未变更 |
 | **V0.1.6** | 2026-11-22 | DSH AI Agent | 王辉 | **R2D-5/R2D-6 收口**：门禁改为「非 fresh 即阻断」（`--allow-unverified` 显式豁免）；glob/占位符锚点落 unverified、目录锚点可用；墓碑归属精确到自身声明下降的文档；审计新增 `--repo` 修正基准错位 |
 | **V0.1.5** | 2026-11-22 | DSH AI Agent | 王辉 | **放行确认 R2D2-1 收口**：空账本（docs 为空且已声明锚点）视同不可用 rc=2；warn 模式下 drifted/missing/stale/unverified 一并计入缺陷，不再与「完美」并存（R2D2-3） |
 | **V0.1.4** | 2026-11-22 | DSH AI Agent | 王辉 | **Delta 终审 R2D-1 收口**：账本缺席/损坏在门禁模式下 rc=2；墓碑判据换为全局锚点多重集（改名合法、删除违规）；未来日期落 unverified；修正「只读」表述与写账本并列的自相矛盾 |
-| **V0.1.3** | 2026-11-22 | DSH AI Agent | 王辉 | **R2 三项 Blockers 收口**：基线墓碑（删/缩锚点即违规）、未跟踪锚点落 unverified、missing_anchor 与 drifted 同权失败；围栏内示例不再被当真声明；判定梯收敛为 `truth_blockers()` 单点（BK-0028 口径） |
 
 ---
 
@@ -91,6 +91,9 @@
 | 空账本 | 结构合法但 docs 为空且存在已声明锚点 ⇒ 视同不可用（rc=2）——`{"docs":{}}` 一次编辑即可让墓碑失效，成本与删账本相同 |
 | 改名/迁移 | 墓碑判据为**全局锚点多重集不减少**：纯改名/拆分合法；删文档、删锚点、缩减多锚点均违规。合法迁移用 --write-baseline 显式刷新并在提交信息登记 |
 | 未来日期 | 「复核于」超前当前时间 1 天以上 ⇒ unverified（未来日期不是复核） |
+| 不可核验锚点 | glob/占位符（`* ? [] {} <>`）与散文锚点（含空格/中文）只从**判定集**剔除，不短路整篇文档——同文档的真实锚点仍照常判 missing/drifted（R2D56-1/4） |
+| 加粗锚点 | 两端 `**` 且内部无 `*` 视为加粗并剥离；`src/**` 这类 glob 不受影响（R2D56-3） |
+| 豁免留痕 | `--allow-unverified` 生效时必须打印豁免行（JSON 模式走 stderr），禁止零痕迹（R2D56-2） |
 | 锚点语义 | 文件或**目录**均可；含 glob/占位符（`* ? [] {} <>`）的锚点标记为不可机械核验 → `unverified`（不再一律 `missing_anchor` 硬红） |
 | 门禁强度 | `--fail-on-drift` = **任何非 fresh 的已声明文档**（drifted / missing_anchor / stale / unverified / 墓碑违规）均 rc=1；`--allow-unverified` 显式豁免 stale/unverified |
 | 墓碑归属 | 只归因到「自身声明数下降」的文档；共享同一锚点的未改动文档不再被连坐，同一路径只计一次 |

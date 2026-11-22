@@ -37,6 +37,8 @@ SECONDS_PER_DAY = 86400
 # R1（加固）：英文逗号只在**后接空白**时视为分隔符，否则 `src/a,b.py` 这类合法路径会被切碎。
 _ANCHOR_SPLIT = re.compile(r"[，、;；]|,(?=\s)")
 _ANCHOR_LINE = re.compile(r"^(?P<path>[^:]+?)(?::(?P<start>\d+)(?:-(?P<end>\d+))?)?$")
+# 路径形态：ASCII 字母数字与 . _ / - 及行区间冒号；不含空格、中文、标点。
+_PATH_SHAPE = re.compile(r"[A-Za-z0-9._/\-]+(?::\d+(?:-\d+)?)?")
 _DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 _COMMIT = re.compile(r"commit\s+([0-9a-fA-F]{7,40})")
 
@@ -63,11 +65,22 @@ def normalize_anchor(raw: str) -> Optional[Dict]:
         return None
     if text.startswith("/") or text.startswith("\\") or re.match(r"^[A-Za-z]:[\\/]", text):
         return None
+    # R2D56-3：先剥「整体加粗」（两端 ** 且内部无 *），再判 glob——
+    # 否则 **src/pkg/x.py** 会被任意 * 误判成 glob，真实锚点假红。
+    bold = re.fullmatch(r"\*\*(.+)\*\*", text)
+    if bold and "*" not in bold.group(1):
+        text = bold.group(1).strip()
     # R2D-6：glob / 占位符锚点不是可 stat 的路径，标记为不可机械核验（后续落 unverified），
     # 而不是一律判 missing_anchor 硬红。
     if any(ch in text for ch in "*?[]{}<>"):
         clean = text.replace("\\", "/").strip("/")
-        return {"path": clean or text, "line_start": None, "line_end": None, "unverifiable": True}
+        return {"path": clean or text, "line_start": None, "line_end": None,
+                "unverifiable": True, "invalid": False}
+    # R2D56-4：散文锚点（含空格/中文标点，不是路径形态）不是「路径不存在」，
+    # 归为 invalid 并给修复提示，而不是 missing_anchor 硬红。
+    if not _PATH_SHAPE.fullmatch(text):
+        return {"path": text, "line_start": None, "line_end": None,
+                "unverifiable": True, "invalid": True}
     body = text
     line_start = line_end = None
     m = _ANCHOR_LINE.match(text)
@@ -79,7 +92,8 @@ def normalize_anchor(raw: str) -> Optional[Dict]:
     parts = [p for p in body.replace("\\", "/").split("/") if p not in ("", ".")]
     if not parts or any(p == ".." for p in parts):
         return None
-    return {"path": "/".join(parts), "line_start": line_start, "line_end": line_end, "unverifiable": False}
+    return {"path": "/".join(parts), "line_start": line_start, "line_end": line_end,
+            "unverifiable": False, "invalid": False}
 
 
 def parse_truth_fields(content: str) -> Dict:
@@ -143,18 +157,26 @@ def classify_doc(
     R2-1（R1-5 升级）：锚点文件存在但**未被版本控制**时没有提交时间可用，
     既不能判漂移也不能判新鲜——必须落 unverified，否则「未提交的改动」会被当成 fresh。
     """
-    if anchor_unverifiable is not None and any(anchor_unverifiable):
+    # R2D56-1：不可机械核验的锚点（glob/占位符/散文）只从**判定集**里剔除，
+    # 不得短路整篇文档——否则一个 glob 就能盖住同文档真实锚点的漂移。
+    mask = list(anchor_unverifiable) if anchor_unverifiable is not None else [False] * len(anchor_paths)
+    decidable = [i for i, unverifiable in enumerate(mask) if not unverifiable]
+    if not decidable:
         return "unverified"
-    if any(not exists for exists in anchor_exists):
+    exists = [anchor_exists[i] for i in decidable]
+    commits = [anchor_last_commits[i] for i in decidable]
+    tracked = [anchor_tracked[i] for i in decidable] if anchor_tracked is not None else None
+
+    if any(not e for e in exists):
         return "missing_anchor"
-    if anchor_tracked is not None and any(exists and not tracked for exists, tracked in zip(anchor_exists, anchor_tracked)):
+    if tracked is not None and any(e and not t for e, t in zip(exists, tracked)):
         return "unverified"
     if verified_ts is None:
         return "unverified"
     # R2D-3：未来日期的「复核于」不是复核。容忍 1 天时区漂移，超出即视为无效声明。
     if verified_ts > now_ts + SECONDS_PER_DAY:
         return "unverified"
-    if any(ts is not None and ts > verified_ts for ts in anchor_last_commits):
+    if any(ts is not None and ts > verified_ts for ts in commits):
         return "drifted"
     if max_age_days > 0 and (now_ts - verified_ts) > max_age_days * SECONDS_PER_DAY:
         return "stale"
@@ -401,6 +423,8 @@ def analyze(
             "doc": rel_doc,
             "status": status,
             "anchors": anchors,
+            "invalid_anchors": [a["path"] for a in anchors if a.get("invalid")],
+            "unverifiable_anchors": [a["path"] for a in anchors if a.get("unverifiable")],
             "verified_at": fields["verified_at"],
             "verified_commit": fields["verified_commit"],
         }
@@ -528,7 +552,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         + summary["stale"] + summary["unverified"]
     )
     if args.allow_unverified:
-        blocking -= summary["stale"] + summary["unverified"]
+        # R2D56-2：豁免必须留痕——零痕迹的豁免等于永久免检的人因通道。
+        waived = summary["stale"] + summary["unverified"]
+        blocking -= waived
+        # --json 时提示走 stderr，避免污染机器可读输出。
+        print(
+            f"⚠️  --allow-unverified 已生效：豁免 stale {summary['stale']} + unverified "
+            f"{summary['unverified']}（共 {waived} 篇不阻断；drifted/missing/墓碑仍阻断）",
+            file=sys.stderr if args.json else sys.stdout,
+        )
     if args.fail_on_drift and blocking:
         return 1
     return 0
