@@ -174,7 +174,7 @@ def test_counter_evidence_fixture_preserved():
         assert fragment in text, f"反证 fixture 丢失原始证据片段: {fragment}"
 
 
-CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(?<![\\.])(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow|clarification-protocol)[\\\\/]", re.IGNORECASE)
+CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(?<![\\.])(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|clarification-protocol)[\\\\/]", re.IGNORECASE)
 
 
 def test_no_cross_skill_relative_links_in_taste_docs():

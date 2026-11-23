@@ -11,7 +11,7 @@
 >   - Manus AI Context Engineering (上下文工程与 2-Action Rule)
 >   - Ralph Loop (Ralph Wiggum 磁盘持久化自主闭环理念)
 >   - 宿主原生 goal 状态原语 (如 `create_goal` / `get_goal` / `update_goal`)
->   - 内部技能生态：`brainstorming`、`grilling`、`research` (`find-docs` / `gh` CLI)、`writing-plans`、`agy-delegation-workflow`、`dual-round-review`
+>   - 内部技能生态：`brainstorming`、`grilling`、`research` (`find-docs` / `gh` CLI)、`writing-plans`、`dual-round-review`
 
 ---
 
@@ -48,7 +48,7 @@
 
 ### 2.2 Ralph Loop 的极简持久化机制 (Persistence over Perfection)
 * 循环的每次迭代（Iteration）均以磁盘状态为起点，以客观测试（Exit Code 0）为终点。
-* **物理本质与上下文隔离**：Ralph Loop 赖以克服上下文腐化的核心物理基石是“单次迭代纯净上下文 (Fresh Context)”。在 Agent 技能编排中，必须通过**派发独立子智能体（如宿主原生子智能体派发能力或后台 `agy`）切断长任务上下文膨胀**，主调度 Agent 仅负责持久化状态管理与阶段流转，严禁在单个长会话中塞入所有子任务的原始细节。
+* **物理本质与上下文隔离**：Ralph Loop 赖以克服上下文腐化的核心物理基石是“单次迭代纯净上下文 (Fresh Context)”。在 Agent 技能编排中，必须通过**派发独立子智能体（如宿主原生子智能体派发能力或外部无头 CLI）切断长任务上下文膨胀**，主调度 Agent 仅负责持久化状态管理与阶段流转，严禁在单个长会话中塞入所有子任务的原始细节。
 * 支持跨会话、跨进程的平滑恢复：即使会话被清空或重启，新会话只需读取磁盘上的计划与状态文件，即可在秒级重构当前工作上下文并继续推进。
 
 ### 2.3 自适应分级测试哲学 (Surgical & Tiered Testing)
@@ -56,7 +56,7 @@
 * **智能体自主裁定 (Autonomous Scoping)**：智能体在规划阶段必须基于 AST 改动范围、依赖拓扑与调用深度，显式论证并裁定测试范围，生成不可逾越的验证基线。
 
 ### 2.4 全生命周期技能闭环 (End-to-End Skills Ecosystem)
-* 拒绝单打独斗，在需求端（`brainstorming`、`grilling`）、调研端（`research`、`find-docs`、`gh` CLI）、规划端（`writing-plans`）、执行端（`host-adapters.md` 三档后端，`agy-delegation-workflow` 仅为其一）和交付端（`dual-round-review`）深度串接成熟专用技能，打造工业级研发装配线。
+* 拒绝单打独斗，在需求端（`brainstorming`、`grilling`）、调研端（`research`、`find-docs`、`gh` CLI）、规划端（`writing-plans`）、执行端（`host-adapters.md` 宿主无关三档后端）和交付端（`dual-round-review`）深度串接成熟专用技能，打造工业级研发装配线。
 
 ---
 
@@ -224,9 +224,9 @@ graph TD
 ### 5.5 阶段 3：宿主自适应委派与 TDD 执行
 * **适用条件**：执行具体的子任务编码与单元测试。
 * **契约与协同**：
-  - **开工前先询问用户选择后端**（宿主原生子智能体 / `agy` 无头进程 / 当前会话内联），详见 `skills/goal-loop/references/host-adapters.md`；
-  - **具备原生子智能体能力的宿主**：直接调用宿主原生子智能体派发子任务，执行隔离的 TDD 循环，**严禁在终端套娃调用 `agy` 命令行**；
-  - **`agy` CLI 环境**：使用 `dispatch-agy.sh` 清除代理并派发无头后台进程，执行模型以本机 `agy` 配置为准；
+  - **开工前先询问用户选择后端**（宿主原生子智能体 / 外部无头 CLI / 当前会话内联），详见 `skills/goal-loop/references/host-adapters.md`；
+  - **具备原生子智能体能力的宿主**：直接调用宿主原生子智能体派发子任务，执行隔离的 TDD 循环，**严禁在终端套娃调用外部无头 CLI**；
+  - **外部无头 CLI 环境**：使用 CLI 原生沙箱与自身模型配置（如 `agy -p` / `claude -p` / `codex exec`），遵循 `host-adapters.md` 的 Silent Landing 假失败判别与 Direct-Write 止损准则；
   - **7 维黄金标准通用模板**：结合通用 `atomic-task-template.md` 约束子任务，禁止后台越权编写计划文档。
 
 ### 5.6 阶段 4：双轮对抗终审硬门禁 ➔ `dual-round-review`

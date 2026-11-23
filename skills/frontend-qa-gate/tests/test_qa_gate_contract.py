@@ -41,7 +41,7 @@ PROHIBITION_WORDS = re.compile(r"不得|禁止|不输出|不许|不含|不涉及
 
 # 跨技能相对路径硬链接：覆盖 (../x/)、(./x/)、(x/)、(../../skills/x/) 与绝对路径形态。
 # 正则自身由 test_cross_skill_link_scanner_self_check 自检，防止再次出现恒真空断言。
-CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(?<![\\.])(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow|clarification-protocol)[\\\\/]", re.IGNORECASE)
+CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(?<![\\.])(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|clarification-protocol)[\\\\/]", re.IGNORECASE)
 FIVE_DIMENSIONS = ["响应式", "状态", "无障碍", "浏览器", "性能"]
 
 

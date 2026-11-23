@@ -41,9 +41,9 @@
 | 文件路径 | 行数 | 字节数 | 真实状态与发现 |
 | :--- | :---: | :---: | :--- |
 | [SKILL.md](../../../skills/clarification-protocol/SKILL.md) | 102 | 6.4 KB | `description` = **623 字符**（超 500 软限）；§1–§4 凝练优秀，但 §5 越界含错误/审查熔断且 L72 提问层预算为空指针，§6 含非澄清杂项 |
-| [decision-ledger.md](../../../skills/clarification-protocol/references/decision-ledger.md) & [convergence-checklist.md](../../../skills/clarification-protocol/references/convergence-checklist.md) | 156 | 10.8 KB | 过度展开为 5 张表 / 9 项候选边界全填「不适用+理由」；连 `decision-ledger.md:14` 自身标题都通不过本技能脚本 |
-| [decision-ledger-template.md](../../../skills/clarification-protocol/templates/decision-ledger-template.md) & [requirement-confirmation-template.md](../../../skills/clarification-protocol/templates/requirement-confirmation-template.md) | 126 | 7.5 KB | **0% 实战采用**；为迁就脚本在单元格里硬写反人类的 `出处: ...` / `影响级别: ...`；与 `doc-governance` RFC 模板 Split-Brain 冲突 |
-| [check-decision-ledger.py](../../../skills/clarification-protocol/scripts/check-decision-ledger.py) + `.sh` | 137 | 5.8 KB | **实测 8 类严重缺陷**，本仓 8 份真实 RFC **0/8** 通过，`USAGE` 仍硬编码 `bash check-decision-ledger.sh` |
+| `references/decision-ledger.md` & `references/convergence-checklist.md` | 156 | 10.8 KB | 过度展开为 5 张表 / 9 项候选边界全填「不适用+理由」；连 `decision-ledger.md:14` 自身标题都通不过本技能脚本 |
+| `templates/decision-ledger-template.md` & `templates/requirement-confirmation-template.md` | 126 | 7.5 KB | **0% 实战采用**；为迁就脚本在单元格里硬写反人类的 `出处: ...` / `影响级别: ...`；与 `doc-governance` RFC 模板 Split-Brain 冲突 |
+| `scripts/check-decision-ledger.py` + `.sh` | 137 | 5.8 KB | **实测 8 类严重缺陷**，本仓 8 份真实 RFC **0/8** 通过，`USAGE` 仍硬编码 `bash check-decision-ledger.sh` |
 | [test_clarification_protocol_contract.py](../../../skills/clarification-protocol/tests/test_clarification_protocol_contract.py) | 428 | 17.5 KB | 实跑 `27 passed (0.52s)`，占总行数 **45.1%**；10 项静态文案锁死 + 5 项正则元自检 + 12 项脚本行为测试（L313–315 以 `newline="\n"` 掩盖 CRLF Bug，0 用例测真实 RFC） |
 
 > 另核实：[clarification-protocol-design.md](../architecture/clarification-protocol-design.md)（169 行）L13/L67/L137/L166 仍漂移指向已退居兼容壳的 `check-decision-ledger.sh`。

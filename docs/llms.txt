@@ -22,10 +22,10 @@
 
 - 全量清单：[reference.md](./_llms/reference.md)
 
-## Explanation (深度剖析 / 系统架构与 ADR 决策) — 29 篇
+## Explanation (深度剖析 / 系统架构与 ADR 决策) — 30 篇
 
 - 全量清单：[explanation.md](./_llms/explanation.md)
 
-## Project Governance (工程演进 / 发布日志与待办) — 87 篇
+## Project Governance (工程演进 / 发布日志与待办) — 88 篇
 
 - 全量清单：[project.md](./_llms/project.md)

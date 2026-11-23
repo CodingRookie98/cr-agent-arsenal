@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.48.0 (登记 Wave 0 止血修复计划并同步文档控制头复核点)
+> - **当前版本**: V1.49.0 (执行 Wave 1 架构瘦身：按 ADR-0004 退役 agy-delegation-workflow，提纯 clarification-protocol V2.0.0)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.49.0** | 2026-11-23 | AI Agent | 王辉 | **Wave 1 架构瘦身（ADR-0004 + `clarification-protocol` V2.0.0）**：从现役技能/设计书表移除 `agy-delegation-workflow`，同步 `clarification-protocol` V2.0.0 描述，并在 §4 补登 `ADR-0004` 与 Wave 1 实施计划 |
 | **V1.48.0** | 2026-11-23 | AI Agent | 王辉 | **Wave 0 止血修复计划登记**：在 §4 补登 `2026-11-23-wave0-skill-bugs-stabilization.md`（修复全仓现红测试与 12 处实证技能源码缺陷） |
 | **V1.47.0** | 2026-11-23 | AI Agent | 王辉 | **完成全仓 7 技能深度调研与评估工程资料包（第 2 批，+7 篇）**：在 §2 登记 `clarification-protocol`、`taste-driven-designer`、`frontend-qa-gate` 三套成对调研/评估报告，以及压轴总纲 `2026-11-23-arsenal-skills-portfolio-overview.md` |
 | **V1.46.0** | 2026-11-23 | AI Agent | 王辉 | **新增核心工程 3 强调研与评估双报告（第 1 批，共 6 篇）**：在 §2 登记 `dual-round-review`、`doc-governance`（Docs-as-Code 增量调研+评估）与 `agy-delegation-workflow` 各自成对的同类调研报告与过度设计评估报告 |
 | **V1.45.0** | 2026-11-23 | AI Agent | 王辉 | **新增 `goal-loop` 深度调研与评估双报告**：在 §2 登记 `2026-11-23-goal-loop-peer-research.md`（六大同类流派与实证规律）与 `2026-11-23-goal-loop-architecture-evaluation.md`（28 份计划活跃度实证、六大病灶与 P0–P2 重构方案） |
-| **V1.44.0** | 2026-11-23 | AI Agent | 王辉 | **退役 `spec-evolution`（ADR-0003）**：从现役技能/设计书表移除 `spec-evolution`，补登 `ADR-0003` 与退役实施计划行，并将 `RFC-0004` 标注为已被取代（`Superseded`） |
 
 ---
 
@@ -43,8 +43,7 @@
 | **`dual-round-review`** | 红队第一性原理穿透 + 元架构师审判校准；支持 Full / Light / Delta 三模式、审查记录锚点与交付凭据归档（报告全文进版本库 + 结构机械门禁） | [dual-round-review-design.md](./explanation/architecture/dual-round-review-design.md) |
 | **`taste-driven-designer`** | 源于 Anshu Chimala AI 双钻模型：外部随机种子 + 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 多模态增强 + 残酷减法 | [taste-driven-designer-design.md](./explanation/architecture/taste-driven-designer-design.md) |
 | **`frontend-qa-gate`** | 源于 kejun《前端开发转向 AI Coding 的常见问题全景》：五域产物断言（响应式 / 状态矩阵 / 无障碍 / 浏览器 / 性能）+ 证据三态 + 回流路由；不做分数判据、不替代人工签收、不侵入代码级审查 | [frontend-qa-gate-design.md](./explanation/architecture/frontend-qa-gate-design.md) |
-| **`clarification-protocol`** | 以「依赖强度 × 实现影响」排序提问、以三类决策台账（已决项 / 已排除边界 / 默认假设）承载裁决、以三项收敛自检（目标 / 边界 / 矛盾）作终止判据；把「是否收敛」从感觉变成可判定句，台账结构由离线校验器机械把关 | [clarification-protocol-design.md](./explanation/architecture/clarification-protocol-design.md) |
-| **`agy-delegation-workflow`** | 认知与执行分离：后台无头执行体的三级优先级链与宿主自适应 + 7 维自包含任务 Prompt + 假失败落盘判别 + 6 步零信任验收（Diff 范围 / 类型与 Lint / 失败模式 grep / 单测 / 全局构建 / 双轮终审） | [agy-delegation-workflow-design.md](./explanation/architecture/agy-delegation-workflow-design.md) |
+| **`clarification-protocol`** | V2.0.0 精简微技能：先读代码自查事实、术语先行、按「依赖强度 × 实现影响」筛问与 ≤5 题软预算、原地维护 4 列单表决策台账（已决项 / 已排除边界 / 默认假设）与出口三问内联自核（目标 / 边界 / 矛盾） | [clarification-protocol-design.md](./explanation/architecture/clarification-protocol-design.md) |
 | **Backlog 治理最佳实践** | 结合软件工程史（精益/看板/Shape Up）与 AI 上下文工程的 14 项待办治理法则 | [backlog-governance-best-practices.md](./explanation/analysis/backlog-governance-best-practices.md) |
 | **LLM-WIKI 社区实现调研** | 六条实现路线（规范纯文件 / 索引检索 / 仓库生成 / 知识图谱 / 检索即答案 / 确定性编译器）+ 十类工程难点（含 21× token、漂移检出盲区、lint 召回 ~50%）+ 十二维对照审计与 P0–P2 改造建议 | [llm-wiki-implementation-research.md](./explanation/analysis/llm-wiki-implementation-research.md) |
 | **长程 Agent 研发闭环同类调研** | 2026-11-23 六大流派（`superpowers` / `mattpocock/skills` / `planning-with-files` / `spec-kit` & `OpenSpec` & `BMAD` / `gsd-core` / `ralph` & Anthropic Harness / `beads` & 原生原语）源码级解剖、五条实证规律与六类行业反模式 | [2026-11-23-goal-loop-peer-research.md](./explanation/analysis/2026-11-23-goal-loop-peer-research.md) |
@@ -90,10 +89,9 @@
 | **`doc-governance`** | [doc-governance 规程](../skills/doc-governance/SKILL.md) | 文档工程与知识库治理（断链静态扫描、历史裁剪、健康体检、llms.txt 生成） |
 | **`goal-loop`** | [goal-loop 规程](../skills/goal-loop/SKILL.md) | 工业级端到端长任务目标实现循环（2-Action Rule、自适应测试、外部技能协同） |
 | **`dual-round-review`** | [dual-round-review 规程](../skills/dual-round-review/SKILL.md) | 对抗性双轮代码终审硬门禁（红队穿透 + 元架构师审判）；支持 Full / Light / Delta 三模式 |
-| **`agy-delegation-workflow`** | [agy-delegation-workflow 规程](../skills/agy-delegation-workflow/SKILL.md) | Antigravity CLI 后台工人自适应委派规程（无头任务派发、环境隔离、边界管控） |
 | **`taste-driven-designer`** | [taste-driven-designer 规程](../skills/taste-driven-designer/SKILL.md) | 品味驱动设计三阶段流程（D1 种子发散 / D2 三信号门禁 / D3 AI Tells 审计与减法）；能力门控、宿主无关、可降级 |
 | **`frontend-qa-gate`** | [frontend-qa-gate 规程](../skills/frontend-qa-gate/SKILL.md) | 前端产物验收（五域断言 + 报告结构机械门禁 + 缺陷回流路由）；能力门控，缺能力记未验证不降级通过 |
-| **`clarification-protocol`** | [clarification-protocol 规程](../skills/clarification-protocol/SKILL.md) | 需求澄清与收敛规程（术语先行前置项、提问分级排序、决策台账去重、三项收敛自检、熔断预算与人类升级）；由全局提示词 §4 的一行指针按需唤起 |
+| **`clarification-protocol`** | [clarification-protocol 规程](../skills/clarification-protocol/SKILL.md) | 需求澄清与收敛规程 V2.0.0（先自查事实、术语先行、按影响筛问与 ≤5 题软预算、4 列单表决策台账去重、出口三问内联自核）；由全局提示词 §4 一行指针按需唤起 |
 
 ---
 
@@ -134,6 +132,8 @@
 | **ADR-0003 退役 `spec-evolution` 技能** | 停用不可跨仓复用、零真实触发且高维护成本的 `spec-evolution` 技能，将不可替代的 C-01 / C-05+YAML / C-07 硬护栏下沉为 `skills/_shared/tests/test_skill_surface_sentinels.py`（MADR 3.0） | [0003-retire-spec-evolution.md](./explanation/decisions/0003-retire-spec-evolution.md) |
 | **退役 `spec-evolution` 实施计划** | 方案 A（退技能、留哨兵）的落地计划、TDD 哨兵、注册面同步与文档状态流转记录 | [2026-11-23-retire-spec-evolution.md](./project/plans/2026-11-23-retire-spec-evolution.md) |
 | **Wave 0 止血修复计划** | Maintenance-Patch 通道：并行委派 W0-A/B/C 修复全仓现红测试、`_UNIT_RX` 17/17 失效、Markdown 链接解析、`--max-doc-bytes` 死参数、`reference/articles` 豁免、Park-Miller LCG 零状态及失实设计书 | [2026-11-23-wave0-skill-bugs-stabilization.md](./project/plans/2026-11-23-wave0-skill-bugs-stabilization.md) |
+| **ADR-0004 退役 `agy-delegation-workflow` 技能** | 停用实战使用率 0%、存在四重硬绑定且与原生编排高度重叠的 `agy-delegation-workflow` 技能，将 Silent Landing / Direct-Write / 虚假合规检查三项核心资产沉淀至 `goal-loop` 与 `dual-round-review`（MADR 3.0） | [0004-retire-agy-delegation-workflow.md](./explanation/decisions/0004-retire-agy-delegation-workflow.md) |
+| **Wave 1 架构瘦身实施计划** | Heavy Track：并行执行 W1-A（按 ADR-0004 抽离三项资产并物理退役 `agy-delegation-workflow`）与 W1-B（去壳提纯 `clarification-protocol` 至 V2.0.0 微技能并清理失效脚本与冲突模板） | [2026-11-23-wave1-retire-agy-and-slim-clarification.md](./project/plans/2026-11-23-wave1-retire-agy-and-slim-clarification.md) |
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |
 | **P2 批次六项 backlog 卡片闭环** | 闭环 BK-0003/BK-0004/BK-0020/BK-0033/BK-0034/BK-0040：稳定 ID 按基线逐轮配对与终审裁决唯一性、修订表头章节作用域、非 UTF-8 输出硬化、baseline 损坏显式失败、嵌套类型逃逸收口（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-14-p2-six-backlog-items.md](./project/plans/2026-10-14-p2-six-backlog-items.md) |
 | **技能脚本 Python 统一化** | 8 个自建技能脚本改为**单一 Python 实现** + 同目录 `.sh` POSIX 兼容壳（形态 B，旧调用面零破坏）；9 套契约测试改为运行时无关（Windows 默认 `sys.executable`，POSIX 另验壳转发）；四注册面与技能内文档口径同步为 Python 主路径；Windows 侧以 uv 隔离环境取证（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-19-skill-scripts-python-unification.md](./project/plans/2026-10-19-skill-scripts-python-unification.md) |

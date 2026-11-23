@@ -2,7 +2,9 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-AGY-DELEGATION-2026
-> - **当前版本**: V1.0.0（首次成文，固化既有规程的架构意图）
+> - **当前版本**: V1.1.0 (已退役：由 ADR-0004 取代，三项核心资产沉淀至 `goal-loop` 与 `dual-round-review`)
+> - **文档状态**: Superseded
+> - **取代于**: ../decisions/0004-retire-agy-delegation-workflow.md
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-11-12
@@ -11,6 +13,19 @@
 >   - **零信任验收 (Zero-Trust Acceptance)**: 被委派执行体的「已完成」自述一律按未验证处理
 >   - **故障注入容错 (3-Tries Rule)**: 同一根因连续三次失败即中断试错，转入降级链
 >   - **宿主自适应 (Host-Adaptive Dispatch)**: 派发通道由运行宿主能力决定，而非由习惯决定
+>   - **接替决策**: [ADR-0004 退役 agy-delegation-workflow 技能并将三项核心资产沉淀至通用规程](../decisions/0004-retire-agy-delegation-workflow.md)
+
+> [!NOTE]
+> **退役说明 (2026-11-23)**：依据 [ADR-0004](../decisions/0004-retire-agy-delegation-workflow.md)，`agy-delegation-workflow` 技能本体已从 `skills/` 移除，三项核心资产（Silent Landing 判别 SOP、Direct-Write 四条止损准则、通用虚假合规检查要点）已沉淀至 `goal-loop/references/host-adapters.md` 与 `dual-round-review/references/failure-modes-catalog.md`。本文档作为历史架构设计记录保留，不再更新。
+
+---
+
+### 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-11-23 | AI Agent | 王辉 | 状态流转为 `Superseded`（取代于 `ADR-0004`），核心资产沉淀至 `goal-loop` 与 `dual-round-review`，本文档作为历史架构设计保留 |
+| **V1.0.0** | 2026-11-12 | Antigravity AI Agent | 王辉 | 首次成文：固化既有 SKILL.md / 三份 references / 模板与派发脚本背后的架构意图，补齐 spec-evolution C-02 交付面缺口（BK-0041） |
 
 ---
 
@@ -142,11 +157,3 @@
 1. **落盘判据自动化**：把 `git status -s` + 单测的假失败判别封装进 `dispatch-agy.py`，消除人工漏判。
 2. **失败模式清单外置**：`failure-modes-audit.md` 目前绑定 Next.js/React 生态，需按技术栈分区，避免在其它栈上产生无关 grep 噪音。
 3. **bank 归属硬校验**：派发前断言记忆库名与本仓库一致，不一致即拒绝派发，把 1.4 从「已修复」升级为「不可能发生」。
-
----
-
-## 9. 修订历史 (Revision History)
-
-| 版本 | 日期 | 变更 |
-|---|---|---|
-| V1.0.0 | 2026-11-12 | 首次成文：固化既有 SKILL.md / 三份 references / 模板与派发脚本背后的架构意图，补齐 spec-evolution C-02 交付面缺口（BK-0041）。本版不改变任何规程行为，仅记录设计依据与边界。 |

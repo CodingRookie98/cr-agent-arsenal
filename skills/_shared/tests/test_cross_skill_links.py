@@ -23,7 +23,6 @@ SKILL_NAMES = [
     "goal-loop",
     "frontend-qa-gate",
     "doc-governance",
-    "agy-delegation-workflow",
     "clarification-protocol",
 ]
 LINK = re.compile(r"\]\(([^)]+)\)")

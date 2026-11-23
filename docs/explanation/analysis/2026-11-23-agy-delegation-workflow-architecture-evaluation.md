@@ -2,12 +2,15 @@
 
 > **文档控制信息**
 > - **文档标识**: ANA-AGY-DELEGATION-EVAL-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.0.1
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-23
 > - **文档所有者**: 核心架构组
 > - **评估依据**: 基于本仓库 `skills/agy-delegation-workflow/` 全部 8 个源文件与设计书的源码精读、28 份历史实施计划及 18 份审查归档的实证统计、本机 `agy 1.5.14` CLI 实测，以及配套外部调研报告 [2026-11-23-agy-delegation-workflow-peer-research.md](./2026-11-23-agy-delegation-workflow-peer-research.md)。
 > - **证据分级**: 【A】一手（本仓库源码/行号/Git 历史/实跑统计、本机 CLI 实测、外部仓库一手源码）｜【B】二手转引（官方文档与工程博客摘要）｜【C】架构裁决与重构建议
+
+> [!NOTE]
+> **执行注记 (2026-11-23)**：本评估报告选定的**方案 A** 已按 [ADR-0004](../decisions/0004-retire-agy-delegation-workflow.md) 正式执行退役，原 `skills/agy-delegation-workflow/` 技能文件已移除；下表与正文中指向已退役源文件的相对链接已改为反引号路径文本以保留历史溯源。
 
 ---
 
@@ -15,6 +18,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.1** | 2026-11-23 | AI Agent | 王辉 | 补充已按 `ADR-0004` 执行退役的注记，并将已删除的 `skills/agy-delegation-workflow/` 相对链接转为行内路径文本消除断链 |
 | **V1.0.0** | 2026-11-23 | AI Agent | 王辉 | 初版：完成 `agy-delegation-workflow` 全量源码与 28 份计划 0% 实战使用率审计、四重硬绑定与功能重叠解剖、脚本安全体检及三档去向方案对比 |
 
 ---
@@ -41,13 +45,13 @@
 
 | 文件路径 | 行数 | 字节数 | 真实定位与健康度 |
 | :--- | :---: | :---: | :--- |
-| [SKILL.md](../../../skills/agy-delegation-workflow/SKILL.md) | 126 | 9,260 | 入口路由（`description` = 334 字符，未超限）；6 处写死 `Gemini 3.8 Flash`、L22 宣称全仓委派 SSOT 与 `host-adapters.md` 冲突 |
-| [failure-modes-audit.md](../../../skills/agy-delegation-workflow/references/failure-modes-audit.md) | 39 | 4,209 | **重度污染**：7 条失败模式中 6 条写死某历史 Next.js/React 19 私有组件库 props 与命令 |
-| [infrastructure-troubleshooting.md](../../../skills/agy-delegation-workflow/references/infrastructure-troubleshooting.md) | 87 | 4,161 | 含高价值 **Silent Landing SOP**，但 L24–L28 标准命令漏 `--add-dir`，绑死 WSL 代理 |
-| [priority-fallback-chain.md](../../../skills/agy-delegation-workflow/references/priority-fallback-chain.md) | 66 | 4,708 | 含高价值 **Direct-Write 四准则**（L47–L55），但 L29–L33 漏 `--add-dir`、L26 写死过时模型 |
-| [task-prompt-template.md](../../../skills/agy-delegation-workflow/templates/task-prompt-template.md) | 91 | 5,384 | **100% 被超越**：1–7 节与 `goal-loop/templates/atomic-task-template.md` 几乎逐字重复，且缺少后者的第 8 节结构化输出契约 |
-| [dispatch-agy.py](../../../skills/agy-delegation-workflow/scripts/dispatch-agy.py) + `.sh` | 275 | 10,454 | 强制无沙箱全权限、硬编码过时模型、argv 传大 Prompt、含原 Bash 行号 `42/46/50/54` 历史包袱 |
-| [test_agy_delegation_contract.py](../../../skills/agy-delegation-workflow/tests/test_agy_delegation_contract.py) | 490 | 20,514 | 占总行数 **41.7%**；前 9 用例为脆弱中文排版/条数锁死测试，后 9 用例为离线 fake-shim 行为测试（但锁死过时默认模型） |
+| `SKILL.md` | 126 | 9,260 | 入口路由（`description` = 334 字符，未超限）；6 处写死 `Gemini 3.8 Flash`、L22 宣称全仓委派 SSOT 与 `host-adapters.md` 冲突 |
+| `references/failure-modes-audit.md` | 39 | 4,209 | **重度污染**：7 条失败模式中 6 条写死某历史 Next.js/React 19 私有组件库 props 与命令 |
+| `references/infrastructure-troubleshooting.md` | 87 | 4,161 | 含高价值 **Silent Landing SOP**，但 L24–L28 标准命令漏 `--add-dir`，绑死 WSL 代理 |
+| `references/priority-fallback-chain.md` | 66 | 4,708 | 含高价值 **Direct-Write 四准则**（L47–L55），但 L29–L33 漏 `--add-dir`、L26 写死过时模型 |
+| `templates/task-prompt-template.md` | 91 | 5,384 | **100% 被超越**：1–7 节与 `goal-loop/templates/atomic-task-template.md` 几乎逐字重复，且缺少后者的第 8 节结构化输出契约 |
+| `scripts/dispatch-agy.py` + `.sh` | 275 | 10,454 | 强制无沙箱全权限、硬编码过时模型、argv 传大 Prompt、含原 Bash 行号 `42/46/50/54` 历史包袱 |
+| `tests/test_agy_delegation_contract.py` | 490 | 20,514 | 占总行数 **41.7%**；前 9 用例为脆弱中文排版/条数锁死测试，后 9 用例为离线 fake-shim 行为测试（但锁死过时默认模型） |
 | **技能目录合计** | **1,174** | **58,690** | 另含 [agy-delegation-workflow-design.md](../architecture/agy-delegation-workflow-design.md)（152 行 / 11.5 KB） |
 
 **Git 演化实证（全史 8 次提交）【A】**：
@@ -70,9 +74,9 @@
 ### 病灶 1：四重硬绑定与内部滞后自相矛盾
 
 1. **跨代过时模型硬编码（14 处）**：`Gemini 3.8 Flash (High)` 被写死在 `SKILL.md:3,16,64,79,85,126`、`infrastructure-troubleshooting.md:26`、`priority-fallback-chain.md:13,26,31`、`dispatch-agy.py:5,28`、`test_agy_delegation_contract.py:44` 与设计书 L77。实测本机 `agy 1.5.14` 已有 23 个模型（主力已迈向 `Gemini 4` 系列与 `Claude 5.5`），且这种写死**公然违背** [goal-loop/references/host-adapters.md](../../../skills/goal-loop/references/host-adapters.md)（L21）「不得在规程里写死品牌模型名」的本仓原则。
-2. **单一历史前端项目私有约定污染**：[failure-modes-audit.md](../../../skills/agy-delegation-workflow/references/failure-modes-audit.md)（L11–L17）7 条失败模式中 **6 条**直接锁死某个 Next.js/React 19 项目的私有 UI 组件库 props（`Badge variant="secondary"` 应为 `neutral`、`Tabs items=` 应为 `tabs=`、`toast variant="destructive"` 应为 `"error"`、`@/mock`、`src/app/<新路径>/*.tsx`、`npx vitest run`、`pnpm build`）。尽管设计书 §8.2 早已承认此缺陷，但从未剥离。
+2. **单一历史前端项目私有约定污染**：`failure-modes-audit.md`（L11–L17）7 条失败模式中 **6 条**直接锁死某个 Next.js/React 19 项目的私有 UI 组件库 props（`Badge variant="secondary"` 应为 `neutral`、`Tabs items=` 应为 `tabs=`、`toast variant="destructive"` 应为 `"error"`、`@/mock`、`src/app/<新路径>/*.tsx`、`npx vitest run`、`pnpm build`）。尽管设计书 §8.2 早已承认此缺陷，但从未剥离。
 3. **私人机器与私人插件耦合**：WSL2 TUN 死代理直接写入技能 `description`（`SKILL.md:3`）；`dispatch-agy.py:241-249` 在无 git 根时输出 Hindsight 插件专属警告 `coding-agent::{cwd_name}`，对未装 Hindsight 的外部用户毫无意义。
-4. **内部规则自相矛盾**：`2026-09-24` 修复 Hindsight 串台时仅改了 `SKILL.md:82-87` 与脚本，**遗漏了** [infrastructure-troubleshooting.md](../../../skills/agy-delegation-workflow/references/infrastructure-troubleshooting.md)（L24–L28）和 [priority-fallback-chain.md](../../../skills/agy-delegation-workflow/references/priority-fallback-chain.md)（L29–L33）中的「标准命令」——两处均缺少 `--add-dir "$PWD"`，直接违反 `SKILL.md:82` 硬红线。
+4. **内部规则自相矛盾**：`2026-09-24` 修复 Hindsight 串台时仅改了 `SKILL.md:82-87` 与脚本，**遗漏了** `infrastructure-troubleshooting.md`（L24–L28）和 `priority-fallback-chain.md`（L29–L33）中的「标准命令」——两处均缺少 `--add-dir "$PWD"`，直接违反 `SKILL.md:82` 硬红线。
 
 ### 病灶 2：70%+ 功能重叠与双 SSOT 摩擦事故
 

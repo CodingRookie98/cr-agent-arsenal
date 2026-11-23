@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CHANGELOG-CR-ARSENAL
-> - **当前版本**: V1.3.0
+> - **当前版本**: V1.4.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-22
 > - **文档所有者**: 核心架构组
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.4.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「Wave 1 架构瘦身：退役 `agy-delegation-workflow` 与精简 `clarification-protocol` V2.0.0」记录 |
 | **V1.3.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「退役 `spec-evolution` 技能并下沉核心哨兵」（ADR-0003）：移除技能目录与对外发行条目，C-01/C-05+YAML/C-07 迁移至 `skills/_shared/tests/` |
 | **V1.2.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「真值轴残余收口与存量文档拆分」：BK-0055（--staged 新文档/BD-9 判据）与 BK-0050（spec-evolution 拆分、skill-scripts 长行改写、体量基线清空） |
 | **V1.1.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「doc-governance 交付尾巴收口」：RFC 生命周期补完、计划 checkpoint 校准、设计书 V1.5.0、索引状态更正、BD-1-R2 修复与两轮独立确认 |
@@ -23,6 +24,23 @@
 本文件记录**已交付**的成果。进行中的工作在 [backlog](./backlog/index.md)，逐日过程在 git log。
 
 格式参照 Keep a Changelog，按交付单元聚合（不按提交逐条罗列）。
+
+## [2026-11-23] Wave 1 架构瘦身：退役 agy-delegation-workflow 与精简 clarification-protocol V2.0.0
+
+### 决策与移除
+
+- **[ADR-0004](../explanation/decisions/0004-retire-agy-delegation-workflow.md)**：经实证审计确认 `agy-delegation-workflow` 实战使用率 0%、存在硬编码过时模型与私有前端约定且与原生委派高度重叠，物理移除 `skills/agy-delegation-workflow/` 全部 8 个源文件与本地软链；现役公开技能由 7 个收敛为 6 个。
+- [agy-delegation-workflow-design.md](../explanation/architecture/agy-delegation-workflow-design.md) 按文档状态机流转为 `Superseded`（取代于 `ADR-0004`），清除 `docs/` 下指向已删技能目录的失效相对链接。
+- 移除 `clarification-protocol` 已失效的离线校验脚本、双份模板与冗余参考文件（`scripts/check-decision-ledger.py`、`.sh`、`references/decision-ledger.md`、`references/convergence-checklist.md`、`templates/decision-ledger-template.md`、`templates/requirement-confirmation-template.md`）。
+
+### 资产沉淀与精简
+
+- **资产无损沉淀**：将 `agy-delegation-workflow` 中仅存的三项通用资产——Silent Landing（假失败 / 延迟落盘）判别 SOP 与 Direct-Write 四条止损准则并入 `skills/goal-loop/references/host-adapters.md`（同步去除 `stage-progression-protocol.md` 旧依赖）；将抽象后的虚假合规检查要点并入 `skills/dual-round-review/references/failure-modes-catalog.md`。
+- **`clarification-protocol` V2.0.0 去壳提纯**：重构 `skills/clarification-protocol/SKILL.md` 为 67 行轻量微技能（`description` 由 623 压降至 362 字符），新增「先自查事实（Lookup Before Asking）」与「≤5 题软预算」，统一 4 列单表决策台账与出口三问内联自核，并将契约测试重构为轻量表面哨兵，同步升级 [clarification-protocol-design.md](../explanation/architecture/clarification-protocol-design.md) 至 V2.0.0。
+
+### 变更
+
+- 同步更新全仓注册面、引导文档与指针：`contexts/AGENTS.md`、`README.md`、`docs/index.md`、`docs/how-to/install-skills.md`、`docs/tutorials/quick-start.md`、`tools/skills-manager/collections/cr-agent-arsenal.json`、`skills/_shared/tests/test_cross_skill_links.py`、`skills/_shared/cross-skill-link-policy.json` 及受影响测试白名单；登记 [Wave 1 架构清场计划](./plans/2026-11-23-wave1-retire-agy-and-slim-clarification.md) 并重生成分层机器地图。
 
 ## [2026-11-23] 退役 `spec-evolution` 技能并下沉核心哨兵
 
