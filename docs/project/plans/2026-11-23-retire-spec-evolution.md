@@ -13,7 +13,8 @@
 > - **关联决策**: [ADR-0003 退役 spec-evolution 技能并下沉哨兵测试](../../explanation/decisions/0003-retire-spec-evolution.md)
 > - **分支基线**: `refactor/retire-spec-evolution` @ `a11ba82`
 > - **执行后端**: 当前会话内联（P4 交付终审派发独立子智能体执行双轮对抗审查）
-> - **状态**: 进行中
+> - **审查凭据**: [2026-11-23-retire-spec-evolution](../reviews/2026-11-23-retire-spec-evolution/README.md)（R1 → R2 双轮对抗终审 ✅ 准予交付，Blockers = 0）
+> - **状态**: 已完成（2026-11-23，终审 **Blockers=0 / 准予交付**）
 
 ---
 
@@ -28,11 +29,11 @@
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P4（独立双轮对抗审查：`dual-round-review` Full 模式）
-- **当前活跃子任务**: T-5（派发 R1 红队与 R2 元架构师独立审查至 Zero Blockers）
+- **当前活跃阶段**: DONE / P5 完成（全量 R1 → R2 双轮对抗审查已收口：🔴 0 / 🟡 5 / ⚪ 1，✅ 准予交付）
+- **当前活跃子任务**: 无（非阻断建议 `R1-1`/`R1-2`/`R1-3`/`R1-5` 已按 R2 裁决登记至 Backlog）
 - **当前子任务重试计数**: 0/3
 - **门禁基线（改动前实测）**: `check-all.py` 6/6 通过（rc=0）；`audit-doc-health.py` PASS 100.0/100（118/118 合规）；`skills/` 共收集 692 条用例（其中 `spec-evolution` 占 84 条 / 16.73s）
-- **最新实测（T-1~T-4 落地后）**: `check-all.py --full` **7/7 全绿**（含 `doc-governance` 测试套件）；`check-golden-tasks.py` **PASS 20 / GAP 0 / FAIL 0**；`pytest skills/_shared/tests/` **8 passed**（0.14s）；`pytest skills/ -q` **611 passed / 1 pre-existing failed**（`master` 既有 `test_existing_archives_all_pass_gate`，与本次变更无关）
+- **最新实测（T-1~T-5 落地后）**: `check-all.py --full` **7/7 全绿**；`check-golden-tasks.py` **PASS 20 / GAP 0 / FAIL 0**；`pytest skills/_shared/tests/` **8 passed**；`check-review-report.py --require-verdict=PASS` **通过**；`pytest skills/ -q` **611 passed / 1 pre-existing failed**（`master` 既有 `test_existing_archives_all_pass_gate`，与本次变更无关）
 
 ---
 
@@ -68,7 +69,7 @@
 - [x] **T-2**：删除 `skills/spec-evolution/`（`git rm -r`）与 `.agents/skills/spec-evolution` 悬空软链接，确认 T-1 哨兵按预期爆红（捕获残留登记）
 - [x] **T-3**：同步 `tools/skills-manager/collections/cr-agent-arsenal.json`、`skills/_shared/tests/test_cross_skill_links.py`、`skills/_shared/cross-skill-link-policy.json`、`skills/clarification-protocol/tests/test_clarification_protocol_contract.py` 与 `README.md`、`docs/index.md`，使 T-1 转绿
 - [x] **T-4**：完成文档生命周期同步——新建 [ADR-0003](../../explanation/decisions/0003-retire-spec-evolution.md)、流转 `RFC-0004` 与 `spec-evolution-design.md` 为 `Superseded` 并消除死相对链接、清理 `clarification-protocol-design.md` 失效外链、更新 `install-skills.md` / `quick-start.md` / `changelog.md`，重生成 `docs/llms.txt` 与 `docs/_llms/*.md`
-- [ ] **T-5**：运行全量验证（`pytest skills/` + `check-all.py --full` + `audit-doc-health.py`）并派发独立双轮对抗审查（`dual-round-review` Full 模式）至 Zero Blockers 放行
+- [x] **T-5**：运行全量验证（`pytest skills/` + `check-all.py --full` + `audit-doc-health.py`）并派发独立双轮对抗审查（`dual-round-review` Full 模式）至 Zero Blockers 放行（R1 → R2 归档于 [2026-11-23-retire-spec-evolution](../reviews/2026-11-23-retire-spec-evolution/README.md)，Blockers=0）
 
 ---
 

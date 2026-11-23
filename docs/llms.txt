@@ -26,6 +26,6 @@
 
 - 全量清单：[explanation.md](./_llms/explanation.md)
 
-## Project Governance (工程演进 / 发布日志与待办) — 85 篇
+## Project Governance (工程演进 / 发布日志与待办) — 86 篇
 
 - 全量清单：[project.md](./_llms/project.md)

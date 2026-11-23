@@ -4,6 +4,7 @@
 > 上级入口：[../llms.txt](../llms.txt)
 
 - [BK-0051-检索层决策-当前不引入-mcp-已评估](../project/backlog/active/BK-0051-检索层决策-当前不引入-mcp-已评估.md): id: BK-0051
+- [BK-0056-技能哨兵轻量加固与口径对齐-r1-1-r1-2-r1-3-r1-5](../project/backlog/active/BK-0056-技能哨兵轻量加固与口径对齐-r1-1-r1-2-r1-3-r1-5.md): id: BK-0056
 - [BK-0001-trim-revision-py-archive-exemption](../project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](../project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0003-stable-id-pair-by-filename](../project/backlog/archive/2026-Q4/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
