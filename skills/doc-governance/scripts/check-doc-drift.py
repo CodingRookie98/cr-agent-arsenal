@@ -462,7 +462,9 @@ def staged_paths(repo: Optional[Path]) -> Optional[set]:
     """B-02：返回暂存区变更路径集合；非 git 或无暂存区时返回 None。"""
     if repo is None:
         return None
-    out = _run_git(repo, ["diff", "--cached", "--name-only"])
+    # core.quotePath=false：非 ASCII 路径（中文锚点/文档名）默认会被转义成 "src/\351..."，
+    # 导致 touched 为空（真值轴在 --staged 下失明）或 doc 不在 staged（合法刷新被误判漂移）。
+    out = _run_git(repo, ["-c", "core.quotePath=false", "diff", "--cached", "--name-only"])
     if out is None:
         return None
     return {line.strip() for line in out.splitlines() if line.strip()}
@@ -580,8 +582,9 @@ def analyze(
                 refreshed = doc_repo_rel in staged and _verified_line_changed_staged(repo_path, doc_repo_rel)
                 if refreshed:
                     # BD-1：本次提交内同时改锚点并刷新复核点 ⇒ 视为已同步处理。
-                    # 但**不得**覆盖 missing_anchor（锚点目标不存在是硬断裂）。
-                    if status != "missing_anchor":
+                    # 但**不得**覆盖硬断裂或既有漂移：missing_anchor（锚点目标不存在）
+                    # 与 drifted（其他锚点的历史漂移）都不能被本次刷新洗白（BD-1-R2）。
+                    if status not in ("missing_anchor", "drifted"):
                         status = "fresh"
                 else:
                     # BD-1-R：文档未暂存，或已暂存但「复核于」未刷新 ⇒ 仍是漂移

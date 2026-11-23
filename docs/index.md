@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.41.0 (补齐 changelog 与 3 篇 RFC 的计划链接，BK-0053 闭环)
+> - **当前版本**: V1.42.0 (交付尾巴收口：RFC 状态更正与补登，backlog 指标改为动态口径)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,13 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.42.0** | 2026-11-23 | DSH AI Agent | 王辉 | **交付尾巴收口**：RFC-0001/0002/0004 状态更正为 Implemented，补登 RFC-0005~0008 条目；backlog 指标改为指向动态仪表盘（禁止手写对账）；同步设计书 V1.5.0 与 RFC-0008 归档防腐块 |
 | **V1.41.0** | 2026-11-22 | DSH AI Agent | 王辉 | **补齐交付叙事（BK-0053）**：新增 docs/project/changelog.md（按交付单元聚合）；§1 增变更日志入口；RFC-0001/0002/0003 补「落地计划」链接；可回答性 G-02/G-16 由 GAP 转 PASS（PASS 17→19 / GAP 3→1） |
 | **V1.40.0** | 2026-11-22 | DSH AI Agent | 王辉 | **补齐上手/操作象限（BK-0052）**：§2.5 新增 1 篇 Tutorial（5 分钟上手）+ 3 篇 How-To（安装技能 / 执行门禁 / 故障排查）；可回答性 G-12/G-13 由 GAP 转 PASS |
 | **V1.39.0** | 2026-11-22 | DSH AI Agent | 王辉 | **分层机器地图登记**：§1 补路由文件与子地图入口；§4 新增「分层机器地图（RFC-0006）」计划行；根 `llms.txt` 21,810 → 883 字节 |
 | **V1.38.0** | 2026-11-22 | DSH AI Agent | 王辉 | **真值轴落地登记**：§4 新增「文档真值轴（RFC-0005）」计划行；同步 `GOVERNANCE.md` V1.7.0（工具表 + 红线 7）、`doc-governance-design.md` V1.4.0、`SKILL.md` 模式 1/2、控制头模板规则 6 与变更矩阵 V1.3.0 |
-| **V1.37.1** | 2026-11-21 | DSH AI Agent | 王辉 | **调研报告登记**：§2 新增《LLM-WIKI 社区实现全景与工程难点深度调研》（`explanation/analysis/llm-wiki-implementation-research.md` V1.0.0），含六条实现路线、十类难点、十二维 `doc-governance` 对照审计与八项改造建议 |
-| **V1.37.0** | 2026-11-19 | AI Agent | 核心架构组 | **规则成文**：§6 新增 `commit-evidence`（提交信息取证口径，BK-0044 闭环）；同步 `reference/rules/commit-evidence.md` V1.0.0 与象限索引 |
-| **V1.36.9** | 2026-10-20 | DSH AI Agent | 王辉 | **P3 批次六项 backlog 闭环交付登记**：四轮审查闭环（R1 红队 → R2 元审判 → delta-r1 定向复核 → delta-r2 终审），终审 **准予交付**（Blockers=0）、门禁 `--require-verdict=PASS` 通过；六卡 `close` 迁入 `archive/2026-Q4/`（index 活跃 21→15、归档 24→30）；计划行标注「已完成」并链接审查归档 |
 
 ---
 
@@ -98,10 +96,14 @@
 | **`frontend-qa-gate` V1.0** | 新建前端产物验收技能：SKILL.md + references + templates + 报告校验脚本 + 契约测试 + 设计书与全套注册；同步补强 taste Gate A 与 goal-loop P3.5 挂载点 | [2026-09-21-frontend-qa-gate.md](./project/plans/2026-09-21-frontend-qa-gate.md) |
 | **`frontend-qa-gate` 后续待办闭环** | 闭环交付遗留三项待办：「：无」声明变体误拒、跨技能相对链接断链自检、结论列 `N/A` 白名单（Maintenance-Patch 通道，已闭环） | [2026-09-21-qa-gate-followups.md](./project/plans/2026-09-21-qa-gate-followups.md) |
 | **Critic 门禁加固 V1.1** | 实跑反证驱动：绝对评分门禁换代三信号门禁，补版本回执/鉴别力自检/冲突仲裁/评审账本 | [2026-09-20-critic-gate-hardening.md](./project/plans/2026-09-20-critic-gate-hardening.md) |
-| **RFC-0001 审查报告归档契约** | 为 `dual-round-review` 引入交付凭据归档：报告全文逐字落盘至版本库归档根 + SHA256 指纹 + 机械门禁（需求确认，状态 In Review） | [RFC-0001-review-report-archive.md](./proposals/RFC-0001-review-report-archive.md) |
+| **RFC-0001 审查报告归档契约** | 为 `dual-round-review` 引入交付凭据归档：报告全文逐字落盘至版本库归档根 + SHA256 指纹 + 机械门禁（**已实现**，状态 Implemented；审查归档见 `docs/project/reviews/2026-10-04-review-report-archive/`） | [RFC-0001-review-report-archive.md](./proposals/RFC-0001-review-report-archive.md) |
 | **RFC-0003 目录级索引约定** | 象限索引托管化与 scaffold 索引自愈：根级人类入口唯一、象限索引按需托管（`<!-- doc-index:managed -->` 位置契约）、登记防 404 与 README 入口跳过（**已实现**，状态 Implemented；三轮双轮对抗审查 Zero Blockers 准予交付） | [RFC-0003-quadrant-index-convention.md](./proposals/RFC-0003-quadrant-index-convention.md) |
-| **RFC-0002 子智能体直写契约** | 执行 RFC-0001 §7.3 A1 预留路径：子智能体直写报告至预授权路径（Write-Scope 单路径例外）+ 主智能体独立复算指纹 + 写入形态登记；含诚实边界（预授权是提示词契约而非沙箱强制）（需求确认，状态 In Review） | [RFC-0002-subagent-direct-write.md](./proposals/RFC-0002-subagent-direct-write.md) |
-| **RFC-0004 spec-evolution 演进回路** | 新建 `spec-evolution` 技能：把演进回路的「选择端」从**模型意见**换成**脚本退出码**——事实采集器（`collect-facts.py`）→ 确定性判定器（`judge.py`，零 LLM/零网络/纯标准库）→ Exit 0/1；判据表 C-01~C-10 覆盖技能交付面完整性、frontmatter 上限、文件规模、注册面漂移与根提示词净增长；v1 结构性地不做无客观信号的设计质量评价（**已实现**，状态 Implemented · V0.4.0：7 个 Task 全部交付，判定器实测复现 §1.1 的 F-1~F-9 全部九项缺陷并修 F-9；`spec-evolution` 自身零 finding，待独立终审） | [RFC-0004-spec-evolution.md](./proposals/RFC-0004-spec-evolution.md) |
+| **RFC-0002 子智能体直写契约** | 执行 RFC-0001 §7.3 A1 预留路径：子智能体直写报告至预授权路径（Write-Scope 单路径例外）+ 主智能体独立复算指纹 + 写入形态登记；含诚实边界（预授权是提示词契约而非沙箱强制）（**已实现**，状态 Implemented；审查归档见 `docs/project/reviews/2026-10-08-subagent-direct-write/`） | [RFC-0002-subagent-direct-write.md](./proposals/RFC-0002-subagent-direct-write.md) |
+| **RFC-0004 spec-evolution 演进回路** | 新建 `spec-evolution` 技能：把演进回路的「选择端」从**模型意见**换成**脚本退出码**——事实采集器（`collect-facts.py`）→ 确定性判定器（`judge.py`，零 LLM/零网络/纯标准库）→ Exit 0/1；判据表 C-01~C-10 覆盖技能交付面完整性、frontmatter 上限、文件规模、注册面漂移与根提示词净增长；v1 结构性地不做无客观信号的设计质量评价（**已实现**，状态 Implemented · V0.4.0：7 个 Task 全部交付，判定器实测复现 §1.1 的 F-1~F-9 全部九项缺陷并修 F-9；`spec-evolution` 自身零 finding；已独立终审：2026-10-12 归档 **Blockers=0 / 准予交付**） | [RFC-0004-spec-evolution.md](./proposals/RFC-0004-spec-evolution.md) |
+| **RFC-0005 文档真值轴** | 控制头三字段（来源 / 代码锚点 / 复核于）+ `check-doc-drift.py` 五态漂移检测（退出码 0/1/2）+ `--truth=warn|require` 双轴报告；结构分语义不变，零声明不颁发满分（**已实现**，状态 Implemented；六轮审查 Zero Blockers，归档 `2026-11-22-doc-truth-axis/`） | [RFC-0005-doc-truth-axis.md](./proposals/RFC-0005-doc-truth-axis.md) |
+| **RFC-0006 分层机器地图** | 根 `llms.txt` 降为象限入口（≤8 KB）+ 全量条目下沉 `_llms/<象限>.md` + 生成器 `--split` / `--check` / `--max-root-bytes`；根与子地图逐字节一致为硬门禁（**已实现**，状态 Implemented；归档 `2026-11-22-split-llms-map/`） | [RFC-0006-split-llms-map.md](./proposals/RFC-0006-split-llms-map.md) |
+| **RFC-0007 文档状态机** | `文档状态` 三态（Active / Contested / Superseded）+ `取代于` / `争议点` + 审计输出「未决冲突清单」；Active 携带取代于即阻断（**已实现**，状态 Implemented；归档 `2026-11-22-doc-status-machine/`） | [RFC-0007-doc-status-contested.md](./proposals/RFC-0007-doc-status-contested.md) |
+| **RFC-0008 文档体量度量** | 字节 ≤64 KB、最长单行 ≤1000 字符为阻断判据，行数 >800 仅警告；棘轮基线 `.doc-size-baseline.json` 消化存量，只降不升（**已实现**，状态 Implemented；审查并入 `2026-11-22-batch-gates/`，存量消化 BK-0050） | [RFC-0008-doc-size-metric.md](./proposals/RFC-0008-doc-size-metric.md) |
 | **`dual-round-review` V2.1.0** | 审查报告持久化归档：三层职责分离（运行时状态/交付凭据/机械门禁）、`check-review-report.sh`、R2 双通道输入、模板↔门禁标题漂移防护（**已终审放行 ✅**，审查归档见 `docs/project/reviews/2026-10-04-review-report-archive/`） | [2026-10-04-review-report-archive.md](./project/plans/2026-10-04-review-report-archive.md) |
 | **`dual-round-review` V2.2.0** | 子智能体直写通道：Write-Scope 单路径例外 + 路径预授权六条 + 主智能体独立复算指纹 + 转录降级显式登记（台账第 7 列）+ `--round` 预授权路径 + 门禁第 8 项 + 旧归档补列迁移 | [2026-10-08-subagent-direct-write.md](./project/plans/2026-10-08-subagent-direct-write.md) |
 | **批次 D 机器地图身份写保护契约** | BK-0030/BK-0031 交付（**已完成**，Maintenance-Patch 通道：五轮审查全部无 P0/P1 准予交付） | [2026-10-09-backlog-batch-d-identity-contract.md](./project/plans/2026-10-09-backlog-batch-d-identity-contract.md) |
@@ -109,7 +111,7 @@
 | **批次 B 机器地图写入侧安全与一致性门禁** | 闭环 BK-0023/BK-0025：缺省落点统一 `resolve()`、零覆盖拒绝落盘；`audit-doc-health.py` 将「机器地图 == 注册命令生成物」固化为硬阻断（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-b-llms-integrity.md](./project/plans/2026-10-09-backlog-batch-b-llms-integrity.md) |
 | **批次 A 归档豁免与 llms 落点修复** | 闭环 BK-0001/BK-0002/BK-0021：两个治理消费者补齐交付凭据归档豁免（写入侧 root 无关兜底）、机器地图落点随 `--root` 派生（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-a-archive-exemption.md](./project/plans/2026-10-09-backlog-batch-a-archive-exemption.md) |
 | **`doc-governance` 目录级索引约定** | 象限索引托管化与 scaffold 索引自愈：`manage-doc-index.py`（ensure/register/入参校验）+ 六分支自愈接入 + tutorial 条件渲染（**已完成**，三轮双轮对抗审查 Zero Blockers 准予交付） | [2026-10-09-quadrant-index-convention.md](./project/plans/2026-10-09-quadrant-index-convention.md) |
-| **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；活跃 **26** 项 / 历史归档 **18** 项，编号至 `BK-0044`；2026-10-14 全量理牌清除 7 条过时或负 ROI 活跃条目，活跃 33 → 26、归档 11 → 18（提交 1b17965）；BK-0039「存量技能交付面债务」已按验收准则结项归档，残余 MID 债务登记于 BK-0041「存量技能交付面残余债务」（agy 设计书 / 两条 description 超建议值 / 测试文件超行限），`close` 未收敛卡片占位与 DoD 勾选的工具缺陷 BK-0042 已修复结项（提交 afdb4e5，V10 复核收口 8390df8；V11 更正记录见归档卡 §5 E-4/E-5），Write-Once 审查归档终审裁决契约失配登记于 BK-0043，提交信息取证据口径的反复更正登记于 BK-0044） | [index.md](./project/backlog/index.md) |
+| **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；活跃/归档数量与编号以 `backlog/index.md` 动态仪表盘为准（禁止在本索引手写对账）；BK-0039「存量技能交付面债务」已按验收准则结项归档，残余 MID 债务登记于 BK-0041「存量技能交付面残余债务」（agy 设计书 / 两条 description 超建议值 / 测试文件超行限），`close` 未收敛卡片占位与 DoD 勾选的工具缺陷 BK-0042 已修复结项（提交 afdb4e5，V10 复核收口 8390df8；V11 更正记录见归档卡 §5 E-4/E-5），Write-Once 审查归档终审裁决契约失配登记于 BK-0043，提交信息取证据口径的反复更正登记于 BK-0044） | [index.md](./project/backlog/index.md) |
 | **ADR-0001 交付凭据归档层** | 审查凭据按「可否重建」分层：运行时状态留隐藏目录、交付凭据进版本库独立目录并对齐治理豁免语义（MADR 3.0；含四轮对抗审查证据） | [0001-review-evidence-archive-layer.md](./explanation/decisions/0001-review-evidence-archive-layer.md) |
 | **ADR-0002 子智能体直写通道** | 写盘权归还内容作者：消除转录失真、写盘与核验分离；显式登记三项代价（授权面由零扩大为单文件、路径预授权是提示词契约而非沙箱强制、写入形态声明不可机械验证）（MADR 3.0） | [0002-subagent-direct-write-channel.md](./explanation/decisions/0002-subagent-direct-write-channel.md) |
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |

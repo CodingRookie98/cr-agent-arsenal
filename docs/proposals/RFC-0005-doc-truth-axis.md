@@ -10,6 +10,15 @@
 > - **关联前置**: [LLM-WIKI 社区实现调研](../explanation/analysis/llm-wiki-implementation-research.md)（§4.2 / §6.2 / §7）、[GOVERNANCE.md](../GOVERNANCE.md)、[doc-governance SKILL](../../skills/doc-governance/SKILL.md)
 > - **落地计划**: [2026-11-22-doc-truth-axis.md](../project/plans/2026-11-22-doc-truth-axis.md)
 
+> [!IMPORTANT]
+> **历史溯源备忘 (Archival Notice)**:
+> 本提案已于 2026-11-22 经六轮对抗审查（R1 → R2 → Delta → 放行确认 → 收口确认 ×2）取得 **Zero Blockers / 准予交付**，并结晶下沉至系统生产基线（2026-11-23 补登防腐备忘）。
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§3 工具表 `check-doc-drift.py`、§4 红线 7）
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（模式 2 真值轴巡检）
+> - 权威实现与账本: `skills/doc-governance/scripts/check-doc-drift.py` 与 `docs/.doc-truth-baseline.json`
+> - 审查凭据全文请查阅: [../project/reviews/2026-11-22-doc-truth-axis/README.md](../project/reviews/2026-11-22-doc-truth-axis/README.md)
+> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
+
 ---
 
 ### 修订历史记录 (Revision History)

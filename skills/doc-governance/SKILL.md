@@ -149,7 +149,7 @@ docs/
 1. **新建文档/提案**：运行 `python3 scripts/scaffold-doc.py <type> <name>`（如 `scaffold-doc.py rfc canvas-collab`），基于规范模板创建脚手架，自动填入合规控制头，并自动 ensure 象限索引与登记本文档（跨象限链接按目标索引是否存在自动降级，杜绝 404）；
 2. **初期 RFC 对齐**：在 `docs/proposals/` 单文档中闭环业务故事、契约草案与选型权衡；
 3. **定案结晶下沉**：方案批准后，遵循 [rfc-crystallization-lifecycle.md](./references/rfc-crystallization-lifecycle.md) 将接口、规则、架构解构沉淀至 Diátaxis 对应目录；
-4. **提案归档防腐**：原 RFC 标记为 `Implemented` 并移至 `docs/proposals/archive/`，加注防腐历史备忘。
+4. **提案归档防腐**：原 RFC 标记为 `Implemented` 并加注 `[!IMPORTANT]` 防腐历史备忘；归档位置二选一——移至 `docs/proposals/archive/`，或当 `docs/project/reviews/` 等 Write-Once 凭据仍以相对路径引用该提案时**原位保留**（历史报告逐字留存、不得改写，移动即断链）。
 
 ---
 

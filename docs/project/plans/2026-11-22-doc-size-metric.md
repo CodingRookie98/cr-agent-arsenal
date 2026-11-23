@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-DOC-SIZE-METRIC-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.0.1
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 
@@ -12,18 +12,19 @@
 > - **需求源**: [RFC-0008](../../proposals/RFC-0008-doc-size-metric.md) + Backlog 调研 D2/C3
 > - **执行后端**: 当前会话内联
 > - **批准基线**: `feat/doc-truth-axis` @ `14166b1`
-> - **状态**: 进行中
+> - **状态**: 已完成（2026-11-23 收口登记：实现 `a5686f2`；审查并入 batch-gates 归档；存量消化转 BK-0050）
 
 ---
 
 ## 🚀 活跃执行状态与持久化检查点 (Active Checkpoint)
 
 - **当前执行通道**: Heavy Track
-- **当前活跃阶段**: P3 → P4
-- **当前活跃子任务**: A-4 文档同步与提交
+- **当前活跃阶段**: P5 完成（交付 + 审查归档 + 收口登记）
+- **当前活跃子任务**: 无（交付完成）
 - **当前子任务重试计数**: 0/3
 - **门禁基线（改动前）**: pytest 270 passed｜audit PASS｜links rc=0｜drift rc=0
-- **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ⏳ / A-5 ☐
+- **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅
+- **实测（2026-11-23 收口复跑）**: `check-all.py` 6 项全通过；`pytest skills/doc-governance/tests` → **295 passed**
 
 ---
 
@@ -49,8 +50,8 @@
 - [x] **A-1** `check_doc_size` + `write_size_baseline` + `load_size_baseline`（字节/最长单行/行数三指标）
 - [x] **A-2** 接入 `audit_health` 的 `doc_size` 块与 `evaluate_verdict`；CLI 增 `--write-size-baseline` / `--max-doc-bytes` / `--max-doc-line`
 - [x] **A-3** 存量基线生成（2 篇）并验证降级为警告
-- [ ] **A-4** 文档同步（GOVERNANCE / SKILL / 模板）+ 提交
-- [ ] **A-5** 审查 + 归档
+- [x] **A-4** 文档同步（GOVERNANCE §3/§4、SKILL 负向规范 6、控制头模板无需变更）+ 提交（`a5686f2`、`a38cc85`）
+- [x] **A-5** 审查 + 归档（并入 `2026-11-22-batch-gates` 归档：Light 红队 → Delta 复核 → 最终确认，5×P1 全收口）
 
 ## 4. 实测（交付时）
 

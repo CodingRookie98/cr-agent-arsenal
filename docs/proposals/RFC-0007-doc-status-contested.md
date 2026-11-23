@@ -10,6 +10,15 @@
 > - **关联前置**: [LLM-WIKI 调研报告](../explanation/analysis/llm-wiki-implementation-research.md) §4.3 / §7 P1-4、[RFC-0005](./RFC-0005-doc-truth-axis.md)
 > - **落地计划**: [2026-11-22-doc-status-machine.md](../project/plans/2026-11-22-doc-status-machine.md)
 
+> [!IMPORTANT]
+> **历史溯源备忘 (Archival Notice)**:
+> 本提案已于 2026-11-22 经两轮独立审查（Light 红队 1×P1 + Delta 复核 0 Blockers）闭环并结晶下沉至系统生产基线（2026-11-23 补登防腐备忘）。
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§4 红线 8：三态状态机）
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（模式 2 状态巡检）
+> - 权威实现: `skills/doc-governance/scripts/audit-doc-health.py`（`check_doc_status`）
+> - 审查凭据全文请查阅: [../project/reviews/2026-11-22-doc-status-machine/README.md](../project/reviews/2026-11-22-doc-status-machine/README.md)
+> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
+
 ---
 
 ### 修订历史记录 (Revision History)

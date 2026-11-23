@@ -10,6 +10,15 @@
 > - **关联前置**: [LLM-WIKI 调研报告](../explanation/analysis/llm-wiki-implementation-research.md) §4.6 / §7 P1-5、[RFC-0005](./RFC-0005-doc-truth-axis.md)
 > - **落地计划**: [2026-11-22-split-llms-map.md](../project/plans/2026-11-22-split-llms-map.md)
 
+> [!IMPORTANT]
+> **历史溯源备忘 (Archival Notice)**:
+> 本提案已于 2026-11-22 经两轮独立审查（Light 红队 3×P1 + Delta 复核 0 Blockers）闭环并结晶下沉至系统生产基线（2026-11-23 补登防腐备忘）。
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§4 红线 7：机器地图逐字节一致）
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（模式 2 机器地图生成）
+> - 权威实现与产物: `skills/doc-governance/scripts/generate-llms-txt.py --split` 与 `docs/_llms/*.md`
+> - 审查凭据全文请查阅: [../project/reviews/2026-11-22-split-llms-map/README.md](../project/reviews/2026-11-22-split-llms-map/README.md)
+> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
+
 ---
 
 ### 修订历史记录 (Revision History)

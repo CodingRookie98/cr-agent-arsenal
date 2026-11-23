@@ -2,13 +2,23 @@
 
 > **提案元数据**
 > - **标识**: RFC-2026-DOC-SIZE-METRIC
-> - **当前状态**: In Review
+> - **当前状态**: Implemented
 > - **发起人**: DSH AI Agent
-> - **当前版本**: V0.1.1
+> - **当前版本**: V1.0.0
 > - **初次发起日期**: 2026-11-22
 > - **目标里程碑**: doc-governance V1.4.0（新增体量门禁；**不改动既有文档内容**）
 > - **关联前置**: [Backlog 治理调研](../explanation/analysis/backlog-governance-best-practices.md) D2/C3、[LLM-WIKI 调研](../explanation/analysis/llm-wiki-implementation-research.md) §4.6
 > - **落地计划**: [2026-11-22-doc-size-metric.md](../project/plans/2026-11-22-doc-size-metric.md)
+
+> [!IMPORTANT]
+> **历史溯源备忘 (Archival Notice)**:
+> 本提案已于 2026-11-23 经批量门禁审查（batch-gates：Light 红队 → Delta 复核 → 最终确认，5 个 P1 全部收口）并结晶下沉至系统生产基线。
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§3 工具表 `check_doc_size`、§4 红线 6 与红线 9、§4.1 外部文献豁免）
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（模式 2 巡检、负向规范 6）
+> - 权威实现与基线: `skills/doc-governance/scripts/audit-doc-health.py`（`check_doc_size` / `--write-size-baseline`）与 `docs/.doc-size-baseline.json`
+> - 审查凭据全文请查阅: [../project/reviews/2026-11-22-batch-gates/README.md](../project/reviews/2026-11-22-batch-gates/README.md)
+> - 存量消化待办请查阅: [../project/backlog/index.md](../project/backlog/index.md)（BK-0050）
+> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
 
 ---
 
@@ -16,6 +26,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.0** | 2026-11-23 | DSH AI Agent | 王辉 | **状态流转 In Review → Implemented**：实现随 `a5686f2` 落地（`check_doc_size` 三指标 + 棘轮基线 + 体量看板），GOVERNANCE V1.10.0/V1.11.1 与 SKILL 负向规范 6 已同步；审查并入 batch-gates 归档（5×P1 全收口）；存量 2 篇转 BK-0050 |
 | **V0.1.1** | 2026-11-22 | DSH AI Agent | 王辉 | **红队 B-03~B-06 收口**：后缀大小写不敏感（.MD/.markdown 不再逃逸）、只按 \n 断行（U+2028 不再绕过单行上限）、基线非数值不崩溃、不可读文件 fail-closed；§4.3 显式登记扫描范围与四项豁免（含有意覆盖缺口） |
 | **V0.1.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初稿：以「字节 + 最长单行」替代行数度量，用棘轮基线消化存量 |
 

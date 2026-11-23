@@ -12,6 +12,16 @@
 > - **落地计划**: [2026-10-12-spec-evolution.md](../project/plans/2026-10-12-spec-evolution.md)
 > - **关联前置**: [RFC-0001](./RFC-0001-review-report-archive.md)（交付凭据归档契约）、[goal-loop 架构设计书](../explanation/architecture/goal-loop-design.md)、[docs/GOVERNANCE.md](../GOVERNANCE.md)
 
+> [!IMPORTANT]
+> **历史溯源备忘 (Archival Notice)**:
+> 本提案已于 2026-10-12 定案并完成实现（2026-11-23 补登防腐备忘），内容已结晶下沉至系统基线。
+> - 权威技能规程请查阅: [../../skills/spec-evolution/SKILL.md](../../skills/spec-evolution/SKILL.md)
+> - 权威架构设计请查阅: [../explanation/architecture/spec-evolution-design.md](../explanation/architecture/spec-evolution-design.md)
+> - 落地计划与结项记录: [../project/plans/2026-10-12-spec-evolution.md](../project/plans/2026-10-12-spec-evolution.md)
+> - 审查凭据全文请查阅: [../project/reviews/2026-10-12-spec-evolution-v1/README.md](../project/reviews/2026-10-12-spec-evolution-v1/README.md)
+> - 实现载体: `skills/spec-evolution/scripts/collect-facts.py` 与 `judge.py`
+> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
+
 ---
 
 ### 修订历史记录 (Revision History)

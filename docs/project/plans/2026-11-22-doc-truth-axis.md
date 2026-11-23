@@ -2,11 +2,11 @@
 
 > **文档控制信息**
 > - **文档标识**: PLAN-DOC-TRUTH-AXIS-2026
-> - **当前版本**: V1.9.0
+> - **当前版本**: V1.9.1
 > - **文档所有者**: 核心架构组
 > - **生效日期**: 2026-11-22
 > - **代码锚点**: skills/doc-governance/scripts/check-doc-drift.py, skills/doc-governance/scripts/audit-doc-health.py
-> - **复核于**: 2026-11-22 / commit 08ebce5
+> - **复核于**: 2026-11-23 / commit ef7e325
 
 > **目标元数据**
 > - **所属项目**: CR 公共技能库（cr-agent-arsenal）
@@ -29,7 +29,7 @@
 - **当前活跃子任务**: 无（交付完成；后续非阻断项见 §9）
 - **当前子任务重试计数**: 0/3（无触发；R1 阻断项一轮修复，未触发 3-Tries）
 - **门禁基线（改动前实测）**: `check-doc-links` rc=0（93 文件）｜`check-doc-control-sync` rc=0｜`audit-doc-health` PASS 100/100｜`pytest skills/doc-governance/tests` 161 passed
-- **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅ / A-6 ✅ / A-7 ⏳
+- **批次进度**: A-1 ✅ / A-2 ✅ / A-3 ✅ / A-4 ✅ / A-5 ✅ / A-6 ✅ / A-7 ✅（2026-11-23 校准：与 §3 任务清单一致）
 - **实测（R1 收口后）**: `check-doc-drift.py --fail-on-drift` → 声明 3/46、fresh 3、drifted 0、真值分 15.0/15、rc=0；`audit-doc-health.py`（warn）→ PASS；`--truth=require` → REJECTED（覆盖率 6.5% < 50%，符合设计）；`pytest skills/doc-governance/tests` → **182 passed**
 
 ---

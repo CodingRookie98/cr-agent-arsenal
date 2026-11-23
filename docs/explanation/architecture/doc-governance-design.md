@@ -2,9 +2,9 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-DOC-GOVERNANCE-2026
-> - **当前版本**: V1.4.2 (新增真值轴：代码锚点漂移检测与双轴健康报告)
+> - **当前版本**: V1.5.0 (治理轴扩展：真值轴 / 分层机器地图 / 状态机 / 体量门禁 / 门禁自动化与可回答性)
 > - **代码锚点**: skills/doc-governance/SKILL.md, skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
-> - **复核于**: 2026-11-22 / commit 08ebce5
+> - **复核于**: 2026-11-23 / commit ef7e325
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-10
@@ -112,13 +112,15 @@ Diátaxis 是被 Python 官方文档、Canonical/Ubuntu、Django、NumPy 等顶�
 ```text
 docs/
 ├── index.md                 # 【全局人类总入口】全景知识库拓扑与分类索引
-├── llms.txt                 # 【AI 智能体机器地图】精炼的机器可读知识拓扑与关键参考入口
+├── llms.txt                 # 【AI 智能体机器地图】象限级入口（≤8 KB）
+├── _llms/                   # 分层子地图（生成物，禁手改）：<象限>.md 承载全量条目
+├── AGENTS.md                # 【路由规则】读取顺序与硬约束（≤30 行，不承载知识）
 ├── GOVERNANCE.md            # 【知识库治理规程】文档分类、生命周期与 CI 门禁规则
 │
 ├── proposals/               # 💡 0. 需求与设计孵化层 (Inception / RFC Proposals)
 │   │                        # ⭐ 项目初期单文件聚焦对齐空间，定案后结晶下沉至 Diátaxis 稳态
-│   ├── RFC-0001-xxx.md      # 初期对齐提案草案 (Draft -> In Review -> Accepted)
-│   └── archive/             # 已结晶下沉的提案历史归档 (Implemented / Superseded)
+│   ├── RFC-0001-xxx.md      # 提案 (Draft -> In Review -> Accepted -> Implemented)
+│   └── archive/             # 可选：已结晶提案归档（存在历史审查引用时优先原位保留）
 │
 ├── tutorials/               # 🎓 1. 教程象限 (Learning-Oriented / Newcomer Success)
 │   ├── quick-start.md       # 5 分钟上手开发与运行首个特性
@@ -146,7 +148,9 @@ docs/
 └── project/                 # 🚀 5. 工程演进与项目管理 (Project Management & Evolution)
     ├── roadmap.md           # 产品规划路线图与版本里程碑矩阵
     ├── changelog.md         # 版本发布日志与交付物归档
-    └── backlog.md           # 统一待办事项、后续优化方向汇总与已关闭清单
+    ├── plans/               # 实施计划与结项记录（YYYY-MM-DD-<feature>.md）
+    ├── reviews/             # 审查凭据归档（Write-Once，逐字留存）
+    └── backlog/             # 待办形态 B：index.md + active/BK-XXXX-*.md + archive/<version>/
 ```
 
 ### 目录级索引约定 (Directory Index Convention)
@@ -159,10 +163,12 @@ docs/
 | 根级机器地图 | `docs/llms.txt` | 供智能体消费的机器可读拓扑 | `generate-llms-txt.py` |
 | 象限/子目录 | `<dir>/index.md` 或 `<dir>/README.md` | 本目录分流入口，**按需存在、非强制** | 托管（脚本）或人工 |
 
-* **托管索引 (Managed Index)**：正文含标记 `<!-- doc-index:managed -->`，由 `scaffold-doc.sh` 生成文档时经 `manage-doc-index.py` 自动创建与**幂等登记**，携带标准控制头并随登记递增补丁版本（修订历史恒 ≤ 5 条）；
+* **托管索引 (Managed Index)**：正文含标记 `<!-- doc-index:managed -->`，由 `scaffold-doc.py`（`scaffold-doc.sh` 为兼容壳）生成文档时经 `manage-doc-index.py` 自动创建与**幂等登记**，携带标准控制头并随登记递增补丁版本（修订历史恒 ≤ 5 条）；
 * **人工索引 (Hand-authored Index)**：不含托管标记，脚本**只读不改**（安全 no-op）；
 * **禁止追溯性空索引**：象限索引按需生成，严禁为凑齐拓扑批量创建空目录与空索引；
 * **收录边界**：象限索引只收录本目录直属文档，跨象限收录统一归根级 `docs/index.md`。
+* **分层机器地图 (Layered Machine Map)**：根 `docs/llms.txt` 只保留象限入口（≤8 KB），全量条目由 `generate-llms-txt.py --split` 下沉至 `docs/_llms/<section>.md`；根与子地图必须逐字节等于生成器产物，手改或不同步即触发「机器地图不一致」硬阻断；
+* **状态可判定 (Mechanical Status)**：控制头 `文档状态` 取 `Active | Contested | Superseded` 三态；`Contested` 必填 `争议点`，`Superseded` 必填 `取代于`，`Active` 携带 `取代于` 即阻断——「哪份该信」由状态回答，不再靠读全文。
 
 ### 目录分层职责与单一事实来源对比表
 
@@ -189,11 +195,14 @@ docs/
 > **文档控制信息**
 > - **文档标识**: [项目标识]-[分类码]-[简写]-[年份] (如: CR-REF-API-2026, CR-EXP-ARCH-2026)
 > - **当前版本**: V{major}.{minor}.{patch} (严格遵循语义化版本)
-> - **文档状态**: [Draft | Active | Deprecated | Superseded]
+> - **文档状态**: [Active | Contested | Superseded]（Contested 必填「争议点」；Superseded 必填「取代于」）
 > - **机密等级**: [内部公开 | 敏感限制]
 > - **生效日期**: YYYY-MM-DD
 > - **文档所有者**: [负责人/角色]
 > - **审核人**: [审核人/角色]
+> - **来源**: [可选：需求 / RFC / 调研文档的相对链接，逗号分隔]
+> - **代码锚点**: [可选：仓库相对路径，逗号分隔；支持 `path:行区间`]
+> - **复核于**: [可选：YYYY-MM-DD / commit <sha>]
 
 ---
 
@@ -203,6 +212,7 @@ docs/
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.5.0** | 2026-11-23 | DSH AI Agent | 王辉 | **治理轴扩展成文**：§3 拓扑补 `_llms/`、`AGENTS.md`、`plans/`、`reviews/`、形态 B backlog；§4.1 控制头补三态状态与真值三字段；§4.4 明确提案归档「archive 或原位保留」判据；§6 工具表补全 11 个脚本并新增 §6.1 五条治理轴；§8 登记阶段 5 |
 | **V1.4.2** | 2026-11-22 | DSH AI Agent | 王辉 | 复核点跟随 Delta 修复提交 eb8a9c0 重钉（SKILL.md 已被改动） |
 | **V1.4.1** | 2026-11-22 | DSH AI Agent | 王辉 | 复核点升级为「日期 + commit `fb62d02`」，与锚点提交对齐（R2 残留风险 ②） |
 | **V1.4.0** | 2026-11-22 | DSH AI Agent | 王辉 | 新增真值轴（RFC-0005）：控制头三字段（来源/代码锚点/复核于）、`check-doc-drift.py` 五态判定与 `audit-doc-health.py --truth` 双轴报告；本设计书自身登记锚点与复核点 |
@@ -276,7 +286,7 @@ graph TD
 2. **业务规则下沉**：将状态机流转与权限策略提取至 `docs/reference/rules/`；
 3. **决策证据沉淀**：将方案备选权衡与否决原因提炼为 MADR 记录存入 `docs/explanation/decisions/`；
 4. **宏观架构下沉**：将全景流程与分层拓扑更新至 `docs/explanation/architecture/`；
-5. **历史提案封存防腐**：将原 RFC 状态更新为 `Implemented`，并在文档头部显式声明防腐警示：
+5. **历史提案封存防腐**：将原 RFC 状态更新为 `Implemented`，并在文档头部显式声明 `[!IMPORTANT]` 防腐块（结晶去向 + 不再增量维护）。归档位置二选一：`docs/proposals/archive/` 或**原位保留**——当 `docs/project/reviews/` 等 Write-Once 历史凭据仍以相对路径引用该提案时，必须原位保留（历史报告逐字留存、不得改写，移动会造成不可修复断链）：
    > ⚠️ **历史溯源备忘**：本提案已于 YYYY-MM-DD 定案结晶。当前系统权威接口与模型以 `` `[reference/...](...)` `` 为准，本文件仅作为立项决策历史溯源，不再增量维护。
 
 ---
@@ -333,13 +343,33 @@ graph TD
 
 存放于 `skills/doc-governance/scripts/`：
 
-| 脚本工具 | 核心功能 | 自动化与自愈行为 |
+| 脚本工具 | 核心功能 | 自动化与门禁行为 |
 |:---|:---|:---|
-| **`check-doc-links.py`** | 全域物理链接与锚点断链静态扫描器 | 递归扫描所有 Markdown 相对链接，校验目标文件物理存在、校验 `.md` 后缀、校验 `#anchor` 标题有效性。有断链 Exit Code 1 阻断。 |
+| **`check-doc-links.py`** | 全域物理链接与锚点断链静态扫描器 | 递归扫描所有 Markdown 相对链接，校验目标文件物理存在、校验 `.md` 后缀、校验 `#anchor` 标题有效性；断链 Exit Code 1 阻断。 |
+| **`check-doc-control-sync.py`** | 控制头版本与修订历史一致性扫描器 | 断言「控制头版本 == 修订历史最新行版本」，杜绝静默版本漂移；无修订表的短文档允许跳过。 |
+| **`check-doc-drift.py`** | 真值轴漂移检测器 | 解析控制头 `来源 / 代码锚点 / 复核于`，输出 `fresh / drifted / missing_anchor / stale / unverified` 五态；`--fail-on-drift` 下任何非 fresh 的已声明文档 → 1，账本缺席/损坏 → 2（fail-closed）；`--write-baseline` 刷新账本，`--staged` 供 pre-commit 使用。 |
+| **`check-golden-tasks.py`** | 知识库可回答性评测器 | 20 条 golden task 机械断言，输出 `PASS / GAP / FAIL` 三态；GAP 表示「文档存在但缺关键事实」，FAIL 表示「断言本身不成立」。 |
+| **`check-all.py`** | 门禁聚合器 | 一次跑完六道门禁（机器地图 / 断链 / 版本一致 / 真值轴 / 健康体检 / 可回答性），任一失败非零退出；`--full` 追加 pytest；作为 `.githooks/pre-commit` 入口。 |
+| **`audit-doc-health.py`** | 知识库全面健康度体检引擎 | 综合计算链接完整率、基线合规率、修订合规率、Diátaxis 拓扑覆盖率，检测孤儿文档并出具健康诊断报告；内置 `check_doc_status`（状态机）、`check_doc_size`（体量门禁）与 Backlog 仪表盘；`--truth=warn|require` 输出真值轴双轴报告。 |
+| **`generate-llms-txt.py`** | 分层机器地图生成器 | 基于拓扑与 Frontmatter 摘要生成 `docs/llms.txt`；`--split` 时根降为象限入口（≤8 KB）并把全量条目下沉 `_llms/`；`--check` 只校验不写盘。 |
 | **`trim-revision.py`** | 修订历史滑动窗口自愈裁剪器 | 检查修订表格行数，`--fix --keep 5` 自动就地裁剪超额历史行，保持头部精悍。 |
-| **`audit-doc-health.py`** | 知识库全面健康度体检引擎 | 综合计算链接完整率、基线合规率、修订合规率、Diátaxis 拓扑覆盖率，检测孤儿文档并出具健康诊断报告。 |
-| **`generate-llms-txt.py`** | 机器可读 `llms.txt` 自动化生成器 | 基于知识库拓扑与各文件 Frontmatter 摘要，自动生成紧凑的 `docs/llms.txt`，赋能 AI 智能体秒级掌握全局知识。 |
-| **`scaffold-doc.sh`** | Diátaxis & RFC 标准脚手架生成脚本 | 快速生成符合教程、指南、参考规格、深度解释、ADR 或初期 RFC 提案的标准文件模板（支持按项目语言与命名规则参数初始化）。 |
+| **`manage-backlog.py`** | 形态 B 待办管理器 | `list / get / create / close / reopen / sync-index` 六子命令；`create` 自动递增 BK 编号并刷新索引，`close` 归档并机械收敛 §4 占位语。 |
+| **`manage-doc-index.py`** | 托管索引管理器 | `ensure / register` 幂等创建与登记象限索引（`<!-- doc-index:managed -->`），人工索引只读不改。 |
+| **`scaffold-doc.py`** | Diátaxis & RFC 标准脚手架生成脚本 | 生成教程 / 指南 / 参考 / 解释 / ADR / RFC 标准模板并自动登记象限索引；`scaffold-doc.sh` 为兼容壳，转发至 Python 实现。 |
+
+### 6.1 五条治理轴（2026-11 扩展）
+
+2026-11-22 至 2026-11-23，技能从「结构合规」扩展到五条可机械判定的治理轴，每条都有独立门禁与已登记阈值：
+
+| 治理轴 | 回答的问题 | 实现载体 | 门禁与阈值 |
+|:---|:---|:---|:---|
+| **真值轴**（RFC-0005） | 文档依赖的代码变了没有？ | `check-doc-drift.py` + `.doc-truth-baseline.json` | 五态判定；`--fail-on-drift` 下非 fresh → 1、账本损坏 → 2；`--truth=require` 另校覆盖率（默认 0.5）与真值分（默认 12/15） |
+| **分层机器地图**（RFC-0006） | `llms.txt` 还是入口，还是已退化为全集？ | `generate-llms-txt.py --split` | 根 ≤8 KB；根与 `_llms/*.md` 必须逐字节等于生成物，手改即阻断 |
+| **文档状态机**（RFC-0007） | 这份文档还能信吗？有没有被取代/有争议？ | `check_doc_status`（audit 内置） | 三态取值；`Contested` 必填争议点、`Superseded` 必填取代于、`Active` 不得带取代于；输出未决冲突清单 |
+| **体量门禁**（RFC-0008） | 单体巨石是否失控？ | `check_doc_size`（audit 内置）+ `.doc-size-baseline.json` | 字节 ≤64 KB、最长单行 ≤1000 字符阻断；行数 >800 仅警告；棘轮基线只降不升 |
+| **门禁自动化与可回答性**（BK-0048/0049） | 门禁靠人记？文档能不能回答真实问题？ | `check-all.py` + `check-golden-tasks.py` + `.githooks/pre-commit` | 六道门禁聚合，任一失败非零退出；20 条 golden task 三态，GAP/FAIL 均计入非通过 |
+
+> **凭据完整性优先于体量治理**：`docs/project/reviews/**` 为 Write-Once 审查凭据，不参与体量三指标与可回答性控制头断言；这是 RFC-0008 §4.3 显式登记的有意取舍，不是遗漏。
 
 ---
 
@@ -384,3 +414,7 @@ planning/后续优化方向汇总.md   ───►  project/backlog.md (待办�
   - 交付物：`check-doc-links.py`、`trim-revision.py`、`audit-doc-health.py`、`generate-llms-txt.py`、`scaffold-doc.sh`，配套单元测试 `test_doc_governance_scripts.py` 11/11 全绿通过。
 - [x] **阶段 4：实战集成与全量体检验证 (<已完成: audit-doc-health 100/100 满分通过>)**
   - 在项目中挂载技能，执行首轮全域健康体检并出具诊断报告，链接零断链，生成全局索引 `index.md` 与机器地图 `llms.txt`。
+- [x] **阶段 5：五条治理轴扩展 (<2026-11-22/23 交付并归档>)**
+  - 真值轴（RFC-0005）、分层机器地图（RFC-0006）、文档状态机（RFC-0007）、体量门禁（RFC-0008）、门禁自动化与可回答性（BK-0048/0049）；
+  - 交付物：`check-doc-drift.py`、`check-all.py`、`check-golden-tasks.py`、`generate-llms-txt.py --split`、`check_doc_status`、`check_doc_size`、`.githooks/pre-commit`；
+  - 审查凭据：`docs/project/reviews/2026-11-22-doc-truth-axis/`、`2026-11-22-split-llms-map/`、`2026-11-22-doc-status-machine/`、`2026-11-22-batch-gates/`。

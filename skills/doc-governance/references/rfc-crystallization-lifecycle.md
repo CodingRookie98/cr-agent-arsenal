@@ -196,4 +196,4 @@ stateDiagram-v2
   > - 核心架构决策请查阅: [0004-xxx.md](../explanation/decisions/0004-xxx.md)
   > 本文件仅作为立项决策历史证据保留，**不再增量维护**。
   ```
-* 将该文件保留在 `docs/proposals/` 或归档至 `docs/proposals/archive/`。
+* 将该文件保留在 `docs/proposals/` 或归档至 `docs/proposals/archive/`；**当 `docs/project/reviews/` 等 Write-Once 历史凭据仍以相对路径引用该提案时，必须原位保留**——历史报告逐字留存、不得改写，移动会造成不可修复断链。
