@@ -13,10 +13,10 @@
 
 ### Active Checkpoint
 
-- **当前阶段**: `P3`（并行委派独立子智能体执行 W0-A / W0-B / W0-C 修复与回归单测）
-- **状态**: 进行中
-- **已完成**: 基线复现（`test_existing_archives_all_pass_gate` FAILED on 4 × 2026-11-22 archives）、分支切出、无冲突三路任务切分
-- **待办**: W0-A / W0-B / W0-C 验收 → 全仓 `pytest skills/ -q` + `check-all.py --full` 零报错 → 独立对抗红队终审（Zero Blockers） → 索引与地图收口
+- **当前阶段**: `DONE`（已完成交付并取得独立红队 Zero Blockers 终审）
+- **状态**: 已完成
+- **已完成**: 基线复现 → 三路子智能体 W0-A/B/C 并行修复 → 主智能体 Zero-Trust Diff 复核与全仓 `pytest skills/ -q`（631 passed / 0 failed） → 独立红队 Light 定向单轮审查（Blockers=0，P2=2 / P3=4；审查归档见 [README.md](../reviews/2026-11-23-wave0-skill-bugs-stabilization/README.md)） → 归档门禁与全量文档门禁验证通过
+- **遗留非阻断项**: R1-1 / R1-2（P2）及 R1-3~R1-6（P3）不阻塞交付，记入 Wave 2 对应技能 V3.0 重构顺手收口
 
 ---
 
