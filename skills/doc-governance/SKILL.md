@@ -65,7 +65,7 @@ docs/
 ├── proposals/               # 💡 0. 需求与设计孵化层 (Inception / RFC Proposals)
 │   │                        # ⭐ 项目初期单文件聚焦对齐空间，定案后结晶下沉至 Diátaxis 稳态
 │   ├── RFC-0001-xxx.md      # 初期对齐提案草案 (Draft -> In Review -> Accepted)
-│   └── archive/             # 已结晶下沉的提案历史归档 (Implemented / Superseded)
+│   └── archive/             # 可选：已结晶提案归档（存在历史审查引用时原位保留）
 │
 ├── tutorials/               # 🎓 1. 教程象限 (Learning-Oriented / Newcomer Success)
 │   ├── quick-start.md       # 5 分钟上手开发与运行首个特性
@@ -91,10 +91,10 @@ docs/
 │   └── concepts/            # 核心业务领域深层概念、设计哲学与数学/算法模型阐释
 │
 └── project/                 # 🚀 5. 工程演进与项目管理 (Project Management & Evolution)
-    ├── roadmap.md           # 产品规划路线图与版本里程碑矩阵
     ├── changelog.md         # 版本发布日志与交付物归档（已落地成果技术叙事单一事实源）
-    ├── backlog.md           # 【热区】现役活跃待办清单（进行中+计划中，严禁堆积关闭项，保持精炼）
-    └── archive/             # 【冷区】历史已结项待办归档（按版本 backlog-vX.Y.md 或季度归档沉淀）
+    ├── plans/               # 实施计划与结项记录
+    ├── reviews/             # 审查凭据归档（Write-Once，逐字留存）
+    └── backlog/             # 【热区】形态 B：index.md + active/ + archive/<version>/
 ```
 
 ### 目录级索引约定 (Directory Index Convention)
@@ -131,7 +131,7 @@ docs/
    - 修改状态机枚举/守卫 ➔ 联动同步 `reference/rules/`；
    - 修改前端组件/样式 Token ➔ 联动同步 `reference/ui/`；
    - 核心架构演化 ➔ 编写一条 MADR 决策追加至 `explanation/decisions/`；
-3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并将 `project/backlog.md` 中对应 **BK 编号**的待办移入 `project/archive/` 对应归档文件（置为 `[x]`，标注去向与日期，保持 backlog.md 热区纯粹精炼，规范见 [backlog-specification.md](./references/backlog-specification.md)）；
+3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并将 `project/backlog/active/` 中对应 **BK 编号**的卡片通过 `manage-backlog.py close` 迁入 `project/backlog/archive/<version>/`（标注去向与日期，保持热区纯粹精炼，规范见 [backlog-specification.md](./references/backlog-specification.md)）；
 4. **版本号与修订历史**：按语义化规范提升受影响文档版本，遵循 **5 条滑动窗口** 在修订表首行（标准降序）追加修订行，并同步更新控制头版本；
 5. **门禁校验**：运行 `check-doc-links.py` 与 `check-doc-control-sync.py` 确保零断链与零版本漂移；若改动触及文档声明的 `代码锚点`，再跑 `check-doc-drift.py` 并刷新 `复核于`（见矩阵「文档代码锚点失效」行）。`--staged` 口径下 `复核于` 的 `commit` 必须指向本次提交的父提交（`HEAD`），只改日期不算刷新。
 
@@ -161,7 +161,7 @@ docs/
 4. **⛔ 严禁修订历史无限膨胀**：修订历史严格限制在最近 5 条之内，超额部分必须裁剪；
 5. **⛔ 严禁破坏工程语言连续性**：既有中文项目必须使用中文撰写正文与解释，严禁中英文混乱杂糅；初期文件命名优先遵循全小写 kebab-case；
 6. **⛔ 严禁单体巨石文档**：以**字节数（≤64 KB）与最长单行（≤1000 字符）**为阻断判据，行数（≤800）仅作提示——行数度量已被证明失效（399 行 / 201 KB 仍判合规）；存量超限登记于 `docs/.doc-size-baseline.json`（棘轮，只降不升），复杂系统必须采用「总纲-子册」拓扑分离；
-7. **⛔ 严禁 Backlog 堆积冷数据与手写对账**：`backlog.md` 为热区待办池，严禁堆积已关闭条目（必须随批次迁出至 `archive/`），严禁在 Backlog 记录历史成果实现细节（归 changelog.md），严禁手写自然语言算术对账日记（指标统计由 `audit-doc-health.py` 动态扫描输出）。
+7. **⛔ 严禁 Backlog 堆积冷数据与手写对账**：`project/backlog/active/` 为热区待办池，严禁堆积已关闭条目（必须随批次迁出至 `archive/`），严禁在 Backlog 记录历史成果实现细节（归 changelog.md），严禁手写自然语言算术对账日记（指标统计由 `audit-doc-health.py` 动态扫描输出）。
 
 ---
 

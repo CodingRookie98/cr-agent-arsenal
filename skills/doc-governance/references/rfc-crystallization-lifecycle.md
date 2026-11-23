@@ -33,7 +33,7 @@ docs/proposals/RFC-0001-xxx.md                 Diátaxis 四象限活文档体�
 └──────────────┬───────────────┘                │ docs/explanation/decisions/  │
                │                                │ 提炼生成的不可篡改 MADR 记录  │
        状态流转: Accepted                       ├──────────────────────────────┤
-               ▼                                │ docs/project/backlog.md      │
+               ▼                                │ docs/project/backlog/        │
 原 RFC 置为 Implemented 归档历史溯源             │ 任务拆解与开发排期            │
                                                 └──────────────────────────────┘
 ```
@@ -182,7 +182,7 @@ stateDiagram-v2
 
 ### 步骤 4：生成操作指引与拆解 Backlog
 * 若该特性引入了新的环境配置或调试命令，沉淀至 `docs/how-to/`；
-* 将具体的实施切片拆解录入 `docs/project/backlog.md`（每片按 [backlog-specification.md](./backlog-specification.md) 赋予 BK 编号，供 changelog 与 commit 引用），准备进入 TDD 编码循环。
+* 将具体的实施切片拆解录入 `docs/project/backlog/`（形态 B 用 `manage-backlog.py create`；每片按 [backlog-specification.md](./backlog-specification.md) 赋予 BK 编号，供 changelog 与 commit 引用），准备进入 TDD 编码循环。
 
 ### 步骤 5：原提案封存与防腐声明 (Archive & Quarantine)
 * 将原 RFC 状态更新为 **`Implemented`**；

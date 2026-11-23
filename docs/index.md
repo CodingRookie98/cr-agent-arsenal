@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.42.0 (交付尾巴收口：RFC 状态更正与补登，backlog 指标改为动态口径)
+> - **当前版本**: V1.43.0 (补录 spec-evolution 主册/子册与 RFC-0007/0008 计划，索引完整性收口)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.43.0** | 2026-11-23 | DSH AI Agent | 王辉 | **计划索引补录**：新增 spec-evolution 主册 + Task 2/3/4-6 子册、文档体量度量（RFC-0008）、文档状态机（RFC-0007）四行，消除计划目录未入总索引的缺口；`research/` 调研迁入 `explanation/analysis/`（归位 Diátaxis 象限） |
 | **V1.42.0** | 2026-11-23 | DSH AI Agent | 王辉 | **交付尾巴收口**：RFC-0001/0002/0004 状态更正为 Implemented，补登 RFC-0005~0008 条目；backlog 指标改为指向动态仪表盘（禁止手写对账）；同步设计书 V1.5.0 与 RFC-0008 归档防腐块 |
 | **V1.41.0** | 2026-11-22 | DSH AI Agent | 王辉 | **补齐交付叙事（BK-0053）**：新增 docs/project/changelog.md（按交付单元聚合）；§1 增变更日志入口；RFC-0001/0002/0003 补「落地计划」链接；可回答性 G-02/G-16 由 GAP 转 PASS（PASS 17→19 / GAP 3→1） |
 | **V1.40.0** | 2026-11-22 | DSH AI Agent | 王辉 | **补齐上手/操作象限（BK-0052）**：§2.5 新增 1 篇 Tutorial（5 分钟上手）+ 3 篇 How-To（安装技能 / 执行门禁 / 故障排查）；可回答性 G-12/G-13 由 GAP 转 PASS |
 | **V1.39.0** | 2026-11-22 | DSH AI Agent | 王辉 | **分层机器地图登记**：§1 补路由文件与子地图入口；§4 新增「分层机器地图（RFC-0006）」计划行；根 `llms.txt` 21,810 → 883 字节 |
-| **V1.38.0** | 2026-11-22 | DSH AI Agent | 王辉 | **真值轴落地登记**：§4 新增「文档真值轴（RFC-0005）」计划行；同步 `GOVERNANCE.md` V1.7.0（工具表 + 红线 7）、`doc-governance-design.md` V1.4.0、`SKILL.md` 模式 1/2、控制头模板规则 6 与变更矩阵 V1.3.0 |
 
 ---
 
@@ -111,6 +111,10 @@
 | **批次 B 机器地图写入侧安全与一致性门禁** | 闭环 BK-0023/BK-0025：缺省落点统一 `resolve()`、零覆盖拒绝落盘；`audit-doc-health.py` 将「机器地图 == 注册命令生成物」固化为硬阻断（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-b-llms-integrity.md](./project/plans/2026-10-09-backlog-batch-b-llms-integrity.md) |
 | **批次 A 归档豁免与 llms 落点修复** | 闭环 BK-0001/BK-0002/BK-0021：两个治理消费者补齐交付凭据归档豁免（写入侧 root 无关兜底）、机器地图落点随 `--root` 派生（**已完成**，Maintenance-Patch 通道：Light 单轮 + 两轮 Delta 复核 Zero Blockers 准予交付） | [2026-10-09-backlog-batch-a-archive-exemption.md](./project/plans/2026-10-09-backlog-batch-a-archive-exemption.md) |
 | **`doc-governance` 目录级索引约定** | 象限索引托管化与 scaffold 索引自愈：`manage-doc-index.py`（ensure/register/入参校验）+ 六分支自愈接入 + tutorial 条件渲染（**已完成**，三轮双轮对抗审查 Zero Blockers 准予交付） | [2026-10-09-quadrant-index-convention.md](./project/plans/2026-10-09-quadrant-index-convention.md) |
+| **`spec-evolution` 实施计划（主册）** | 机械化演进回路技能实现：目标 / 约束 / Task 1 / Task 7 / 验收与风险（Task 2/3/4-6 见子册） | [2026-10-12-spec-evolution.md](./project/plans/2026-10-12-spec-evolution.md) |
+| **`spec-evolution` 实施子册** | Task 2 / Task 3 / Task 4-6 原文迁移（历史实施细节，不再增量维护） | [task2](./project/plans/2026-10-12-spec-evolution-task2.md) · [task3](./project/plans/2026-10-12-spec-evolution-task3.md) · [task4-6](./project/plans/2026-10-12-spec-evolution-task4-6.md) |
+| **文档体量度量换挡（RFC-0008）** | 字节 + 最长单行阻断、棘轮基线消化存量（**已完成**，审查并入 `2026-11-22-batch-gates/`） | [2026-11-22-doc-size-metric.md](./project/plans/2026-11-22-doc-size-metric.md) |
+| **文档状态机（RFC-0007）** | 三态状态机 + 未决冲突清单（**已完成**，归档 `2026-11-22-doc-status-machine/`） | [2026-11-22-doc-status-machine.md](./project/plans/2026-11-22-doc-status-machine.md) |
 | **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；活跃/归档数量与编号以 `backlog/index.md` 动态仪表盘为准（禁止在本索引手写对账）；BK-0039「存量技能交付面债务」已按验收准则结项归档，残余 MID 债务登记于 BK-0041「存量技能交付面残余债务」（agy 设计书 / 两条 description 超建议值 / 测试文件超行限），`close` 未收敛卡片占位与 DoD 勾选的工具缺陷 BK-0042 已修复结项（提交 afdb4e5，V10 复核收口 8390df8；V11 更正记录见归档卡 §5 E-4/E-5），Write-Once 审查归档终审裁决契约失配登记于 BK-0043，提交信息取证据口径的反复更正登记于 BK-0044） | [index.md](./project/backlog/index.md) |
 | **ADR-0001 交付凭据归档层** | 审查凭据按「可否重建」分层：运行时状态留隐藏目录、交付凭据进版本库独立目录并对齐治理豁免语义（MADR 3.0；含四轮对抗审查证据） | [0001-review-evidence-archive-layer.md](./explanation/decisions/0001-review-evidence-archive-layer.md) |
 | **ADR-0002 子智能体直写通道** | 写盘权归还内容作者：消除转录失真、写盘与核验分离；显式登记三项代价（授权面由零扩大为单文件、路径预授权是提示词契约而非沙箱强制、写入形态声明不可机械验证）（MADR 3.0） | [0002-subagent-direct-write-channel.md](./explanation/decisions/0002-subagent-direct-write-channel.md) |
@@ -129,7 +133,7 @@
 | :--- | :--- | :--- |
 | **`ai-world-class-designer`** | Anshu Chimala (前 Apple AI 原型负责人): AI 设计双钻模型、独立 Critic 审稿闭环与 8 大反平庸工程技术 | [how-to-turn-your-ai-into-a-world-class-designer.md](./reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md) |
 | **`ai-coding-frontend-common-problems`** | kejun: AI Coding 前端常见问题全景 —— 研究证据、风险分层与十条可执行防御清单（本文献为本技能需求源） | [ai-coding-frontend-common-problems.md](./reference/articles/ai-coding-frontend-common-problems.md) |
-| **`backlog-capacity-governance`** | 真实实践调研：Linear/Jira/GitHub/actions-stale 的入口收口、自动出清、Close-as-Move 与 index+shard 拓扑 | [2026-10-04-backlog-capacity-governance.md](./research/2026-10-04-backlog-capacity-governance.md) |
+| **`backlog-capacity-governance`** | 真实实践调研：Linear/Jira/GitHub/actions-stale 的入口收口、自动出清、Close-as-Move 与 index+shard 拓扑 | [2026-10-04-backlog-capacity-governance.md](./explanation/analysis/2026-10-04-backlog-capacity-governance.md) |
 
 ---
 

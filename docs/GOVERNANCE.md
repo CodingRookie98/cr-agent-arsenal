@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-GOV-2026
-> - **当前版本**: V1.11.1
+> - **当前版本**: V1.11.2
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-20
 > - **代码锚点**: skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
@@ -14,11 +14,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.11.2** | 2026-11-23 | DSH AI Agent | 王辉 | **目录拓扑与现状对齐**：补 `_llms/`、`AGENTS.md`、`plans/`、`reviews/`；`backlog.md` → 形态 B `backlog/`；how-to/reference 按实际文件与目录更新（`install-skills` / `run-doc-gates` / `troubleshoot-doc-governance`、`articles`+`rules`），删除未落地的 `roadmap.md` 与 `api/models` 示例条目 |
 | **V1.11.1** | 2026-11-22 | DSH AI Agent | 王辉 | **红队 B 项收口**：真值轴新增 `--staged`（pre-commit 下「锚点已暂存而文档未同步」即判漂移）与「同一次提交视为同步」豁免；体量门禁后缀大小写不敏感、U+2028 不再绕过、不可读 fail-closed；§4.1 登记 `reference/articles` 豁免；可回答性 GAP 口径细化 |
 | **V1.11.0** | 2026-11-22 | DSH AI Agent | 王辉 | **门禁自动化与可回答性评测（BK-0048/BK-0049）**：§3 新增 `check-all.py`（六道门禁聚合，1.5 s，pre-commit 入口）与 `check-golden-tasks.py`（20 条可回答性断言，三态 PASS/GAP/FAIL）；§5 登记 pre-commit 安装方式与 GAP 处置口径 |
 | **V1.10.0** | 2026-11-22 | DSH AI Agent | 王辉 | **体量度量换挡（RFC-0008）**：新增 `check_doc_size`（字节 ≤64 KB、最长单行 ≤1000 阻断；行数仅警告），棘轮基线 `.doc-size-baseline.json` 消化 2 篇存量；§3 工具表与红线 10 同步；废弃「800 行」作为阻断判据 |
 | **V1.9.1** | 2026-11-22 | DSH AI Agent | 王辉 | **状态机 TD 收口**：`取代于` 允许根内 `../` 跨目录链、只拦越界；表格形态只解析控制头连续块（字段说明表不再被误读）；C-4 覆盖引用式/带 title/大写扩展名；隐式 Active 携带指针亦阻断；§4.1 登记 backlog 豁免 |
-| **V1.9.0** | 2026-11-22 | DSH AI Agent | 王辉 | **文档状态机（RFC-0007）**：控制头 `文档状态` 扩为 Active/Contested/Superseded 三态，新增 `取代于`（Superseded 必填）与 `争议点`；§3 工具表补 `check_doc_status`；§4 新增红线 9「禁 Active 带取代于」；审计输出新增「未决冲突清单」 |
 
 ---
 
@@ -41,23 +41,27 @@
 ```text
 docs/
 ├── index.md                 # 【全局人类总入口】全景知识库拓扑与分类索引
-├── llms.txt                 # 【AI 智能体机器地图】精炼的机器可读知识拓扑与关键参考入口
+├── llms.txt                 # 【AI 智能体机器地图】象限级入口（≤8 KB），条目级清单在 _llms/ 下
+├── AGENTS.md                # 【路由规则】读取顺序与硬约束（≤30 行，不承载知识）
+├── _llms/                   # 分层子地图（生成物，禁手改）：<象限>.md 全量条目清单
 ├── GOVERNANCE.md            # 【知识库治理规程】本文档
 │
 ├── proposals/               # 💡 0. 需求与设计孵化层 (Inception / RFC Proposals)
-│   ├── RFC-0001-xxx.md      # 初期对齐提案草案 (Draft -> In Review -> Accepted)
-│   └── archive/             # 已结晶下沉的提案历史归档 (Implemented / Superseded)
+│   ├── RFC-0001-xxx.md      # 初期对齐提案草案 (Draft -> In Review -> Accepted -> Implemented)
+│   └── archive/             # 可选：已结晶提案归档（存在历史审查引用时原位保留）
 │
 ├── tutorials/               # 🎓 1. 教程象限 (Learning-Oriented / Newcomer Success)
+│   ├── index.md             # 象限分流入口（托管）
 │   └── quick-start.md       # 5 分钟上手开发与运行首个特性
 │
 ├── how-to/                  # 🛠️ 2. 操作指南象限 (Problem-Oriented / Task Recipes)
-│   ├── installing-skills.md # 技能安装与软链接配置 SOP
-│   └── testing-guide.md     # 技能自测与门禁校验 SOP
+│   ├── index.md             # 象限分流入口（托管）
+│   ├── install-skills.md    # 技能安装与软链接配置 SOP
+│   ├── run-doc-gates.md     # 六道门禁的执行与失败处置 SOP
+│   └── troubleshoot-doc-governance.md  # 按症状索引的故障排查
 │
 ├── reference/               # 📖 3. 技术参考象限 (Information-Oriented / Machine Truth)
-│   ├── api/                 # 接口契约规格与错误信封
-│   ├── models/              # 数据模型与 Schema 定义
+│   ├── articles/            # 外部文献逐字转载（RFC-0008 §4.3 体量/控制头豁免）
 │   └── rules/               # 行为协议、规则与不可变约束
 │
 ├── explanation/             # 💡 4. 深度剖析象限 (Understanding-Oriented / The "Why")
@@ -66,11 +70,10 @@ docs/
 │   └── analysis/            # 技术选型评估与调研报告
 │
 └── project/                 # 🚀 5. 工程演进与项目管理 (Project Management & Evolution)
-    ├── roadmap.md           # 路线图与规划
-    ├── changelog.md         # 版本发布日志
-    ├── backlog.md           # 待办与技术债清单
+    ├── changelog.md         # 版本发布日志与交付叙事单一事实源
     ├── plans/               # 实施计划与结项记录
-    └── reviews/             # 交付凭据归档（审查报告全文；推荐默认归档根，schema 见 RFC-0001）
+    ├── reviews/             # 交付凭据归档（审查报告全文；推荐默认归档根，schema 见 RFC-0001）
+    └── backlog/             # 待办形态 B：index.md + active/ + archive/<version>/
 ```
 
 **目录级索引约定**：根级 `docs/index.md` 为**唯一**的人类总索引入口；象限/子目录 `index.md`（或 `README.md`）为**按需存在**的分流入口，由 `scaffold-doc.py` 经 `manage-doc-index.py` 自动创建与幂等登记（托管标记 `<!-- doc-index:managed -->`）。不含托管标记的索引视为人工维护，脚本只读不改；严禁为凑齐拓扑批量创建空索引。

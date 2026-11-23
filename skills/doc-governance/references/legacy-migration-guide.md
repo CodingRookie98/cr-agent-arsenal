@@ -33,7 +33,7 @@
 | `operations/deployment.md` | How-To Guides | `docs/how-to/deployment.md` | 保留纯命令操作步骤，剔除长篇理论 |
 | `operations/试用指南.md` | Tutorials | `docs/tutorials/onboarding.md` | 重构为新手 5 分钟上手体验向导 |
 | `planning/*进度跟踪.md` | Project Evolution | `docs/project/changelog.md` | 演进为结构化版本变更发布日志 |
-| `planning/后续优化方向汇总.md` | Project Evolution | `docs/project/backlog.md` | 统一维护的待办与技术债积压清单 |
+| `planning/后续优化方向汇总.md` | Project Evolution | `docs/project/backlog/`（形态 B；或 `backlog.md` 形态 A） | 统一维护的待办与技术债积压清单 |
 
 ---
 

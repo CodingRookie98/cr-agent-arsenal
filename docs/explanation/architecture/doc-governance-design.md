@@ -4,7 +4,7 @@
 > - **文档标识**: SKILL-DES-DOC-GOVERNANCE-2026
 > - **当前版本**: V1.5.0 (治理轴扩展：真值轴 / 分层机器地图 / 状态机 / 体量门禁 / 门禁自动化与可回答性)
 > - **代码锚点**: skills/doc-governance/SKILL.md, skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
-> - **复核于**: 2026-11-23 / commit eb35612
+> - **复核于**: 2026-11-23 / commit 7f05fcf
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-10
@@ -239,7 +239,7 @@ docs/
 
 | 代码或功能变更特征 | 必须同步更新的文档集合 | 验收与门禁标准 |
 |:---|:---|:---|
-| **新增/修改业务功能** | 1. `docs/reference/rules/` (规则)<br>2. `docs/project/changelog.md` (发布日志)<br>3. `docs/project/backlog.md` (关闭对应待办) | 进度状态标记准确，关联合并 Commit SHA |
+| **新增/修改业务功能** | 1. `docs/reference/rules/` (规则)<br>2. `docs/project/changelog.md` (发布日志)<br>3. `docs/project/backlog/` (关闭对应待办：形态 B `active/` → `archive/`) | 进度状态标记准确，关联合并 Commit SHA |
 | **调整接口契约 / 数据模型** | 1. `docs/reference/api/` (API 规格)<br>2. `docs/reference/models/` (数据模型与 Schema) | 字段名、类型、必填项与错误信封 100% 镜像对齐 |
 | **前端页面 / UI 组件演进** | 1. `docs/reference/ui/` (Token 与组件契约)<br>2. `docs/how-to/` (若涉及新页面操作指引) | 交互流与 Token 命名一致，无虚构组件 |
 | **底层核心架构 / 框架选型** | 1. `docs/explanation/architecture/` (架构总纲与子册)<br>2. `docs/explanation/decisions/` (新建 MADR 记录)<br>3. `docs/explanation/analysis/` (选型评估) | 记录决策权衡、为什么否决其他备选方案 |
@@ -269,7 +269,7 @@ graph TD
         Dissect -->|"重大不可逆决策权衡"| ADR["💡 docs/explanation/decisions/<br>(生成不可篡改 MADR)"]
         Dissect -->|"系统全景架构图"| Arch["💡 docs/explanation/architecture/"]
         Dissect -->|"环境装配与操作 SOP"| HowTo["🛠️ docs/how-to/"]
-        Dissect -->|"任务拆解录入"| Backlog["🚀 docs/project/backlog.md"]
+        Dissect -->|"任务拆解录入"| Backlog["🚀 docs/project/backlog/"]
         
         Approved --> Archive["📦 原 RFC 状态置为 Implemented 封存<br>(加注防腐备忘，保留历史溯源)"]
     end
@@ -388,7 +388,7 @@ planning/*选型评估.md        ───►  explanation/analysis/ (选型与�
 operations/deployment.md    ───►  how-to/deployment.md (部署指南)
 operations/试用指南.md       ───►  tutorials/onboarding.md (新手试用教程)
 planning/版本进度跟踪.md      ───►  project/changelog.md (发版历史)
-planning/后续优化方向汇总.md   ───►  project/backlog.md (待办与优化清单)
+planning/后续优化方向汇总.md   ───►  project/backlog/ (待办与优化清单，形态 B)
 ```
 
 * 技能脚本自带 `--compat` 兼容探测能力，支持在老结构项目上平稳运行健康检查，同时提供一键迁移映射规划。
