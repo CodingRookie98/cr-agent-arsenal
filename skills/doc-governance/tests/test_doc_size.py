@@ -10,6 +10,8 @@ AC-4 存量恶化阻断；AC-5 基线缺失/损坏视为无基线；AC-6 行数�
 import importlib.util
 import json
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -101,6 +103,81 @@ class TestDocSize(unittest.TestCase):
         path = self.mod.write_size_baseline(self.root, max_bytes=1000, max_line=100)
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         self.assertIn("reference/big.md", data["docs"])
+
+    def test_reference_articles_are_exempt_from_size_gate(self):
+        """RFC-0008 / GOVERNANCE §4.1：reference/articles/** 外部转载文献不参与体量门禁，普通文档仍阻断。"""
+        # 构造 >64 KB 且单行 >1000 字符的文档
+        write_doc(self.root, "reference/articles/ext.md", lines=60, line_len=1200)
+        write_doc(self.root, "reference/articles/nested/ext2.md", lines=60, line_len=1200)
+        res_exempt = self._check()
+        self.assertEqual(res_exempt["issues"], [], res_exempt)
+        self.assertEqual(res_exempt["warnings"], [], res_exempt)
+        self.assertNotIn("reference/articles/ext.md", res_exempt["docs"])
+        self.assertNotIn("reference/articles/nested/ext2.md", res_exempt["docs"])
+
+        # 同大小普通文档与前缀相似目录（reference/articles-extra/）必须被阻断
+        write_doc(self.root, "explanation/a.md", lines=60, line_len=1200)
+        write_doc(self.root, "reference/articles-extra/other.md", lines=60, line_len=1200)
+        res_block = self._check()
+        self.assertEqual(len(res_block["issues"]), 2, res_block)
+        self.assertTrue(any("explanation/a.md" in i for i in res_block["issues"]), res_block)
+        self.assertTrue(any("reference/articles-extra/other.md" in i for i in res_block["issues"]), res_block)
+        self.assertFalse(any("reference/articles/ext.md" in i for i in res_block["issues"]), res_block)
+
+    def test_audit_health_and_cli_respect_max_doc_bytes_and_line(self):
+        """回归：audit_health 与 CLI 体检必须将 --max-doc-bytes / --max-doc-line 透传至 check_doc_size。"""
+        ctrl = (
+            "> **文档控制信息**\n"
+            "> - **文档标识**: {doc_id}\n"
+            "> - **当前版本**: V1.0.0\n\n"
+            "### 修订历史记录 (Revision History)\n\n"
+            "| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |\n"
+            "| :--- | :--- | :--- | :--- | :--- |\n"
+            "| **V1.0.0** | 2026-11-23 | AI Agent | 架构师 | 初版 |\n"
+        )
+        (self.root / "explanation").mkdir(parents=True, exist_ok=True)
+        (self.root / "explanation" / "sample.md").write_text(
+            "# Sample\n\n" + ctrl.format(doc_id="EXP-1") + "\n" + ("a" * 80) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        (self.root / "index.md").write_text(
+            "# Index\n\n" + ctrl.format(doc_id="IDX-1") + "\n- [Sample](./explanation/sample.md)\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+
+        # 函数级：默认阈值不阻断，收紧阈值必须产出 doc_size issues
+        default_res = self.mod.audit_health(self.root)
+        self.assertEqual(default_res["doc_size"]["issues"], [], default_res["doc_size"])
+
+        tight_bytes = self.mod.audit_health(self.root, max_doc_bytes=100)
+        self.assertTrue(tight_bytes["doc_size"]["issues"], tight_bytes["doc_size"])
+
+        tight_line = self.mod.audit_health(self.root, max_doc_line=50)
+        self.assertTrue(tight_line["doc_size"]["issues"], tight_line["doc_size"])
+
+        # CLI 级：默认 PASS；传入 --max-doc-bytes / --max-doc-line 必须触发体量阻断（rc != 0）
+        script = str(SCRIPTS_DIR / "audit-doc-health.py")
+        cli_ok = subprocess.run(
+            [sys.executable, script, "--root", str(self.root)],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        self.assertEqual(cli_ok.returncode, 0, cli_ok.stdout + cli_ok.stderr)
+
+        cli_bytes = subprocess.run(
+            [sys.executable, script, "--root", str(self.root), "--max-doc-bytes", "100"],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        self.assertNotEqual(cli_bytes.returncode, 0, cli_bytes.stdout + cli_bytes.stderr)
+        self.assertIn("文档体量超限", cli_bytes.stdout + cli_bytes.stderr)
+
+        cli_line = subprocess.run(
+            [sys.executable, script, "--root", str(self.root), "--max-doc-line", "50"],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        self.assertNotEqual(cli_line.returncode, 0, cli_line.stdout + cli_line.stderr)
+        self.assertIn("文档体量超限", cli_line.stdout + cli_line.stderr)
 
 
 

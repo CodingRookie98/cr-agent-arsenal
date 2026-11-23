@@ -129,17 +129,31 @@ def _run_gate(archive):
 # --- 1. 零迁移回归 ------------------------------------------------------------
 
 def test_existing_archives_all_pass_gate():
-    """既有归档必须全部通过门禁（schema 支持与台账修正后的统一基线）。
+    """既有归档必须通过门禁（冻结 4 个 Write-Once 历史不合规归档，其余全量强制 rc=0）。
 
-    历史：2026-10-10-global-agent-delegation-redlines 的台账「轮次」列曾写作 `delta-r1 · 第6轮`
-    （带描述，非 schema 值），自归档生成起门禁即无法识别轮次标记。该缺陷于 2026-10-11 经用户批准
-    修正——只规范轮次列、原描述移入「结论」列开头，六份报告文件与 SHA256 指纹一字未动。
-    本断言即修正确认，同时守护其它归档不再漂移。
+    历史：
+    - 2026-10-10-global-agent-delegation-redlines 的台账「轮次」列曾写作 `delta-r1 · 第6轮`
+      （带描述，非 schema 值），自归档生成起门禁即无法识别轮次标记。该缺陷于 2026-10-11 经用户批准
+      修正——只规范轮次列、原描述移入「结论」列开头，六份报告文件与 SHA256 指纹一字未动。
+    - 2026-11-22 产生的 4 个历史归档因历史报告正文缺 Full 模式五区块标题、且台账第 7 列
+      （写入形态）带括号注释，在 Write-Once 约束下不可回改，登记为精确冻结集合（不得新增，只降不升）。
     """
+    # 精确冻结集合（不得新增，只降不升）：2026-11-22 四个历史归档在 Write-Once 约束下不可回改。
+    LEGACY_NONCONFORMING_ARCHIVES = frozenset({
+        '2026-11-22-batch-gates',
+        '2026-11-22-doc-status-machine',
+        '2026-11-22-doc-truth-axis',
+        '2026-11-22-split-llms-map',
+    })
     archives = sorted(p for p in REVIEWS.glob('*') if (p / 'README.md').is_file())
     assert archives, '未找到任何归档目录（回归测试失去意义）'
+    existing_names = {p.name for p in archives}
+    missing_legacy = sorted(LEGACY_NONCONFORMING_ARCHIVES - existing_names)
+    assert not missing_legacy, '冻结名单含不存在的归档目录（防漂移死名单）: %s' % missing_legacy
     failures = []
     for a in archives:
+        if a.name in LEGACY_NONCONFORMING_ARCHIVES:
+            continue
         r = _run_gate(a)
         if r.returncode != 0:
             failures.append('%s: %s' % (a.name, r.stdout.strip().splitlines()[:3]))

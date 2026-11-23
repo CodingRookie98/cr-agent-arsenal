@@ -89,3 +89,4 @@
 - [文档真值轴（来源/代码锚点/漂移检测）实施计划](../project/plans/2026-11-22-doc-truth-axis.md): **目标**：让知识库第一次具备**可机械测定的真值轴**——文档能声明自己依赖哪些代码、何时被复核过；工具能回答「哪些文档的依赖已经变了」，并在需要时阻断。
 - [分层机器地图（RFC-0006）实施计划](../project/plans/2026-11-22-split-llms-map.md): **目标**：根 `llms.txt` 从「全集清单」降为「象限入口」，体量恒定在 8 KB 以内；全量条目下沉 `_llms/`，并由门禁保证根与子地图逐字节同步。
 - [退役 spec-evolution 技能并下沉核心哨兵测试实施计划](../project/plans/2026-11-23-retire-spec-evolution.md): **目标**：按用户裁定的「方案 A（退技能、留哨兵）」退役 `spec-evolution`：
+- [Wave 0 止血修复计划：全仓现红测试与已实证源码级真 Bug 清零](../project/plans/2026-11-23-wave0-skill-bugs-stabilization.md): 1. `prepare-review-context.py:358` `_UNIT_RX` 强求行首 `>`，但自身 `:500` 及 17/17 真实归档均无 `>`，导致 `_read_unit()` 全返回 `None` → 兼容 `...

@@ -3,11 +3,11 @@
 """
 check-all.py - 文档治理门禁聚合器（BK-0048）
 
-按固定顺序运行五道门禁，任一失败即以非零退出码阻断，并给出可直接复制的修复命令。
+按固定顺序运行六道门禁，任一失败即以非零退出码阻断，并给出可直接复制的修复命令。
 设计目标：让「忘记跑门禁」不再是失败模式——pre-commit hook 与 CI 共用同一入口。
 
 用法:
-    python3 skills/doc-governance/scripts/check-all.py            # 五道门禁（快，<10s）
+    python3 skills/doc-governance/scripts/check-all.py            # 六道门禁（快，<10s）
     python3 skills/doc-governance/scripts/check-all.py --full     # 追加 pytest 全量
     python3 skills/doc-governance/scripts/check-all.py --quiet    # 只输出失败项
 
@@ -57,7 +57,7 @@ def main() -> int:
         (
             "版本一致",
             [py, str(SCRIPTS_DIR / "check-doc-control-sync.py"), "--root", root],
-            f"{py} skills/doc-governance/scripts/trim-revision.py --root {root} --fix --keep 5",
+            "同步文档控制头『当前版本』与修订历史表首行版本号一致（必要时运行 check-doc-control-sync.py 定位）",
         ),
         (
             "真值轴",

@@ -355,7 +355,7 @@ def _emit_range(record: dict[str, str], base_ref: str, head_ref: str) -> int:
     return 0
 
 
-_UNIT_RX = re.compile(r"^>\s*-\s*\*\*交付单元\*\*:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
+_UNIT_RX = re.compile(r"^(?:>\s*)?-\s*\*\*交付单元\*\*:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 
 
 def _read_unit(archive_dir: str) -> str | None:
@@ -367,7 +367,10 @@ def _read_unit(archive_dir: str) -> str | None:
         match = _UNIT_RX.search(_read_text(index))
     except OSError:
         return None
-    return match.group(1) if match else None
+    if not match:
+        return None
+    value = match.group(1).strip()
+    return value or None
 
 
 def _resolve_archive_dir(root: str, slug: str) -> str:

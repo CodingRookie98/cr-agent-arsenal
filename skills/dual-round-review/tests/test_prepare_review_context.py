@@ -434,6 +434,43 @@ def test_archive_reuse_accepts_matching_unit(tmp_path):
     assert '不一致' not in r.stderr
 
 
+def test_archive_reuse_accepts_scaffold_format_across_days(tmp_path):
+    """回归：真实 scaffold 产出的 `- **交付单元**: <slug>`（无 `>`）跨日必须复用旧目录。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8', newline='\n')
+    first = _run(repo, '--slug=cross-day-demo', '--working')
+    assert first.returncode == 0, first.stderr
+    orig = _archive_dirs(repo)[0]
+    old_dir = orig.parent / '2020-01-01-cross-day-demo'
+    orig.rename(old_dir)
+
+    second = _run(repo, '--slug=cross-day-demo', '--round=r1', '--working')
+
+    assert second.returncode == 0, second.stderr
+    assert '跳过归档目录' not in second.stderr, second.stderr
+    assert '索引缺少「交付单元」字段' not in second.stderr, second.stderr
+    path = _report_path(second.stdout)
+    assert '2020-01-01-cross-day-demo/' in path, f'跨日应复用旧日期目录，而不是建新目录: {path}'
+    dirs = _archive_dirs(repo)
+    assert len(dirs) == 1 and dirs[0].name == '2020-01-01-cross-day-demo'
+
+
+def test_archive_reuse_rejects_other_unit_in_scaffold_format(tmp_path):
+    """回归：无 `>` 的真实格式下，后缀碰撞但交付单元不同仍须精确识别为「不一致」并拒绝复用。"""
+    repo = _repo(tmp_path)
+    (repo / 'a.txt').write_text('two\n', encoding='utf-8', newline='\n')
+    foreign = _mk_archive(repo, '2020-01-01-review-report-archive',
+                          '- **交付单元**: review-report-archive')
+
+    r = _run(repo, '--slug=archive', '--round=r1', '--working')
+
+    assert r.returncode == 0, r.stderr
+    assert '不一致' in r.stderr, f'无 `>` 格式应准确读出原交付单元并报不一致:\n{r.stderr}'
+    assert '索引缺少「交付单元」字段' not in r.stderr
+    path = _report_path(r.stdout)
+    assert foreign.name not in path
+
+
 # --- RFC-0002 Delta 回归（R1-1 / R1-2 / R1-7）---------------------------------
 
 

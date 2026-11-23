@@ -381,6 +381,51 @@ class TestScaffoldDocSh(unittest.TestCase):
         self.assertEqual((shim_dir / "tutorials" / "shim.md").read_text(encoding="utf-8"),
                          (py_dir / "tutorials" / "shim.md").read_text(encoding="utf-8"))
 
+    def test_help_flag_exits_zero(self):
+        """-h / --help 必须正常输出用法并返回 rc=0。"""
+        scaffold_script = SCRIPTS_DIR / "scaffold-doc.py"
+        for flag in ("-h", "--help"):
+            with self.subTest(flag=flag):
+                res = subprocess.run(
+                    [sys.executable, str(scaffold_script), flag],
+                    capture_output=True, text=True, encoding="utf-8",
+                )
+                self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+                self.assertIn("用法:", res.stdout)
+                self.assertIn("--lang zh", res.stdout)
+
+    def test_tutorial_template_recommends_py_not_sh(self):
+        """无 how-to/index.md 时，tutorial 模板应推荐 scaffold-doc.py 而非已废弃的 scaffold-doc.sh。"""
+        res = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "scaffold-doc.py"),
+             "tutorial", "intro", "--root", str(self.test_dir)],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        self.assertEqual(res.returncode, 0, res.stderr)
+        body = (self.test_dir / "tutorials" / "intro.md").read_text(encoding="utf-8")
+        self.assertIn("scaffold-doc.py how-to <name>", body)
+        self.assertNotIn("scaffold-doc.sh", body)
+
+    def test_lang_parameter_accepts_zh_and_rejects_unsupported(self):
+        """--lang zh 正常生成；传入非 zh 时不得静默丢弃并输出中文，须明确报错。"""
+        scaffold_script = SCRIPTS_DIR / "scaffold-doc.py"
+        ok_res = subprocess.run(
+            [sys.executable, str(scaffold_script),
+             "how-to", "zh-doc", "--root", str(self.test_dir), "--lang", "zh"],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        self.assertEqual(ok_res.returncode, 0, ok_res.stdout + ok_res.stderr)
+        self.assertTrue((self.test_dir / "how-to" / "zh-doc.md").exists())
+
+        bad_res = subprocess.run(
+            [sys.executable, str(scaffold_script),
+             "how-to", "en-doc", "--root", str(self.test_dir), "--lang", "en"],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        self.assertNotEqual(bad_res.returncode, 0, "传入不受支持的语言不得静默成功")
+        self.assertIn("zh", bad_res.stdout + bad_res.stderr)
+        self.assertFalse((self.test_dir / "how-to" / "en-doc.md").exists(), "被拒时不得生成中文产物")
+
 
 class TestEvidenceArchiveExemption(unittest.TestCase):
     """交付凭据归档 docs/project/reviews/** 豁免文档治理扫描（RFC-0001 R1-2 回归）。

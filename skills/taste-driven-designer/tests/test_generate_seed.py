@@ -51,6 +51,8 @@ def park_miller(seed_text, length):
         if idx == -1:
             idx = 97  # 与脚本的 index()==0 兜底分支严格对应
         h = (h * 31 + idx) % MOD
+    if h == 0:
+        h = 1  # Park-Miller 前提: 1 <= state <= M-1, 防止零状态吸收
     x = h
     out = []
     for _ in range(length):
@@ -121,6 +123,22 @@ def test_different_seeds_differ():
     a = run("-s", "seed-one", "-l", "64").stdout
     b = run("-s", "seed-two", "-l", "64").stdout
     assert a != b
+
+
+def test_zero_state_seeds_do_not_degenerate():
+    """Park-Miller LCG 零状态回归: 'A'/'AAAA' 等哈希为 0 的种子不得死锁为全 'A'。"""
+    for seed in ("A", "AAAA"):
+        r1 = run("-s", seed, "-l", "32")
+        r2 = run("-s", seed, "-l", "32")
+        assert r1.returncode == 0, r1.stderr
+        assert r2.returncode == 0, r2.stderr
+        assert r1.stdout == r2.stdout, f"-s {seed} 确定性输出必须稳定可复现"
+        out = r1.stdout.strip()
+        assert len(out) == 32
+        assert set(out) <= BASE62
+        assert set(out) != {"A"}, f"-s {seed} 陷入 Park-Miller 零状态吸收（全 A）"
+        assert len(set(out)) > 5, f"-s {seed} 字符熵过低: {out}"
+        assert out == park_miller(seed, 32)
 
 
 def test_random_mode_variety():

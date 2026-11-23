@@ -4,7 +4,7 @@
 > - **文档标识**: SKILL-DES-DOC-GOVERNANCE-2026
 > - **当前版本**: V1.5.0 (治理轴扩展：真值轴 / 分层机器地图 / 状态机 / 体量门禁 / 门禁自动化与可回答性)
 > - **代码锚点**: skills/doc-governance/SKILL.md, skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
-> - **复核于**: 2026-11-23 / commit 7f05fcf
+> - **复核于**: 2026-11-23 / commit 7a91c22
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-10
@@ -228,7 +228,7 @@ docs/
 * **链接格式铁律**：文档间的交叉引用必须采用**带 `.md` 后缀的相对路径物理文件链接**：
   - ✅ 正确：`` `[视觉设计规范.md](../reference/ui/视觉设计规范.md)` ``
   - ❌ 错误：`` `[视觉设计规范](/reference/ui/视觉设计规范)` `` (缺失后缀，破坏本地 IDE 与无头环境解析)
-  - ❌ 错误：`` `[视觉设计规范](file:///home/hui/...)` `` (硬编码绝对路径，破坏跨机器移植性)
+  - ❌ 错误：`` `[视觉设计规范](file:///abs/path/to/...)` `` (硬编码绝对路径，破坏跨机器移植性)
 * **全局索引同步**：任何新增、重命名、移动或归档文档的操作，**必须同步更新 `docs/index.md` 与 `docs/llms.txt`**，并运行链接检测工具确保全局零断链（Exit Code 0）。
 
 ---
@@ -314,7 +314,7 @@ graph TD
 
 ## 5. `doc-governance` 技能定位与核心运行模式 (Skill Architecture)
 
-技能物理定位为公共技能：`/home/hui/workspace/projects/cr-public-skills/skills/doc-governance/`。
+技能物理定位为公共技能：`skills/doc-governance/`。
 
 ### 5.1 三大运行模式
 
@@ -398,9 +398,9 @@ planning/后续优化方向汇总.md   ───►  project/backlog/ (待办与
 ## 8. 实施计划与交付里程碑 (Implementation Roadmap)
 
 - [x] **阶段 1：现代架构设计方案编写与用户审批 (<已由王辉正式审批定案>)**
-  - 产出物：`/home/hui/workspace/projects/cr-public-skills/docs/explanation/architecture/doc-governance-design.md` (V1.2.0)
+  - 产出物：`docs/explanation/architecture/doc-governance-design.md` (V1.2.0)
 - [x] **阶段 2：`doc-governance` 核心技能规程与参考库落地 (<已交付并入库: cd4731b>)**
-  - 目标目录：`/home/hui/workspace/projects/cr-public-skills/skills/doc-governance/`
+  - 目标目录：`skills/doc-governance/`
   - 交付物：
     - `SKILL.md` (主规程：适用场景、三种运行模式 SOP、反模式清单与硬门禁)
     - `references/diataxis-standard.md` (Diátaxis 详细分层与写作边界标准)
@@ -410,7 +410,7 @@ planning/后续优化方向汇总.md   ───►  project/backlog/ (待办与
     - `references/adr-specification.md` (MADR 3.0 决策规范与生命周期)
     - `references/legacy-migration-guide.md` (既有老项目平滑迁移映射操作手册)
 - [x] **阶段 3：自动化辅助脚本工具箱实现与自测 (<已交付并100%单测通过>)**
-  - 目标目录：`/home/hui/workspace/projects/cr-public-skills/skills/doc-governance/scripts/`
+  - 目标目录：`skills/doc-governance/scripts/`
   - 交付物：`check-doc-links.py`、`trim-revision.py`、`audit-doc-health.py`、`generate-llms-txt.py`、`scaffold-doc.sh`，配套单元测试 `test_doc_governance_scripts.py` 11/11 全绿通过。
 - [x] **阶段 4：实战集成与全量体检验证 (<已完成: audit-doc-health 100/100 满分通过>)**
   - 在项目中挂载技能，执行首轮全域健康体检并出具诊断报告，链接零断链，生成全局索引 `index.md` 与机器地图 `llms.txt`。

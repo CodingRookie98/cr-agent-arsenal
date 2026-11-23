@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.47.0 (完成全仓 7 技能 15 篇调研评估资料包并登记第 2 批 7 篇与组合总纲)
+> - **当前版本**: V1.48.0 (登记 Wave 0 止血修复计划并同步文档控制头复核点)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.48.0** | 2026-11-23 | AI Agent | 王辉 | **Wave 0 止血修复计划登记**：在 §4 补登 `2026-11-23-wave0-skill-bugs-stabilization.md`（修复全仓现红测试与 12 处实证技能源码缺陷） |
 | **V1.47.0** | 2026-11-23 | AI Agent | 王辉 | **完成全仓 7 技能深度调研与评估工程资料包（第 2 批，+7 篇）**：在 §2 登记 `clarification-protocol`、`taste-driven-designer`、`frontend-qa-gate` 三套成对调研/评估报告，以及压轴总纲 `2026-11-23-arsenal-skills-portfolio-overview.md` |
 | **V1.46.0** | 2026-11-23 | AI Agent | 王辉 | **新增核心工程 3 强调研与评估双报告（第 1 批，共 6 篇）**：在 §2 登记 `dual-round-review`、`doc-governance`（Docs-as-Code 增量调研+评估）与 `agy-delegation-workflow` 各自成对的同类调研报告与过度设计评估报告 |
 | **V1.45.0** | 2026-11-23 | AI Agent | 王辉 | **新增 `goal-loop` 深度调研与评估双报告**：在 §2 登记 `2026-11-23-goal-loop-peer-research.md`（六大同类流派与实证规律）与 `2026-11-23-goal-loop-architecture-evaluation.md`（28 份计划活跃度实证、六大病灶与 P0–P2 重构方案） |
 | **V1.44.0** | 2026-11-23 | AI Agent | 王辉 | **退役 `spec-evolution`（ADR-0003）**：从现役技能/设计书表移除 `spec-evolution`，补登 `ADR-0003` 与退役实施计划行，并将 `RFC-0004` 标注为已被取代（`Superseded`） |
-| **V1.43.0** | 2026-11-23 | DSH AI Agent | 王辉 | **计划索引补录**：新增 spec-evolution 主册 + Task 2/3/4-6 子册、文档体量度量（RFC-0008）、文档状态机（RFC-0007）四行，消除计划目录未入总索引的缺口；`research/` 调研迁入 `explanation/analysis/`（归位 Diátaxis 象限） |
 
 ---
 
@@ -133,6 +133,7 @@
 | **ADR-0002 子智能体直写通道** | 写盘权归还内容作者：消除转录失真、写盘与核验分离；显式登记三项代价（授权面由零扩大为单文件、路径预授权是提示词契约而非沙箱强制、写入形态声明不可机械验证）（MADR 3.0） | [0002-subagent-direct-write-channel.md](./explanation/decisions/0002-subagent-direct-write-channel.md) |
 | **ADR-0003 退役 `spec-evolution` 技能** | 停用不可跨仓复用、零真实触发且高维护成本的 `spec-evolution` 技能，将不可替代的 C-01 / C-05+YAML / C-07 硬护栏下沉为 `skills/_shared/tests/test_skill_surface_sentinels.py`（MADR 3.0） | [0003-retire-spec-evolution.md](./explanation/decisions/0003-retire-spec-evolution.md) |
 | **退役 `spec-evolution` 实施计划** | 方案 A（退技能、留哨兵）的落地计划、TDD 哨兵、注册面同步与文档状态流转记录 | [2026-11-23-retire-spec-evolution.md](./project/plans/2026-11-23-retire-spec-evolution.md) |
+| **Wave 0 止血修复计划** | Maintenance-Patch 通道：并行委派 W0-A/B/C 修复全仓现红测试、`_UNIT_RX` 17/17 失效、Markdown 链接解析、`--max-doc-bytes` 死参数、`reference/articles` 豁免、Park-Miller LCG 零状态及失实设计书 | [2026-11-23-wave0-skill-bugs-stabilization.md](./project/plans/2026-11-23-wave0-skill-bugs-stabilization.md) |
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |
 | **P2 批次六项 backlog 卡片闭环** | 闭环 BK-0003/BK-0004/BK-0020/BK-0033/BK-0034/BK-0040：稳定 ID 按基线逐轮配对与终审裁决唯一性、修订表头章节作用域、非 UTF-8 输出硬化、baseline 损坏显式失败、嵌套类型逃逸收口（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-14-p2-six-backlog-items.md](./project/plans/2026-10-14-p2-six-backlog-items.md) |
 | **技能脚本 Python 统一化** | 8 个自建技能脚本改为**单一 Python 实现** + 同目录 `.sh` POSIX 兼容壳（形态 B，旧调用面零破坏）；9 套契约测试改为运行时无关（Windows 默认 `sys.executable`，POSIX 另验壳转发）；四注册面与技能内文档口径同步为 Python 主路径；Windows 侧以 uv 隔离环境取证（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-19-skill-scripts-python-unification.md](./project/plans/2026-10-19-skill-scripts-python-unification.md) |

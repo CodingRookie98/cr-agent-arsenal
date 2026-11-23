@@ -97,6 +97,7 @@ _ID_CELL_RE = re.compile(r"^D?R1?-[0-9]+$")
 # 仅用于 fail-closed 守卫的「ID 记号」探测（宽松匹配，不要求单元格列结构规范）。
 _ID_TOKEN_RE = re.compile(r"D?R1?-[0-9]+")
 _ROUND_PREFIX_RE = re.compile(r"^(delta-r1|delta-r2|r1|r2)")
+_MD_LINK_RE = re.compile(r"^\[[^\]]*\]\(([^)]+)\)$")
 _NON_FILE_CHARS_RE = re.compile(r"[^A-Za-z0-9._-]")
 _NON_HEX_CHARS_RE = re.compile(r"[^0-9a-fA-F]")
 _HAS_ALNUM_RE = re.compile(r"[A-Za-z0-9]")
@@ -189,6 +190,33 @@ def _read_fields(line: str) -> tuple[str, str, str, str]:
     return padded[0], padded[1], padded[2], padded[3]
 
 
+def _is_safe_filename(name: str) -> bool:
+    """仅接受归档目录内的单层文件名（禁止路径分隔符、`.`/`..` 及非法字符）。"""
+    if name in ("", ".", ".."):
+        return False
+    if "/" in name or "\\" in name:
+        return False
+    return _NON_FILE_CHARS_RE.search(name) is None
+
+
+def _parse_report_filename(raw_file: str) -> str:
+    """解析台账「报告文件」单元格：支持 `[label](target)` 链接、反引号与裸文件名。
+
+    Markdown 链接只接受当前目录 `./<fname>` 或裸 `<fname>`；含 `../`、子目录、
+    反斜杠或绝对路径的目标保留非空白文本交由后续安全校验显式拒绝，
+    既防路径穿越也防返回空串导致静默跳过（fail-open）。
+    """
+    cell = raw_file.strip().strip("`").strip()
+    match = _MD_LINK_RE.match(cell)
+    if not match:
+        return _NON_FILE_CHARS_RE.sub("", raw_file)
+    target = match.group(1).strip()
+    candidate = target[2:] if target.startswith("./") else target
+    if _is_safe_filename(candidate):
+        return candidate
+    return "".join(target.split()) or "".join(cell.split())
+
+
 def _ledger_rows(lines: list[str]) -> list[str]:
     """台账行解析（awk -F'|'）：输出 `轮次\\t文件名\\tSHA256\\t写入形态` 文本行。"""
     rows: list[str] = []
@@ -213,7 +241,7 @@ def _ledger_rows(lines: list[str]) -> list[str]:
         # R1-02 回归：原实现经 `[[:space:]]`（UTF-8 含 Unicode 空白）归一化单元格，
         # 此处用 `str.strip()`（Unicode 感知）保持一致，避免 U+3000/U+2002 填充把合法归档误判非法。
         write_mode = raw_mode.strip()
-        fname = _NON_FILE_CHARS_RE.sub("", raw_file)
+        fname = _parse_report_filename(raw_file)
         declared = _NON_HEX_CHARS_RE.sub("", raw_hash)
         if not _HAS_ALNUM_RE.search(round_name):
             continue
@@ -394,6 +422,12 @@ def _check_reports(
         round_name, fname, declared, write_mode = _read_fields(row)
         if round_name == "":
             continue
+        if not _is_safe_filename(fname):
+            messages.append(
+                f"错误: 台账登记的报告文件路径非法（仅允许当前归档目录内文件名）: {fname}（轮次 {round_name}）"
+            )
+            errors += 1
+            continue
         rfile = os.path.join(archive, fname)
         if not os.path.isfile(rfile):
             messages.append(f"错误: 台账登记的报告文件不存在: {fname}（轮次 {round_name}）")
@@ -543,8 +577,8 @@ def _check_orphan_reports(archive: str, index: str, messages: list[str]) -> int:
     registered = set()
     for row in _collect_rows(index):
         fname = _read_fields(row)[1]
-        if fname:
-            registered.add(os.path.basename(fname))
+        if fname and _is_safe_filename(fname):
+            registered.add(fname)
     try:
         entries = os.listdir(archive)
     except OSError:

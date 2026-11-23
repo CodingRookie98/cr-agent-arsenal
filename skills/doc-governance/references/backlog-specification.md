@@ -74,7 +74,7 @@ docs/project/
 
 ```markdown
 - [ ] **BK-0157** `[Type:TechDebt]` `[Pri:P2]` `[Trigger:文献库>1000篇]` 文献聚合的服务端分页与截断可观测性
-  - **来源**: [RFC-0003 §8](../proposals/RFC-0003.md) / [P3 批次 2 审查报告](file:///path/to/review.md)
+  - **来源**: [RFC-0003 §8](../proposals/RFC-0003.md) / [P3 批次 2 审查报告](./reviews/2026-10-04-p3-batch2/README.md)
   - **验收**: 超过 1000 篇时返回 truncated=true 标志与截断告警，自动化集成用例覆盖边界
 ```
 

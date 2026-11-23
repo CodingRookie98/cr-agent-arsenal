@@ -29,11 +29,12 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL_MD = SKILL_DIR / "SKILL.md"
 PROTOCOL = SKILL_DIR / "references" / "critic-loop-protocol.md"
+AI_TELLS = SKILL_DIR / "references" / "ai-tells-audit.md"
 CRITIC_TMPL = SKILL_DIR / "templates" / "critic-prompt-template.md"
 BRIEF_TMPL = SKILL_DIR / "templates" / "design-brief-template.md"
 FIXTURE = SKILL_DIR / "tests" / "fixtures" / "critic-gate-counter-evidence.md"
 
-SCORE_WORDS = re.compile(r"评分|分数|得分|分值")
+SCORE_WORDS = re.compile(r"评分|分数|得分|分值|终分")
 GATE_WORDS = re.compile(r"完成|放行|通过|达标|准入|交付|上线|发版|发布|合并")
 PROHIBITION_WORDS = re.compile(r"不得|禁止|不输出|不许|不含|不涉及|不参与|不作为|不构成|仅作|不作|遥测|非门禁|❌")
 
@@ -114,6 +115,7 @@ def test_scanner_boundary_self_check():
         "仅当 Critic 评分达到 9 分时才放行。",
         "评分到 9 就放上线。",
         "分数达到门槛方可交付。",
+        "交付说明包含 Critic 终分。",
     ):
         with _pytest.raises(AssertionError):
             assert_no_score_gate(illegal, "selftest-illegal")
@@ -159,13 +161,20 @@ def test_brief_has_ledgers():
     assert_no_score_gate(text, "设计简报模板")
 
 
+def test_ai_tells_audit_has_no_score_gate():
+    text = read(AI_TELLS)
+    assert "Critic 终分" not in text, "ai-tells-audit.md 不得残留旧版「Critic 终分」交付口径"
+    assert not re.search(r"9\s*/\s*10", text), "ai-tells-audit.md 不得出现 9/10 门禁形态"
+    assert_no_score_gate(text, "ai-tells-audit.md")
+
+
 def test_counter_evidence_fixture_preserved():
     text = read(FIXTURE)
     for fragment in ("6.2 → 5.8", "70a91fc", "线胜于面", "空白截图"):
         assert fragment in text, f"反证 fixture 丢失原始证据片段: {fragment}"
 
 
-CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(?<![\\.])(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow)[\\\\/]", re.IGNORECASE)
+CROSS_SKILL_LINK = re.compile("(?:^|[\\s(=/\"'>、，（])(?:[^)\\s\"'<>]*?[\\\\/])*(?<![\\.])(taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|agy-delegation-workflow|clarification-protocol)[\\\\/]", re.IGNORECASE)
 
 
 def test_no_cross_skill_relative_links_in_taste_docs():
@@ -193,6 +202,7 @@ def test_cross_skill_scanner_self_check():
         "裸路径 ../dual-round-review/SKILL.md 文本",
         '(..\\goal-loop\\SKILL.md)',
         '../Goal-Loop/SKILL.md',
+        '../clarification-protocol/SKILL.md',
     ]
     for sample in illegal:
         assert CROSS_SKILL_LINK.search(sample), f"漏检: {sample}"

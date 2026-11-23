@@ -32,6 +32,9 @@ import importlib.util
 # 否则每次真实审查交付都会单调侵蚀知识库健康度（外推约 11 次交付即跌破 80 分门槛）。
 # 豁免语义登记见 docs/GOVERNANCE.md。
 EVIDENCE_ARCHIVE_PARTS = ("project", "reviews")
+# RFC-0008：外部文献逐字转载（docs/reference/articles/**），原文不可改写，
+# 不参与体量三指标（豁免语义登记见 docs/GOVERNANCE.md §4.1）。
+REFERENCE_ARTICLES_PARTS = ("reference", "articles")
 # RFC-0006：分层机器地图的子地图是**生成物**（无控制头、无入链），路由文件是**规则**而非知识；
 # 二者都不参与元数据/孤儿/修订计分，但仍参与断链扫描（链接必须有效）。
 GENERATED_MAP_DIR = "_llms"
@@ -57,6 +60,15 @@ def in_evidence_archive(path: Path, root_dir: Path) -> bool:
     except ValueError:
         return False
     return rel.parts[:2] == EVIDENCE_ARCHIVE_PARTS
+
+
+def in_reference_articles(path: Path, root_dir: Path) -> bool:
+    """判定路径是否落在外部文献转载目录内（<root>/reference/articles/**）。"""
+    try:
+        rel = path.relative_to(root_dir)
+    except ValueError:
+        return False
+    return rel.parts[:2] == REFERENCE_ARTICLES_PARTS
 
 # 动态加载同目录下带有短横线名称的兄弟脚本
 _scripts_dir = Path(__file__).resolve().parent
@@ -338,7 +350,12 @@ def _size_docs(root_dir: Path):
             continue
         if any(p in f.parts for p in ("node_modules", ".git", "dist", "build")):
             continue
-        if in_evidence_archive(f, root_dir) or in_generated_map(f, root_dir) or is_router_file(f, root_dir):
+        if (
+            in_evidence_archive(f, root_dir)
+            or in_reference_articles(f, root_dir)
+            or in_generated_map(f, root_dir)
+            or is_router_file(f, root_dir)
+        ):
             continue
         yield f
 
@@ -980,6 +997,8 @@ def audit_health(
     truth_mode: str = "warn",
     max_age_days: int = 180,
     repo_path: Optional[Path] = None,
+    max_doc_bytes: Optional[int] = None,
+    max_doc_line: Optional[int] = None,
 ) -> Dict:
     """执行全面的健康度体检"""
     all_md_files = [
@@ -1173,7 +1192,11 @@ def audit_health(
         "llms_map_issue": check_llms_map_consistency(root_dir),
         "agents_md_issue": check_agents_md(root_dir),
         "doc_status": check_doc_status(root_dir),
-        "doc_size": check_doc_size(root_dir),
+        "doc_size": check_doc_size(
+            root_dir,
+            max_bytes=SIZE_MAX_BYTES if max_doc_bytes is None else max_doc_bytes,
+            max_line=SIZE_MAX_LINE if max_doc_line is None else max_doc_line,
+        ),
         "truth": truth_block,
         "scores": {
             "link_score": round(link_score, 1),
@@ -1217,8 +1240,8 @@ def main():
     if args.write_size_baseline:
         written = write_size_baseline(
             root_path,
-            max_bytes=args.max_doc_bytes or SIZE_MAX_BYTES,
-            max_line=args.max_doc_line or SIZE_MAX_LINE,
+            max_bytes=SIZE_MAX_BYTES if args.max_doc_bytes is None else args.max_doc_bytes,
+            max_line=SIZE_MAX_LINE if args.max_doc_line is None else args.max_doc_line,
         )
         print(f"🧱 已写入体量基线: {written}")
         sys.exit(0)
@@ -1230,6 +1253,8 @@ def main():
         truth_mode=args.truth,
         max_age_days=args.max_age_days,
         repo_path=Path(args.repo).resolve() if args.repo else None,
+        max_doc_bytes=args.max_doc_bytes,
+        max_doc_line=args.max_doc_line,
     )
     if "error" in res:
         print(f"❌ {res['error']}", file=sys.stderr)

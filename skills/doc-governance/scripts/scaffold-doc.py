@@ -3,7 +3,7 @@
 
 移植自 skills/doc-governance/scripts/scaffold-doc.sh，行为逐字节对齐（stdout/stderr/
 退出码/产物文件内容）。用法：
-    python3 scaffold-doc.py <type> <name> [--root docs] [--lang zh|en]
+    python3 scaffold-doc.py <type> <name> [--root docs] [--lang zh]
 类型 (<type>)：
     tutorial    - 新手上门教程 (docs/tutorials/)
     how-to      - 任务操作指南 (docs/how-to/)
@@ -26,7 +26,7 @@ import subprocess
 import sys
 from datetime import date
 
-USAGE_TYPES = "<tutorial|how-to|reference|explanation|adr|rfc|backlog> <doc-name> [--root docs] [--lang zh|en]"
+USAGE_TYPES = "<tutorial|how-to|reference|explanation|adr|rfc|backlog> <doc-name> [--root docs] [--lang zh]"
 
 # 原实现 heredoc 中 `${NAME}` / `${SEQ_PADDED}` 等占位符，Python 侧用同名 token 渲染。
 TUTORIAL_TEMPLATE = """# ${NAME} 新手上路指南 (Tutorial)
@@ -500,7 +500,7 @@ def _quadrant_file(root_dir: str, doc_type: str, name: str, today: str, year: st
         if os.path.isfile(f"{root_dir}/how-to/index.md"):
             next_step = "- 探索更多实战操作: [how-to 指南](../how-to/index.md)"
         else:
-            next_step = ("- 探索更多实战操作: 运行 `scaffold-doc.sh how-to <name>` "
+            next_step = ("- 探索更多实战操作: 运行 `scaffold-doc.py how-to <name>` "
                          "创建 `how-to/` 象限指南")
         tokens["NEXT_STEP_LINE"] = next_step
     if not _write_text(file_path, _render(template, **tokens), redirect_line):
@@ -617,11 +617,25 @@ def _parse_options(argv: list[str]) -> tuple[str, str, bool]:
     return root_dir, lang, True
 
 
+def _print_usage() -> None:
+    """输出完整命令行用法说明（供 -h / --help 调用）。"""
+    _out(f"用法: {_self_path()} {USAGE_TYPES}")
+    _out("可用类型: tutorial, how-to, reference, explanation, adr, rfc, backlog")
+    _out("选项:")
+    _out("  --root <dir>   文档根目录（默认 docs）")
+    _out("  --lang zh      模板语言（当前仅支持 zh，默认 zh）")
+    _out("  -h, --help     显示本帮助信息并退出")
+
+
 def main(argv: list[str] | None = None) -> int:
     """入口：返回进程退出码（与原 Bash 实现一致）。"""
     sys.stdout.reconfigure(encoding="utf-8", newline="\n")
     sys.stderr.reconfigure(encoding="utf-8", newline="\n")
     args = list(argv) if argv is not None else list(sys.argv[1:])
+
+    if any(arg in ("-h", "--help") for arg in args):
+        _print_usage()
+        return 0
 
     doc_type = args[0] if len(args) > 0 else ""
     name = args[1] if len(args) > 1 else ""
@@ -631,8 +645,12 @@ def main(argv: list[str] | None = None) -> int:
         _out(f"用法: {_self_path()} {USAGE_TYPES}")
         return 1
 
-    root_dir, _lang, ok = _parse_options(args)
+    root_dir, lang, ok = _parse_options(args)
     if not ok:
+        return 1
+
+    if lang != "zh":
+        _err(f"❌ 错误: --lang 当前仅支持 'zh'，暂不支持 '{lang}'（拒绝静默回退为中文模板）。")
         return 1
 
     today = date.today().strftime("%Y-%m-%d")

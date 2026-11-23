@@ -27,7 +27,7 @@ PARK_MILLER_A = 48271
 NON_CHARSET_VALUE = 97  # 与 awk 分支 index(cs, ch)==0 -> v=97 严格对应
 
 USAGE = (
-    "用法: generate-seed.sh [-l LENGTH] [-c COUNT] [-s SEED]\n"
+    "用法: python3 generate-seed.py [-l LENGTH] [-c COUNT] [-s SEED]\n"
     "\n"
     "生成 base62 字母数字字符串, 作为设计灵感的外部随机性种子 (String Seed of Thought)。\n"
     "\n"
@@ -39,9 +39,9 @@ USAGE = (
     "  -h         显示本帮助\n"
     "\n"
     "示例:\n"
-    "  bash generate-seed.sh                  # 64 位真随机种子\n"
-    "  bash generate-seed.sh -l 128 -c 3      # 3 条 128 位种子, 供多方向并行探索\n"
-    "  bash generate-seed.sh -s team-2026 -l 48   # 团队可复现同一设计方向\n"
+    "  python3 generate-seed.py                    # 64 位真随机种子\n"
+    "  python3 generate-seed.py -l 128 -c 3        # 3 条 128 位种子, 供多方向并行探索\n"
+    "  python3 generate-seed.py -s team-2026 -l 48 # 团队可复现同一设计方向\n"
 )
 
 
@@ -130,6 +130,8 @@ def generate_deterministic(seed, length, count):
         index = CHARSET.find(char)
         value = NON_CHARSET_VALUE if index < 0 else index
         state = (state * 31 + value) % PARK_MILLER_MOD
+    if state == 0:
+        state = 1  # Park-Miller 前提 1 <= state <= M-1, 避免零状态吸收导致全 'A' 输出
     lines = []
     for _ in range(count):
         chars = []

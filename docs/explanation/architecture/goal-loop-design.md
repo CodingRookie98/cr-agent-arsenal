@@ -7,7 +7,7 @@
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-08
 > - **参考基准**:
->   - `/home/hui/workspace/projects/faceFusionCpp/docs/dev/zh/process/workflow.md` (工业级 TDD 与阶段流转规程)
+>   - 工业级 C++ 工程 TDD 与阶段流转实践规范
 >   - Manus AI Context Engineering (上下文工程与 2-Action Rule)
 >   - Ralph Loop (Ralph Wiggum 磁盘持久化自主闭环理念)
 >   - 宿主原生 goal 状态原语 (如 `create_goal` / `get_goal` / `update_goal`)

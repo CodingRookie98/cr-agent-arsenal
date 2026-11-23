@@ -771,3 +771,83 @@ def test_unicode_padded_write_mode_cell_is_accepted(tmp_path):
     assert r.returncode == 0, r.stdout + r.stderr
     assert '通过' in r.stdout
 
+
+# --- 回归：台账「报告文件」列 Markdown 链接解析与路径逃逸防御 ----------------------
+
+
+def test_markdown_link_in_ledger_report_column_passes(tmp_path):
+    """台账报告文件列使用 `[r1-aaa..bbb.md](./r1-aaa..bbb.md)` 等 Markdown 链接时应正确解析通过。"""
+    d = tmp_path / 'archive'
+    d.mkdir()
+    r1_name = 'r1-aaa..bbb.md'
+    r2_name = 'r2-aaa..bbb.md'
+    (d / r1_name).write_text(R1_BODY, encoding='utf-8', newline='\n')
+    (d / r2_name).write_text(R2_BODY, encoding='utf-8', newline='\n')
+    rows = '\n'.join([
+        f'| R1 | `aaa..bbb` | sub-R1 | [{r1_name}](./{r1_name}) | `{_sha12(R1_BODY)}` | 🔴 1 / 🟡 1 / ⚪ 0 | direct |',
+        f'| R2 | `aaa..bbb` | sub-R2 | `[{r2_name}]({r2_name})` | `{_sha12(R2_BODY)}` | ✅ 准予交付 | direct |',
+    ])
+    (d / 'README.md').write_text(
+        INDEX_TMPL.format(mode='full', verdict='✅ 准予交付', rows=rows),
+        encoding='utf-8', newline='\n')
+
+    r = _run(d)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert '通过' in r.stdout
+    assert '未登记' not in r.stdout
+
+
+@pytest.mark.parametrize('evil_target', [
+    '../evil.md',
+    './../evil.md',
+    'sub/evil.md',
+    './sub/evil.md',
+    r'..\evil.md',
+])
+def test_markdown_link_path_traversal_is_rejected(tmp_path, evil_target):
+    """路径逃逸（含 `../`、子目录、反斜杠）不得被 Markdown 链接解析放行，即使目标及同名文件均真实存在。"""
+    (tmp_path / 'evil.md').write_text(R1_BODY, encoding='utf-8', newline='\n')
+    d = tmp_path / 'archive'
+    (d / 'sub').mkdir(parents=True)
+    (d / 'evil.md').write_text(R1_BODY, encoding='utf-8', newline='\n')
+    (d / 'sub' / 'evil.md').write_text(R1_BODY, encoding='utf-8', newline='\n')
+    sha = _sha12(R1_BODY)
+    row = f'| R1 | `aaa..bbb` | sub-R1 | [x]({evil_target}) | `{sha}` | 🔴 0 | direct |'
+    (d / 'README.md').write_text(
+        INDEX_TMPL.format(mode='light', verdict='未定', rows=row),
+        encoding='utf-8', newline='\n')
+
+    r = _run(d)
+    assert r.returncode == 1, f'逃逸链接 {evil_target!r} 不得放行:\n{r.stdout}'
+    assert '路径非法' in r.stdout, r.stdout
+
+
+def test_markdown_link_absolute_path_is_rejected(tmp_path):
+    """绝对路径 Markdown 链接不得放行，即使指向真实存在的合法报告文件。"""
+    outside = tmp_path / 'evil.md'
+    outside.write_text(R1_BODY, encoding='utf-8', newline='\n')
+    d = tmp_path / 'archive'
+    d.mkdir()
+    row = f'| R1 | `aaa..bbb` | sub-R1 | [x]({outside.as_posix()}) | `{_sha12(R1_BODY)}` | 🔴 0 | direct |'
+    (d / 'README.md').write_text(
+        INDEX_TMPL.format(mode='light', verdict='未定', rows=row),
+        encoding='utf-8', newline='\n')
+
+    r = _run(d)
+    assert r.returncode == 1, f'绝对路径链接不得放行:\n{r.stdout}'
+    assert '路径非法' in r.stdout, r.stdout
+
+
+def test_markdown_link_traversal_mixed_with_valid_row_still_fails(tmp_path):
+    """含合法行时，额外一条 `[x](../evil.md)` 逃逸行不得被静默跳过（fail-closed）。"""
+    (tmp_path / 'evil.md').write_text(R1_BODY, encoding='utf-8', newline='\n')
+    d, _, _ = _build(tmp_path, mode='light', with_r2=False, verdict='未定')
+    index = (d / 'README.md').read_text(encoding='utf-8')
+    evil_row = f'| delta-r1 | `aaa..bbb` | sub-x | [x](../evil.md) | `{_sha12(R1_BODY)}` | 🔴 0 | direct |\n'
+    (d / 'README.md').write_text(
+        index.replace('\n## 待办与后续轮次', '\n' + evil_row + '\n## 待办与后续轮次', 1),
+        encoding='utf-8', newline='\n')
+
+    r = _run(d)
+    assert r.returncode == 1, f'混合台账里的逃逸行不得静默跳过:\n{r.stdout}'
+    assert '路径非法' in r.stdout, r.stdout
