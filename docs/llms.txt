@@ -22,7 +22,7 @@
 
 - 全量清单：[reference.md](./_llms/reference.md)
 
-## Explanation (深度剖析 / 系统架构与 ADR 决策) — 14 篇
+## Explanation (深度剖析 / 系统架构与 ADR 决策) — 29 篇
 
 - 全量清单：[explanation.md](./_llms/explanation.md)
 

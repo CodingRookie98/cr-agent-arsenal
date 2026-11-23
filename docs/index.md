@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.44.0 (退役 spec-evolution 并登记 ADR-0003 与实施计划)
+> - **当前版本**: V1.47.0 (完成全仓 7 技能 15 篇调研评估资料包并登记第 2 批 7 篇与组合总纲)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.47.0** | 2026-11-23 | AI Agent | 王辉 | **完成全仓 7 技能深度调研与评估工程资料包（第 2 批，+7 篇）**：在 §2 登记 `clarification-protocol`、`taste-driven-designer`、`frontend-qa-gate` 三套成对调研/评估报告，以及压轴总纲 `2026-11-23-arsenal-skills-portfolio-overview.md` |
+| **V1.46.0** | 2026-11-23 | AI Agent | 王辉 | **新增核心工程 3 强调研与评估双报告（第 1 批，共 6 篇）**：在 §2 登记 `dual-round-review`、`doc-governance`（Docs-as-Code 增量调研+评估）与 `agy-delegation-workflow` 各自成对的同类调研报告与过度设计评估报告 |
+| **V1.45.0** | 2026-11-23 | AI Agent | 王辉 | **新增 `goal-loop` 深度调研与评估双报告**：在 §2 登记 `2026-11-23-goal-loop-peer-research.md`（六大同类流派与实证规律）与 `2026-11-23-goal-loop-architecture-evaluation.md`（28 份计划活跃度实证、六大病灶与 P0–P2 重构方案） |
 | **V1.44.0** | 2026-11-23 | AI Agent | 王辉 | **退役 `spec-evolution`（ADR-0003）**：从现役技能/设计书表移除 `spec-evolution`，补登 `ADR-0003` 与退役实施计划行，并将 `RFC-0004` 标注为已被取代（`Superseded`） |
 | **V1.43.0** | 2026-11-23 | DSH AI Agent | 王辉 | **计划索引补录**：新增 spec-evolution 主册 + Task 2/3/4-6 子册、文档体量度量（RFC-0008）、文档状态机（RFC-0007）四行，消除计划目录未入总索引的缺口；`research/` 调研迁入 `explanation/analysis/`（归位 Diátaxis 象限） |
-| **V1.42.0** | 2026-11-23 | DSH AI Agent | 王辉 | **交付尾巴收口**：RFC-0001/0002/0004 状态更正为 Implemented，补登 RFC-0005~0008 条目；backlog 指标改为指向动态仪表盘（禁止手写对账）；同步设计书 V1.5.0 与 RFC-0008 归档防腐块 |
-| **V1.41.0** | 2026-11-22 | DSH AI Agent | 王辉 | **补齐交付叙事（BK-0053）**：新增 docs/project/changelog.md（按交付单元聚合）；§1 增变更日志入口；RFC-0001/0002/0003 补「落地计划」链接；可回答性 G-02/G-16 由 GAP 转 PASS（PASS 17→19 / GAP 3→1） |
-| **V1.40.0** | 2026-11-22 | DSH AI Agent | 王辉 | **补齐上手/操作象限（BK-0052）**：§2.5 新增 1 篇 Tutorial（5 分钟上手）+ 3 篇 How-To（安装技能 / 执行门禁 / 故障排查）；可回答性 G-12/G-13 由 GAP 转 PASS |
 
 ---
 
@@ -47,6 +47,21 @@
 | **`agy-delegation-workflow`** | 认知与执行分离：后台无头执行体的三级优先级链与宿主自适应 + 7 维自包含任务 Prompt + 假失败落盘判别 + 6 步零信任验收（Diff 范围 / 类型与 Lint / 失败模式 grep / 单测 / 全局构建 / 双轮终审） | [agy-delegation-workflow-design.md](./explanation/architecture/agy-delegation-workflow-design.md) |
 | **Backlog 治理最佳实践** | 结合软件工程史（精益/看板/Shape Up）与 AI 上下文工程的 14 项待办治理法则 | [backlog-governance-best-practices.md](./explanation/analysis/backlog-governance-best-practices.md) |
 | **LLM-WIKI 社区实现调研** | 六条实现路线（规范纯文件 / 索引检索 / 仓库生成 / 知识图谱 / 检索即答案 / 确定性编译器）+ 十类工程难点（含 21× token、漂移检出盲区、lint 召回 ~50%）+ 十二维对照审计与 P0–P2 改造建议 | [llm-wiki-implementation-research.md](./explanation/analysis/llm-wiki-implementation-research.md) |
+| **长程 Agent 研发闭环同类调研** | 2026-11-23 六大流派（`superpowers` / `mattpocock/skills` / `planning-with-files` / `spec-kit` & `OpenSpec` & `BMAD` / `gsd-core` / `ralph` & Anthropic Harness / `beads` & 原生原语）源码级解剖、五条实证规律与六类行业反模式 | [2026-11-23-goal-loop-peer-research.md](./explanation/analysis/2026-11-23-goal-loop-peer-research.md) |
+| **`goal-loop` 过度设计与重构评估** | 17 文件 / 125 KB 全量体量与 28 份真实计划活跃度实证审计、十二维横向对标、六大过度设计与腐化病灶诊断、五项护城河甄别及 P0–P2 分阶段瘦身升级路线图 | [2026-11-23-goal-loop-architecture-evaluation.md](./explanation/analysis/2026-11-23-goal-loop-architecture-evaluation.md) |
+| **AI 代码审查与对抗验证同类调研** | Anthropic `/code-review`（112 行 Per-Issue 并行证伪）、OpenAI Codex（95 行空结果优先 + JSON Schema）、`superpowers`、`mattpocock`、`PR-Agent` 与 6 项前沿实证研究 | [2026-11-23-dual-round-review-peer-research.md](./explanation/analysis/2026-11-23-dual-round-review-peer-research.md) |
+| **`dual-round-review` 过度设计与重构评估** | 24 文件 / 236.8 KB 体检、17 归档 / 70 报告实证 ROI、`_UNIT_RX` 17/17 失效与链接剥离双 Bug、0 用 Artifact 模式与 V3.0 瘦身升级方案 | [2026-11-23-dual-round-review-architecture-evaluation.md](./explanation/analysis/2026-11-23-dual-round-review-architecture-evaluation.md) |
+| **Docs-as-Code 与 Agent-First 文档增量调研** | 衔接既有 LLM-WIKI 调研，增量覆盖 `lychee`/`vale`/`markdownlint`/`madr`、Diátaxis 中小仓反噬、OpenAI/Anthropic/ETH Zurich 实证与 `addyosmani`/`anthropics` 公共技能边界法则 | [2026-11-23-doc-governance-peer-research.md](./explanation/analysis/2026-11-23-doc-governance-peer-research.md) |
+| **`doc-governance` 过度设计与重构评估** | 598.6 KB 巨无霸体量与 9 子系统解构、12 脚本可移植性审计、390 commits 治理税实证、7 处真实源码 Bug 与三刀切割瘦身蓝图 | [2026-11-23-doc-governance-architecture-evaluation.md](./explanation/analysis/2026-11-23-doc-governance-architecture-evaluation.md) |
+| **无头 Coding Agent 委派与多 CLI 编排调研** | 10 个高星多 CLI/无头编排标杆（`superpowers`/`claude -p`/`codex exec`/`gastown`/`agent-orchestrator`/`vibe-kanban` 停运信号、`agy 1.5.14` 实测）与原生时代剩余生态位裁定 | [2026-11-23-agy-delegation-workflow-peer-research.md](./explanation/analysis/2026-11-23-agy-delegation-workflow-peer-research.md) |
+| **`agy-delegation-workflow` 过度设计与重构评估** | 28 份计划 0% 实战使用率审计、四重硬绑定与 70%+ 重叠解剖、脚本安全隐患、仅存 3 项真资产与「抽资产退役 vs 止血」去向方案 | [2026-11-23-agy-delegation-workflow-architecture-evaluation.md](./explanation/analysis/2026-11-23-agy-delegation-workflow-architecture-evaluation.md) |
+| **AI 需求澄清与交互收敛同类调研** | `spec-kit` `/speckit.clarify`（≤5 题原地回写）、`superpowers` `brainstorming`、`mattpocock` `grilling`（28 行）、`OpenSpec` 及 *HumanEvalComm*/*ClarEval*/*ClarifyCodeBench* 学术实证 | [2026-11-23-clarification-protocol-peer-research.md](./explanation/analysis/2026-11-23-clarification-protocol-peer-research.md) |
+| **`clarification-protocol` 过度设计与重构评估** | 8 篇真实 RFC 实跑 0/8 通过、脚本 8 类硬伤（含空列放行 `rc=0`）、L72 空指针预算、双模板 Split-Brain 与 60–80 行微技能去壳提纯方案 | [2026-11-23-clarification-protocol-architecture-evaluation.md](./explanation/analysis/2026-11-23-clarification-protocol-architecture-evaluation.md) |
+| **AI 前端审美设计、反 Slop 与 Critic 同类调研** | Anthropic `frontend-design`（9.4 KB，2026 新一代 AI Slop）、`ui-ux-pro-max`（153k★ 策展库）、`pbakaus/impeccable`（115k★ 表面模式 + 44 微剧本 + 双隔离评审）与 `vercel/web-design-guidelines` | [2026-11-23-taste-driven-designer-peer-research.md](./explanation/analysis/2026-11-23-taste-driven-designer-peer-research.md) |
+| **`taste-driven-designer` 过度设计与重构评估** | 13 文件 / 74.9 KB 体检、`generate-seed.py` Park-Miller 零状态数学 Bug、设计书误覆写断言「无测试」、与 `frontend-design` >70% 重叠及三档提纯方案 | [2026-11-23-taste-driven-designer-architecture-evaluation.md](./explanation/analysis/2026-11-23-taste-driven-designer-architecture-evaluation.md) |
+| **AI 前端运行时验收与浏览器 QA 同类调研** | `gstack`（142k★）、`chrome-devtools-mcp`（58.9k★）、`agent-browser`（53.5k★ `dogfood`）、`playwright-mcp`（40k★）、`axe-core` / `lhci` 与三层黄金验收架构 | [2026-11-23-frontend-qa-gate-peer-research.md](./explanation/analysis/2026-11-23-frontend-qa-gate-peer-research.md) |
+| **`frontend-qa-gate` 过度设计与重构评估** | 73.3% 代码验表 / 0 行采集、5 组对抗探针全击穿 Exit 0、无头环境永久 BLOCKED 死锁机理与「探针编排实采化 vs 吸收合并」方案 | [2026-11-23-frontend-qa-gate-architecture-evaluation.md](./explanation/analysis/2026-11-23-frontend-qa-gate-architecture-evaluation.md) |
+| **全仓 7 技能组合横向全景评估与治理总路线图** | 汇总全仓 15 篇调研/评估一手数据：7 技能去留评级表、五大跨技能系统性共病（Goodhart 异化/正则验 MD/Split-Brain/IFScale/公私混淆）、Wave 0–3 总路线图（预计瘦身 70%–75%）与五条防腐宪法 | [2026-11-23-arsenal-skills-portfolio-overview.md](./explanation/analysis/2026-11-23-arsenal-skills-portfolio-overview.md) |
 
 ---
 
