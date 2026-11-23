@@ -34,7 +34,7 @@
 
 ### 新增
 
-- `skills/goal-loop/scripts/pack-handoff.py`：≤120 行纯 Python 3 标准库跨平台文件指针交接脚本，提供 `brief`（按任务 ID 从计划精准抽取单任务简报落盘）与 `review-pkg`（采集 `base..head` 提交清单、三点式 Diff 统计与变更文件清单，防止审查漏前序提交）。
+- `skills/goal-loop/scripts/pack-handoff.py`：≤145 行纯 Python 3 标准库跨平台文件指针交接脚本，提供 `brief`（按任务 ID 从计划精准抽取单任务简报落盘）与 `review-pkg`（采集 `base..head` 提交清单、三点式 Diff 统计与变更文件清单，防止审查漏前序提交）。
 - `skills/goal-loop/tests/test_goal_loop_contract.py`：覆盖 `pack-handoff.py` 真实文件与 Git 行为单测，以及抗脆弱的 frontmatter / 围栏 / 五主阶段 / 防回流表面哨兵。
 
 ### 重构与变更

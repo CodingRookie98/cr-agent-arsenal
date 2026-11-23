@@ -71,7 +71,7 @@ license: MIT
 ```bash
 SKILL_DIR="<goal-loop 技能实际所在目录>"
 python3 "$SKILL_DIR/scripts/pack-handoff.py" brief <plan_file> --task <task_id> [--out <path>]
-python3 "$SKILL_DIR/scripts/pack-handoff.py" review-pkg <base_ref> [head_ref] [--out <path>]
+python3 "$SKILL_DIR/scripts/pack-handoff.py" review-pkg <base_ref> [head_ref] [--repo <dir>] [--out <path>]
 ```
 
 ---

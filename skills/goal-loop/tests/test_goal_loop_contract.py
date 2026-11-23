@@ -1,6 +1,8 @@
 """test_goal_loop_contract.py — goal-loop V3.0 交接脚本行为单测与轻量表面哨兵。"""
 from __future__ import annotations
 
+import importlib.util
+import os
 import re
 import subprocess
 import sys
@@ -14,6 +16,7 @@ except ImportError:  # pragma: no cover
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL_MD = SKILL_DIR / "SKILL.md"
 PACK_SCRIPT = SKILL_DIR / "scripts" / "pack-handoff.py"
+PLAN_TEMPLATE = SKILL_DIR / "templates" / "goal-plan-template.md"
 FENCE_RX = re.compile(r"^\s*(`{3,}|~{3,})")
 FRONTMATTER_RX = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
 
@@ -28,8 +31,16 @@ SAMPLE_PLAN = (
 )
 
 
-def _run_pack(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run([sys.executable, str(PACK_SCRIPT), *args], capture_output=True, text=True, encoding="utf-8", errors="replace", shell=False)
+def _run_pack(*args: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([sys.executable, str(PACK_SCRIPT), *args], capture_output=True, text=True, encoding="utf-8", errors="replace", shell=False, env=env)
+
+
+def _load_pack_module():
+    spec = importlib.util.spec_from_file_location("pack_handoff_mod", PACK_SCRIPT)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -71,8 +82,13 @@ def _fences_balanced(text: str) -> bool:
     fence = ""
     for line in text.splitlines():
         m = FENCE_RX.match(line)
-        if m and (not fence or (m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence) and not line[m.end():].strip())):
-            fence = "" if fence else m.group(1)
+        if not m:
+            continue
+        tok, rest = m.group(1), line[m.end():]
+        if not fence and (tok[0] == "~" or "`" not in rest):
+            fence = tok
+        elif fence and tok[0] == fence[0] and len(tok) >= len(fence) and not rest.strip():
+            fence = ""
     return not fence
 
 
@@ -156,8 +172,105 @@ def test_skill_frontmatter_fences_and_core_surface():
     assert "不提问" in opt_text and "不得伪称已激活" in opt_text and (SKILL_DIR / "templates" / "goal-plan-template.md").is_file()
 
 
+def test_brief_extracts_all_official_template_tasks_and_utf8_on_gbk():
+    for task_id in ("E-0", "E-1", "E-2", "V-1", "V-2", "V-3", "C-1", "C-2"):
+        r = _run_pack("brief", str(PLAN_TEMPLATE), "--task", task_id)
+        assert r.returncode == 0, f"模板任务 {task_id} 抽取失败: {r.stderr}"
+        assert f"Task {task_id}" in r.stdout and _fences_balanced(r.stdout)
+    r_v2 = _run_pack("brief", str(PLAN_TEMPLATE), "--task", "V-2")
+    assert "Task V-2（条件 · 仅前端产物交付）" in r_v2.stdout and "check-qa-report.py" in r_v2.stdout and "Task V-3" not in r_v2.stdout
+    gbk_env = {**os.environ, "PYTHONIOENCODING": "gbk"}
+    r_gbk = _run_pack("brief", str(PLAN_TEMPLATE), "--task", "V-2", env=gbk_env)
+    assert r_gbk.returncode == 0 and "🚀" in r_gbk.stdout and "Task V-2" in r_gbk.stdout
+
+
+def test_brief_task_id_boundaries_and_hyphen_compat(tmp_path: Path):
+    plan = tmp_path / "ids.md"
+    plan.write_text(
+        "# 任务边界测试\n\n## 任务清单\n"
+        "- [ ] **Task 1.1**: 子项一点一\n"
+        "- [ ] **Task 1**: 主项一号\n"
+        "- [ ] **Task E-1-a**: 分支项\n"
+        "- [ ] **Task E-1**: 精确项\n"
+        "- [ ] **Task-9**: 连字符九号\n",
+        encoding="utf-8",
+    )
+    r1 = _run_pack("brief", str(plan), "--task", "1")
+    assert r1.returncode == 0 and "主项一号" in r1.stdout and "子项一点一" not in r1.stdout
+    re1 = _run_pack("brief", str(plan), "--task", "E-1")
+    assert re1.returncode == 0 and "精确项" in re1.stdout and "分支项" not in re1.stdout
+    for query in ("Task-9", "Task 9", "9"):
+        r9 = _run_pack("brief", str(plan), "--task", query)
+        assert r9.returncode == 0 and "连字符九号" in r9.stdout
+    only_sub = tmp_path / "only_sub.md"
+    only_sub.write_text("# 仅子项\n\n- [ ] **Task 1.1**: 子项\n- [ ] **Task E-1-a**: 分支\n", encoding="utf-8")
+    assert _run_pack("brief", str(only_sub), "--task", "1").returncode == 1
+    assert _run_pack("brief", str(only_sub), "--task", "E-1").returncode == 1
+
+
+def test_brief_truncated_code_fence_stays_balanced_and_inline_backticks(tmp_path: Path):
+    long_code = "\n".join(f"  echo step-{i}" for i in range(1, 45))
+    plan = tmp_path / "fenced.md"
+    plan.write_text(
+        "# 围栏截断测试\n\n## 2. 测试策略与级别裁定\n- 命令清单:\n  ```bash\n"
+        + long_code
+        + "\n  ```\n\n---\n\n## 任务清单\n```inline```\n- [ ] **Task E-1**: 目标不应被吞噬\n",
+        encoding="utf-8",
+    )
+    r = _run_pack("brief", str(plan), "--task", "E-1")
+    assert r.returncode == 0, r.stderr
+    assert _fences_balanced(r.stdout), f"截断后围栏失衡:\n{r.stdout}"
+    assert "> ...（节选已截断）" in r.stdout and "## 目标任务\n- [ ] **Task E-1**: 目标不应被吞噬" in r.stdout
+    mod = _load_pack_module()
+    assert mod._fence_flags(["```inline```", "- [ ] Task E-1: ok"]) == [False, False]
+
+
+def test_review_pkg_cjk_filenames_and_error_guards(tmp_path: Path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    base_sha, head_sha = _init_sample_repo(repo)
+    (repo / "说明文档.md").write_text("# 中文路径测试\n", encoding="utf-8")
+    commit_cmd = ("-c", "user.name=Tester", "-c", "user.email=tester@example.com", "commit")
+    assert _git(repo, "add", "说明文档.md").returncode == 0 and _git(repo, *commit_cmd, "-m", "docs: add cjk file").returncode == 0
+    r_cjk = _run_pack("review-pkg", base_sha, "HEAD", "--repo", str(repo))
+    assert r_cjk.returncode == 0, r_cjk.stderr
+    assert "- `说明文档.md`" in r_cjk.stdout and "\\350" not in r_cjk.stdout
+
+    plan = tmp_path / "plan.md"
+    plan.write_text(SAMPLE_PLAN, encoding="utf-8")
+    bad_utf8 = tmp_path / "bad.md"
+    bad_utf8.write_bytes(b"\xff\xfe\x80\x81")
+    out_dir = tmp_path / "existing_dir"
+    out_dir.mkdir()
+    for cmd in (
+        ("brief", str(plan), "--task", "E-1", "--out", ""),
+        ("brief", str(plan), "--task", "E-1", "--out", str(out_dir)),
+        ("brief", str(bad_utf8), "--task", "E-1"),
+        ("review-pkg", head_sha, head_sha, "--repo", str(repo)),
+        ("review-pkg", "HEAD", base_sha, "--repo", str(repo)),
+    ):
+        res = _run_pack(*cmd)
+        assert res.returncode == 1 and res.stderr.strip() and "Traceback" not in res.stderr, f"意外结果 {cmd}: rc={res.returncode}, err={res.stderr}"
+    no_git = _run_pack("review-pkg", base_sha, "HEAD", "--repo", str(repo), env={**os.environ, "PATH": ""})
+    assert no_git.returncode == 1 and no_git.stderr.strip() and "Traceback" not in no_git.stderr
+
+
 def test_retired_and_corrupted_tokens_do_not_regress():
-    retired = ("goal-state-tracker", "HALF-OPEN", "2-Action Rule", "docs/project/evaluation/", "docs/architecture/", "evaluation-report-template", "research-spike-template")
+    retired = (
+        "goal-state-tracker",
+        "HALF-OPEN",
+        "2-Action Rule",
+        "docs/project/evaluation/",
+        "docs/architecture/",
+        "evaluation-report-template",
+        "research-spike-template",
+        "create_goal",
+        "get_goal",
+        "update_goal",
+        "docs/design/",
+        "docs/adr/",
+        "阶段 3.5",
+    )
     for path in (SKILL_MD, *sorted((SKILL_DIR / "references").glob("*.md")), *sorted((SKILL_DIR / "templates").glob("*.md"))):
         text = path.read_text(encoding="utf-8")
         for token in retired:

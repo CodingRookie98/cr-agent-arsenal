@@ -11,17 +11,17 @@
 
 | 级别 | 测试类型 | 运行阶段 | 关注焦点与验证目标 | 执行成本 | 典型工具/命令范例 |
 |:---:|---|:---:|---|:---:|---|
-| **L0** | **静态代码门禁**<br/>(Static / Lint) | 阶段 3 每次代码变动后 | 语法合法性、静态类型安全、代码异味、未声明依赖排查、死代码清理 | 秒级 (<3s) | `tsc --noEmit`, `eslint`, `cargo check`, `golangci-lint`, `mypy` |
-| **L1** | **单元测试**<br/>(Unit Test) | 阶段 3 单任务 TDD 循环内 | 纯函数、算法逻辑、边界分支、状态机流转、无真实外部 I/O 依赖 | 极快 (<10s) | `vitest run <path>`, `pytest <path>`, `go test -run`, `cargo test --lib` |
-| **L2** | **模块集成测试**<br/>(Integration) | 阶段 3.5 集成验证阶段 | 模块间接口契约、数据库/存储交互、中间件装配、跨组件状态联动 | 中等 (10s~1m) | `vitest run integration/`, `cargo test --test integration`, `python build.py --action test --test-label integration` |
-| **L3** | **端到端测试**<br/>(E2E / System) | 阶段 4 终审验收前 | 用户主干交互链路、CLI 命令全流程、跨子系统集成、真实产物运行验证 | 较高 (1m~5m) | `playwright test`, `run_e2e.py`, 全流程 CLI 批处理验证 |
-| **L-Doc** | **文档/元数据检查** | 阶段 5 归档阶段 | 链接有效性、拼写检查、Markdown 语法规范、图表语法合法性 | 极快 (<2s) | `markdownlint`, link-checker |
+| **L0** | **静态代码门禁**<br/>(Static / Lint) | `Execute`（阶段 3）每次代码变动后 | 语法合法性、静态类型安全、代码异味、未声明依赖排查、死代码清理 | 秒级 (<3s) | `tsc --noEmit`, `eslint`, `cargo check`, `golangci-lint`, `mypy` |
+| **L1** | **单元测试**<br/>(Unit Test) | `Execute`（阶段 3）单任务 TDD 循环内 | 纯函数、算法逻辑、边界分支、状态机流转、无真实外部 I/O 依赖 | 极快 (<10s) | `vitest run <path>`, `pytest <path>`, `go test -run`, `cargo test --lib` |
+| **L2** | **模块集成测试**<br/>(Integration) | `Verify`（阶段 4，原 P3.5）集成验证 | 模块间接口契约、数据库/存储交互、中间件装配、跨组件状态联动 | 中等 (10s~1m) | `vitest run integration/`, `cargo test --test integration`, `python build.py --action test --test-label integration` |
+| **L3** | **端到端测试**<br/>(E2E / System) | `Verify`（阶段 4，原 P4）终审验收前 | 用户主干交互链路、CLI 命令全流程、跨子系统集成、真实产物运行验证 | 较高 (1m~5m) | `playwright test`, `run_e2e.py`, 全流程 CLI 批处理验证 |
+| **L-Doc** | **文档/元数据检查** | `Close`（阶段 5）归档阶段 | 链接有效性、拼写检查、Markdown 语法规范、图表语法合法性 | 极快 (<2s) | `markdownlint`, link-checker |
 
 ---
 
 ## 2. 改动特征与测试级别映射矩阵 (Decision Matrix)
 
-在阶段 1 规划与阶段 2 拆解中，智能体必须对照下表确定当前改动必须执行的测试组合：
+在 **`Plan`（阶段 2，原 P1/P2）** 规划与任务拆解中，智能体必须对照下表确定当前改动必须执行的测试组合：
 
 | 改动特征分类 | 适用典型场景 | 强制执行测试组合 | 豁免条件与说明 |
 |---|---|:---:|---|
@@ -38,7 +38,7 @@
 
 ## 3. 智能体自主裁定测试范围 SOP (Autonomous Test Scoping)
 
-对于未被上述矩阵直接覆盖的复合改动场景，智能体在**阶段 1（计划制定）**必须执行以下 4 步结构化推理：
+对于未被上述矩阵直接覆盖的复合改动场景，智能体在 **`Plan`（阶段 2，计划制定）** 必须执行以下 4 步结构化推理：
 
 ### 第 1 步：改动影响面分析 (Blast Radius Analysis)
 * 提取待改动或待新增文件的依赖树拓扑。
@@ -75,12 +75,11 @@
 
 ## 4. 阶段与执行时机契约 (Execution Phase Mapping)
 
-1. **阶段 3（子任务 TDD 实现）**：
+1. **`Execute`（阶段 3，子任务 TDD 实现）**：
    - 编码期间：持续运行 **L0**（语法类型检查）；
    - TDD 循环内：运行当前任务指定的 **L1 单元测试**（先红后绿，Exit Code 0 方可 Commit）。
-2. **阶段 3.5（集成验证）**：
-   - 所有子任务提交完毕后触发；
-   - 运行裁定书规定的 **L2 集成测试** 与全局编译构建。
-3. **阶段 4（完成验收与双轮终审）**：
-   - 运行裁定书规定的 **L3 E2E 测试**；
-   - 启动 `dual-round-review`，终审报告中审查者必须核对实际执行的测试覆盖率与真实退出码。
+2. **`Verify`（阶段 4，原 P3.5/P4，集成验证与独立对抗终审）**：
+   - 集成与构建验证（原 P3.5）：所有子任务提交完毕后触发，运行裁定书规定的 **L2 集成测试** 与全局编译构建；
+   - 终审前验收与对抗终审（原 P4）：运行裁定书规定的 **L3 E2E 测试** 并启动 `dual-round-review`，终审报告中审查者必须核对实际执行的测试覆盖率与真实退出码。
+3. **`Close`（阶段 5，文档同步与归档）**：
+   - 运行 **L-Doc** 文档与元数据检查，确认链接有效性、格式规范与文档同步达标。
