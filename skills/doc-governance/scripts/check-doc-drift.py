@@ -272,8 +272,21 @@ def git_last_commit_sha(repo: Path, rel_path: str) -> Optional[str]:
     return _run_git(repo, ["log", "-1", "--format=%H", "--", rel_path])
 
 
-def _verified_line_changed_staged(repo: Optional[Path], rel_path: str) -> bool:
-    """BD-1（pre-commit 口径）：暂存区的「复核于」行是否与 HEAD 不同。"""
+def _head_path_missing(repo: Optional[Path], rel_path: str) -> bool:
+    """HEAD 树中是否不存在该路径（用于识别「本提交新增」）。"""
+    if repo is None:
+        return False
+    return _run_git(repo, ["cat-file", "-e", f"HEAD:{rel_path}"]) is None
+
+
+def _verified_line_changed_staged(
+    repo: Optional[Path], rel_path: str, anchor_paths: Optional[Sequence[str]] = None
+) -> bool:
+    """BD-1（pre-commit 口径）：暂存区的「复核于」行是否与 HEAD 不同。
+
+    BK-0055：新文档没有旧「复核于」行可比。仅当**所有锚点也在本提交新增**时才视为已刷新；
+    否则「新文档 + 修改既有锚点」无法证明复核点覆盖新版本，按未刷新处理（fail-closed）。
+    """
     if repo is None:
         return False
 
@@ -287,9 +300,32 @@ def _verified_line_changed_staged(repo: Optional[Path], rel_path: str) -> bool:
 
     prev = _run_git(repo, ["show", f"HEAD:{rel_path}"])
     cur = _run_git(repo, ["show", f":{rel_path}"])
-    if prev is None or cur is None:
-        return True
+    if cur is None:
+        return False
+    if prev is None:
+        anchors = list(anchor_paths or [])
+        return bool(anchors) and all(_head_path_missing(repo, anchor) for anchor in anchors)
     return _line(prev) != _line(cur)
+
+
+def _verified_commit_points_to_head(repo: Optional[Path], rel_path: str) -> bool:
+    """BD-9（pre-commit 口径）：同提交豁免必须把「复核于」指向本次提交的父提交（HEAD）。
+
+    只改日期、commit 仍指向旧提交不算刷新——否则「日期 22→23、锚点照旧漂移」可蒙混过关。
+    """
+    if repo is None:
+        return False
+    text = _run_git(repo, ["show", f":{rel_path}"])
+    if not text:
+        return False
+    line = next((item.strip() for item in text.split("\n") if "复核于" in item), "")
+    match = re.search(r"commit\s+([0-9a-fA-F]{7,40})", line)
+    if not match:
+        return False
+    head = _run_git(repo, ["rev-parse", "HEAD"])
+    if not head:
+        return False
+    return head.lower().startswith(match.group(1).lower())
 
 
 def _verified_line_changed(repo: Path, rel_path: str, commit_sha: Optional[str]) -> bool:
@@ -459,15 +495,17 @@ def _removed_from_baseline(baseline: Dict[str, List[str]], current: Dict[str, Li
 
 
 def staged_paths(repo: Optional[Path]) -> Optional[set]:
-    """B-02：返回暂存区变更路径集合；非 git 或无暂存区时返回 None。"""
+    """B-02：返回暂存区变更路径集合；非 git 或无暂存区时返回 None。
+
+    BK-0055：用 `-z` 按 NUL 切分，避免 `core.quotePath` 对含引号/反斜杠/换行的文件名
+    加引号或转义（此前中文路径需单独关闭 quotePath，`-z` 一并覆盖全部非 ASCII 场景）。
+    """
     if repo is None:
         return None
-    # core.quotePath=false：非 ASCII 路径（中文锚点/文档名）默认会被转义成 "src/\351..."，
-    # 导致 touched 为空（真值轴在 --staged 下失明）或 doc 不在 staged（合法刷新被误判漂移）。
-    out = _run_git(repo, ["-c", "core.quotePath=false", "diff", "--cached", "--name-only"])
+    out = _run_git(repo, ["diff", "--cached", "--name-only", "-z"])
     if out is None:
         return None
-    return {line.strip() for line in out.splitlines() if line.strip()}
+    return {part for part in out.split("\x00") if part}
 
 
 def analyze(
@@ -579,7 +617,13 @@ def analyze(
                 doc_path.relative_to(repo_path).as_posix() if repo_path is not None else rel_doc
             )
             if touched:
-                refreshed = doc_repo_rel in staged and _verified_line_changed_staged(repo_path, doc_repo_rel)
+                refreshed = (
+                    doc_repo_rel in staged
+                    and _verified_line_changed_staged(
+                        repo_path, doc_repo_rel, [a["path"] for a in anchors]
+                    )
+                    and _verified_commit_points_to_head(repo_path, doc_repo_rel)
+                )
                 if refreshed:
                     # BD-1：本次提交内同时改锚点并刷新复核点 ⇒ 视为已同步处理。
                     # 但**不得**覆盖硬断裂或既有漂移：missing_anchor（锚点目标不存在）
@@ -587,8 +631,10 @@ def analyze(
                     if status not in ("missing_anchor", "drifted"):
                         status = "fresh"
                 else:
-                    # BD-1-R：文档未暂存，或已暂存但「复核于」未刷新 ⇒ 仍是漂移
-                    status = "drifted"
+                    # BD-1-R：文档未暂存，或已暂存但「复核于」未刷新 ⇒ 仍是漂移。
+                    # missing_anchor 优先级更高，不被降级成 drifted。
+                    if status != "missing_anchor":
+                        status = "drifted"
         record = {
             "doc": rel_doc,
             "status": status,

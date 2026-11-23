@@ -3,9 +3,7 @@
 > 本文件由 `generate-llms-txt.py --split` 生成，请勿手改。
 > 上级入口：[../llms.txt](../llms.txt)
 
-- [BK-0050-存量超限文档拆分-spec-evolution-skill-scripts](../project/backlog/active/BK-0050-存量超限文档拆分-spec-evolution-skill-scripts.md): id: BK-0050
 - [BK-0051-检索层决策-当前不引入-mcp-已评估](../project/backlog/active/BK-0051-检索层决策-当前不引入-mcp-已评估.md): id: BK-0051
-- [BK-0055-check-doc-drift-staged-残余风险-新增文档复核点判据与纯日](../project/backlog/active/BK-0055-check-doc-drift-staged-残余风险-新增文档复核点判据与纯日.md): id: BK-0055
 - [BK-0001-trim-revision-py-archive-exemption](../project/backlog/archive/2026-Q4/BK-0001-trim-revision-py-archive-exemption.md): id: BK-0001
 - [BK-0002-generate-llms-txt-archive-exemption](../project/backlog/archive/2026-Q4/BK-0002-generate-llms-txt-archive-exemption.md): id: BK-0002
 - [BK-0003-stable-id-pair-by-filename](../project/backlog/archive/2026-Q4/BK-0003-stable-id-pair-by-filename.md): id: BK-0003
@@ -55,9 +53,11 @@
 - [BK-0047-windows-全量-pytest-95-例失败-控制台编码与夹具断言漂移两类归](../project/backlog/archive/2026-Q4/BK-0047-windows-全量-pytest-95-例失败-控制台编码与夹具断言漂移两类归.md): id: BK-0047
 - [BK-0048-门禁自动化-pre-commit-hook-一键聚合脚本](../project/backlog/archive/2026-Q4/BK-0048-门禁自动化-pre-commit-hook-一键聚合脚本.md): id: BK-0048
 - [BK-0049-知识库可用性评测-20-条-golden-task](../project/backlog/archive/2026-Q4/BK-0049-知识库可用性评测-20-条-golden-task.md): id: BK-0049
+- [BK-0050-存量超限文档拆分-spec-evolution-skill-scripts](../project/backlog/archive/2026-Q4/BK-0050-存量超限文档拆分-spec-evolution-skill-scripts.md): id: BK-0050
 - [BK-0052-知识库缺口-how-to-与-tutorials-象限为空](../project/backlog/archive/2026-Q4/BK-0052-知识库缺口-how-to-与-tutorials-象限为空.md): id: BK-0052
 - [BK-0053-知识库缺口-changelog-缺失与-3-篇-rfc-无落地计划链接](../project/backlog/archive/2026-Q4/BK-0053-知识库缺口-changelog-缺失与-3-篇-rfc-无落地计划链接.md): id: BK-0053
 - [BK-0054-知识库缺口-taste-driven-designer-缺架构设计书](../project/backlog/archive/2026-Q4/BK-0054-知识库缺口-taste-driven-designer-缺架构设计书.md): id: BK-0054
+- [BK-0055-check-doc-drift-staged-残余风险-新增文档复核点判据与纯日](../project/backlog/archive/2026-Q4/BK-0055-check-doc-drift-staged-残余风险-新增文档复核点判据与纯日.md): id: BK-0055
 - [项目待办与后续演进清单 (Backlog Index)](../project/backlog/index.md): *(当前暂无进行中的待办)*
 - [变更日志 (Changelog)](../project/changelog.md): 本文件记录**已交付**的成果。进行中的工作在 [backlog](../project/backlog/index.md)，逐日过程在 git log。
 - [dual-round-review 技能 V2.0 重构实施方案 (A → B → C)](../project/plans/2026-09-14-dual-round-review-v2.md): 1. **宿主绑定 + 异步假设**：`invoke_subagent`/`Agent`/`agy -p`/`view_file` 写死；"必须结束回合等待异步唤醒"在同步前台派发宿主上会丢结果。
@@ -76,6 +76,9 @@
 - [批次 D 机器地图身份写保护契约实施计划 (Implementation Plan)](../project/plans/2026-10-09-backlog-batch-d-identity-contract.md): **本轮最有价值的教训**：我的连续修复多次在**错误的层次**上打补丁 —— ① 把「身份保真」做成提示文案的正确性（应为生成器侧写保护）；② 把「原子落盘」直接拼固定 `.tmp` 名（绕过了既有的归档写保护闸门）；③ 用「统一处方」收...
 - [doc-governance 目录级索引约定与 scaffold 索引自愈实施方案计划 (Implementation Plan)](../project/plans/2026-10-09-quadrant-index-convention.md)
 - [全局提示词渐进披露重构实施计划 (AGENTS.md Progressive Disclosure)](../project/plans/2026-10-10-agents-md-progressive-disclosure.md): 2026-10-10，一次 **9 行**的全局提示词改动被挂载了 `dual-round-review` 完整流程：**6 轮**独立子智能体对抗审查、**6 份报告共 216KB**、6 次提交。用户判语：
+- [spec-evolution 实施计划 · 子册 Task 2（事实采集器与契约测试）](../project/plans/2026-10-12-spec-evolution-task2.md): str, extra: str = "license: MIT") -> str:
+- [spec-evolution 实施计划 · 子册 Task 3（判定器与判定契约测试）](../project/plans/2026-10-12-spec-evolution-task3.md): **Files**
+- [spec-evolution 实施计划 · 子册 Task 4-6（门禁不变式 / 设计书 / 注册面）](../project/plans/2026-10-12-spec-evolution-task4-6.md): **Files**
 - [spec-evolution 机械化演进回路技能实现计划 (Implementation Plan)](../project/plans/2026-10-12-spec-evolution.md): Use when auditing delivery-surface completeness of this repository's skills and root prompt, or when a goal-loop P5 delivery re-checks the skills it touched. Runs a read-only fact collector and a deterministic exit-code judge (zero LLM, zero network) mapping facts to findings C-01 through C-10, emitting a report whose human-verdict section stays empty. Triggers on missing tests or design docs, incomplete skill surfaces, registration gaps, frontmatter length limits, oversized files, and root-prompt net growth.
 - [P2 批次六项 backlog 卡片闭环实施计划 (Implementation Plan)](../project/plans/2026-10-14-p2-six-backlog-items.md)
 - [自建技能脚本 Python 统一化实施计划 (Implementation Plan)](../project/plans/2026-10-19-skill-scripts-python-unification.md): 1. 8 个技能各自拥有 `<name>.py` 实现，在 **Windows 原生 Python** 与 **WSL/Linux Python** 上均可直接执行，行为与改造前 Bash 实现**逐字节一致**（stdout/stderr...

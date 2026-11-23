@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CHANGELOG-CR-ARSENAL
-> - **当前版本**: V1.1.0
+> - **当前版本**: V1.2.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-22
 > - **文档所有者**: 核心架构组
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.2.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「真值轴残余收口与存量文档拆分」：BK-0055（--staged 新文档/BD-9 判据）与 BK-0050（spec-evolution 拆分、skill-scripts 长行改写、体量基线清空） |
 | **V1.1.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「doc-governance 交付尾巴收口」：RFC 生命周期补完、计划 checkpoint 校准、设计书 V1.5.0、索引状态更正、BD-1-R2 修复与两轮独立确认 |
 | **V1.0.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初版：按「交付单元」记录可交付成果（此前交付叙事散落在各计划的执行偏差表与提交信息里） |
 
@@ -21,6 +22,23 @@
 本文件记录**已交付**的成果。进行中的工作在 [backlog](./backlog/index.md)，逐日过程在 git log。
 
 格式参照 Keep a Changelog，按交付单元聚合（不按提交逐条罗列）。
+
+## [2026-11-23] 真值轴残余收口与存量文档拆分
+
+### 修复
+
+- **BK-0055**：`check-doc-drift.py` 的 `--staged` 口径再加固——① `staged_paths()` 改用 `git diff --cached --name-only -z`（NUL 切分，覆盖引号/反斜杠/换行文件名）；② 新文档仅当**所有锚点也在本提交新增**时才视为已刷新，否则 fail-closed；③ 新增 `_verified_commit_points_to_head()`，「复核于」的 commit 必须指向本次提交父提交（HEAD），只改日期不再构成豁免（BD-9）
+- 新增 4 条回归（合法刷新 L、中文文档名正例、新文档+既有锚点 fail-closed、新文档+新锚点通过）；`change-impact-matrix` V1.3.1 与 SKILL 模式 1 同步判定细则
+
+### 变更
+
+- **BK-0050**：`2026-10-12-spec-evolution.md` 由 127,747 字节拆为主册 **52,355 字节**（保留目标/约束/Task 1/Task 7/验收与风险）+ 三个原文子册（Task 2 27,951 B / Task 3 31,950 B / Task 4-6 17,987 B）
+- `2026-10-19-skill-scripts-python-unification.md` 唯一 1,269 字符长行按语义边界换行，全文 **40,438 字节 / 最长 854**
+- `docs/.doc-size-baseline.json` 刷新为 `{"docs": {}, "version": 1}`（体量基线清空）
+
+### 验证
+
+- `check-all.py --full` **7/7 全绿**；`pytest skills/doc-governance/tests` **302 passed**；断链 0；机器地图重生成
 
 ## [2026-11-23] doc-governance 交付尾巴收口
 

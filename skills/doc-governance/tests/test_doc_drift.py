@@ -1617,6 +1617,93 @@ class TestBD1Staged(unittest.TestCase):
         self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
         self.assertIn("drifted", proc.stdout)
 
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_bd1r_staged_legit_refresh_to_head_passes(self):
+        """L：锚点改动 + 「复核于」指向本次提交父提交（HEAD）⇒ 合法，rc=0/fresh。"""
+        docs = self._setup()
+        head = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        time.sleep(1)
+        (self.root / "src" / "a.py").write_text("x=2\n", encoding="utf-8")
+        (docs / "a.md").write_text(
+            make_doc("body", anchors="src/a.py", verified="2026-11-23 / commit " + head), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--staged", "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("fresh", proc.stdout)
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_bd1r_unicode_doc_legit_refresh_passes(self):
+        """P3 正例：中文文档名 + 合法刷新（复核于指向 HEAD）⇒ rc=0/fresh。"""
+        self._git("init", "-q")
+        (self.root / "src").mkdir()
+        (self.root / "src" / "锚点.py").write_text("x=1\n", encoding="utf-8")
+        docs = self.root / "docs"
+        docs.mkdir()
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "init")
+        sha = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        doc = docs / "文档.md"
+        doc.write_text(make_doc("body", anchors="src/锚点.py", verified="2026-11-22 / commit " + sha), encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", "doc")
+        head = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        subprocess.run([sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+                        "--repo", str(self.root), "--write-baseline"], capture_output=True)
+        time.sleep(1)
+        (self.root / "src" / "锚点.py").write_text("x=2\n", encoding="utf-8")
+        doc.write_text(make_doc("body", anchors="src/锚点.py", verified="2026-11-23 / commit " + head), encoding="utf-8")
+        self._git("add", "-A")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--staged", "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("fresh", proc.stdout)
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_bd1r_new_doc_with_modified_existing_anchor_is_drifted(self):
+        """BK-0055：新文档 + 修改既有锚点，无法证明复核点覆盖新版本 ⇒ drifted（fail-closed）。"""
+        docs = self._setup()
+        head = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        time.sleep(1)
+        (self.root / "src" / "a.py").write_text("x=2\n", encoding="utf-8")
+        (docs / "new.md").write_text(
+            make_doc("body", anchors="src/a.py", verified="2026-11-23 / commit " + head), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--staged", "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("drifted", proc.stdout)
+
+    @unittest.skipUnless(shutil.which("git"), "env has no git")
+    def test_bd1r_new_doc_with_new_anchor_passes(self):
+        """BK-0055：新文档 + 新锚点同提交 ⇒ 属于同一次提交，rc=0/fresh。"""
+        docs = self._setup()
+        head = self._git("rev-parse", "--short", "HEAD").stdout.strip()
+        time.sleep(1)
+        (self.root / "src" / "b.py").write_text("y=1\n", encoding="utf-8")
+        (docs / "new.md").write_text(
+            make_doc("body", anchors="src/b.py", verified="2026-11-23 / commit " + head), encoding="utf-8"
+        )
+        self._git("add", "-A")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "check-doc-drift.py"), "--root", str(docs),
+             "--repo", str(self.root), "--staged", "--fail-on-drift"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("fresh", proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

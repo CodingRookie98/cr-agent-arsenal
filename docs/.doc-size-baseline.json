@@ -1,13 +1,4 @@
 {
-  "docs": {
-    "project/plans/2026-10-12-spec-evolution.md": {
-      "bytes": 127747,
-      "longest_line": 879
-    },
-    "project/plans/2026-10-19-skill-scripts-python-unification.md": {
-      "bytes": 40431,
-      "longest_line": 1269
-    }
-  },
+  "docs": {},
   "version": 1
 }

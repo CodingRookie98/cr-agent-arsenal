@@ -4,7 +4,7 @@
 > - **文档标识**: SKILL-DES-DOC-GOVERNANCE-2026
 > - **当前版本**: V1.5.0 (治理轴扩展：真值轴 / 分层机器地图 / 状态机 / 体量门禁 / 门禁自动化与可回答性)
 > - **代码锚点**: skills/doc-governance/SKILL.md, skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
-> - **复核于**: 2026-11-23 / commit ef7e325
+> - **复核于**: 2026-11-23 / commit eb35612
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-10

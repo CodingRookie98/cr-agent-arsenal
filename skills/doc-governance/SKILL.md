@@ -133,7 +133,7 @@ docs/
    - 核心架构演化 ➔ 编写一条 MADR 决策追加至 `explanation/decisions/`；
 3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并将 `project/backlog.md` 中对应 **BK 编号**的待办移入 `project/archive/` 对应归档文件（置为 `[x]`，标注去向与日期，保持 backlog.md 热区纯粹精炼，规范见 [backlog-specification.md](./references/backlog-specification.md)）；
 4. **版本号与修订历史**：按语义化规范提升受影响文档版本，遵循 **5 条滑动窗口** 在修订表首行（标准降序）追加修订行，并同步更新控制头版本；
-5. **门禁校验**：运行 `check-doc-links.py` 与 `check-doc-control-sync.py` 确保零断链与零版本漂移；若改动触及文档声明的 `代码锚点`，再跑 `check-doc-drift.py` 并刷新 `复核于`（见矩阵「文档代码锚点失效」行）。
+5. **门禁校验**：运行 `check-doc-links.py` 与 `check-doc-control-sync.py` 确保零断链与零版本漂移；若改动触及文档声明的 `代码锚点`，再跑 `check-doc-drift.py` 并刷新 `复核于`（见矩阵「文档代码锚点失效」行）。`--staged` 口径下 `复核于` 的 `commit` 必须指向本次提交的父提交（`HEAD`），只改日期不算刷新。
 
 ### 模式 2：知识库全局巡检与自愈 (Audit & Heal Mode)
 在版本发布前、大型重构后或定期维护时执行：
