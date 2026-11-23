@@ -1,18 +1,18 @@
 # 可选技能依赖与缺失处置 (Optional Skill Dependencies)
 
-> P-1 / P0 / P0.5 / P1 会联动外部技能。它们是**增强件，不是安装前提**：缺失时按本文探测与处置，
+> `Align` / `Plan`（原 P-1 / P0 / P0.5 / P1）会联动外部技能。它们是**增强件，不是安装前提**：缺失时按本文探测与处置，
 > 不得假定其存在，也不得因缺失跳过门禁或伪称已激活。
 
 ## 1. 依赖清单
 
 | 阶段 | 外部技能 | 来源仓库 | 缺失时的后果 |
 |:---:|---|---|---|
-| **P-1** | `brainstorming` | obra/superpowers | 方案对比门禁无执行体 |
-| **P0** | `grilling`（`/grill-me`） | mattpocock/skills | 方案压力测试退化为自查 |
-| **P0.5** | `research`（可替代 `deep-research`） | mattpocock/skills | 调研须改为会话内只读探查 |
-| **P1** | `writing-plans` | obra/superpowers | 计划改按本技能模板生成 |
+| **Align（原 P-1）** | `brainstorming` | obra/superpowers | 方案对比门禁无执行体 |
+| **Align（原 P0）** | `grilling`（`/grill-me`） | mattpocock/skills | 方案压力测试退化为自查 |
+| **Align（原 P0.5）** | `research`（可替代 `deep-research`） | mattpocock/skills | 调研须改为会话内只读探查 |
+| **Plan（原 P1）** | `writing-plans` | obra/superpowers | 计划改按本技能模板生成 |
 
-> 清单只登记**有阶段门禁职责**的四项；其余联动技能（如 `find-docs`）按其自身装配状态按需使用，不纳入强制探测。
+> 清单只登记**有阶段门禁职责**的四项；其余联动技能（如 `find-docs`、`clarification-protocol`、`doc-governance`）按其自身装配状态按需使用，不纳入强制探测。
 
 ## 2. 探测（进入首个相关阶段前执行一次，不逐阶段重复）
 
@@ -54,7 +54,7 @@ npx --yes skills@latest add -y https://github.com/mattpocock/skills --skill gril
 
 - **替代 `brainstorming`**：给出 2~3 个方案对比（权衡 / 成本 / 回滚），取得 User Nod 后方可继续；
 - **替代 `grilling`**：自列 ≥5 条隐式假设逐条证伪，未决项登记为显式默认假设；
-- **替代 `research`**：本地检索 → `gh search repos|code` → 官方文档，产出备忘录落盘；
+- **替代 `research`**：本地检索 → `gh search repos|code` → 官方文档，产出分析文档落盘至 `docs/explanation/analysis/`；
 - **替代 `writing-plans`**：按 [goal-plan-template.md](../templates/goal-plan-template.md) 生成计划。
 
 ## 5. 铁律

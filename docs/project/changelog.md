@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CHANGELOG-CR-ARSENAL
-> - **当前版本**: V1.4.0
+> - **当前版本**: V1.5.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-22
 > - **文档所有者**: 核心架构组
@@ -13,17 +13,34 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.5.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「Wave 2A：`goal-loop` V3.0 瘦身与现代化升级」记录 |
 | **V1.4.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「Wave 1 架构瘦身：退役 `agy-delegation-workflow` 与精简 `clarification-protocol` V2.0.0」记录 |
 | **V1.3.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「退役 `spec-evolution` 技能并下沉核心哨兵」（ADR-0003）：移除技能目录与对外发行条目，C-01/C-05+YAML/C-07 迁移至 `skills/_shared/tests/` |
 | **V1.2.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「真值轴残余收口与存量文档拆分」：BK-0055（--staged 新文档/BD-9 判据）与 BK-0050（spec-evolution 拆分、skill-scripts 长行改写、体量基线清空） |
 | **V1.1.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「doc-governance 交付尾巴收口」：RFC 生命周期补完、计划 checkpoint 校准、设计书 V1.5.0、索引状态更正、BD-1-R2 修复与两轮独立确认 |
-| **V1.0.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初版：按「交付单元」记录可交付成果（此前交付叙事散落在各计划的执行偏差表与提交信息里） |
 
 ---
 
 本文件记录**已交付**的成果。进行中的工作在 [backlog](./backlog/index.md)，逐日过程在 git log。
 
 格式参照 Keep a Changelog，按交付单元聚合（不按提交逐条罗列）。
+
+## [2026-11-23] Wave 2A：goal-loop V3.0 瘦身与现代化升级
+
+### 移除
+
+- 物理移除 0% 实战使用率的状态跟踪脚本与文案锁死测试：`skills/goal-loop/scripts/goal-state-tracker.py`、`skills/goal-loop/scripts/goal-state-tracker.sh`、`skills/goal-loop/tests/test_goal_state_tracker.py`、`skills/goal-loop/tests/test_failure_recovery_contract.py`、`skills/goal-loop/tests/test_optional_skill_contract.py`。
+- 物理移除两份零使用模板：`skills/goal-loop/templates/evaluation-report-template.md`、`skills/goal-loop/templates/research-spike-template.md`（调研与评估落盘统一对齐 Diátaxis `docs/explanation/analysis/`）。
+
+### 新增
+
+- `skills/goal-loop/scripts/pack-handoff.py`：≤120 行纯 Python 3 标准库跨平台文件指针交接脚本，提供 `brief`（按任务 ID 从计划精准抽取单任务简报落盘）与 `review-pkg`（采集 `base..head` 提交清单、三点式 Diff 统计与变更文件清单，防止审查漏前序提交）。
+- `skills/goal-loop/tests/test_goal_loop_contract.py`：覆盖 `pack-handoff.py` 真实文件与 Git 行为单测，以及抗脆弱的 frontmatter / 围栏 / 五主阶段 / 防回流表面哨兵。
+
+### 重构与变更
+
+- **`goal-loop` V3.0 规程收敛**：将历史 9–10 编号收敛为 `Align → Plan → Execute → Verify → Close` 五主阶段（保留三轨裁剪矩阵中的历史编号映射）；拆除不可度量的 `HALF-OPEN` 伪运行时与机械 `2-Action Rule`，升级为事件驱动上下文工程与 3-Tries 非阻塞熔断；修复 `documentation-sync-matrix.md` 与 `stage-progression-protocol.md` 内部路径腐化，并在 `host-adapters.md` / `atomic-task-template.md` 引入四项现代执行纪律。
+- 同步更新架构设计书 [goal-loop-design.md](../explanation/architecture/goal-loop-design.md)、评估报告 [2026-11-23-goal-loop-architecture-evaluation.md](../explanation/analysis/2026-11-23-goal-loop-architecture-evaluation.md)、跨技能与全局入口（`skills/frontend-qa-gate/SKILL.md`、`contexts/AGENTS.md`、`README.md`、`docs/index.md`），并登记 [Wave 2A 实施计划](./plans/2026-11-23-wave2a-goal-loop-v3.md)。
 
 ## [2026-11-23] Wave 1 架构瘦身：退役 agy-delegation-workflow 与精简 clarification-protocol V2.0.0
 

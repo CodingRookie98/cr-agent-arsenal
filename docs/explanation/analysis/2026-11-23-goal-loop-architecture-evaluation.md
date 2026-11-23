@@ -2,12 +2,15 @@
 
 > **文档控制信息**
 > - **文档标识**: ANA-GOAL-LOOP-EVAL-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.0.1
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-23
 > - **文档所有者**: 核心架构组
 > - **评估依据**: 基于本仓库 `skills/goal-loop/` 全量 17 文件源码精读、28 份真实历史实施计划（`docs/project/plans/*.md`）实证使用率统计，以及配套外部调研报告 [2026-11-23-goal-loop-peer-research.md](./2026-11-23-goal-loop-peer-research.md) 收敛的六大流派与实证规律。
 > - **证据分级**: 【A】一手（本仓库源码/行号实测、28 份计划脚本全量统计、外部开源项目一手源码）｜【B】二手转引（学术论文与工程博客综合摘要）｜【C】架构师专业裁决与推演建议
+
+> [!NOTE]
+> **执行注记 (2026-11-23)**：本评估报告选定的**方案 A** 已按 `V3.0.0` 正式落地（Wave 2A 完成五主阶段收敛、退役零用正则状态脚本与两份僵尸模板、拆除不可度量重入伪运行时、引入 `scripts/pack-handoff.py` 与四项 2026 编排纪律，详见 [goal-loop-design.md](../architecture/goal-loop-design.md)）；下文统计与表格数据反映 `V2.x` 审计时刻的历史快照。
 
 ---
 
@@ -15,6 +18,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.1** | 2026-11-23 | AI Agent | 王辉 | 补充方案 A 已按 `V3.0.0` 正式落地的执行注记，说明下表统计为 `V2.x` 审计历史快照，并将指向已退役 7 文件的相对链接转为反引号路径文本以消除断链 |
 | **V1.0.0** | 2026-11-23 | AI Agent | 王辉 | 初版：完成 `goal-loop` 全量资产与 28 份真实计划活跃度实证审计、十二维横向对标、六大过度设计与结构病灶诊断、五项核心护城河甄别及 P0–P2 分阶段重构路线图 |
 
 ---
@@ -49,14 +53,14 @@
 | **核心细则** | [testing-decision-matrix.md](../../../skills/goal-loop/references/testing-decision-matrix.md) | 86 | 7,334 | **全场最高价值细则**（L0–L3 矩阵 + 影响面分析 + Mock 防逃逸红线），应重点保留 |
 | **核心细则** | [optional-skill-dependencies.md](../../../skills/goal-loop/references/optional-skill-dependencies.md) | 65 | 3,767 | 三分支无头安全降级清晰实用，体量克制 |
 | **核心细则** | [documentation-sync-matrix.md](../../../skills/goal-loop/references/documentation-sync-matrix.md) | 52 | 4,944 | **重度腐化**：通篇引用 `GOVERNANCE.md` 明令禁止的瀑布旧目录，与 `doc-governance` 重叠 |
-| **脚本代码** | [goal-state-tracker.py](../../../skills/goal-loop/scripts/goal-state-tracker.py) + `.sh` | 370 | 13,068 | **高债僵尸代码**：365 行正则读写 Markdown，28 份真实业务计划 **0 次调用** |
+| **脚本代码** | `scripts/goal-state-tracker.py` + `scripts/goal-state-tracker.sh` | 370 | 13,068 | **高债僵尸代码**：365 行正则读写 Markdown，28 份真实业务计划 **0 次调用** |
 | **模板套件** | [goal-plan-template.md](../../../skills/goal-loop/templates/goal-plan-template.md) | 152 | 9,208 | 常用主模板，但需清理旧调研路径与 tracker 备注 |
 | **模板套件** | [atomic-task-template.md](../../../skills/goal-loop/templates/atomic-task-template.md) | 89 | 3,926 | 子任务 7 维契约 + 输出规约，实用但可与文件指针交接结合精简 |
-| **模板套件** | [research-spike-template.md](../../../skills/goal-loop/templates/research-spike-template.md) | 82 | 4,442 | **零使用僵尸模板**，且约定目录与 Diátaxis 冲突 |
-| **模板套件** | [evaluation-report-template.md](../../../skills/goal-loop/templates/evaluation-report-template.md) | 43 | 2,002 | **零使用僵尸模板**，且约定目录与 Diátaxis 冲突 |
-| **测试套件** | [test_goal_state_tracker.py](../../../skills/goal-loop/tests/test_goal_state_tracker.py) | 297 | 10,043 | 仅服务零使用脚本，构成纯粹的连带维护债 |
-| **测试套件** | [test_failure_recovery_contract.py](../../../skills/goal-loop/tests/test_failure_recovery_contract.py) | 92 | 4,474 | **文案锁死测试**：逐字断言 Markdown 子串（`"25%"`、`"3 + 2 + 2 = **7 次**"`），阻碍精简 |
-| **测试套件** | [test_optional_skill_contract.py](../../../skills/goal-loop/tests/test_optional_skill_contract.py) | 76 | 3,667 | 同为 Markdown 子串断言测试，部分关键防挂死条款可留极简哨兵，其余过度绑定措辞 |
+| **模板套件** | `templates/research-spike-template.md` | 82 | 4,442 | **零使用僵尸模板**，且约定目录与 Diátaxis 冲突 |
+| **模板套件** | `templates/evaluation-report-template.md` | 43 | 2,002 | **零使用僵尸模板**，且约定目录与 Diátaxis 冲突 |
+| **测试套件** | `tests/test_goal_state_tracker.py` | 297 | 10,043 | 仅服务零使用脚本，构成纯粹的连带维护债 |
+| **测试套件** | `tests/test_failure_recovery_contract.py` | 92 | 4,474 | **文案锁死测试**：逐字断言 Markdown 子串（`"25%"`、`"3 + 2 + 2 = **7 次**"`），阻碍精简 |
+| **测试套件** | `tests/test_optional_skill_contract.py` | 76 | 3,667 | 同为 Markdown 子串断言测试，部分关键防挂死条款可留极简哨兵，其余过度绑定措辞 |
 | **合计** | **17 个文件**（另含 [goal-loop-design.md](../architecture/goal-loop-design.md) 352 行 / 30.4 KB） | **2,128** | **125,073** | 其中明确可退役/大幅瘦身的死重与锁死代码超过 **1,000 行（~50 KB）** |
 
 ### 1.2 本仓 28 份真实实施计划的活跃度画像（实证统计【A】）
@@ -149,7 +153,7 @@
    - [stage-progression-protocol.md](../../../skills/goal-loop/references/stage-progression-protocol.md) L204 在通用的 P4 阶段步骤中写死了「**核查 Rules of Hooks、SSR 沙盒**」（明显残留自早期某个 React/Next.js 项目的拷贝）；
    - 同文件 L4 仍称「本规程确立**双轨执行通道**」，L13–L19 的 ASCII 图也仅有 Heavy Track 与 Fast-Track，而 L28 矩阵和 L43 早已扩展为三轨（含 Maintenance-Patch），文档内部演进脱节；
 4. **168 行「文案锁死型」假安全感测试**：
-   - [test_failure_recovery_contract.py](../../../skills/goal-loop/tests/test_failure_recovery_contract.py)（92 行）与 [test_optional_skill_contract.py](../../../skills/goal-loop/tests/test_optional_skill_contract.py)（76 行）看似增加了 pytest 绿灯数量，实则核心断言形如 `assert "3 + 2 + 2 = **7 次**" in body`（L50）、`assert "25%" in body and "任务剩余预算 ÷ 3" in body`（L51）。这类测试**完全不能证明 LLM 会遵守规程**，唯一效果是在你试图简化冗余提示词时让 CI 变红——把「过度设计」焊死在了回归测试里。
+   - `skills/goal-loop/tests/test_failure_recovery_contract.py`（92 行）与 `skills/goal-loop/tests/test_optional_skill_contract.py`（76 行）看似增加了 pytest 绿灯数量，实则核心断言形如 `assert "3 + 2 + 2 = **7 次**" in body`（L50）、`assert "25%" in body and "任务剩余预算 ÷ 3" in body`（L51）。这类测试**完全不能证明 LLM 会遵守规程**，唯一效果是在你试图简化冗余提示词时让 CI 变红——把「过度设计」焊死在了回归测试里。
 
 ### 病灶 6：缺失四项经 2026 社区验证的高杠杆编排模式
 
@@ -187,7 +191,7 @@
 | 序号 | 改造项 | 目标文件 | 预期效果与验收口径 |
 | :---: | :--- | :--- | :--- |
 | **P0-1** | **退役零使用正则状态机脚本及配套测试** | 删除 `scripts/goal-state-tracker.py`、`.sh`、`tests/test_goal_state_tracker.py`；同步清理 `SKILL.md:78-90` 与模板备注 | 净减 **667 行 / 23.1 KB** 零用代码债；`SKILL.md` 聚焦纯路由；更新设计书并写明「直接编辑计划头部锚点」 |
-| **P0-2** | **拆除不可度量的 `HALF-OPEN / G1–G4 / 25% 预算` 伪运行时** | 重写 [failure-recovery-protocol.md](../../../skills/goal-loop/references/failure-recovery-protocol.md) 与 [SKILL.md](../../../skills/goal-loop/SKILL.md) 铁律 9；清理 [test_failure_recovery_contract.py](../../../skills/goal-loop/tests/test_failure_recovery_contract.py) 文案锁死断言 | 回归清晰、可执行、无自相矛盾的「3-Tries 熔断 → STOP/RECORD/RESEARCH → 非阻塞升级（`parked` + 人类裁决）」；彻底消除与 `host-adapters.md:67` 的冲突，减少约 6–8 KB 提示词噪音 |
+| **P0-2** | **拆除不可度量的 `HALF-OPEN / G1–G4 / 25% 预算` 伪运行时** | 重写 [failure-recovery-protocol.md](../../../skills/goal-loop/references/failure-recovery-protocol.md) 与 [SKILL.md](../../../skills/goal-loop/SKILL.md) 铁律 9；清理 `tests/test_failure_recovery_contract.py` 文案锁死断言 | 回归清晰、可执行、无自相矛盾的「3-Tries 熔断 → STOP/RECORD/RESEARCH → 非阻塞升级（`parked` + 人类裁决）」；彻底消除与 `host-adapters.md:67` 的冲突，减少约 6–8 KB 提示词噪音 |
 | **P0-3** | **退役两份零使用僵尸模板** | 删除 `templates/evaluation-report-template.md` 与 `templates/research-spike-template.md` | 净减 **125 行 / 6.4 KB**；P0.5 调研统一直指 `docs/explanation/analysis/`（与 `doc-governance` 对齐），存量评估收归计划背景段 |
 | **P0-4** | **修复内部腐化、路径违例与领域泄露** | 修订 [documentation-sync-matrix.md](../../../skills/goal-loop/references/documentation-sync-matrix.md)（删全部瀑布旧目录，对齐 Diátaxis 与 `doc-governance`）、[stage-progression-protocol.md](../../../skills/goal-loop/references/stage-progression-protocol.md)（补全三轨图、删 L204 React/SSR 硬编码、修 L104/L133 旧路径）、[goal-plan-template.md](../../../skills/goal-loop/templates/goal-plan-template.md)（修旧路径）、[goal-loop-design.md](../architecture/goal-loop-design.md)（删 L10 个人绝对路径） | 全技能零 Diátaxis 违例、零个人路径、零特定前端栈污染、零双轨/三轨自相矛盾 |
 | **P0-5** | **将机械 `2-Action Rule` 升级为事件驱动落盘** | 修订 `SKILL.md` 铁律 10 与 [context-engineering.md](../../../skills/goal-loop/references/context-engineering.md) | 废除「每 2 次只读强写盘」；改为「阶段切换 / 关键根因收敛 / 上下文压缩前落盘检查点，大型原始输出按需卸载至 `.goal-loop/`」 |

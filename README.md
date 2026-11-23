@@ -53,7 +53,7 @@ cr-agent-arsenal/
 
 | 技能名称 | 目录路径 | 核心功能与应用场景 | 适用智能体环境 |
 |---|---|---|---|
-| **`goal-loop`** | [`skills/goal-loop`](./skills/goal-loop/SKILL.md) | **工业级端到端长任务目标实现循环**。<br/>以计划文件为唯一可读真相源；具备上下文工程（2-Action Rule）、自适应测试分级裁定（L0~L3）、宿主无关执行后端适配、外部技能深度编排与 3-Tries 熔断自愈机制。 | Claude Code / Antigravity / DSH / 全局 Shell |
+| **`goal-loop`** | [`skills/goal-loop`](./skills/goal-loop/SKILL.md) | **工业级端到端长任务目标实现循环（V3.0）**。<br/>以计划文件为唯一可读真相源，收敛为五主阶段（`Align → Plan → Execute → Verify → Close`）与三轨分流；具备事件驱动上下文工程、极薄文件指针交接（`pack-handoff.py`）、自适应测试分级裁定（L0~L3）、宿主无关执行后端适配与 3-Tries 非阻塞熔断自愈机制。 | Claude Code / Antigravity / DSH / 全局 Shell |
 | **`dual-round-review`** | [`skills/dual-round-review`](./skills/dual-round-review/SKILL.md) | **对抗性非讨好型双轮代码终审硬门禁**。<br/>第一轮红队第一性原理极限穿透 + 第二轮资深元架构师审判校准，彻底终结浅层创可贴补丁与大模型讨好型盲目交付；支持 Full / Light / Delta 三模式。 | 具备子智能体派发能力的智能体 / CLI |
 | **`clarification-protocol`** | [`skills/clarification-protocol`](./skills/clarification-protocol/SKILL.md) | **需求澄清与收敛规程**（源于提问收敛律）。<br/>先自查事实再向人类发问；术语先行对齐易歧义词；按「依赖强度 × 实现影响」筛问并设 ≤5 题软预算（低影响直转默认假设）；原地维护 4 列单表决策台账（已决项 / 已排除边界 / 默认假设，禁止重开已排除项）；出口三问内联自核（目标 / 边界 / 矛盾）。 | 宿主无关（任意具备对话能力的智能体） |
 | **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance/SKILL.md) | **工业级文档工程与知识库治理体系**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转模型与 Docs-as-Code 自动化门禁，彻底杜绝文档与代码漂移。 | Claude Code / Antigravity / 全局 Shell |

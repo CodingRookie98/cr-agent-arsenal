@@ -26,7 +26,7 @@ taste-driven-designer D1-D3  →  frontend-qa-gate  →  dual-round-review P4
 - 用户问询「响应式是否完整 / 手机端能不能用 / 键盘能不能走通 / 无障碍是否达标」；
 - 用户问询「错误态、空态、加载态是否实现」「断网、权限失效、重复提交有没有产物表现」；
 - 用户问询「目标浏览器是否覆盖」「性能是否回归」「上线前还需要验什么」；
-- taste-driven-designer D3 交付后，或 goal-loop P3.5 集成验证阶段。
+- taste-driven-designer D3 交付后，或 goal-loop Verify（原 P3.5）集成验证阶段。
 
 **不用**：
 - 纯设计方向与品味判断（归 taste-driven-designer 的 Critic 与人类创意总监）；
