@@ -5,7 +5,8 @@
   "consumers": [
     "skills/_shared/tests/test_cross_skill_links.py（仓库级自检，覆盖全部技能）",
     "skills/taste-driven-designer/tests/test_gate_contract.py（技能内联副本 + 自检）",
-    "skills/frontend-qa-gate/tests/test_qa_gate_contract.py（技能内联副本 + 自检）"
+    "skills/frontend-qa-gate/tests/test_qa_gate_contract.py（技能内联副本 + 自检）",
+    "skills/clarification-protocol/tests/test_clarification_protocol_contract.py（技能内联自检）"
   ],
   "coverage": {
     "covered": [

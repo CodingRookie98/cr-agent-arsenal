@@ -2,12 +2,15 @@
 
 > **文档控制信息**
 > - **文档标识**: ANA-CLARIFICATION-EVAL-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.0.1
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-23
 > - **文档所有者**: 核心架构组
 > - **评估依据**: 基于 `skills/clarification-protocol/` 全部 8 个源文件（949 行 / 48.0 KB）、设计书、7 次 Git 提交历史、对本仓全部 8 份 `docs/proposals/RFC-*.md` 实跑 `check-decision-ledger.py` 与 28 份计划实证审计，并对照配套调研报告 [2026-11-23-clarification-protocol-peer-research.md](./2026-11-23-clarification-protocol-peer-research.md)。
 > - **证据分级**: 【A】一手（本仓库源码/行号/实跑 8 份 RFC 与 8 组边界探针、外部标杆一手源码）｜【B】二手转引（学术论文摘要）｜【C】架构师诊断与重构设计
+
+> [!NOTE]
+> **执行注记 (2026-11-23)**：本评估报告选定的**方案 A** 已按 `V2.0.0` 正式落地（Wave 1 移除 6 个外壳文件并重构 [SKILL.md](../../../skills/clarification-protocol/SKILL.md) 为 67 行 / 362 字符描述）；下文统计与表格数据反映 `V1.x` 审计时刻的历史快照。
 
 ---
 
@@ -15,6 +18,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.1** | 2026-11-23 | AI Agent | 王辉 | 补充方案 A 已按 `V2.0.0` 落地（Wave 1 移除 6 个外壳文件并重构 `SKILL.md` 为 67 行 / 362 字符描述）的执行注记，说明下表数据为 `V1.x` 审计时刻的历史快照 |
 | **V1.0.0** | 2026-11-23 | AI Agent | 王辉 | 初版：完成 `clarification-protocol` 8 文件体检、8 份真实 RFC 实跑 0/8 假阳性审计、`check-decision-ledger.py` 8 类实测缺陷、Split-Brain 双模板剖析与轻量重塑方案 |
 
 ---

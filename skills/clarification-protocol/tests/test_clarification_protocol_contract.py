@@ -12,19 +12,21 @@ SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILL_MD = SKILL_DIR / "SKILL.md"
 ACTIVE_SKILLS = ("taste-driven-designer", "dual-round-review", "goal-loop", "frontend-qa-gate", "doc-governance", "clarification-protocol")
 CROSS_SKILL_LINK = re.compile(r"(?:^|[\s(=/\"\'>、，（])(?:[^)\s\"\'<>]*?[\\/])*(?<![.])(?:" + "|".join(ACTIVE_SKILLS) + r")[\\/]", re.IGNORECASE)
-MD_LINK, INLINE_CODE = re.compile(r"\]\(([^)]+)\)"), re.compile(r"`[^`]*`")
+MD_LINK, INLINE_CODE = re.compile(r"\]\(([^)]*)\)"), re.compile(r"`[^`]*`")
+FENCE_RX = re.compile(r"^\s*(`{3,}|~{3,})")
 COMMAND_EXAMPLE = re.compile(r"^\s*(?:bash|sh|python3?|npx|pnpm|npm|node)\s")
 FRONTMATTER_RX = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
 
 
-def _strip_fences(text: str) -> str:
-    out, fenced = [], False
+def _strip_fences(text: str) -> tuple[str, bool]:
+    out, fence = [], ""
     for line in text.splitlines():
-        if line.strip().startswith("```"):
-            fenced = not fenced
-        elif not fenced:
+        m = FENCE_RX.match(line)
+        if m and (not fence or (m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence) and not line[m.end():].strip())):
+            fence = "" if fence else m.group(1)
+        elif not fence:
             out.append(line)
-    return "\n".join(out)
+    return "\n".join(out), not fence
 
 
 def _parse_frontmatter(text: str) -> dict:
@@ -40,9 +42,11 @@ def _parse_frontmatter(text: str) -> dict:
         key, sep, val = line.partition(":")
         assert sep, f"非法 YAML 行: {line!r}"
         v = val.strip()
-        if not (len(v) >= 2 and v[0] == v[-1] and v[0] in ("'", '"')):
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ("'", '"'):
+            v = v[1:-1]
+        else:
             assert not re.search(r":(?:\s|$)", v), f"{key} 含未加引号的 ': '"
-        meta[key.strip()] = v.strip("'\"")
+        meta[key.strip()] = v
     return meta
 
 
@@ -59,20 +63,25 @@ def test_fences_balanced_and_links_clean():
     docs = sorted(p for p in SKILL_DIR.rglob("*.md") if "__pycache__" not in str(p))
     assert SKILL_MD in docs
     for path in docs:
-        text = path.read_text(encoding="utf-8")
-        assert sum(1 for ln in text.splitlines() if ln.strip().startswith("```")) % 2 == 0, f"围栏未闭合: {path.name}"
-        for i, line in enumerate(_strip_fences(text).splitlines(), 1):
+        stripped, balanced = _strip_fences(path.read_text(encoding="utf-8"))
+        assert balanced, f"围栏未闭合: {path.name}"
+        for i, line in enumerate(stripped.splitlines(), 1):
             clean = INLINE_CODE.sub("", line)
             if not (COMMAND_EXAMPLE.match(line) and "](" not in line):
                 assert not CROSS_SKILL_LINK.search(clean), f"禁止跨技能相对外链: {path.name}:{i}"
             for t in (m.strip() for m in MD_LINK.findall(clean)):
-                if not t.startswith(("http", "#", "mailto:")):
-                    target = (path.parent / t.split("#")[0]).resolve()
-                    assert target.exists() and (target == root or root in target.parents), f"断链或越界: {path.name}:{i} -> {t}"
+                if not t.startswith(("http://", "https://", "#", "mailto:")):
+                    rel = t.split("#", 1)[0].strip()
+                    assert rel, f"空链接目标: {path.name}:{i} -> {t!r}"
+                    target = (path.parent / rel).resolve()
+                    assert target.is_file() and root in target.parents, f"断链或越界: {path.name}:{i} -> {t}"
 
 
 def test_retired_artifacts_and_null_pointer_do_not_regress():
     text = SKILL_MD.read_text(encoding="utf-8")
-    for retired in ("check-decision-ledger", "decision-ledger-template", "requirement-confirmation-template"):
+    for retired in (
+        "check-decision-ledger", "decision-ledger-template", "requirement-confirmation-template",
+        "decision-ledger.md", "convergence-checklist",
+    ):
         assert retired not in text, f"已废弃外壳回流进 SKILL.md: {retired}"
     assert not re.search(r"\|\s*提问层\s*\|\s*本节\s*\|", text), "旧空指针「提问层 | 本节」不得回流"
