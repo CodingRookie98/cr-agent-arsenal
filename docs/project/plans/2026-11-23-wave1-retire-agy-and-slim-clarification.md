@@ -13,10 +13,14 @@
 
 ### Active Checkpoint
 
-- **当前阶段**: `P4`（基线落地全绿，进入双轮独立对抗审查）
-- **状态**: 进行中
-- **已完成**: 需求与优先级裁决、分支切出、`ADR-0004` 定稿、并行委派 W1-A（退役 `agy-delegation-workflow` + 抽离三项资产）与 W1-B（提纯 `clarification-protocol` V2.0.0）、W1-C 注册面与总索引/机器地图同步、主智能体 Zero-Trust Diff 复核与全仓测试/7 项文档门禁全绿
-- **待办**: 双轮独立对抗审查（R1 红队 → R2 元架构师审判，Zero Blockers 放行） → 审查报告归档与计划结项 → Fast-Forward 合入 `master` 并推送
+- **当前阶段**: `DONE`（已完成并终审放行）
+- **状态**: 已完成
+- **已完成**:
+  - 需求与优先级裁决、分支切出、`ADR-0004` 定稿；
+  - 并行委派 W1-A（按 `ADR-0004` 抽离三项资产并退役 `agy-delegation-workflow`）、W1-B（提纯 `clarification-protocol` V2.0.0 至 67 行 / 362 字符微技能并清理 6 个冗余外壳）与 W1-C（全仓注册面、入口摘要、`docs/index.md`、`docs/project/changelog.md` 与分层机器地图同步），基线提交 `1928f1e`；
+  - 完整四轮独立双轮对抗审查（R1 `5a232df30ec7` → R2 `11e41ff7a806` 坐实 1 项 P1 阻断项 `R1-1` → W1-Delta 修复提交 `244c6b3` → Delta-R1 `1e8affcac24c` 0 缺陷 → Delta-R2 `a12417f6e089` **准予交付 Zero Blockers**），归档见 [审查归档 README](../reviews/2026-11-23-wave1-retire-agy-and-slim-clarification/README.md)；
+  - 全量验证：`python3 -m pytest skills/ -q`（`589 passed`，Exit 0）、`check-all.py --full`（7/7 PASS，Exit 0）、`check-golden-tasks.py`（20/20 PASS，Exit 0）与 `check-review-report.py --require-verdict=PASS`（Exit 0）。
+- **待办**: 无（准备 Fast-Forward 合入 `master` 并推送）
 
 ---
 
