@@ -25,7 +25,6 @@ SKILL_NAMES = [
     "doc-governance",
     "agy-delegation-workflow",
     "clarification-protocol",
-    "spec-evolution",
 ]
 LINK = re.compile(r"\]\(([^)]+)\)")
 CROSS = re.compile(

@@ -2,15 +2,30 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-SPEC-EVOLUTION-2026
-> - **当前版本**: V1.0.0 (事实层 / 判定层 / 门禁层三层分离 + 锚点硬门禁 + 零 LLM judge)
+> - **当前版本**: V1.1.0 (已退役：由 ADR-0003 取代，核心哨兵下沉至 `skills/_shared/tests/`)
+> - **文档状态**: Superseded
+> - **取代于**: ../decisions/0003-retire-spec-evolution.md
 > - **设计所有者**: 王辉
 > - **设计架构师**: DSH AI Agent
 > - **创建日期**: 2026-10-12
 > - **参考基准**:
->   - [RFC-0004 spec-evolution 演进回路](../../proposals/RFC-0004-spec-evolution.md)（已受理 · V0.3.0）
+>   - [RFC-0004 spec-evolution 演进回路](../../proposals/RFC-0004-spec-evolution.md)（Superseded）
+>   - [ADR-0003 退役 spec-evolution 技能并下沉哨兵测试](../decisions/0003-retire-spec-evolution.md)
 >   - Huang et al., *Large Language Models Cannot Self-Correct Reasoning Yet* ([arXiv:2310.01798](https://arxiv.org/abs/2310.01798))
 >   - [Agent Skills 规范](https://agentskills.io/specification)（`description` 硬限 1024 字符）
 >   - 内部技能生态：`goal-loop`、`doc-governance`（Diátaxis 与文档门禁）、`dual-round-review`（交付终审）、`writing-skills`（技能形态与失败类型）
+
+> [!NOTE]
+> **退役说明 (2026-11-23)**：依据 [ADR-0003](../decisions/0003-retire-spec-evolution.md)，`spec-evolution` 技能本体已从 `skills/` 移除，不可替代的 `C-01`/`C-05`/`C-07` 哨兵断言已迁移至 `skills/_shared/tests/test_skill_surface_sentinels.py`。本文档作为历史架构设计记录保留，不再更新。
+
+---
+
+### 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-11-23 | AI Agent | 王辉 | 状态流转为 `Superseded`（取代于 `ADR-0003`），将已移除的 `skills/spec-evolution/` 相对链接转为行内代码保留历史溯源 |
+| **V1.0.0** | 2026-10-12 | DSH AI Agent | 王辉 | 初版（事实层 / 判定层 / 门禁层三层分离 + 锚点硬门禁 + 零 LLM judge） |
 
 ---
 
@@ -160,7 +175,7 @@ Reviewer ≠ Author。判定器负责**列出**候选，人类负责**裁决**�
 
 ## 6. 已知表达上限 (Known Limits)
 
-与 [`references/checks-spec.md`](../../../skills/spec-evolution/references/checks-spec.md) §5 保持一致，显式登记、不在 v1 掩饰：
+与历史归档判据文件 `skills/spec-evolution/references/checks-spec.md` §5 保持一致，显式登记、不在 v1 掩饰：
 
 1. **C-10 无法判定「理由是否成立」**：准入判据允许根提示词净增长（前提是同一提交给出等量删减或不可压缩的理由）。判定器只能观测「是否净增长」，**无法**判定理由是否成立。故 C-10 报告文案固定为中性提示，而非指控。
 2. **C-03 存在误报面**：`scripts/` 与 `templates/` 对纯规程型技能可豁免。C-03 采「有则须完整、无则记 MID 提示」，命中项须人工确认是否属豁免场景。
@@ -181,8 +196,9 @@ v2 的启动与否记录在 [RFC-0004](../../proposals/RFC-0004-spec-evolution.m
 
 ## 8. 相关文档 (See Also)
 
-- 技能规程：[`skills/spec-evolution/SKILL.md`](../../../skills/spec-evolution/SKILL.md)
-- 判据表：[`references/checks-spec.md`](../../../skills/spec-evolution/references/checks-spec.md)
-- 锚点契约：[`references/anchor-contract.md`](../../../skills/spec-evolution/references/anchor-contract.md)
+- 技能规程（已退役删除）：`skills/spec-evolution/SKILL.md`
+- 判据表（已退役删除）：`skills/spec-evolution/references/checks-spec.md`
+- 锚点契约（已退役删除）：`skills/spec-evolution/references/anchor-contract.md`
+- 接替决策：[ADR-0003 退役 spec-evolution 技能并下沉哨兵测试](../decisions/0003-retire-spec-evolution.md)
 - 需求确认文档：[RFC-0004 spec-evolution 演进回路](../../proposals/RFC-0004-spec-evolution.md)
 - 落地计划：[2026-10-12-spec-evolution.md](../../project/plans/2026-10-12-spec-evolution.md)

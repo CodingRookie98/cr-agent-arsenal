@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.43.0 (补录 spec-evolution 主册/子册与 RFC-0007/0008 计划，索引完整性收口)
+> - **当前版本**: V1.44.0 (退役 spec-evolution 并登记 ADR-0003 与实施计划)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,11 +12,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.44.0** | 2026-11-23 | AI Agent | 王辉 | **退役 `spec-evolution`（ADR-0003）**：从现役技能/设计书表移除 `spec-evolution`，补登 `ADR-0003` 与退役实施计划行，并将 `RFC-0004` 标注为已被取代（`Superseded`） |
 | **V1.43.0** | 2026-11-23 | DSH AI Agent | 王辉 | **计划索引补录**：新增 spec-evolution 主册 + Task 2/3/4-6 子册、文档体量度量（RFC-0008）、文档状态机（RFC-0007）四行，消除计划目录未入总索引的缺口；`research/` 调研迁入 `explanation/analysis/`（归位 Diátaxis 象限） |
 | **V1.42.0** | 2026-11-23 | DSH AI Agent | 王辉 | **交付尾巴收口**：RFC-0001/0002/0004 状态更正为 Implemented，补登 RFC-0005~0008 条目；backlog 指标改为指向动态仪表盘（禁止手写对账）；同步设计书 V1.5.0 与 RFC-0008 归档防腐块 |
 | **V1.41.0** | 2026-11-22 | DSH AI Agent | 王辉 | **补齐交付叙事（BK-0053）**：新增 docs/project/changelog.md（按交付单元聚合）；§1 增变更日志入口；RFC-0001/0002/0003 补「落地计划」链接；可回答性 G-02/G-16 由 GAP 转 PASS（PASS 17→19 / GAP 3→1） |
 | **V1.40.0** | 2026-11-22 | DSH AI Agent | 王辉 | **补齐上手/操作象限（BK-0052）**：§2.5 新增 1 篇 Tutorial（5 分钟上手）+ 3 篇 How-To（安装技能 / 执行门禁 / 故障排查）；可回答性 G-12/G-13 由 GAP 转 PASS |
-| **V1.39.0** | 2026-11-22 | DSH AI Agent | 王辉 | **分层机器地图登记**：§1 补路由文件与子地图入口；§4 新增「分层机器地图（RFC-0006）」计划行；根 `llms.txt` 21,810 → 883 字节 |
 
 ---
 
@@ -44,7 +44,6 @@
 | **`taste-driven-designer`** | 源于 Anshu Chimala AI 双钻模型：外部随机种子 + 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 多模态增强 + 残酷减法 | [taste-driven-designer-design.md](./explanation/architecture/taste-driven-designer-design.md) |
 | **`frontend-qa-gate`** | 源于 kejun《前端开发转向 AI Coding 的常见问题全景》：五域产物断言（响应式 / 状态矩阵 / 无障碍 / 浏览器 / 性能）+ 证据三态 + 回流路由；不做分数判据、不替代人工签收、不侵入代码级审查 | [frontend-qa-gate-design.md](./explanation/architecture/frontend-qa-gate-design.md) |
 | **`clarification-protocol`** | 以「依赖强度 × 实现影响」排序提问、以三类决策台账（已决项 / 已排除边界 / 默认假设）承载裁决、以三项收敛自检（目标 / 边界 / 矛盾）作终止判据；把「是否收敛」从感觉变成可判定句，台账结构由离线校验器机械把关 | [clarification-protocol-design.md](./explanation/architecture/clarification-protocol-design.md) |
-| **`spec-evolution`** | 机械化演进回路：把演进回路的「选择端」从模型意见换成脚本退出码（只读采集器 → 确定性判定器 → Exit 0/1/2）+ 锚点硬门禁（不可解析即 fail-closed）+ 人类裁决区永久留白；只判「产物存在性」，不做设计质量评价 | [spec-evolution-design.md](./explanation/architecture/spec-evolution-design.md) |
 | **`agy-delegation-workflow`** | 认知与执行分离：后台无头执行体的三级优先级链与宿主自适应 + 7 维自包含任务 Prompt + 假失败落盘判别 + 6 步零信任验收（Diff 范围 / 类型与 Lint / 失败模式 grep / 单测 / 全局构建 / 双轮终审） | [agy-delegation-workflow-design.md](./explanation/architecture/agy-delegation-workflow-design.md) |
 | **Backlog 治理最佳实践** | 结合软件工程史（精益/看板/Shape Up）与 AI 上下文工程的 14 项待办治理法则 | [backlog-governance-best-practices.md](./explanation/analysis/backlog-governance-best-practices.md) |
 | **LLM-WIKI 社区实现调研** | 六条实现路线（规范纯文件 / 索引检索 / 仓库生成 / 知识图谱 / 检索即答案 / 确定性编译器）+ 十类工程难点（含 21× token、漂移检出盲区、lint 召回 ~50%）+ 十二维对照审计与 P0–P2 改造建议 | [llm-wiki-implementation-research.md](./explanation/analysis/llm-wiki-implementation-research.md) |
@@ -80,7 +79,6 @@
 | **`taste-driven-designer`** | [taste-driven-designer 规程](../skills/taste-driven-designer/SKILL.md) | 品味驱动设计三阶段流程（D1 种子发散 / D2 三信号门禁 / D3 AI Tells 审计与减法）；能力门控、宿主无关、可降级 |
 | **`frontend-qa-gate`** | [frontend-qa-gate 规程](../skills/frontend-qa-gate/SKILL.md) | 前端产物验收（五域断言 + 报告结构机械门禁 + 缺陷回流路由）；能力门控，缺能力记未验证不降级通过 |
 | **`clarification-protocol`** | [clarification-protocol 规程](../skills/clarification-protocol/SKILL.md) | 需求澄清与收敛规程（术语先行前置项、提问分级排序、决策台账去重、三项收敛自检、熔断预算与人类升级）；由全局提示词 §4 的一行指针按需唤起 |
-| **`spec-evolution`** | [spec-evolution 规程](../skills/spec-evolution/SKILL.md) | 机械化演进回路（技能交付面完整性、`description` 上限、文件规模、四注册面漂移、根提示词净增长）；判定只采信脚本退出码与可核验锚点，人类裁决区永久留白 |
 
 ---
 
@@ -99,7 +97,7 @@
 | **RFC-0001 审查报告归档契约** | 为 `dual-round-review` 引入交付凭据归档：报告全文逐字落盘至版本库归档根 + SHA256 指纹 + 机械门禁（**已实现**，状态 Implemented；审查归档见 `docs/project/reviews/2026-10-04-review-report-archive/`） | [RFC-0001-review-report-archive.md](./proposals/RFC-0001-review-report-archive.md) |
 | **RFC-0003 目录级索引约定** | 象限索引托管化与 scaffold 索引自愈：根级人类入口唯一、象限索引按需托管（`<!-- doc-index:managed -->` 位置契约）、登记防 404 与 README 入口跳过（**已实现**，状态 Implemented；三轮双轮对抗审查 Zero Blockers 准予交付） | [RFC-0003-quadrant-index-convention.md](./proposals/RFC-0003-quadrant-index-convention.md) |
 | **RFC-0002 子智能体直写契约** | 执行 RFC-0001 §7.3 A1 预留路径：子智能体直写报告至预授权路径（Write-Scope 单路径例外）+ 主智能体独立复算指纹 + 写入形态登记；含诚实边界（预授权是提示词契约而非沙箱强制）（**已实现**，状态 Implemented；审查归档见 `docs/project/reviews/2026-10-08-subagent-direct-write/`） | [RFC-0002-subagent-direct-write.md](./proposals/RFC-0002-subagent-direct-write.md) |
-| **RFC-0004 spec-evolution 演进回路** | 新建 `spec-evolution` 技能：把演进回路的「选择端」从**模型意见**换成**脚本退出码**——事实采集器（`collect-facts.py`）→ 确定性判定器（`judge.py`，零 LLM/零网络/纯标准库）→ Exit 0/1；判据表 C-01~C-10 覆盖技能交付面完整性、frontmatter 上限、文件规模、注册面漂移与根提示词净增长；v1 结构性地不做无客观信号的设计质量评价（**已实现**，状态 Implemented · V0.4.0：7 个 Task 全部交付，判定器实测复现 §1.1 的 F-1~F-9 全部九项缺陷并修 F-9；`spec-evolution` 自身零 finding；已独立终审：2026-10-12 归档 **Blockers=0 / 准予交付**） | [RFC-0004-spec-evolution.md](./proposals/RFC-0004-spec-evolution.md) |
+| **RFC-0004 spec-evolution 演进回路（已退役）** | 曾新建 `spec-evolution` 技能并落地 C-01~C-10 采集/判定器（已于 2026-11-23 依据 ADR-0003 流转为 `Superseded`，技能下线，核心哨兵 C-01/C-05/C-07 下沉 `skills/_shared/tests/test_skill_surface_sentinels.py`） | [RFC-0004-spec-evolution.md](./proposals/RFC-0004-spec-evolution.md) |
 | **RFC-0005 文档真值轴** | 控制头三字段（来源 / 代码锚点 / 复核于）+ `check-doc-drift.py` 五态漂移检测（退出码 0/1/2）+ `--truth=warn|require` 双轴报告；结构分语义不变，零声明不颁发满分（**已实现**，状态 Implemented；六轮审查 Zero Blockers，归档 `2026-11-22-doc-truth-axis/`） | [RFC-0005-doc-truth-axis.md](./proposals/RFC-0005-doc-truth-axis.md) |
 | **RFC-0006 分层机器地图** | 根 `llms.txt` 降为象限入口（≤8 KB）+ 全量条目下沉 `_llms/<象限>.md` + 生成器 `--split` / `--check` / `--max-root-bytes`；根与子地图逐字节一致为硬门禁（**已实现**，状态 Implemented；归档 `2026-11-22-split-llms-map/`） | [RFC-0006-split-llms-map.md](./proposals/RFC-0006-split-llms-map.md) |
 | **RFC-0007 文档状态机** | `文档状态` 三态（Active / Contested / Superseded）+ `取代于` / `争议点` + 审计输出「未决冲突清单」；Active 携带取代于即阻断（**已实现**，状态 Implemented；归档 `2026-11-22-doc-status-machine/`） | [RFC-0007-doc-status-contested.md](./proposals/RFC-0007-doc-status-contested.md) |
@@ -118,6 +116,8 @@
 | **项目待办清单 (Backlog)** | 形态 B 目录分片架构（active/ 与 archive/，由 `manage-backlog.py` 自动化治理；活跃/归档数量与编号以 `backlog/index.md` 动态仪表盘为准（禁止在本索引手写对账）；BK-0039「存量技能交付面债务」已按验收准则结项归档，残余 MID 债务登记于 BK-0041「存量技能交付面残余债务」（agy 设计书 / 两条 description 超建议值 / 测试文件超行限），`close` 未收敛卡片占位与 DoD 勾选的工具缺陷 BK-0042 已修复结项（提交 afdb4e5，V10 复核收口 8390df8；V11 更正记录见归档卡 §5 E-4/E-5），Write-Once 审查归档终审裁决契约失配登记于 BK-0043，提交信息取证据口径的反复更正登记于 BK-0044） | [index.md](./project/backlog/index.md) |
 | **ADR-0001 交付凭据归档层** | 审查凭据按「可否重建」分层：运行时状态留隐藏目录、交付凭据进版本库独立目录并对齐治理豁免语义（MADR 3.0；含四轮对抗审查证据） | [0001-review-evidence-archive-layer.md](./explanation/decisions/0001-review-evidence-archive-layer.md) |
 | **ADR-0002 子智能体直写通道** | 写盘权归还内容作者：消除转录失真、写盘与核验分离；显式登记三项代价（授权面由零扩大为单文件、路径预授权是提示词契约而非沙箱强制、写入形态声明不可机械验证）（MADR 3.0） | [0002-subagent-direct-write-channel.md](./explanation/decisions/0002-subagent-direct-write-channel.md) |
+| **ADR-0003 退役 `spec-evolution` 技能** | 停用不可跨仓复用、零真实触发且高维护成本的 `spec-evolution` 技能，将不可替代的 C-01 / C-05+YAML / C-07 硬护栏下沉为 `skills/_shared/tests/test_skill_surface_sentinels.py`（MADR 3.0） | [0003-retire-spec-evolution.md](./explanation/decisions/0003-retire-spec-evolution.md) |
+| **退役 `spec-evolution` 实施计划** | 方案 A（退技能、留哨兵）的落地计划、TDD 哨兵、注册面同步与文档状态流转记录 | [2026-11-23-retire-spec-evolution.md](./project/plans/2026-11-23-retire-spec-evolution.md) |
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |
 | **P2 批次六项 backlog 卡片闭环** | 闭环 BK-0003/BK-0004/BK-0020/BK-0033/BK-0034/BK-0040：稳定 ID 按基线逐轮配对与终审裁决唯一性、修订表头章节作用域、非 UTF-8 输出硬化、baseline 损坏显式失败、嵌套类型逃逸收口（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-14-p2-six-backlog-items.md](./project/plans/2026-10-14-p2-six-backlog-items.md) |
 | **技能脚本 Python 统一化** | 8 个自建技能脚本改为**单一 Python 实现** + 同目录 `.sh` POSIX 兼容壳（形态 B，旧调用面零破坏）；9 套契约测试改为运行时无关（Windows 默认 `sys.executable`，POSIX 另验壳转发）；四注册面与技能内文档口径同步为 Python 主路径；Windows 侧以 uv 隔离环境取证（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-19-skill-scripts-python-unification.md](./project/plans/2026-10-19-skill-scripts-python-unification.md) |

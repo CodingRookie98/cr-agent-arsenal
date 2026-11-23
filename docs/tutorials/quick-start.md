@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: TUT-QUICK-START-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.0.1
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-22
 > - **文档所有者**: 核心架构组
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.1** | 2026-11-23 | AI Agent | 王辉 | 随 `ADR-0003` 退役 `spec-evolution`，技能清单与期望输出由 8 个同步为 7 个 |
 | **V1.0.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初版：面向新人/新 agent 的最短上手路径（装技能 → 跑门禁 → 定位一份文档） |
 
 ---
@@ -23,7 +24,7 @@
 
 完成本教程后，你将能：
 
-1. 把仓库里的 8 个技能装进你的 agent（或确认它们已就位）；
+1. 把仓库里的 7 个技能装进你的 agent（或确认它们已就位）；
 2. 用一条命令跑完全部门禁，并看懂失败信息该找谁；
 3. 用「象限入口 → 子地图 → 正文」三层索引，在 30 秒内定位任意一份文档。
 
@@ -46,9 +47,9 @@ git --version
 
 ```bash
 ls skills/
-# 期望看到 8 个技能目录 + _shared：
+# 期望看到 7 个技能目录 + _shared：
 # agy-delegation-workflow  clarification-protocol  doc-governance
-# dual-round-review  frontend-qa-gate  goal-loop  spec-evolution  taste-driven-designer
+# dual-round-review  frontend-qa-gate  goal-loop  taste-driven-designer
 ```
 
 若你的 agent 还看不到这些技能，二选一：

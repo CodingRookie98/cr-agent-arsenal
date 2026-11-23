@@ -56,7 +56,6 @@ SKILL_NAMES = [
     "doc-governance",
     "agy-delegation-workflow",
     "clarification-protocol",
-    "spec-evolution",
 ]
 CROSS_SKILL_LINK = re.compile(
     r"(?:^|[\s(=/\"\'>、，（])(?:[^)\s\"\'<>]*?[\\/])*(?<![.])(?:"
@@ -177,7 +176,7 @@ def test_cross_skill_link_scanner_self_check():
     illegal = [
         "(../goal-loop/SKILL.md)",
         "(./dual-round-review/SKILL.md)",
-        "(spec-evolution/SKILL.md)",
+        "(frontend-qa-gate/SKILL.md)",
         "(../../skills/doc-governance/SKILL.md)",
         "(/abs/skills/clarification-protocol/SKILL.md)",
         "../Goal-Loop/SKILL.md",

@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: HOW-INSTALL-SKILLS-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.0.1
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-22
 > - **文档所有者**: 核心架构组
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.1** | 2026-11-23 | AI Agent | 王辉 | 随 `ADR-0003` 退役 `spec-evolution`，期望安装技能数由 8 个同步为 7 个 |
 | **V1.0.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初版：两种分发形态的选型与命令、验证与卸载 |
 
 ---
@@ -80,7 +81,7 @@ python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a <a
 ## 验证安装
 
 1. 让宿主列出技能（各宿主命令不同，通常为 `/skills` 或查看 `.agents/skills/`）。
-2. 期望看到 8 个技能：`agy-delegation-workflow`、`clarification-protocol`、`doc-governance`、`dual-round-review`、`frontend-qa-gate`、`goal-loop`、`spec-evolution`、`taste-driven-designer`。
+2. 期望看到 7 个技能：`agy-delegation-workflow`、`clarification-protocol`、`doc-governance`、`dual-round-review`、`frontend-qa-gate`、`goal-loop`、`taste-driven-designer`。
 3. **数量少一个**通常意味着该技能的 `SKILL.md` frontmatter 不是合法 YAML——最常见原因是 `description` 含 `: `（冒号+空格）却未加引号，`npx` 会**静默跳过**且仍 exit 0。
 
 ## 卸载

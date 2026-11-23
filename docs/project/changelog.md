@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CHANGELOG-CR-ARSENAL
-> - **当前版本**: V1.2.0
+> - **当前版本**: V1.3.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-22
 > - **文档所有者**: 核心架构组
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.3.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「退役 `spec-evolution` 技能并下沉核心哨兵」（ADR-0003）：移除技能目录与对外发行条目，C-01/C-05+YAML/C-07 迁移至 `skills/_shared/tests/` |
 | **V1.2.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「真值轴残余收口与存量文档拆分」：BK-0055（--staged 新文档/BD-9 判据）与 BK-0050（spec-evolution 拆分、skill-scripts 长行改写、体量基线清空） |
 | **V1.1.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「doc-governance 交付尾巴收口」：RFC 生命周期补完、计划 checkpoint 校准、设计书 V1.5.0、索引状态更正、BD-1-R2 修复与两轮独立确认 |
 | **V1.0.0** | 2026-11-22 | DSH AI Agent | 王辉 | 初版：按「交付单元」记录可交付成果（此前交付叙事散落在各计划的执行偏差表与提交信息里） |
@@ -22,6 +23,21 @@
 本文件记录**已交付**的成果。进行中的工作在 [backlog](./backlog/index.md)，逐日过程在 git log。
 
 格式参照 Keep a Changelog，按交付单元聚合（不按提交逐条罗列）。
+
+## [2026-11-23] 退役 `spec-evolution` 技能并下沉核心哨兵
+
+### 决策与移除
+
+- **ADR-0003**：经实证评估（硬编码绑定本仓无法外部复用、30 天真实执行 0 次、现行输出全为 BK-0041 已裁定 `wontfix` 噪声、2,851 行代码与 84 条用例维护成本倒挂），物理移除 `skills/spec-evolution/` 与 `.agents/skills/spec-evolution` 悬空软链接；现役公开技能由 8 个收敛为 7 个。
+- `RFC-0004` 与 `spec-evolution-design.md` 按文档状态机流转为 `Superseded`（取代于 `ADR-0003`），清除 `docs/` 下指向已删技能目录的失效相对链接，保留历史计划与 Write-Once 审查凭据原貌。
+
+### 新增
+
+- `skills/_shared/tests/test_skill_surface_sentinels.py`：承接不可替代的三道硬护栏（`C-01` 测试存在性、`C-05` `description < 1024` 与 YAML frontmatter 合法性、`C-07` 五处注册面双向严格一致）及合成仓库负向自检用例。
+
+### 变更
+
+- `cr-agent-arsenal.json`、`README.md`、`docs/index.md`、`docs/how-to/install-skills.md`、`docs/tutorials/quick-start.md`、`skills/_shared/tests/test_cross_skill_links.py`、`skills/_shared/cross-skill-link-policy.json`、`skills/clarification-protocol/tests/test_clarification_protocol_contract.py`、`clarification-protocol-design.md` 同步更新并重生成分层机器地图。
 
 ## [2026-11-23] 真值轴残余收口与存量文档拆分
 

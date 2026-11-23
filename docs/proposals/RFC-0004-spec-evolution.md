@@ -2,9 +2,11 @@
 
 > **提案元数据**
 > - **标识**: RFC-2026-SPEC-EVOLUTION
-> - **当前状态**: Implemented
+> - **当前状态**: Superseded
+> - **文档状态**: Superseded
+> - **取代于**: ../explanation/decisions/0003-retire-spec-evolution.md
 > - **发起人**: 工程师 / AI Agent
-> - **当前版本**: V0.6.0
+> - **当前版本**: V0.7.0
 > - **初次发起日期**: 2026-10-12
 > - **目标里程碑**: spec-evolution V1.0.0（新增技能，不涉及仓库版本号变更）
 > - **定案日期**: 2026-10-12
@@ -13,13 +15,13 @@
 > - **关联前置**: [RFC-0001](./RFC-0001-review-report-archive.md)（交付凭据归档契约）、[goal-loop 架构设计书](../explanation/architecture/goal-loop-design.md)、[docs/GOVERNANCE.md](../GOVERNANCE.md)
 
 > [!IMPORTANT]
-> **历史溯源备忘 (Archival Notice)**:
-> 本提案已于 2026-10-12 定案并完成实现（2026-11-23 补登防腐备忘），内容已结晶下沉至系统基线。
-> - 权威技能规程请查阅: [../../skills/spec-evolution/SKILL.md](../../skills/spec-evolution/SKILL.md)
-> - 权威架构设计请查阅: [../explanation/architecture/spec-evolution-design.md](../explanation/architecture/spec-evolution-design.md)
+> **历史溯源与退役备忘 (Archival & Retirement Notice)**:
+> 本提案曾于 2026-10-12 定案并实现，后于 **2026-11-23 依据 [ADR-0003](../explanation/decisions/0003-retire-spec-evolution.md) 退役**：技能目录已移除，不可替代的 `C-01`/`C-05`/`C-07` 哨兵断言已迁移至 `skills/_shared/tests/test_skill_surface_sentinels.py`。
+> - 原技能规程（已退役删除）: `skills/spec-evolution/SKILL.md`
+> - 权威架构设计（已标 Superseded）: [../explanation/architecture/spec-evolution-design.md](../explanation/architecture/spec-evolution-design.md)
+> - 接替决策: [ADR-0003 退役 spec-evolution 技能并下沉哨兵测试](../explanation/decisions/0003-retire-spec-evolution.md)
 > - 落地计划与结项记录: [../project/plans/2026-10-12-spec-evolution.md](../project/plans/2026-10-12-spec-evolution.md)
 > - 审查凭据全文请查阅: [../project/reviews/2026-10-12-spec-evolution-v1/README.md](../project/reviews/2026-10-12-spec-evolution-v1/README.md)
-> - 实现载体: `skills/spec-evolution/scripts/collect-facts.py` 与 `judge.py`
 > 本文件仅作为立项决策历史证据保留，**不再增量维护**。
 
 ---
@@ -28,11 +30,11 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V0.7.0** | 2026-11-23 | AI Agent | 王辉 | **退役流转 Implemented → Superseded**（依据 `ADR-0003`）：技能本体下线，核心哨兵下沉 `skills/_shared/tests/test_skill_surface_sentinels.py`；原 `skills/spec-evolution/SKILL.md` 相对链接转为行内代码防断链 |
 | **V0.2.0** | 2026-10-12 | DSH AI Agent | 王辉 | 四项未决项收口：C-04 降为建议值（MID）、C-05 改按 `description` 口径、C-07 注册面 5→4、F-1~F-9 不进本次交付。依据 Agent Skills 规范原文与生成器源码实证，修正 V0.1.0 中两处契约误设 |
 | **V0.3.0** | 2026-10-12 | DSH AI Agent | 王辉 | **状态流转 In Review → Accepted**（用户裁决准予受理）；批准进入 P1 编写落地计划。契约内容未变更，仅登记受理决定 |
 | **V0.4.0** | 2026-10-12 | DSH AI Agent | 王辉 | **状态流转 Accepted → Implemented**（交付完成）：采集器 `collect-facts.py`、判定器 `judge.py`（C-01~C-10 + 锚点硬门禁 + 退出码 0/1/2）、报告模板、GI-1~GI-6 门禁不变式（50 条测试）、架构设计书与四注册面接入全部落地。判定器对全仓实跑复现 §1.1 的 F-1~F-9 全部九项缺陷（findings 17 条 / HIGH+BLOCKER 8 条），修 F-9 后降至 11 条 / 3 条；**spec-evolution 自身零 finding**。**原位保留未移入 `proposals/archive/`**（仓库尚无该目录、RFC-0001~0003 均未归档，移位会打断技能内相对链接） |
 | **V0.5.0** | 2026-10-12 | DSH AI Agent | 待用户裁定 | **P3.5 双轮审查修正**（基线 `0306f37..fe8da78`，R2 裁定阻断交付）：① §3.4 补登 `[REPO:*]` 锚点形式与行号语义——C-07 的四个注册面与 C-09 的门禁证据均在技能目录之外，原文只登记 `[SKILL:*]`/`[RULE:*]` 属**契约缺口**（R1-7，R2 认定比 R1 所述更严重）；② §3.4 明确 `[RULE:*]` 解析域是**标题树**、加粗条目不可作锚点；③ §3.3 与 G2 的退出码口径按实现收敛为「0 = 无 BLOCKER/HIGH（可含 MID advisory）」（R1-2）；④ GI-3 与术语表同步扩至三类锚点。契约内容变更，实现侧同步见计划《执行偏差记录》D-10~D-15 |
-| **V0.6.0** | 2026-11-12 | DSH AI Agent | 待用户裁定 | **撤回未落地的 P5 增量挂载**（§3.6 路由表 + 段落 + 裁决项 + DK-8 + 见证表同步）：`skills/goal-loop/` 对本技能零引用，挂载从未实现；其判据与交付流程自带门禁重合，重复挂载只产出重复 finding。触发路由收敛为唯一入口「显式手动调用」，`SKILL.md` 同步删除自动触发承诺。**本行含两项独立变更**（提交时应拆分）：(a) P5 撤回；(b) 修 BK-0046 —— C-09 区分「门禁失败」与「门禁未得出结论」，采集器新增 `timed_out` / `error` / `duration_s`，`GATE_TIMEOUT` 300s→600s，超时与采集失败（`OSError`，如 9p 断连）都不再判 BLOCKER，报告单列「未得出结论」、结论记 `INCOMPLETE`（不静默转通过）；§3.2 判据表 C-09 行与严重度语义同步 |
 
 ---
 

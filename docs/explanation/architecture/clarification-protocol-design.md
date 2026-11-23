@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-CLARIFICATION-PROTOCOL-2026
-> - **当前版本**: V1.0.0 (六节澄清协议 + 交付面四件套：展开 / 骨架 / 校验 / 回归)
+> - **当前版本**: V1.0.1 (同步 spec-evolution 退役：交付面参考源切换至共享哨兵测试与 ADR-0003)
 > - **设计所有者**: 王辉
 > - **设计架构师**: DSH AI Agent
 > - **创建日期**: 2026-10-13
@@ -14,7 +14,16 @@
 >   - [templates/decision-ledger-template.md](../../../skills/clarification-protocol/templates/decision-ledger-template.md) / [templates/requirement-confirmation-template.md](../../../skills/clarification-protocol/templates/requirement-confirmation-template.md) —— 台账与需求确认文档骨架
 >   - [tests/test_clarification_protocol_contract.py](../../../skills/clarification-protocol/tests/test_clarification_protocol_contract.py) —— 交付面与硬约束回归
 >   - [skills/goal-loop/SKILL.md](../../../skills/goal-loop/SKILL.md) —— 熔断预算的重入门控与成本上限由其 failure-recovery-protocol 承载
->   - [skills/spec-evolution/references/checks-spec.md](../../../skills/spec-evolution/references/checks-spec.md) —— C-01 / C-02 / C-03 交付面判据的定义源
+>   - [ADR-0003 退役 spec-evolution 技能并下沉哨兵测试](../decisions/0003-retire-spec-evolution.md) —— C-01 / C-05 / C-07 交付面硬护栏迁移至 `skills/_shared/tests/test_skill_surface_sentinels.py`（C-02 由 `check-golden-tasks.py` `G-08` 承担）
+
+---
+
+### 修订历史记录 (Revision History)
+
+| 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **V1.0.1** | 2026-11-23 | AI Agent | 王辉 | 随 `ADR-0003` 移除已退役的 `skills/spec-evolution/references/checks-spec.md` 外链，对齐现行哨兵来源 |
+| **V1.0.0** | 2026-10-13 | DSH AI Agent | 王辉 | 初版（六节澄清协议 + 交付面四件套：展开 / 骨架 / 校验 / 回归） |
 
 ---
 
@@ -145,7 +154,7 @@ templates/ ── 台账骨架（落进计划文件）/ 需求确认文档骨架
 
 ## 7. 演进方向 (Roadmap)
 
-- **description 收敛**：当前 623 字符，超出 spec-evolution C-04 的建议值（≤ 500）；压缩会改变触发面，需与触发回归一起做，已登记为存量债务（BK-0041）。
+- **description 说明**：当前 623 字符（高于 500 建议值、远低于 1024 硬限）；压缩会改变触发面，BK-0041 已裁定接受偏离。
 - **台账校验器扩展**：当前为结构校验；后续可在不引入人类裁决的前提下，增加"编号连续性"与"复开条件非空"的机械检查。
 - **与计划文件的耦合**：评估在 writing-plans 的计划模板中直接内嵌台账骨架，减少一次复制。
 
@@ -156,5 +165,5 @@ templates/ ── 台账骨架（落进计划文件）/ 需求确认文档骨架
 - [三项收敛自检展开](../../../skills/clarification-protocol/references/convergence-checklist.md)
 - [台账结构校验器](../../../skills/clarification-protocol/scripts/check-decision-ledger.sh)
 - [goal-loop 技能](../../../skills/goal-loop/SKILL.md)（熔断预算的重入门控与成本上限）
-- [spec-evolution 交付面判据](../../../skills/spec-evolution/references/checks-spec.md)
+- [ADR-0003 退役 spec-evolution 技能](../decisions/0003-retire-spec-evolution.md)（现行跨技能哨兵契约）
 - [技能注册与治理总入口](../../index.md)

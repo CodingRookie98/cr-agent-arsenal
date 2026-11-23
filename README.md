@@ -3,7 +3,7 @@
 > 🚀 **面向现代 AI 智能体（Claude Code / Antigravity / OpenCode / Codex / Hermes / DSH 等）的工业级工程化武器库与资产沉淀中枢**。
 
 本项目全面收纳、标准化与沉淀在智能体实际工程落地中积累的四维资产：
-- 🎯 **标准技能包 (Skills)**：遵循 [`agentskills.io`](https://agentskills.io/specification) 开放规范的 8 个确定性可执行技能；
+- 🎯 **标准技能包 (Skills)**：遵循 [`agentskills.io`](https://agentskills.io/specification) 开放规范的 7 个确定性可执行技能；
 - 🧠 **上下文基线 (Contexts)**：统一的多智能体微内核规范 (`AGENTS.md`) 与跨环境一键链接分发；
 - 🛠️ **编排与运维工具链 (Tools)**：技能批量包管理 CLI (`skills-manager`：`list` / `install` / `uninstall`)；
 - 📚 **架构与治理文档 (Docs)**：涵盖 Diátaxis 架构设计、RFC 演进与长程长任务方法论。
@@ -22,7 +22,6 @@ cr-agent-arsenal/
 │   ├── doc-governance/         # 工业级文档工程与知识库治理体系
 │   ├── taste-driven-designer/  # 品味驱动设计三阶段流程 (D1 发散 / D2 Critic 闭环 / D3 减法)
 │   ├── frontend-qa-gate/       # 前端产物验收硬门禁 (五域断言 + 证据三态)
-│   ├── spec-evolution/         # 规范资产机械化演进回路 (collect-facts → judge → 退出码)
 │   └── _shared/                # 跨技能共享策略与测试 (非技能包，无 SKILL.md)
 │
 ├── contexts/                   # 2.【上下文工程与系统基线】
@@ -38,7 +37,7 @@ cr-agent-arsenal/
 │   ├── index.md                # 知识库全景索引
 │   ├── GOVERNANCE.md           # 知识库治理规程
 │   ├── llms.txt                # 智能体机器可读地图 (由 doc-governance 脚本生成)
-│   ├── explanation/            # 解释象限 (architecture 设计书 7 份 / analysis / decisions)
+│   ├── explanation/            # 解释象限 (architecture 现役设计书 7 份 / analysis / decisions)
 │   ├── reference/              # 参考象限 (rules 平台规则与不可变约束 / articles 外部文献)
 │   ├── project/                # 工程治理 (plans 计划 / reviews 审查报告 / backlog 待办)
 │   ├── proposals/              # RFC 提案与结晶流转
@@ -62,7 +61,6 @@ cr-agent-arsenal/
 | **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance/SKILL.md) | **工业级文档工程与知识库治理体系**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转模型与 Docs-as-Code 自动化门禁，彻底杜绝文档与代码漂移。 | Claude Code / Antigravity / 全局 Shell |
 | **`taste-driven-designer`** | [`skills/taste-driven-designer`](./skills/taste-driven-designer/SKILL.md) | **品味驱动设计三阶段流程**（源于 Anshu Chimala AI 双钻模型）。<br/>D1 种子字符串发散（外部随机性）→ D2 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 每轮内嵌产物自检→ D3 AI Tells 审计与残酷减法；图像/视频增强能力门控，宿主无关、可降级。 | 具备子智能体派发能力的智能体 / CLI |
 | **`frontend-qa-gate`** | [`skills/frontend-qa-gate`](./skills/frontend-qa-gate/SKILL.md) | **前端产物验收硬门禁**（源于 kejun《前端开发转向 AI Coding 的常见问题全景》）。<br/>五域断言：响应式视口 / 交互状态矩阵 / 无障碍键盘与读屏 / 浏览器覆盖 / 性能预算；证据三态（已实现 / 已运行验证 / 未验证）、结论仅 PASS / FAIL / BLOCKED，不做分数判据；审产物不审代码（代码级判据路由 `dual-round-review`），回流缺陷按路由表分流。 | 具备浏览器驱动能力的智能体 / CLI |
-| **`spec-evolution`** | [`skills/spec-evolution`](./skills/spec-evolution/SKILL.md) | **机械化演进回路**（源于 RFC-0004）。<br/>把演进回路的「选择端」从**模型意见**换成**脚本退出码**：只读事实采集器（`collect-facts.py`）→ 确定性判定器（`judge.py`，零 LLM / 零网络 / 纯标准库）→ Exit 0/1/2；判据表 C-01~C-10 覆盖技能交付面完整性、`description` 上限、文件规模、注册面漂移与根提示词净增长。结论一律锚定在可核验的章节路径/仓库路径锚点上（锚点不可解析即 fail-closed 退出 2），**人类裁决区永久留白**，模型代填即门禁违规。 | Claude Code / Antigravity / DSH / 全局 Shell |
 
 > ⚠️ **新增技能须知**：`SKILL.md` 的 frontmatter 必须是**合法 YAML**。`description` 若含 `": "`（冒号+空格，如 `evidence: xxx`）必须整体加引号，否则 `npx skills` 解析失败会**静默跳过该技能**（命令仍 exit 0，`Found N skills` 少一个）。规范细节见 [agentskills.io specification](https://agentskills.io/specification)。
 
@@ -85,7 +83,7 @@ python3 contexts/install.py
 >     https://github.com/CodingRookie98/cr-agent-arsenal \
 >     --skill goal-loop --agent <agent> --full-depth
 >   ```
->   批量安装本仓库全部 8 个技能，用 `-f cr-agent-arsenal` 指定预设（**不带 `-f` 时默认预设是 `common`，即外部技能集，而非本仓库技能**）：
+>   批量安装本仓库全部 7 个技能，用 `-f cr-agent-arsenal` 指定预设（**不带 `-f` 时默认预设是 `common`，即外部技能集，而非本仓库技能**）：
 >   ```bash
 >   python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a <agent> -y
 >   ```
@@ -114,7 +112,7 @@ python3 tools/skills-manager/skills_manager.py list -f frontend
 # 为指定智能体批量安装技能
 python3 tools/skills-manager/skills_manager.py install -a opencode -f common
 
-# 安装本仓库自有的 8 个技能 (cr-agent-arsenal 预设，来源为本仓库 GitHub master)
+# 安装本仓库自有的 7 个技能 (cr-agent-arsenal 预设，来源为本仓库 GitHub master)
 python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a antigravity -y
 ```
 
@@ -131,7 +129,6 @@ python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a an
   * `dual-round-review`: [dual-round-review-design.md](./docs/explanation/architecture/dual-round-review-design.md)
   * `taste-driven-designer`: [taste-driven-designer-design.md](./docs/explanation/architecture/taste-driven-designer-design.md)
   * `frontend-qa-gate`: [frontend-qa-gate-design.md](./docs/explanation/architecture/frontend-qa-gate-design.md)
-  * `spec-evolution`: [spec-evolution-design.md](./docs/explanation/architecture/spec-evolution-design.md)
   * `clarification-protocol`: [clarification-protocol-design.md](./docs/explanation/architecture/clarification-protocol-design.md)
 * 🧩 **`goal-loop` 宿主执行后端适配规程**: [skills/goal-loop/references/host-adapters.md](./skills/goal-loop/references/host-adapters.md)
 * 🚀 **实施计划与结项记录**: 计划索引见 [docs/index.md](./docs/index.md) §4 工程演进与管理（计划文件归档于 `docs/project/plans/`）
@@ -162,5 +159,5 @@ git config core.hooksPath .githooks
 
 ## 📄 规范与许可 (Standards & License)
 
-* **技能规范**：本仓库 8 个技能均遵循 [`agentskills.io` 规范](https://agentskills.io/specification)——`name` 与所在目录同名、`description` 为合法 YAML 且不超过规范上限（1024 字符，现行 8 个技能全部达标；500 字符为建议值，`clarification-protocol` 623 与 `dual-round-review` 738 超出建议值，已登记为存量债务 [BK-0041](./docs/project/backlog/active/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md)）、`SKILL.md` 正文均 < 500 行，可直接被 `npx skills` 拉取。
-* **许可**：本项目采用 [MIT 许可证](./LICENSE)（Copyright © 2026 CodingRookie98），8 个技能 frontmatter 均已声明 `license: MIT`；可自由使用、修改与再分发，但须保留版权与许可声明。
+* **技能规范**：本仓库 7 个技能均遵循 [`agentskills.io` 规范](https://agentskills.io/specification)——`name` 与所在目录同名、`description` 为合法 YAML 且不超过规范上限（1024 字符，现行 7 个技能全部达标；500 字符为建议值，`clarification-protocol` 623 与 `dual-round-review` 738 超出建议值，已裁定接受偏离 [BK-0041](./docs/project/backlog/archive/2026-Q4/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md)）、`SKILL.md` 正文均 < 500 行，可直接被 `npx skills` 拉取。
+* **许可**：本项目采用 [MIT 许可证](./LICENSE)（Copyright © 2026 CodingRookie98），7 个技能 frontmatter 均已声明 `license: MIT`；可自由使用、修改与再分发，但须保留版权与许可声明。
