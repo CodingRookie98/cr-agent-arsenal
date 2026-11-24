@@ -5,8 +5,8 @@
 > - **当前版本**: V1.0.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-24
-> - **执行通道**: **Heavy Track（前端双技能架构重构与真实证据门禁升级）** —— 独立分支 + Full Mode 独立双轮对抗审查
-> - **状态**: 进行中
+> - **执行通道**: **Heavy Track（前端双技能架构重构与真实证据门禁升级）** —— 独立分支 + Full Mode 独立双轮对抗审查（R1 → R2 → Delta-R1 零缺陷放行）
+> - **状态**: 已完成
 > - **分支**: `refactor/wave3-frontend-skills-v2`（基于 `master` `7768359`）
 > - **评估与调研依据**: [taste-driven-designer 评估报告](../../explanation/analysis/2026-11-23-taste-driven-designer-architecture-evaluation.md) · [taste-driven-designer 同类调研](../../explanation/analysis/2026-11-23-taste-driven-designer-peer-research.md) · [frontend-qa-gate 评估报告](../../explanation/analysis/2026-11-23-frontend-qa-gate-architecture-evaluation.md) · [frontend-qa-gate 同类调研](../../explanation/analysis/2026-11-23-frontend-qa-gate-peer-research.md) · [全仓组合总纲](../../explanation/analysis/2026-11-23-arsenal-skills-portfolio-overview.md)
 
@@ -14,14 +14,13 @@
 
 ### Active Checkpoint
 
-- **当前阶段**: `Execute`
-- **状态**: 进行中
+- **当前阶段**: `DONE`（已完成并终审放行）
+- **状态**: 已完成
 - **已完成**:
-  - 完成 Wave 3 方案设计与无文件交集三任务包切分（W3-1 / W3-2 / W3-3），切出独立功能分支 `refactor/wave3-frontend-skills-v2`（基线 `7768359`）；
-  - 并行启动 W3-1（`taste-driven-designer` V2.0）、W3-2（`frontend-qa-gate` V2.0）与 W3-3（`goal-loop` 跨技能引用与仓级文档同步）。
-- **待办**:
-  - 汇合 W3-1 / W3-2 / W3-3 并执行全量自验门禁；
-  - 派发 Full Mode 独立双轮对抗审查（R1 → R2 → 如需 Scoped Delta），取得 Zero Blockers 终审凭据后合并入主干。
+  - 在分支 `refactor/wave3-frontend-skills-v2`（基线 `7768359`）并行完成 W3-1（`taste-driven-designer` V2.0）、W3-2（`frontend-qa-gate` V2.0）、W3-3（跨技能引用与仓级文档同步），并经 Plan Review 补充 W3-Fix-Docs（清理 3 份存量文档断链与 `cross-skill-link-policy.json` consumers）与 W3-Fix-QA（`--evidence-root` 默认值收紧为清单所在目录 + 12B 流式魔数），原子提交为 `151a4f3`；
+  - 独立 Full Mode R1（`d36d44a00b67`）与 R2（`5cfb331b61be`，裁定 `阻断交付`，坐实 `R1-1` 并保留 `R1-2`/`R1-3` 优化建议） → 独立 W3-Delta 修复提交 `2e7df5e`（根治 `R1-1` 并顺并 `R1-2`/`R1-3`） → 独立 Scoped Delta (`delta-r1`，`862f2b8375b9`) 复核 **🔴 0 / 🟡 0 / ⚪ 0** 免派 `delta-r2` 直接收口放行，归档见 [wave3-frontend-skills-v2](../reviews/2026-11-24-wave3-frontend-skills-v2/README.md)；
+  - 实测 Git 追踪体量变化（`master` `7768359` → `2e7df5e`）：`taste-driven-designer` 13 → 10 文件 / 1,437 → 554 行（-61.4%）/ 78,208 B → 31,187 B（-60.1%，核心 7 文件 18,485 B）；`frontend-qa-gate` 8 → 9 文件 / 1,568 → 978 行（-37.6%）/ 76,647 B → 49,007 B（-36.1%，核心 7 文件 29,178 B，从 0 实采纯正则升级为 209 行磁盘物证/魔数门禁 + 282 行真实物证单测）；两技能合计 154,855 B → 80,194 B（-48.2%）；全仓 `skills/` 544,365 B → 470,384 B（-13.6%）。
+- **待办**: 无（复跑全量门禁后 Fast-Forward 合入 `master` 并推送）
 
 ---
 
