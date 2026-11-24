@@ -4,7 +4,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 import pytest
-import yaml
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_MD, SEED_PY = ROOT / "SKILL.md", ROOT / "scripts" / "generate-seed.py"
@@ -17,6 +21,29 @@ FENCE_RX, LINK_RX, CODE_RX = re.compile(r"^\s*(`{3,}|~{3,})(.*)$"), re.compile(r
 CROSS_RX = re.compile(r"(?:^|[\s(=/\"'>、，（])(?:[^)\s\"\'<>]*?[\\/])*(?<![.])(?:taste-driven-designer|dual-round-review|goal-loop|frontend-qa-gate|doc-governance|clarification-protocol)[\\/]", re.I)
 SCORE_RX, GATE_RX = re.compile(r"评分|分数|得分|分值|终分"), re.compile(r"完成|放行|通过|达标|准入|交付|上线|发版|发布|合并")
 BAN_RX, PATH_RX = re.compile(r"不得|禁止|禁绝|不输出|不许|不含|不涉及|不参与|不作为|不构成|仅作|不作|遥测|非门禁|❌"), re.compile(r"(?:/home/|/Users/|[A-Za-z]:\\)")
+
+
+def _parse_frontmatter(text: str) -> dict:
+    match = FM_RX.match(text)
+    assert match, "SKILL.md missing YAML frontmatter"
+    body = match.group(1)
+    if yaml is not None:
+        parsed = yaml.safe_load(body)
+        assert isinstance(parsed, dict)
+        return parsed
+    meta = {}
+    for line in body.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        k, sep, raw = line.partition(":")
+        assert sep, f"invalid YAML line: {line!r}"
+        v = raw.strip()
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ("'", '"'):
+            v = v[1:-1]
+        else:
+            assert not re.search(r":(?:\s|$)", v), f"unquoted colon in {k}"
+        meta[k.strip()] = v
+    return meta
 
 
 def _scan_fences(text: str) -> tuple[bool, str]:
@@ -46,7 +73,7 @@ def test_frontmatter_links_and_budgets():
     text = SKILL_MD.read_text(encoding="utf-8")
     assert len(text.splitlines()) <= 100 and len(text.encode("utf-8")) <= 6500
     assert len(SEED_PY.read_text(encoding="utf-8").splitlines()) <= 80
-    meta = yaml.safe_load(FM_RX.match(text).group(1))
+    meta = _parse_frontmatter(text)
     assert meta.get("name") == "taste-driven-designer" and str(meta.get("license")).strip() == "MIT"
     desc = meta.get("description", "")
     assert isinstance(desc, str) and desc.strip() and len(desc) <= 500
@@ -85,3 +112,13 @@ def test_backflow_and_v2_contracts():
     _no_score_gate("通过条件不含分数，也不涉及评分。", "legal")
     with pytest.raises(AssertionError):
         _no_score_gate("仅当评分达到 9 分时才放行。", "illegal")
+
+
+def test_frontmatter_stdlib_fallback_and_unquoted_colon_trap(monkeypatch):
+    monkeypatch.setitem(globals(), "yaml", None)
+    meta = _parse_frontmatter(SKILL_MD.read_text(encoding="utf-8"))
+    assert meta.get("name") == "taste-driven-designer" and str(meta.get("license")).strip() == "MIT"
+    assert isinstance(meta.get("description"), str) and meta["description"].strip()
+    bad = "---\nname: taste-driven-designer\ndescription: Triggers: landing page\n---\n"
+    with pytest.raises(AssertionError, match="unquoted colon"):
+        _parse_frontmatter(bad)

@@ -242,3 +242,41 @@ def test_cli_usage_missing_file_and_bad_json_exit_codes(tmp_path: Path):
     broken = tmp_path / "broken.json"
     broken.write_text("{broken json", encoding="utf-8")
     assert _run(str(broken)).returncode == 1
+
+
+def test_allows_angle_brackets_in_free_text_and_rejects_full_placeholders(tmp_path: Path):
+    manifest = _setup_bundle(tmp_path)
+    data = _base_manifest()
+    data["automated_assertions"][0]["steps"] = "Check scrollWidth <= innerWidth and height > 0"
+    data["automated_assertions"][1]["steps"] = "<button> triggers <dialog> with focus"
+    data["automated_assertions"][2].update({"status": "na", "na_reason": "No <img> or <input> on static view"})
+    data["human_signoff"][0]["item"] = "VoiceOver navigates <nav> menu"
+    data["human_signoff"][1]["signer"] = "Alice <alice@example.com>"
+    _write_manifest(manifest, data)
+    res = _run(str(manifest), "--require-verdict=PASS")
+    assert res.returncode == 0, res.stderr
+
+    for mutate in (
+        lambda d: d["automated_assertions"][0].update({"steps": "<fill steps>"}),
+        lambda d: d["automated_assertions"][0].update({"steps": "<Set viewport to 375x812, check scrollWidth <= innerWidth>"}),
+        lambda d: d["automated_assertions"][0].update({"evidence": "shots/<v1.png>"}),
+        lambda d: d["human_signoff"][1].update({"signer": "<签收人 / 日期>"}),
+    ):
+        bad = _base_manifest()
+        mutate(bad)
+        _write_manifest(manifest, bad)
+        assert _run(str(manifest)).returncode == 1
+    assert _run(str(TEMPLATE_JSON)).returncode == 1
+
+
+@pytest.mark.parametrize("bad_status", [["passed"], {"x": 1}])
+def test_rejects_unhashable_status_without_traceback(tmp_path: Path, bad_status):
+    manifest = _setup_bundle(tmp_path)
+    for section in ("automated_assertions", "human_signoff"):
+        data = _base_manifest()
+        data[section][0]["status"] = bad_status
+        _write_manifest(manifest, data)
+        res = _run(str(manifest))
+        assert res.returncode == 1
+        assert "invalid" in res.stderr.lower()
+        assert "TypeError" not in res.stderr and "Traceback" not in res.stderr

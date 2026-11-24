@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse, json, re, sys
 from pathlib import Path
 
-PLACEHOLDER_RE = re.compile(r"<(?:[^>\s][^>\n]*)?>")
+PLACEHOLDER_RE, FULL_PLACEHOLDER_RE = re.compile(r"<(?:[^>\s][^>\n]*)?>"), re.compile(r"^<[^>\n]+>$")
 WIN_DRIVE_RE = re.compile(r"^[A-Za-z]:")
 CORE_DOMAINS, VALID_DOMAINS = frozenset({"D-R", "D-S", "D-A", "D-P"}), frozenset({"D-R", "D-S", "D-A", "D-P", "D-B"})
 AUTO_STATUSES, HUMAN_STATUSES = frozenset({"passed", "failed", "unverified", "na"}), frozenset({"pending_human", "signed_off", "failed", "na"})
@@ -15,6 +15,10 @@ SIGNAL_KEYS = ("console_errors", "page_errors", "axe_critical_serious")
 
 def _ok_str(val: object) -> bool:
     return isinstance(val, str) and bool(val.strip()) and not PLACEHOLDER_RE.search(val)
+
+
+def _ok_text(val: object) -> bool:
+    return isinstance(val, str) and bool(s := val.strip()) and not FULL_PLACEHOLDER_RE.fullmatch(s)
 
 
 def _collect_records(raw: list[object], kind: str, errs: list[str]) -> list[tuple[dict[str, object], str]]:
@@ -85,9 +89,7 @@ def _check_ev_file(rel: object, root: Path, errs: list[str], aid: str) -> None:
             errs.append(f"{aid}: invalid evidence {rel!r}: {exc}")
 
 
-def _check_assertions(
-    data: dict[str, object], min_n: int, no_dom: bool, root: Path, errs: list[str]
-) -> list[dict[str, object]]:
+def _check_assertions(data: dict[str, object], min_n: int, no_dom: bool, root: Path, errs: list[str]) -> list[dict[str, object]]:
     raw = data.get("automated_assertions")
     if not isinstance(raw, list) or not raw:
         errs.append("automated_assertions must be a non-empty array")
@@ -101,13 +103,13 @@ def _check_assertions(
             doms.add(dom)
         else:
             errs.append(f"{tag}: invalid domain {dom!r}")
-        if st not in AUTO_STATUSES:
-            errs.append(f"{tag}: invalid status {st!r}")
-        if not _ok_str(item.get("steps")):
+        if not _ok_text(item.get("steps")):
             errs.append(f"{tag}: steps missing or placeholder")
-        if st == "na" and not _ok_str(item.get("na_reason")):
+        if not isinstance(st, str) or st not in AUTO_STATUSES:
+            errs.append(f"{tag}: invalid status {st!r}")
+        elif st == "na" and not _ok_text(item.get("na_reason")):
             errs.append(f"{tag}: na requires na_reason")
-        if st == "passed":
+        elif st == "passed":
             ev = item.get("evidence")
             paths = [ev] if isinstance(ev, str) else ev if isinstance(ev, list) and ev else []
             if not paths:
@@ -128,14 +130,14 @@ def _check_human(data: dict[str, object], errs: list[str]) -> list[dict[str, obj
         return []
     records = _collect_records(raw, "human_signoff", errs)
     for entry, tag in records:
-        if not _ok_str(entry.get("item")):
+        if not _ok_text(entry.get("item")):
             errs.append(f"{tag}: item missing or placeholder")
         st = entry.get("status")
-        if st not in HUMAN_STATUSES:
+        if not isinstance(st, str) or st not in HUMAN_STATUSES:
             errs.append(f"{tag}: invalid human status {st!r}")
-        elif st == "signed_off" and not (_ok_str(entry.get("signer")) and _ok_str(entry.get("signed_at"))):
+        elif st == "signed_off" and not (_ok_text(entry.get("signer")) and _ok_str(entry.get("signed_at"))):
             errs.append(f"{tag}: signed_off requires signer and signed_at")
-        elif st == "na" and not _ok_str(entry.get("na_reason")):
+        elif st == "na" and not _ok_text(entry.get("na_reason")):
             errs.append(f"{tag}: na requires na_reason")
     return [entry for entry, _ in records]
 
@@ -173,8 +175,7 @@ def _die(msg: str, code: int = 2) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    for s in (sys.stdout, sys.stderr):
-        getattr(s, "reconfigure", lambda **_: None)(encoding="utf-8", newline="\n")
+    for s in (sys.stdout, sys.stderr): getattr(s, "reconfigure", lambda **_: None)(encoding="utf-8", newline="\n")
     p = argparse.ArgumentParser(description="Validate V2.0 frontend QA evidence JSON manifest.")
     p.add_argument("manifest")
     p.add_argument("--require-verdict", choices=("PASS",))
