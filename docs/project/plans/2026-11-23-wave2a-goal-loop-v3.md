@@ -13,10 +13,14 @@
 
 ### Active Checkpoint
 
-- **当前阶段**: `Verify`（预审查基线全绿，进入 Full Mode 双轮独立对抗审查）
-- **状态**: 进行中
-- **已完成**: 并行完成 W2A-1（五主阶段规程/模板/设计书 V3.0.0 与评估注记）与 W2A-2（退役零用 tracker 与 3 份旧测试，新增 119 行 `pack-handoff.py` 交接脚本与 164 行行为+表面单测，同步跨技能与索引/变更日志），刷新分层机器地图；主智能体独立验收全仓 `pytest`（`554 passed`）、`check-all.py --full`（7/7）与 `check-golden-tasks.py`（20/20）均 Exit 0
-- **待办**: Full Mode 双轮独立对抗审查（R1 红队 → R2 元架构师审判至 Zero Blockers） → 归档审查凭据与计划结项 → Fast-Forward 合入 `master` 并推送
+- **当前阶段**: `DONE`（已完成并终审放行）
+- **状态**: 已完成
+- **已完成**:
+  - 精读评估报告与全部 17 源文件、核查全仓外部引用、切出 `refactor/wave2a-goal-loop-v3` 并定稿计划；
+  - 并行委派 W2A-1（五主阶段收敛、拆除伪运行时与机械 2-Action Rule、Diátaxis 对齐与四项 2026 编排纪律、设计书 V3.0.0 与评估注记）与 W2A-2（退役零用 tracker 与 3 份旧测试、实现 144 行极薄 `pack-handoff.py` 与行为单测、同步跨技能与全局索引/变更日志），基线提交 `b49109c`；
+  - Full Mode 四轮独立对抗审查（`r1` `220f419464de` → `r2` `d8b3b49382ee` 坐实 5 项 P1 → W2A-Delta 修复 `6fe71c0` → `delta-r1` `99b8abf97917` P0/P1/P2=0, P3=1 → `delta-r2` `3669d9f2a642` **准予交付 Zero Blockers**），归档见 [审查归档 README](../reviews/2026-11-23-wave2a-goal-loop-v3/README.md)；
+  - 全量验证：`python3 -m pytest skills/ -q`（`558 passed`）、`check-all.py --full`（7/7 PASS）、`check-golden-tasks.py`（20/20 PASS）与 `check-review-report.py --require-verdict=PASS`（Exit 0）。
+- **待办**: 无（准备 Fast-Forward 合入 `master` 并推送）
 
 ---
 
