@@ -1,7 +1,6 @@
-"""check-review-report.py 契约测试：校验《审查归档》结构门禁的判定语义。
+"""check-review-report.py 契约测试：校验《审查归档》结构门禁的判定语义与 V3.0 表面契约。
 
-覆盖 RFC-0001 §3.5 的 7 项校验规则，每项各配失败与通过用例。
-
+覆盖核心校验规则、Write-Once 既有归档回归、Scoped Delta 零缺陷免 R2 放行与模板/表面哨兵。
 跨平台口径：默认调用 Python 实现（`sys.executable`）；POSIX 下旧 `.sh` 兼容壳仍可用，
 其行为等价性由 `test_compat_shim_forwards_to_python` 守护。
 """
@@ -15,8 +14,18 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'check-review-report.py'
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+REPO = SKILL_DIR.parents[1]
+REVIEWS = REPO / 'docs' / 'project' / 'reviews'
+SCRIPT = SKILL_DIR / 'scripts' / 'check-review-report.py'
 SHIM = SCRIPT.with_suffix('.sh')
+FRONTMATTER_RX = re.compile(r'\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)', re.DOTALL)
+FENCE_RX = re.compile(r'^\s*(`{3,}|~{3,})')
 
 R1_BODY = """# 第一轮对抗审查报告 (Round 1 Red-Team Review Report)
 
@@ -92,14 +101,14 @@ def _row(rank, fname, sha, conclusion, write_mode='direct'):
 def _build(tmp_path, *, mode='full', verdict='✅ 准予交付', with_r2=True,
            r1_body=R1_BODY, r2_body=R2_BODY, r1_sha=None, r2_sha=None,
            tamper_after_index=False, index_override=None, drop_file=False,
-           r1_mode='direct', r2_mode='direct'):
+           r1_mode='direct', r2_mode='direct', r1_rank='R1'):
     """构造一个归档目录；返回 (目录, r1 文件, r2 文件或 None)。"""
     d = tmp_path / 'archive'
     d.mkdir()
     r1_name = 'r1-940e0f3..a1b2c3d.md'
     r2_name = 'r2-940e0f3..a1b2c3d.md'
     (d / r1_name).write_text(r1_body, encoding='utf-8', newline='\n')
-    rows = [_row('R1', r1_name, r1_sha if r1_sha is not None else _sha12(r1_body),
+    rows = [_row(r1_rank, r1_name, r1_sha if r1_sha is not None else _sha12(r1_body),
                  '🔴 1 / 🟡 1 / ⚪ 0', r1_mode)]
     r2_file = None
     if with_r2:
@@ -279,11 +288,14 @@ def test_require_verdict_pass_fails_when_undecided(tmp_path):
     assert r.returncode == 1
 
 
-SKILL_DIR = Path(__file__).resolve().parents[1]
-_TEMPLATES = {
-    'r1': SKILL_DIR / 'references' / 'round-1-red-team.md',
-    'r2': SKILL_DIR / 'references' / 'round-2-meta-architect.md',
-}
+_R1_TEMPLATES = (
+    SKILL_DIR / 'references' / 'round-1-red-team.md',
+    SKILL_DIR / 'templates' / 'r1-report-code.md',
+)
+_R2_TEMPLATES = (
+    SKILL_DIR / 'references' / 'round-2-meta-architect.md',
+    SKILL_DIR / 'templates' / 'r2-report.md',
+)
 
 
 def _checker_sections():
@@ -304,22 +316,33 @@ def _checker_sections():
 
 
 def _template_headings(path):
-    body = path.read_text(encoding='utf-8').split('## Output Format')[-1]
+    body = path.read_text(encoding='utf-8').split('## Output Format')[-1].split('## 输出格式')[-1]
     return re.findall(r'^## \d+\. .+$', body, re.M)
 
 
 def test_template_headings_match_checker_constants():
-    """提示词模板的输出区块标题必须以门禁必需常量为前缀——防止两处独立漂移。
-
-    门禁按行首**前缀**匹配（Python 实现为 `line.startswith(section)`，等价于原
-    `grep -F` 前缀语义），故模板标题允许携带英文副标题，但不得改名。
-    """
+    """模板与参考提示词的输出区块标题必须逐项匹配门禁必需常量——防止独立漂移。"""
     r1_secs, r2_secs = _checker_sections()
     assert r1_secs and r2_secs, '未能从门禁脚本解析出必需区块常量'
-    for h in _template_headings(_TEMPLATES['r1']):
-        assert any(h.startswith(s) for s in r1_secs), 'R1 模板标题与门禁常量不匹配: ' + h
-    for h in _template_headings(_TEMPLATES['r2']):
-        assert any(h.startswith(s) for s in r2_secs), 'R2 模板标题与门禁常量不匹配: ' + h
+    for path in _R1_TEMPLATES:
+        hs = _template_headings(path)
+        assert len(hs) == len(r1_secs), f'{path.name} R1 区块数不匹配: {hs}'
+        for h, expected in zip(hs, r1_secs):
+            assert h.startswith(expected), f'{path.name} R1 标题不匹配: {h} != {expected}'
+    for path in _R2_TEMPLATES:
+        hs = _template_headings(path)
+        assert len(hs) == len(r2_secs), f'{path.name} R2 区块数不匹配: {hs}'
+        for h, expected in zip(hs, r2_secs):
+            assert h.startswith(expected), f'{path.name} R2 标题不匹配: {h} != {expected}'
+
+
+def test_r1_template_and_reference_defect_headers_aligned():
+    """R1 模板与参考提示词的缺陷清单表头须均含「稳定 ID」与「是否由当前 Diff 引入」。"""
+    for path in _R1_TEMPLATES:
+        body = path.read_text(encoding='utf-8').split('## 4. 潜在缺陷清单', 1)[-1]
+        header = next((ln for ln in body.splitlines() if ln.lstrip().startswith('|') and '稳定 ID' in ln), '')
+        assert header, f'{path.name} 缺少缺陷清单表头'
+        assert '是否由当前 Diff 引入' in header, f'{path.name} 缺陷表头缺少「是否由当前 Diff 引入」: {header}'
 
 
 def test_ledger_rows_outside_section_ignored(tmp_path):
@@ -402,8 +425,6 @@ def test_require_verdict_ok_on_bare_value(tmp_path):
     assert r.returncode == 0, r.stdout
 
 
-
-
 # --- BK-0043 回归：PASS 接受「准予交付」+ 括号统计串，但拒绝一切伪后缀 ----------
 
 
@@ -463,7 +484,6 @@ def test_usage_documents_write_mode_check(tmp_path):
     r = _run(tmp_path, '--help')
     assert r.returncode == 0
     assert '写入形态' in r.stdout
-
 
 
 LEGACY_INDEX_TMPL = """# 审查归档 · 示例交付
@@ -625,8 +645,6 @@ def test_official_template_r2_empty_detail_table_still_fails(tmp_path):
     r = _run(d)
     assert r.returncode == 1, r.stdout
     assert '明细表' in r.stdout
-
-
 
 
 # --- BK-0012 回归：归档内未登记报告必须可枚举 ------------------------------------
@@ -797,13 +815,7 @@ def test_markdown_link_in_ledger_report_column_passes(tmp_path):
     assert '未登记' not in r.stdout
 
 
-@pytest.mark.parametrize('evil_target', [
-    '../evil.md',
-    './../evil.md',
-    'sub/evil.md',
-    './sub/evil.md',
-    r'..\evil.md',
-])
+@pytest.mark.parametrize('evil_target', ['../evil.md', './../evil.md', 'sub/evil.md', './sub/evil.md', r'..\evil.md'])
 def test_markdown_link_path_traversal_is_rejected(tmp_path, evil_target):
     """路径逃逸（含 `../`、子目录、反斜杠）不得被 Markdown 链接解析放行，即使目标及同名文件均真实存在。"""
     (tmp_path / 'evil.md').write_text(R1_BODY, encoding='utf-8', newline='\n')
@@ -851,3 +863,133 @@ def test_markdown_link_traversal_mixed_with_valid_row_still_fails(tmp_path):
     r = _run(d)
     assert r.returncode == 1, f'混合台账里的逃逸行不得静默跳过:\n{r.stdout}'
     assert '路径非法' in r.stdout, r.stdout
+
+
+# --- 真实归档零退化与第 10 项轮次容错（迁自已退役的 artifact schema 套件）-----------
+
+
+def test_existing_archives_all_pass_gate():
+    """既有归档必须通过门禁（冻结 4 个 Write-Once 历史不合规归档，其余全量强制 rc=0）。"""
+    LEGACY = frozenset({
+        '2026-11-22-batch-gates', '2026-11-22-doc-status-machine',
+        '2026-11-22-doc-truth-axis', '2026-11-22-split-llms-map',
+    })
+    archives = sorted(p for p in REVIEWS.glob('*') if (p / 'README.md').is_file())
+    assert archives, '未找到任何归档目录（回归测试失去意义）'
+    missing_legacy = sorted(LEGACY - {p.name for p in archives})
+    assert not missing_legacy, f'冻结名单含不存在的归档目录（防漂移死名单）: {missing_legacy}'
+    failures = [
+        f'{a.name}: {r.stdout.strip().splitlines()[:3]}'
+        for a in archives
+        if a.name not in LEGACY and (r := _run(a)).returncode != 0
+    ]
+    assert not failures, f'既有归档门禁失败: {failures}'
+
+
+def test_ledger_round_column_tolerates_human_description(tmp_path):
+    """轮次列容错：允许带人类描述（如 `delta-r1 · 第1轮`），按前导标记值解析通过。"""
+    for i, token in enumerate(('delta-r1 · 第1轮', 'r1 · 第1轮', 'delta-r1')):
+        sub = tmp_path / f'case-{i}'
+        sub.mkdir()
+        d, _, _ = _build(sub, mode='light', with_r2=False, verdict='未定', r1_rank=token)
+        r = _run(d)
+        assert r.returncode == 0, f'{token!r} 未被容忍: {r.stdout}{r.stderr}'
+
+
+def test_ledger_round_column_rejects_unknown_token(tmp_path):
+    """容忍不等于放宽：非标记值轮次（如 `round-1`）仍须判为未登记 R1。"""
+    d, _, _ = _build(tmp_path, mode='light', with_r2=False, verdict='未定', r1_rank='round-1')
+    r = _run(d)
+    assert r.returncode != 0
+    assert '台账未登记任何 R1 报告' in r.stdout
+
+
+# --- Scoped Delta 与 V3.0 契约保护用例 -------------------------------------------
+
+
+def test_scoped_delta_zero_defect_without_delta_r2_passes_pass_verdict(tmp_path):
+    """Scoped Delta：Full 首轮闭环后，delta-r1 零缺陷且无 delta-r2 时 --require-verdict=PASS 放行。"""
+    d = tmp_path / 'archive'
+    d.mkdir()
+    r1_1 = _body_with_ids(R1_BODY, R1_TABLE_HEAD, ['R1-1'], '\n## 5. 第一轮结论概要\n移交第二轮。\n')
+    r2_1 = _body_with_ids(R2_BODY, R2_TABLE_HEAD, ['R1-1'], '\n## 3. 终审放行结论\n- **交付判定**: 🔴 阻断交付\n')
+    delta_r1 = _body_with_ids(R1_BODY, R1_TABLE_HEAD, [], '\n## 5. 第一轮结论概要\n- 分级统计：🔴 0 / 🟡 0 / ⚪ 0\n')
+    for fname, body in (('r1-aaa1111..bbb2222.md', r1_1), ('r2-aaa1111..bbb2222.md', r2_1), ('delta-r1-bbb2222..ccc3333.md', delta_r1)):
+        (d / fname).write_text(body, encoding='utf-8', newline='\n')
+    rows = '\n'.join((
+        _row('r1', 'r1-aaa1111..bbb2222.md', _sha12(r1_1), '🔴 1 / 🟡 0 / ⚪ 0'),
+        _row('r2', 'r2-aaa1111..bbb2222.md', _sha12(r2_1), '🔴 阻断交付'),
+        _row('delta-r1', 'delta-r1-bbb2222..ccc3333.md', _sha12(delta_r1), '✅ 准予交付（0 缺陷）'),
+    ))
+    (d / 'README.md').write_text(INDEX_TMPL.format(mode='delta', verdict='准予交付', rows=rows), encoding='utf-8', newline='\n')
+    r = _run(d, '--require-verdict=PASS')
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_conclusion_cell_with_bare_pipe_preserves_write_mode(tmp_path):
+    """R1-12 行为回归：结论单元格含裸竖线且行尾带 `|` 时，末列写入形态仍须正确解析通过。"""
+    d, _, _ = _build(tmp_path)
+    idx = (d / 'README.md').read_text(encoding='utf-8')
+    (d / 'README.md').write_text(idx.replace('🔴 1 / 🟡 1 / ⚪ 0', '🔴 1 | 🟡 1 | ⚪ 0', 1), encoding='utf-8', newline='\n')
+    r = _run(d)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def _parse_frontmatter(text: str) -> dict:
+    m = FRONTMATTER_RX.match(text)
+    assert m, 'SKILL.md 缺少合法 YAML frontmatter'
+    body = m.group(1)
+    if yaml is not None:
+        parsed = yaml.safe_load(body)
+        assert isinstance(parsed, dict), 'frontmatter 顶层必须为 mapping'
+        return parsed
+    meta, lines, i = {}, body.splitlines(), 0
+    while i < len(lines):
+        ln = lines[i]
+        if not ln.strip() or ln.lstrip().startswith('#'):
+            i += 1
+            continue
+        key, sep, raw = ln.partition(':')
+        assert sep, f'非法 YAML 行: {ln!r}'
+        v = raw.strip()
+        if v in ('>', '|', '>-', '|-'):
+            blk, i = [], i + 1
+            while i < len(lines) and (lines[i].startswith((' ', '\t')) or not lines[i].strip()):
+                blk.append(lines[i].strip())
+                i += 1
+            meta[key.strip()] = ' '.join(x for x in blk if x)
+            continue
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ("'", '"'):
+            v = v[1:-1]
+        else:
+            assert not re.search(r':(?:\s|$)', v), f'{key} 含未加引号的 ": "'
+        meta[key.strip()], i = v, i + 1
+    return meta
+
+
+def _fences_balanced(text: str) -> bool:
+    fence = ''
+    for line in text.splitlines():
+        m = FENCE_RX.match(line)
+        if not m:
+            continue
+        tok, rest = m.group(1), line[m.end():]
+        if not fence and (tok[0] == '~' or '`' not in rest):
+            fence = tok
+        elif fence and tok[0] == fence[0] and len(tok) >= len(fence) and not rest.strip():
+            fence = ''
+    return not fence
+
+
+def test_v3_skill_surface_frontmatter_fences_and_no_artifact_backflow():
+    """V3.0 表面与防回流哨兵：frontmatter 预算、全技能围栏配对平衡与退役关键词拦截。"""
+    skill_text = (SKILL_DIR / 'SKILL.md').read_text(encoding='utf-8')
+    meta = _parse_frontmatter(skill_text)
+    assert meta.get('name') == SKILL_DIR.name == 'dual-round-review'
+    assert str(meta.get('license', '')).strip().upper() == 'MIT'
+    desc = meta.get('description', '')
+    assert isinstance(desc, str) and desc.strip() and len(desc) <= 500, f'description 非法或超 500 字符: {len(desc)}'
+    for path in sorted(p for p in SKILL_DIR.rglob('*.md') if '__pycache__' not in str(p)):
+        assert _fences_balanced(path.read_text(encoding='utf-8')), f'围栏未闭合: {path.relative_to(SKILL_DIR)}'
+    for retired in ('artifact-contract', 'r1-report-artifact', 'Review Schema: artifact'):
+        assert retired not in skill_text, f'SKILL.md 含已退役关键词: {retired}'

@@ -54,7 +54,7 @@ cr-agent-arsenal/
 | 技能名称 | 目录路径 | 核心功能与应用场景 | 适用智能体环境 |
 |---|---|---|---|
 | **`goal-loop`** | [`skills/goal-loop`](./skills/goal-loop/SKILL.md) | **工业级端到端长任务目标实现循环（V3.0）**。<br/>以计划文件为唯一可读真相源，收敛为五主阶段（`Align → Plan → Execute → Verify → Close`）与三轨分流；具备事件驱动上下文工程、极薄文件指针交接（`pack-handoff.py`）、自适应测试分级裁定（L0~L3）、宿主无关执行后端适配与 3-Tries 非阻塞熔断自愈机制。 | Claude Code / Antigravity / DSH / 全局 Shell |
-| **`dual-round-review`** | [`skills/dual-round-review`](./skills/dual-round-review/SKILL.md) | **对抗性非讨好型双轮代码终审硬门禁**。<br/>第一轮红队第一性原理极限穿透 + 第二轮资深元架构师审判校准，彻底终结浅层创可贴补丁与大模型讨好型盲目交付；支持 Full / Light / Delta 三模式。 | 具备子智能体派发能力的智能体 / CLI |
+| **`dual-round-review`** | [`skills/dual-round-review`](./skills/dual-round-review/SKILL.md) | **对抗性非讨好型双轮代码终审硬门禁（V3.0）**。<br/>第一轮红队第一性原理极限穿透 + 第二轮资深元架构师审判校准；支持 Full / Light / Scoped Delta（`delta-r1` 零缺陷免派 `delta-r2`）三模式与能力档位分层，注入 Untrusted Data 防注入与空结果优先准则，保留 Write-Once 原文归档与机械门禁（`check-review-report.py`）。 | 具备子智能体派发能力的智能体 / CLI |
 | **`clarification-protocol`** | [`skills/clarification-protocol`](./skills/clarification-protocol/SKILL.md) | **需求澄清与收敛规程**（源于提问收敛律）。<br/>先自查事实再向人类发问；术语先行对齐易歧义词；按「依赖强度 × 实现影响」筛问并设 ≤5 题软预算（低影响直转默认假设）；原地维护 4 列单表决策台账（已决项 / 已排除边界 / 默认假设，禁止重开已排除项）；出口三问内联自核（目标 / 边界 / 矛盾）。 | 宿主无关（任意具备对话能力的智能体） |
 | **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance/SKILL.md) | **工业级文档工程与知识库治理体系**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转模型与 Docs-as-Code 自动化门禁，彻底杜绝文档与代码漂移。 | Claude Code / Antigravity / 全局 Shell |
 | **`taste-driven-designer`** | [`skills/taste-driven-designer`](./skills/taste-driven-designer/SKILL.md) | **品味驱动设计三阶段流程**（源于 Anshu Chimala AI 双钻模型）。<br/>D1 种子字符串发散（外部随机性）→ D2 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 每轮内嵌产物自检→ D3 AI Tells 审计与残酷减法；图像/视频增强能力门控，宿主无关、可降级。 | 具备子智能体派发能力的智能体 / CLI |
@@ -157,5 +157,5 @@ git config core.hooksPath .githooks
 
 ## 📄 规范与许可 (Standards & License)
 
-* **技能规范**：本仓库 6 个技能均遵循 [`agentskills.io` 规范](https://agentskills.io/specification)——`name` 与所在目录同名、`description` 为合法 YAML 且不超过规范上限（1024 字符，现行 6 个技能全部达标；500 字符为建议值，`clarification-protocol` V2.0.0 已压降至 362 字符达标，现役 6 个技能仅 `dual-round-review` 738 字符超出建议值，已裁定接受偏离 [BK-0041](./docs/project/backlog/archive/2026-Q4/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md)）、`SKILL.md` 正文均 < 500 行，可直接被 `npx skills` 拉取。
+* **技能规范**：本仓库 6 个技能均遵循 [`agentskills.io` 规范](https://agentskills.io/specification)——`name` 与所在目录同名、`description` 为合法 YAML 且不超过规范上限（1024 字符）与 500 字符建议值（现役 6 个技能全部收敛达标：`dual-round-review` V3.0 已由 738 压降至 310 字符、`clarification-protocol` 362、`goal-loop` 369、`doc-governance` 434、`frontend-qa-gate` 487、`taste-driven-designer` 490；历史债务溯源见 [BK-0041](./docs/project/backlog/archive/2026-Q4/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md)）、`SKILL.md` 正文均 < 500 行，可直接被 `npx skills` 拉取。
 * **许可**：本项目采用 [MIT 许可证](./LICENSE)（Copyright © 2026 CodingRookie98），6 个技能 frontmatter 均已声明 `license: MIT`；可自由使用、修改与再分发，但须保留版权与许可声明。

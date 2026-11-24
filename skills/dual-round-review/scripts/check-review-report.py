@@ -19,9 +19,7 @@
    括号统计串（真实归档形态，BK-0043）；占位/否定/无统计后缀一律不成立；
   8) 写入形态合法性：台账每行的「写入形态」列必须存在且取值 ∈ {direct, transcribed}
      （RFC-0002 §3.5——该列是唯一能区分「子智能体直写原文」与「主智能体转录产物」的可审计属性）。
-  9) schema 自描述（2026-10-11 产物审查能力）：报告首部含 `> **Review Schema**: artifact` 时，
-     R1 按产物 schema 校验五区块与稳定 ID 区块；未声明则缺省 code —— 既有归档零迁移。
- 10) 轮次列容错（2026-10-11）：台账「轮次」列允许带人类描述（如 `delta-r1 · 第6轮`），
+  9) 轮次列容错（2026-10-11）：台账「轮次」列允许带人类描述（如 `delta-r1 · 第6轮`），
      门禁按**前导标记值**解析；标记值之外的写法（如 `round-1`）仍判为未登记 R1。
 
 用法: python3 check-review-report.py <归档目录> [--require-verdict=PASS]
@@ -47,18 +45,7 @@ R2_SECTIONS = (
     "## 2. 最终裁决明细表",
     "## 3. 终审放行结论",
 )
-# 产物 schema（Review Schema: artifact）——R2 三区块与稳定 ID 命名空间（R1-<n>）与 code 完全共用，
-# 故仅 R1 五区块与 R1 稳定 ID 区块需要按 schema 切换。
-R1_ARTIFACT_SECTIONS = (
-    "## 1. 产物契约核验与意图溯源",
-    "## 2. 事实与证据核验",
-    "## 3. 失败预演与误用路径推演",
-    "## 4. 指控清单",
-    "## 5. 第一轮结论概要",
-)
-ARTIFACT_MARKER = "> **Review Schema**: artifact"
 CODE_R1_ID_SECTION = "## 4. 潜在缺陷清单"
-ARTIFACT_R1_ID_SECTION = "## 4. 指控清单"
 INDEX_FIELDS = ("**交付单元**", "**归档根**", "**终审裁决**")
 LEDGER_HEADER = "## 轮次台账"
 R2_ID_SECTION = "## 2. 最终裁决明细表"
@@ -78,7 +65,7 @@ USAGE = """用法: check-review-report.sh <归档目录> [--require-verdict=PASS
 校验项 8：台账「写入形态」列必须存在且取值 ∈ {direct, transcribed}
   （RFC-0002 §3.5；缺失或第三值均判失败）
 
-校验项 10：台账「轮次」列按前导标记值解析——允许带人类描述（如 `delta-r1 · 第6轮`），
+校验项 9：台账「轮次」列按前导标记值解析——允许带人类描述（如 `delta-r1 · 第6轮`），
   但标记值须为 r1 / r2 / delta-r1 / delta-r2 之一（如 `round-1` 判为未登记 R1）。
 
 归档目录结构（推荐默认根 docs/project/reviews/）:
@@ -149,13 +136,6 @@ def _strip_fences(lines: list[str]) -> list[str]:
 def _heading_present(lines: list[str], section: str) -> bool:
     """区块判定：必须为**行首标题**，行内散文提及不算（R1-4 回归）。"""
     return any(line.startswith(section) for line in lines)
-
-
-def _report_schema(path: str) -> str:
-    """schema 判定（第 9 项）：报告自描述，缺省 code。标记须为**行首整行**且不在围栏内。"""
-    if ARTIFACT_MARKER in _strip_fences(_read_lines(path)):
-        return "artifact"
-    return "code"
 
 
 def _sha256_of(path: str) -> str:
@@ -473,11 +453,10 @@ def _check_id_alignment(r1_files: list[str], r2_files: list[str], messages: list
     bases: list[str] = []
     unparsed_r1: set[str] = set()
     for path in r1_files:
-        header = ARTIFACT_R1_ID_SECTION if _report_schema(path) == "artifact" else CODE_R1_ID_SECTION
-        ids = _section_ids(path, header)
+        ids = _section_ids(path, CODE_R1_ID_SECTION)
         r1_ids_text += ids + "\n"
         key = _base_key(path)
-        if ids == "" and _has_unparsed_id_rows(path, header):
+        if ids == "" and _has_unparsed_id_rows(path, CODE_R1_ID_SECTION):
             # R1-01 回归：表头之后出现 ID 记号行却抽不到任何 ID（解析失败）时 fail-closed。
             unparsed_r1.add(key)
         if not r1_by_base.get(key, ""):
@@ -500,7 +479,8 @@ def _check_id_alignment(r1_files: list[str], r2_files: list[str], messages: list
             errors += 1
 
     # 方向二：**按基线逐轮配对**施加——R1 的每一条缺陷都必须被**同一轮**的 R2 定性。
-    # 仅当台账登记了 R2 报告时适用——Light 模式为单轮红队，无 R2，不做此校验。
+    # 仅当台账登记了 R2 报告时适用——Light 模式为单轮红队，无 R2，不做此校验；
+    # Full 模式下的 Scoped Delta（delta-r1 零缺陷且未派发 delta-r2）在下方 round_r1 为空分支放行。
     if not r2_files:
         return errors
     for key in bases:
@@ -615,21 +595,12 @@ def main(argv: list[str] | None = None) -> int:
     errors += report_errors
     errors += _check_orphan_reports(archive, index, messages)
     if report_count == 0:
-        messages.append("错误: 轮次台账为空或未按 schema 登记任何报告文件")
+        messages.append("错误: 轮次台账为空或未登记任何报告文件")
         errors += 1
 
     for path in r1_files:
         label = f"R1 报告（{os.path.basename(path)}）"
-        if _report_schema(path) == "artifact":
-            errors += _check_sections(path, label, R1_ARTIFACT_SECTIONS, messages)
-        else:
-            before = len(messages)
-            errors += _check_sections(path, label, R1_SECTIONS, messages)
-            if len(messages) != before:
-                messages.append(
-                    "提示: 未发现 Review Schema 标记，按 code schema 校验；"
-                    f"若本报告为产物审查，请在报告首部加入 '{ARTIFACT_MARKER}' 后重跑。"
-                )
+        errors += _check_sections(path, label, R1_SECTIONS, messages)
     for path in r2_files:
         errors += _check_sections(path, f"R2 报告（{os.path.basename(path)}）", R2_SECTIONS, messages)
 

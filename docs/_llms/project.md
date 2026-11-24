@@ -92,3 +92,4 @@
 - [Wave 0 止血修复计划：全仓现红测试与已实证源码级真 Bug 清零](../project/plans/2026-11-23-wave0-skill-bugs-stabilization.md): 1. `prepare-review-context.py:358` `_UNIT_RX` 强求行首 `>`，但自身 `:500` 及 17/17 真实归档均无 `>`，导致 `_read_unit()` 全返回 `None` → 兼容 `...
 - [Wave 1 架构清场计划：退役 agy-delegation-workflow 与去壳提纯 clarification-protocol](../project/plans/2026-11-23-wave1-retire-agy-and-slim-clarification.md): 1. **吸收真资产**：
 - [Wave 2A 实施计划：goal-loop V3.0 瘦身与现代化升级](../project/plans/2026-11-23-wave2a-goal-loop-v3.md): 采用评估报告 **方案 A（P0 止血瘦身 + P1 现代化升级）**：
+- [Wave 2B 实施计划：dual-round-review V3.0 瘦身与现代化升级](../project/plans/2026-11-24-wave2b-dual-round-review-v3.md): 采用评估报告 **方案 A 务实收敛路线（保持现有 20 个历史归档 100% 向后兼容）**：

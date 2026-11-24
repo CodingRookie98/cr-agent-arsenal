@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CHANGELOG-CR-ARSENAL
-> - **当前版本**: V1.5.0
+> - **当前版本**: V1.6.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-22
 > - **文档所有者**: 核心架构组
@@ -13,17 +13,34 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.6.0** | 2026-11-24 | AI Agent | 王辉 | 新增 2026-11-24「Wave 2B：`dual-round-review` V3.0 瘦身与现代化升级」记录 |
 | **V1.5.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「Wave 2A：`goal-loop` V3.0 瘦身与现代化升级」记录 |
 | **V1.4.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「Wave 1 架构瘦身：退役 `agy-delegation-workflow` 与精简 `clarification-protocol` V2.0.0」记录 |
 | **V1.3.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「退役 `spec-evolution` 技能并下沉核心哨兵」（ADR-0003）：移除技能目录与对外发行条目，C-01/C-05+YAML/C-07 迁移至 `skills/_shared/tests/` |
 | **V1.2.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「真值轴残余收口与存量文档拆分」：BK-0055（--staged 新文档/BD-9 判据）与 BK-0050（spec-evolution 拆分、skill-scripts 长行改写、体量基线清空） |
-| **V1.1.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「doc-governance 交付尾巴收口」：RFC 生命周期补完、计划 checkpoint 校准、设计书 V1.5.0、索引状态更正、BD-1-R2 修复与两轮独立确认 |
 
 ---
 
 本文件记录**已交付**的成果。进行中的工作在 [backlog](./backlog/index.md)，逐日过程在 git log。
 
 格式参照 Keep a Changelog，按交付单元聚合（不按提交逐条罗列）。
+
+## [2026-11-24] Wave 2B：dual-round-review V3.0 瘦身与现代化升级
+
+### 移除
+
+- 物理退役 0% 使用率的 `Artifact Review` 平行分支：`skills/dual-round-review/references/artifact-contract.md`、`round-1-artifact-red-team.md`、`verdict-rubric-artifact.md`、`templates/r1-report-artifact.md` 与 `tests/test_artifact_schema_contract.py`；同步清除 `check-review-report.py` 中的 `Artifact Schema` 双分支逻辑。
+- 物理移除 20/20 静态文案与源码变量名锁死测试 `skills/dual-round-review/tests/test_write_channel_contract.py`。
+
+### 重构与升级
+
+- **`dual-round-review` V3.0 瘦身**：压缩 `SKILL.md` 并清偿全仓最后一条超限 `description`（738 → 310 字符，现役 6/6 技能全部收敛至 ≤ 500 字符建议值）；清除私有历史术语与单栈硬编码；将非代码规范审查吸收为通用 R1 规程中的 3 条核心提示。
+- **注入四项高杠杆审查升级**：R1/R2 提示词引入 **Untrusted Data 防注入** 与 **空结果优先（Zero-Noise）** 准则，建立 **能力档位分层** 与 **Scoped Delta 零缺陷免 `delta-r2` 收口**（`check-review-report.py` 对无 `delta-r2` 的零缺陷 `delta-r1` 正常放行，同时保持历史 Write-Once 归档兼容）。
+
+### 测试迁移与文档同步
+
+- 将 `test_existing_archives_all_pass_gate`（含 4 项 `2026-11-22-*` 冻结集合及防漂移断言）与轮次列容错回归迁移至 `skills/dual-round-review/tests/test_check_review_report.py`，并补齐模板/参考/脚本零漂移、Scoped Delta 零缺陷 `--require-verdict=PASS`、frontmatter 预算、围栏配对与防回流哨兵测试。
+- 同步更新架构设计书 [dual-round-review-design.md](../explanation/architecture/dual-round-review-design.md)、评估报告执行注记 [2026-11-23-dual-round-review-architecture-evaluation.md](../explanation/analysis/2026-11-23-dual-round-review-architecture-evaluation.md)、全局入口 `README.md`、`docs/index.md` 与 [Wave 2B 实施计划](./plans/2026-11-24-wave2b-dual-round-review-v3.md)。
 
 ## [2026-11-23] Wave 2A：goal-loop V3.0 瘦身与现代化升级
 

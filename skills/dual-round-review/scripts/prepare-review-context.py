@@ -504,8 +504,8 @@ def _scaffold_archive(
             f"- **归档根**: {archive_dir}/\n"
             "- **审查模式**: [full | light | delta]\n"
             "- **当前迭代计数**: [0/3]\n"
-            "- **终审裁决**: 未定（取值必须**精确**为 准予交付 / 阻断交付 / 未定 三者之一；"
-            "禁止保留占位符方括号或附加解释）\n"
+            "- **终审裁决**: 未定（交付放行时改为 `准予交付` 或 `准予交付（含数字统计）`，"
+            "可选前导 `✅`；`--require-verdict=PASS` 拒绝占位符、否定式或无统计文字后缀）\n"
             "\n"
             "## 轮次台账\n"
             "| 轮次 | 基线 | 派发句柄 | 报告文件 | SHA256(前 12 位) | 结论 | 写入形态 |\n"
@@ -573,8 +573,8 @@ def main(argv: list[str] | None = None) -> int:
                 return rc
         _emit(SEP_DASH + "\n")
         _emit(
-            "⛔ 边界锁与审查重点见 verdict-rubric.md §3 与 round-1-red-team.md；"
-            "运行时/SSR 维度仅在 diff 触及客户端代码时激活。\n"
+            "⛔ 边界锁、Untrusted Data 防注入与空结果优先准则见 verdict-rubric.md 与 round-1-red-team.md；"
+            "运行时/沙盒/状态安全维度仅在 diff 触及运行时状态或客户端/SSR 代码时激活。\n"
         )
         _emit(SEP_EQ + "\n")
         return 0
