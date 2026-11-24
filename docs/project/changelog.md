@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CHANGELOG-CR-ARSENAL
-> - **当前版本**: V1.7.0
+> - **当前版本**: V1.8.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-22
 > - **文档所有者**: 核心架构组
@@ -13,6 +13,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.8.0** | 2026-11-24 | AI Agent | 王辉 | 新增 2026-11-24「Wave 3：`taste-driven-designer` 与 `frontend-qa-gate` V2.0 瘦身与真实证据化升级」记录 |
 | **V1.7.0** | 2026-11-24 | AI Agent | 王辉 | 新增 2026-11-24「Wave 2C：`doc-governance` V3.0 三刀切割与公私物理分离」记录（ADR-0005） |
 | **V1.6.0** | 2026-11-24 | AI Agent | 王辉 | 新增 2026-11-24「Wave 2B：`dual-round-review` V3.0 瘦身与现代化升级」记录 |
 | **V1.5.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「Wave 2A：`goal-loop` V3.0 瘦身与现代化升级」记录 |
@@ -24,6 +25,23 @@
 本文件记录**已交付**的成果。进行中的工作在 [backlog](./backlog/index.md)，逐日过程在 git log。
 
 格式参照 Keep a Changelog，按交付单元聚合（不按提交逐条罗列）。
+
+## [2026-11-24] Wave 3：taste-driven-designer 与 frontend-qa-gate V2.0 瘦身与真实证据化升级
+
+### 移除
+
+- **`taste-driven-designer` 冗余外壳清理**：退役并移除独立的 `references/multimodal-enrichment.md`（并入 `critic-loop-protocol.md`）、`templates/seed-string-procedure.md`（并入 `discover-phase.md`）、`scripts/generate-seed.sh` POSIX 兼容壳，以及旧版 `tests/test_generate_seed.py` 与文案锁死测试 `tests/test_gate_contract.py`；移除冗余状态矩阵与「Critic 终分」/个人真名残留。
+- **`frontend-qa-gate` 假正则门禁退役**：物理废弃 433 行中文 Markdown 正则解析器与旧文书契约件（`references/browser-verification-protocol.md`、`templates/qa-report-template.md`、`scripts/check-qa-report.sh` 与 `tests/test_qa_gate_contract.py`）；从 `D-S` 交互状态域移除越界的代码级推导项 `S9`（归位 `dual-round-review`）。
+
+### 重构与升级
+
+- **`taste-driven-designer` V2.0**：D1 新增 `Persuade` vs `Operate` 表面模式分流与一体化 SSoT 种子流程；D3 将反模式扩展为 **2026 10 大 AI Tells**；D2 拆除 9 列账本与 `round-nonce` 回执官僚负担，收敛为 **5 列评审记录表**（保留盲比匿名去标识、空白截图作废、鉴别力自检、原则优先与防乒乓、5 轮上限）并内置无截图降级与多模态门控；将 `scripts/generate-seed.py` 升级为纯标准库 `argparse` + `secrets` + `hashlib.sha256` 拒绝采样无偏流（消除 Park-Miller 零状态死锁）；五域运行时断言 SSOT 归位 `frontend-qa-gate`；新建 `tests/test_taste_generate_seed.py` 与 `tests/test_taste_designer_v2_surface.py`。
+- **`frontend-qa-gate` V2.0**：实施**双轨门禁架构**破解无头永久 `BLOCKED` 死锁——Tier 1 自动化阻断门禁（23 项：`D-R` 5 + `D-S` 8 + `D-A` 7 + `D-P` 3）与 Tier 2 人工/真机签收清单（4 项：`H-A5`/`H-V4/V5`/`H-V6`/`H-B1/B2`，标 `pending_human` 不阻断自动化放行）；新增现代探针编排协议 `references/probe-orchestration.md`（路由至 `chrome-devtools-mcp` / `agent-browser` / Playwright + axe + LHCI / `webapp-testing`）；将 `scripts/check-qa-report.py` 重构为 Schema v2 **Fail-Closed 真实磁盘证据 JSON 门禁**（校验磁盘文件存在、非空、symlink 防逃逸、`.png`/`.jpg`/`.webp`/`.json` 魔数格式、占位符拦截、`runtime_signals` 计数清零与 `verdict` 推导一致性），配 `templates/qa-evidence-template.json`、`templates/qa-summary-template.md` 及测试 `tests/test_frontend_qa_evidence_gate.py`、`tests/test_frontend_qa_v2_surface.py`。
+
+### 接口与文档同步
+
+- 同步 `skills/goal-loop/`（`references/stage-progression-protocol.md` 与 `templates/goal-plan-template.md`）前端机械校验命令为 `python3 <frontend-qa-gate 技能目录>/scripts/check-qa-report.py <qa-evidence.json> --require-verdict=PASS`，并清晰标注 V2.0 双轨放行口径（Tier 1 `PASS` 放行，Tier 2 `pending_human` 交人类签收）。
+- 同步更新 `README.md`、[docs/index.md](../index.md)（V1.53.0）、[taste-driven-designer-design.md](../explanation/architecture/taste-driven-designer-design.md)（V2.0.0）、[frontend-qa-gate-design.md](../explanation/architecture/frontend-qa-gate-design.md)（V2.0.0），并创建 [Wave 3 实施计划](./plans/2026-11-24-wave3-frontend-skills-v2.md)。
 
 ## [2026-11-24] Wave 2C：doc-governance V3.0 三刀切割与公私物理分离
 

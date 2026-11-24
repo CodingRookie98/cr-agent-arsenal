@@ -71,7 +71,7 @@
 
 ### 1.4 旁证：这是武器库的共性缺口
 
-`frontend-qa-gate` 已具备 [报告结构机械校验器](../../skills/frontend-qa-gate/scripts/check-qa-report.sh)，却同样**未规定报告落位**。整个武器库缺失的是「报告产物的持久化落位层」，本 RFC 以 `dual-round-review` 为试点。
+`frontend-qa-gate` 已具备报告结构机械校验器（原 `skills/frontend-qa-gate/scripts/check-qa-report.sh`，Wave 3 已升级为 JSON 物证门禁 `check-qa-report.py`），却同样**未规定报告落位**。整个武器库缺失的是「报告产物的持久化落位层」，本 RFC 以 `dual-round-review` 为试点。
 
 ---
 

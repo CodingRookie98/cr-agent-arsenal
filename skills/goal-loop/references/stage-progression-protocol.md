@@ -98,17 +98,17 @@
 
 * **子步骤 4.1 集成与构建验证（原 P3.5）**：对裁定书含 L2 的任务，运行跨模块集成测试与项目全局编译构建至 Exit Code 0（纯独立单元可按裁定书豁免）。
 * **子步骤 4.2 前端产物验收（条件步骤 · 仅前端产物交付，位于 R1 之前）**：
-  - **设计任务链路**：`taste-driven-designer` D1-D3 → `frontend-qa-gate`（真实浏览器断言，结论须为 `PASS`）→ `dual-round-review` R1/R2；
+  - **设计任务链路**：`taste-driven-designer` D1-D3 → `frontend-qa-gate`（Tier 1 自动化门禁结论须为 `PASS`，Tier 2 人工/真机签收项按 `pending_human` 交付人类签收）→ `dual-round-review` R1/R2；
   - **非设计任务链路**：`frontend-qa-gate` → `dual-round-review`；
-  - **无效证据纪律**：结论为 `FAIL` 或 `BLOCKED`（含任何未验证项）不得声称通过，按其回流路由修复后重验；产物断言、代码终审与品味裁决三者不得互相替代；
-  - **机械校验命令**：``python3 <frontend-qa-gate 技能目录>/scripts/check-qa-report.py <报告文件> --require-verdict=PASS --min-assertions=15``（退出码 0 方视为 `PASS` 可证）。
+  - **双轨与无效证据纪律**：V2.0 采用「Tier 1 自动化阻断门禁 + Tier 2 人工/真机签收清单」双轨制——Tier 1 真实磁盘证据校验 `PASS` 即可放行进入 `dual-round-review`（`FAIL` 或 `BLOCKED` 不得声称通过，须按回流路由修复后重验）；Tier 2 人工/真机签收项（如读屏实测、软键盘安全区、低版浏览器矩阵）按 `pending_human` 交付人类签收，不构成无头死锁。产物断言、代码终审与品味裁决三者不得互相替代；
+  - **机械校验命令**：`python3 <frontend-qa-gate 技能目录>/scripts/check-qa-report.py <qa-evidence.json> --require-verdict=PASS`（退出码 0 方视为 Tier 1 `PASS` 可证）。
 * **子步骤 4.3 独立对抗终审与 Delta Re-Loop（原 P4 · 联动 `dual-round-review`）**：
   1. 运行 L3 端到端测试（若裁定书适用）；
   2. **通道裁量**：Heavy Track 执行全量双轮对抗审查；Fast-Track / Maintenance-Patch 执行定向单轮红队审查（Diff 边界锁），触及公共契约、核心链路或鉴权/并发/数据一致性时升级为全量双轮；
   3. **独立双轮执行**：R1 独立红队锁定 `BASE..HEAD` Diff 边界，穿透核查**逻辑漏洞、竞态/资源泄漏与领域运行时安全风险**；R2 元架构师独立审判，剔除历史未改代码越界挑刺并输出最终裁决明细表；
   4. **Delta Re-Loop 硬门禁**：若 `Blockers > 0`，根因修复并原子提交后，**必须以修复提交为新基线重派 Delta Re-Loop 复核**，严禁自宣通过；同一目标迭代上限 **5 次**，触顶按 [failure-recovery-protocol.md](failure-recovery-protocol.md) 升级人类裁决；
   5. 阻断项清零后安全合并功能分支并清理临时分支。
-* **准出底线 (<HARD-GATE>)**：持有独立子智能体针对最新提交的 **Zero Blockers** 终审凭据（前端交付另需 `frontend-qa-gate` `PASS` 且校验脚本 Exit Code 0）方可合并入库。
+* **准出底线 (<HARD-GATE>)**：持有独立子智能体针对最新提交的 **Zero Blockers** 终审凭据（前端交付另需 `frontend-qa-gate` Tier 1 真实磁盘证据校验 `PASS` 且退出码 0，Tier 2 人工/真机签收项按 `pending_human` 交人类签收）方可合并入库。
 
 ### 阶段 5：`Close` — 文档联动同步与计划归档（原 P5）
 

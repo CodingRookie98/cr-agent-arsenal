@@ -2,12 +2,15 @@
 
 > **文档控制信息**
 > - **文档标识**: ANA-TASTE-DESIGNER-EVAL-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.0.1
 > - **文档状态**: Active
-> - **生效日期**: 2026-11-23
+> - **生效日期**: 2026-11-24
 > - **文档所有者**: 核心架构组
 > - **评估依据**: 基于 `skills/taste-driven-designer/` 全部 13 个源文件（1,407 行 / 74.9 KB）、设计书、原教旨原文 [how-to-turn-your-ai-into-a-world-class-designer.md](../../reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md)、两份历史实施计划、实跑 `pytest` 与脚本测试，并对照配套调研报告 [2026-11-23-taste-driven-designer-peer-research.md](./2026-11-23-taste-driven-designer-peer-research.md)。
 > - **证据分级**: 【A】一手（本仓库全量源码/行号/实跑命令与脚本反例、外部标杆一手源码）｜【B】二手转引（工程文与论文摘要）｜【C】架构师诊断与重构设计
+
+> [!NOTE]
+> **执行注记 (2026-11-24)**：**Wave 3（[taste-driven-designer-design.md](../architecture/taste-driven-designer-design.md) V2.0.0）已按本报告推荐的方案 A 完成 V2.0 瘦身提纯升级**（与 `frontend-qa-gate` 双轨真实磁盘证据化升级同步落地）——D1 新增 `Persuade`/`Operate` 表面模式分流并合并种子流程至 `references/discover-phase.md`，D3 扩展 2026 10 大 AI Tells，D2 收敛为 5 列评审记录表并并入无截图降级与多模态能力门控，移除冗余状态矩阵并将五域运行时断言 SSOT 归位 `frontend-qa-gate`，重铸纯标准库无偏 `scripts/generate-seed.py`（配 `test_taste_generate_seed.py` 与 `test_taste_designer_v2_surface.py`），并退役 `multimodal-enrichment.md`、`seed-string-procedure.md`、`generate-seed.sh`、`test_gate_contract.py` 与 `test_generate_seed.py`。下文所有体量与路径均为 **Wave 3 重构前审计时刻的历史快照**（已退役或迁移的文件引用已转为纯反引号代码片段防止 404 断链）。
 
 ---
 
@@ -15,6 +18,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.1** | 2026-11-24 | AI Agent | 核心架构组 | 补充 Wave 3（V2.0.0）已按方案 A 完成 V2.0 瘦身提纯升级的执行注记，并将下文指向已退役 V1 文件的相对链接转为纯反引号代码片段防止 404 断链 |
 | **V1.0.0** | 2026-11-23 | AI Agent | 王辉 | 初版：完成 `taste-driven-designer` 13 文件全量审计、`generate-seed.py` 零状态数学 Bug 实测、7 处内部漂移与设计书覆写事故还原、与 `frontend-design` 70%+ 重叠解剖及三档重构去向方案 |
 
 ---
@@ -42,10 +46,10 @@
 | 分层 | 文件 | 行数 | 字节数 | 健康度与发现 |
 | :--- | :--- | :---: | :---: | :--- |
 | 路由层 | [SKILL.md](../../../skills/taste-driven-designer/SKILL.md) | 118 | 9.6 KB | L11 裸引仓内路径 `docs/reference/articles/...`（单技能安装不可达） |
-| 核心细则 (4) | [critic-loop-protocol.md](../../../skills/taste-driven-designer/references/critic-loop-protocol.md)（183 L）、[discover-phase.md](../../../skills/taste-driven-designer/references/discover-phase.md)（91 L）、[ai-tells-audit.md](../../../skills/taste-driven-designer/references/ai-tells-audit.md)（83 L）、[multimodal-enrichment.md](../../../skills/taste-driven-designer/references/multimodal-enrichment.md)（73 L） | 430 | 27.7 KB | D2 协议过重；`ai-tells-audit.md:83` 残留已废止的「Critic 终分」；7 反模式滞后停留在 2025 上一代特征 |
-| 模板套件 (3) | [critic-prompt-template.md](../../../skills/taste-driven-designer/templates/critic-prompt-template.md)（113 L）、[design-brief-template.md](../../../skills/taste-driven-designer/templates/design-brief-template.md)（57 L）、[seed-string-procedure.md](../../../skills/taste-driven-designer/templates/seed-string-procedure.md)（43 L） | 213 | 11.5 KB | `design-brief-template.md:30-31` 在 MIT 开源模板中硬编码个人真名 `王辉` |
+| 核心细则 (4) | [critic-loop-protocol.md](../../../skills/taste-driven-designer/references/critic-loop-protocol.md)（183 L）、[discover-phase.md](../../../skills/taste-driven-designer/references/discover-phase.md)（91 L）、[ai-tells-audit.md](../../../skills/taste-driven-designer/references/ai-tells-audit.md)（83 L）、`multimodal-enrichment.md`（原 `skills/taste-driven-designer/references/multimodal-enrichment.md`，已退役，73 L） | 430 | 27.7 KB | D2 协议过重；`ai-tells-audit.md:83` 残留已废止的「Critic 终分」；7 反模式滞后停留在 2025 上一代特征 |
+| 模板套件 (3) | [critic-prompt-template.md](../../../skills/taste-driven-designer/templates/critic-prompt-template.md)（113 L）、[design-brief-template.md](../../../skills/taste-driven-designer/templates/design-brief-template.md)（57 L）、`seed-string-procedure.md`（原 `skills/taste-driven-designer/templates/seed-string-procedure.md`，已退役，43 L） | 213 | 11.5 KB | `design-brief-template.md:30-31` 在 MIT 开源模板中硬编码个人真名 `王辉` |
 | 脚本 (2) | [generate-seed.py](../../../skills/taste-driven-designer/scripts/generate-seed.py)（198 L）+ `.sh`（5 L） | 203 | 7.4 KB | **实测数学 Bug** + 61 行 Bash `getopts` 仿写包袱 + `USAGE` 残留 `bash generate-seed.sh` |
-| 测试与夹具 (3) | [test_gate_contract.py](../../../skills/taste-driven-designer/tests/test_gate_contract.py)（213 L）、[test_generate_seed.py](../../../skills/taste-driven-designer/tests/test_generate_seed.py)（185 L）、[critic-gate-counter-evidence.md](../../../skills/taste-driven-designer/tests/fixtures/critic-gate-counter-evidence.md)（45 L） | 443 | 20.4 KB | 实跑 `28 passed (1.45s)`；但 `test_gate_contract.py` 13 用例中 **0 行为测试**，全为静态子串锁死且漏扫 `ai-tells-audit.md` |
+| 测试与夹具 (3) | `test_gate_contract.py`（原 `skills/taste-driven-designer/tests/test_gate_contract.py`，已退役，213 L）、`test_generate_seed.py`（原 `skills/taste-driven-designer/tests/test_generate_seed.py`，已退役，185 L）、[critic-gate-counter-evidence.md](../../../skills/taste-driven-designer/tests/fixtures/critic-gate-counter-evidence.md)（45 L） | 443 | 20.4 KB | 实跑 `28 passed (1.45s)`；但 `test_gate_contract.py` 13 用例中 **0 行为测试**，全为静态子串锁死且漏扫 `ai-tells-audit.md` |
 
 ### 1.2 `generate-seed.py` 实测数学 Bug 与过度封装
 

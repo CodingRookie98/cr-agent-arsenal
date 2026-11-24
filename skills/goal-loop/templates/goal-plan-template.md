@@ -94,8 +94,9 @@
 ### Verify：集成验证、前端条件验收与独立终审（原 P3.5 / P4）
 - [ ] **Task V-1**: 运行 L2 跨模块集成测试、全局构建与 L3 E2E（若裁定适用）
   - **验收命令**: `[L2/L3 与全局构建命令]`
-- [ ] **Task V-2（条件 · 仅前端产物交付）**: 取得 `frontend-qa-gate`《前端验收报告》且结论为 `PASS`
-  - **机械校验**: ``python3 <frontend-qa-gate 技能目录>/scripts/check-qa-report.py <报告文件> --require-verdict=PASS --min-assertions=15``（`FAIL`/`BLOCKED` 严禁进入 V-3）
+- [ ] **Task V-2（条件 · 仅前端产物交付）**: 取得 `frontend-qa-gate` 产物验收证据（`qa-evidence.json` 与人类摘要）且 Tier 1 自动化门禁结论为 `PASS`
+  - **双轨口径**: Tier 1 真实磁盘证据校验 `PASS` 即可放行进入 V-3（`FAIL`/`BLOCKED` 严禁进入）；Tier 2 人工/真机签收项按 `pending_human` 交付人类签收，不构成无头死锁
+  - **机械校验**: `python3 <frontend-qa-gate 技能目录>/scripts/check-qa-report.py <qa-evidence.json> --require-verdict=PASS`
 - [ ] **Task V-3**: 按通道执行独立对抗终审（Heavy 全量双轮 `dual-round-review`；Fast-Track / Maintenance-Patch 定向单轮红队）与 Delta Re-Loop 闭环（上限 5 次），取得最新提交的 **Zero Blockers** 裁决后合并分支
   - **审查输入**: 可由 `scripts/pack-handoff.py review-pkg <base_ref> HEAD --out .goal-loop/review-pkg.md` 生成交接包
 

@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "artifact": {
+    "name": "<artifact-name>",
+    "url": "<http://localhost:3000>",
+    "commit": "<git-commit-sha>",
+    "captured_at": "<ISO8601-timestamp>",
+    "probe_tool": "<chrome-devtools-mcp | agent-browser | playwright>"
+  },
+  "runtime_signals": {
+    "console_errors": 0,
+    "page_errors": 0,
+    "axe_critical_serious": 0
+  },
+  "automated_assertions": [
+    {
+      "id": "V1",
+      "domain": "D-R",
+      "status": "passed",
+      "steps": "<Set viewport to 375x812, scroll to bottom, check scrollWidth <= innerWidth>",
+      "evidence": [
+        "shots/<v1-375.png>",
+        "logs/<v1-viewport.json>"
+      ]
+    },
+    {
+      "id": "S1",
+      "domain": "D-S",
+      "status": "passed",
+      "steps": "<Cold-load entry route, collect console/page errors and layout shift>",
+      "evidence": "shots/<s1-initial.png>"
+    },
+    {
+      "id": "A7",
+      "domain": "D-A",
+      "status": "passed",
+      "steps": "<Run axe-core scan on main interactive flow, verify 0 critical/serious violations>",
+      "evidence": "logs/<a7-axe.json>"
+    },
+    {
+      "id": "P1",
+      "domain": "D-P",
+      "status": "passed",
+      "steps": "<Compare production bundle size against baseline>",
+      "evidence": "logs/<p1-bundle.json>"
+    }
+  ],
+  "human_signoff": [
+    {
+      "id": "H-A5",
+      "item": "Real screen reader (VoiceOver/NVDA) completes primary user journey",
+      "status": "pending_human"
+    },
+    {
+      "id": "H-V4/V5",
+      "item": "Physical mobile soft keyboard and notch safe-area insets do not obscure inputs",
+      "status": "pending_human"
+    },
+    {
+      "id": "H-V6",
+      "item": "Physical device portrait/landscape orientation switch preserves usability",
+      "status": "pending_human"
+    },
+    {
+      "id": "H-B1/B2",
+      "item": "Target minimum Safari/Firefox/WebView browser matrix verified on real devices",
+      "status": "pending_human"
+    }
+  ],
+  "verdict": "<PASS | FAIL | BLOCKED>"
+}

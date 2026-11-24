@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CR-PUB-DOCS-INDEX-2026
-> - **当前版本**: V1.52.0 (执行 Wave 2C：doc-governance V3.0 三刀切割、公共技能回归 Convention-First 与私有门禁/待办工具分离)
+> - **当前版本**: V1.53.0 (执行 Wave 3：`taste-driven-designer` 与 `frontend-qa-gate` V2.0 瘦身、去正则与真实磁盘证据化升级)
 > - **维护负责人**: 核心架构组
 > - **生效日期**: 2026-10-04
 
@@ -12,6 +12,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.53.0** | 2026-11-24 | AI Agent | 王辉 | **Wave 3 前端双技能 V2.0 重构**：更新 §2/§3 `taste-driven-designer` V2.0 与 `frontend-qa-gate` V2.0 描述，并在 §4 补登 Wave 3 实施计划 |
 | **V1.52.0** | 2026-11-24 | AI Agent | 王辉 | **Wave 2C `doc-governance` V3.0 三刀切割（ADR-0005）**：移除 `llms.txt` 与 `_llms/` 机器地图入口，更新 §2/§3 `doc-governance` V3.0 与 §2.5 操作手册描述，流转 RFC-0003/0005/0006 为 `Superseded` 并在 §4 补登 ADR-0005 与 Wave 2C 实施计划 |
 | **V1.51.0** | 2026-11-24 | AI Agent | 王辉 | **Wave 2B `dual-round-review` V3.0 瘦身与现代化升级**：更新 §2/§3 `dual-round-review` 描述（退役 Artifact 支线、Scoped Delta 零缺陷免 R2、Untrusted Data 防注入与空结果优先），并在 §4 补登 Wave 2B 实施计划 |
 | **V1.50.0** | 2026-11-23 | AI Agent | 王辉 | **Wave 2A `goal-loop` V3.0 瘦身与现代化升级**：更新 §2/§3 `goal-loop` 描述（五主阶段、三轨分流、事件驱动上下文工程与文件指针交接），并在 §4 补登 Wave 2A 实施计划 |
@@ -40,8 +41,8 @@
 | **`doc-governance`** | V3.0 Convention-First 轻内核与公私分离架构（ADR-0005）：公共技能仅保留 Diátaxis / RFC 结晶 / MADR / 变更联动规程与通用 `--exclude` 断链扫描器；私有门禁与待办管理分别下沉 `scripts/doc-gates/` 与 `scripts/backlog/` | [doc-governance-design.md](./explanation/architecture/doc-governance-design.md) |
 | **`goal-loop`** | V3.0 五主阶段（`Align → Plan → Execute → Verify → Close`）与三轨分流、事件驱动上下文工程、极薄文件指针交接、自适应测试分级裁定与双轮终审的工业级目标收敛循环 | [goal-loop-design.md](./explanation/architecture/goal-loop-design.md) |
 | **`dual-round-review`** | V3.0 红队第一性原理穿透 + 元架构师审判校准；支持 Full / Light / Scoped Delta（`delta-r1` 零缺陷免 R2）与能力档位分层、Untrusted Data 防注入、空结果优先、退役 0 用 Artifact 支线（吸收为通用非代码提示），保留 Write-Once 交付凭据归档与机械门禁 | [dual-round-review-design.md](./explanation/architecture/dual-round-review-design.md) |
-| **`taste-driven-designer`** | 源于 Anshu Chimala AI 双钻模型：外部随机种子 + 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 多模态增强 + 残酷减法 | [taste-driven-designer-design.md](./explanation/architecture/taste-driven-designer-design.md) |
-| **`frontend-qa-gate`** | 源于 kejun《前端开发转向 AI Coding 的常见问题全景》：五域产物断言（响应式 / 状态矩阵 / 无障碍 / 浏览器 / 性能）+ 证据三态 + 回流路由；不做分数判据、不替代人工签收、不侵入代码级审查 | [frontend-qa-gate-design.md](./explanation/architecture/frontend-qa-gate-design.md) |
+| **`taste-driven-designer`** | V2.0 源于 Anshu Chimala AI 双钻模型：D1 `Persuade`/`Operate` 表面模式分流 + 纯标准库外部种子 + 5 列极简盲比/4+1 Critic 闭环（内置无截图降级与多模态门控）+ 2026 10 大 AI Tells 与残酷减法，五域运行时验收 SSOT 归位 `frontend-qa-gate` | [taste-driven-designer-design.md](./explanation/architecture/taste-driven-designer-design.md) |
+| **`frontend-qa-gate`** | V2.0 双轨前端产物验收硬门禁：Tier 1 23 项自动化阻断（`D-R` 5 / `D-S` 8 / `D-A` 7 / `D-P` 3）+ Tier 2 4 项 `pending_human` 人工/真机签收 + 现代探针编排 + Fail-Closed 真实磁盘证据 JSON 门禁（`check-qa-report.py` Schema v2）+ 四类回流路由 | [frontend-qa-gate-design.md](./explanation/architecture/frontend-qa-gate-design.md) |
 | **`clarification-protocol`** | V2.0.0 精简微技能：先读代码自查事实、术语先行、按「依赖强度 × 实现影响」筛问与 ≤5 题软预算、原地维护 4 列单表决策台账（已决项 / 已排除边界 / 默认假设）与出口三问内联自核（目标 / 边界 / 矛盾） | [clarification-protocol-design.md](./explanation/architecture/clarification-protocol-design.md) |
 | **Backlog 治理最佳实践** | 结合软件工程史（精益/看板/Shape Up）与 AI 上下文工程的 14 项待办治理法则 | [backlog-governance-best-practices.md](./explanation/analysis/backlog-governance-best-practices.md) |
 | **LLM-WIKI 社区实现调研** | 六条实现路线（规范纯文件 / 索引检索 / 仓库生成 / 知识图谱 / 检索即答案 / 确定性编译器）+ 十类工程难点（含 21× token、漂移检出盲区、lint 召回 ~50%）+ 十二维对照审计与 P0–P2 改造建议 | [llm-wiki-implementation-research.md](./explanation/analysis/llm-wiki-implementation-research.md) |
@@ -88,8 +89,8 @@
 | **`doc-governance`** | [doc-governance 规程](../skills/doc-governance/SKILL.md) | Convention-First 文档工程与知识库治理 V3.0（Diátaxis 四象限、RFC 结晶、MADR 决策、变更联动矩阵与通用 `--exclude` 断链扫描器） |
 | **`goal-loop`** | [goal-loop 规程](../skills/goal-loop/SKILL.md) | 工业级端到端长任务目标实现循环 V3.0（五主阶段、三轨分流、事件驱动检查点、文件指针交接、自适应测试与 3-Tries 非阻塞熔断） |
 | **`dual-round-review`** | [dual-round-review 规程](../skills/dual-round-review/SKILL.md) | 对抗性双轮代码终审硬门禁 V3.0（红队穿透 + 元架构师审判）；支持 Full / Light / Scoped Delta 三模式、能力档位分层、Untrusted Data 防注入与空结果优先，保留 Write-Once 归档与机械门禁 |
-| **`taste-driven-designer`** | [taste-driven-designer 规程](../skills/taste-driven-designer/SKILL.md) | 品味驱动设计三阶段流程（D1 种子发散 / D2 三信号门禁 / D3 AI Tells 审计与减法）；能力门控、宿主无关、可降级 |
-| **`frontend-qa-gate`** | [frontend-qa-gate 规程](../skills/frontend-qa-gate/SKILL.md) | 前端产物验收（五域断言 + 报告结构机械门禁 + 缺陷回流路由）；能力门控，缺能力记未验证不降级通过 |
+| **`taste-driven-designer`** | [taste-driven-designer 规程](../skills/taste-driven-designer/SKILL.md) | 品味驱动设计三阶段流程 V2.0（`Persuade`/`Operate` 表面模式、纯标准库 SSoT 种子、5 列极简盲比/4+1 Critic 闭环、2026 10 大 AI Tells 与残酷减法）；能力门控、宿主无关、可降级 |
+| **`frontend-qa-gate`** | [frontend-qa-gate 规程](../skills/frontend-qa-gate/SKILL.md) | 前端产物验收双轨硬门禁 V2.0（Tier 1 23 项自动化阻断 + Tier 2 4 项 `pending_human` 人工/真机签收、现代探针编排、Schema v2 真实磁盘证据 JSON 门禁与四类回流路由） |
 | **`clarification-protocol`** | [clarification-protocol 规程](../skills/clarification-protocol/SKILL.md) | 需求澄清与收敛规程 V2.0.0（先自查事实、术语先行、按影响筛问与 ≤5 题软预算、4 列单表决策台账去重、出口三问内联自核）；由全局提示词 §4 一行指针按需唤起 |
 
 ---
@@ -136,7 +137,8 @@
 | **Wave 2A `goal-loop` V3.0 重构计划** | Heavy Track：并行执行 W2A-1（收敛为 `Align → Plan → Execute → Verify → Close` 五主阶段、清理死重模板与伪运行时、对齐 Diátaxis 路径并同步架构设计书 V3.0.0）与 W2A-2（移除 `goal-state-tracker` 与文案锁死测试、引入极薄 `pack-handoff.py` 交接脚本与行为契约单测、同步跨技能与全局索引）（**已完成**：四轮独立双轮对抗审查 R1 → R2 → Delta-R1 → Delta-R2 达成 Zero Blockers 准予交付，归档见 [2026-11-23-wave2a-goal-loop-v3](./project/reviews/2026-11-23-wave2a-goal-loop-v3/README.md)） | [2026-11-23-wave2a-goal-loop-v3.md](./project/plans/2026-11-23-wave2a-goal-loop-v3.md) |
 | **Wave 2B `dual-round-review` V3.0 重构计划** | Heavy Track：并行执行 W2B-1（压缩 `SKILL.md` 至 ≤12 KB 与 `description` 310 字符、退役 0 用 Artifact 支线、去技术栈硬编码并注入 Untrusted Data/空结果优先/Scoped Delta/能力档位分层、对齐模板与设计书 V3.0.0）与 W2B-2（清理脚本 Artifact 分支、迁移并重建行为与表面契约测试、同步全局入口与日志）（**已完成**：三轮独立对抗审查 R1 → R2 → Scoped Delta R1 零缺陷达成 Zero Blockers 准予交付，归档见 [2026-11-24-wave2b-dual-round-review-v3](./project/reviews/2026-11-24-wave2b-dual-round-review-v3/README.md)） | [2026-11-24-wave2b-dual-round-review-v3.md](./project/plans/2026-11-24-wave2b-dual-round-review-v3.md) |
 | **ADR-0005 物理切割 `doc-governance` 公共技能与本仓私有文档门禁体系** | 执行「三刀切割」：公共技能回归 Convention-First 轻内核 + 通用 `--exclude` 断链扫描器；本仓私有门禁与待办管理分别下沉 `scripts/doc-gates/` 与 `scripts/backlog/`；退役低 ROI 仪式税（`trim-revision`/`check-doc-drift`/`llms.txt` 等），取代 RFC-0003/0005/0006（MADR 3.0，Accepted） | [0005-split-doc-governance-public-vs-repo-local.md](./explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md) |
-| **Wave 2C `doc-governance` V3.0 重构计划** | Heavy Track：三路并行委派 W2C-1（公共技能瘦身与通用 `--exclude` 断链扫描器）、W2C-2（本仓私有 `scripts/doc-gates/`、`scripts/backlog/` 与 `.githooks/pre-commit`）、W2C-3（退役旧生成物、流转 RFC 状态并同步全仓治理与引导文档）（**已完成**：三轮独立对抗审查 R1 → R2 → Scoped Delta R1 零缺陷达成 Zero Blockers 准予交付，归档见 [2026-11-24-wave2c-doc-governance-v3](./project/reviews/2026-11-24-wave2c-doc-governance-v3/README.md)） | [2026-11-24-wave2c-doc-governance-v3.md](./project/plans/2026-11-24-wave2c-doc-governance-v3.md) |
+| **Wave 2C `doc-governance` V3.0 重构计划** | Heavy Track：三路并行委派 W2C-1（公共技能瘦身与通用 `--exclude` 断链扫描器）、W2C-2（本仓私有 `scripts/doc-gates/`、`scripts/backlog/` 与 `.githooks/pre-commit`）、W2C-3（退役旧生成物、流转 RFC 状态并同步全仓治理与引导文档）（**已完成**：三轮独立对抗审查 R1 → R2 → Scoped Delta R1 零缺陷达成 Zero Blockers 准予交付，归档见 [wave2c-doc-governance-v3](./project/reviews/2026-11-24-wave2c-doc-governance-v3/README.md)） | [2026-11-24-wave2c-doc-governance-v3.md](./project/plans/2026-11-24-wave2c-doc-governance-v3.md) |
+| **Wave 3 前端双技能 V2.0 重构计划** | Heavy Track：三路并行委派 W3-1（`taste-driven-designer` V2.0：表面模式分流、2026 10 大 AI Tells、5 列盲比记录表与纯标准库无偏种子）、W3-2（`frontend-qa-gate` V2.0：双轨 23+4 门禁、现代探针编排与 Schema v2 真实磁盘证据 JSON 门禁）与 W3-3（跨技能 `goal-loop` 同步与仓级文档/设计书升级）（**进行中**） | [2026-11-24-wave3-frontend-skills-v2.md](./project/plans/2026-11-24-wave3-frontend-skills-v2.md) |
 | **全局提示词渐进披露重构** | `contexts/AGENTS.md` 129 → 97 行：压缩条件性条款、把澄清规程下沉为 `clarification-protocol` 技能、合并 §4 标题层级，并按用户裁决新增 root 防回流准入判据；依据社区/官方「root 只放每任务适用内容 + 指令预算」最佳实践（**已完成**：三批 + 收口交付，129 → 97 行 / 13316 → 10746 字节；Fast Path 文档重构，未挂对抗审查） | [2026-10-10-agents-md-progressive-disclosure.md](./project/plans/2026-10-10-agents-md-progressive-disclosure.md) |
 | **P2 批次六项 backlog 卡片闭环** | 闭环 BK-0003/BK-0004/BK-0020/BK-0033/BK-0034/BK-0040：稳定 ID 按基线逐轮配对与终审裁决唯一性、修订表头章节作用域、非 UTF-8 输出硬化、baseline 损坏显式失败、嵌套类型逃逸收口（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-14-p2-six-backlog-items.md](./project/plans/2026-10-14-p2-six-backlog-items.md) |
 | **技能脚本 Python 统一化** | 8 个自建技能脚本改为**单一 Python 实现** + 同目录 `.sh` POSIX 兼容壳（形态 B，旧调用面零破坏）；9 套契约测试改为运行时无关（Windows 默认 `sys.executable`，POSIX 另验壳转发）；四注册面与技能内文档口径同步为 Python 主路径；Windows 侧以 uv 隔离环境取证（**进行中**，Heavy Track；实施计划与验收口径见计划文档） | [2026-10-19-skill-scripts-python-unification.md](./project/plans/2026-10-19-skill-scripts-python-unification.md) |

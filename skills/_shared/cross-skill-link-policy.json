@@ -4,8 +4,8 @@
   "rationale": "每个技能可独立安装（npx skills add --skill <name>），跨技能相对路径在单装后必然断链。引用他技能只允许命名引用（反引号内的技能名）。",
   "consumers": [
     "skills/_shared/tests/test_cross_skill_links.py（仓库级自检，覆盖全部技能）",
-    "skills/taste-driven-designer/tests/test_gate_contract.py（技能内联副本 + 自检）",
-    "skills/frontend-qa-gate/tests/test_qa_gate_contract.py（技能内联副本 + 自检）",
+    "skills/taste-driven-designer/tests/test_taste_designer_v2_surface.py（技能内联表面自检）",
+    "skills/frontend-qa-gate/tests/test_frontend_qa_v2_surface.py（技能内联表面自检）",
     "skills/clarification-protocol/tests/test_clarification_protocol_contract.py（技能内联自检）"
   ],
   "coverage": {

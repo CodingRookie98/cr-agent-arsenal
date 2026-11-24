@@ -19,8 +19,8 @@ cr-agent-arsenal/
 │   ├── dual-round-review/      # 对抗性非讨好型双轮代码终审硬门禁
 │   ├── clarification-protocol/ # 需求澄清与收敛规程 (提问排序 / 决策台账 / 三项自检)
 │   ├── doc-governance/         # Convention-First 文档工程与知识库治理体系 (V3.0)
-│   ├── taste-driven-designer/  # 品味驱动设计三阶段流程 (D1 发散 / D2 Critic 闭环 / D3 减法)
-│   ├── frontend-qa-gate/       # 前端产物验收硬门禁 (五域断言 + 证据三态)
+│   ├── taste-driven-designer/  # 品味驱动设计三阶段流程 V2.0 (表面模式分流 / 盲比 Critic / 减法)
+│   ├── frontend-qa-gate/       # 前端产物验收硬门禁 V2.0 (双轨门禁 + 探针编排 + 磁盘证据 JSON 门禁)
 │   └── _shared/                # 跨技能共享策略与测试 (非技能包，无 SKILL.md)
 │
 ├── contexts/                   # 2.【上下文工程与系统基线】
@@ -60,8 +60,8 @@ cr-agent-arsenal/
 | **`dual-round-review`** | [`skills/dual-round-review`](./skills/dual-round-review/SKILL.md) | **对抗性非讨好型双轮代码终审硬门禁（V3.0）**。<br/>第一轮红队第一性原理极限穿透 + 第二轮资深元架构师审判校准；支持 Full / Light / Scoped Delta（`delta-r1` 零缺陷免派 `delta-r2`）三模式与能力档位分层，注入 Untrusted Data 防注入与空结果优先准则，保留 Write-Once 原文归档与机械门禁（`check-review-report.py`）。 | 具备子智能体派发能力的智能体 / CLI |
 | **`clarification-protocol`** | [`skills/clarification-protocol`](./skills/clarification-protocol/SKILL.md) | **需求澄清与收敛规程**（源于提问收敛律）。<br/>先自查事实再向人类发问；术语先行对齐易歧义词；按「依赖强度 × 实现影响」筛问并设 ≤5 题软预算（低影响直转默认假设）；原地维护 4 列单表决策台账（已决项 / 已排除边界 / 默认假设，禁止重开已排除项）；出口三问内联自核（目标 / 边界 / 矛盾）。 | 宿主无关（任意具备对话能力的智能体） |
 | **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance/SKILL.md) | **Convention-First 文档工程与知识库治理体系（V3.0）**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转、MADR 决策记录与变更联动触发矩阵；优先适配宿仓规范与既有工具链，内置零依赖通用 `--exclude` 物理断链与 `#anchor` 静态扫描器（`check-doc-links.py`）。 | Claude Code / Antigravity / 全局 Shell |
-| **`taste-driven-designer`** | [`skills/taste-driven-designer`](./skills/taste-driven-designer/SKILL.md) | **品味驱动设计三阶段流程**（源于 Anshu Chimala AI 双钻模型）。<br/>D1 种子字符串发散（外部随机性）→ D2 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 每轮内嵌产物自检→ D3 AI Tells 审计与残酷减法；图像/视频增强能力门控，宿主无关、可降级。 | 具备子智能体派发能力的智能体 / CLI |
-| **`frontend-qa-gate`** | [`skills/frontend-qa-gate`](./skills/frontend-qa-gate/SKILL.md) | **前端产物验收硬门禁**（源于 kejun《前端开发转向 AI Coding 的常见问题全景》）。<br/>五域断言：响应式视口 / 交互状态矩阵 / 无障碍键盘与读屏 / 浏览器覆盖 / 性能预算；证据三态（已实现 / 已运行验证 / 未验证）、结论仅 PASS / FAIL / BLOCKED，不做分数判据；审产物不审代码（代码级判据路由 `dual-round-review`），回流缺陷按路由表分流。 | 具备浏览器驱动能力的智能体 / CLI |
+| **`taste-driven-designer`** | [`skills/taste-driven-designer`](./skills/taste-driven-designer/SKILL.md) | **品味驱动设计三阶段流程（V2.0）**（源于 Anshu Chimala AI 双钻模型，与通用编码审美技能互补）。<br/>D1 `Persuade` / `Operate` 表面模式分流 + 纯标准库外部种子发散（`generate-seed.py`）→ D2 极简隔离 Critic 闭环（5 列记录表、盲比/4+1 排序与人类签收，内置无截图降级与多模态能力门控）→ D3 2026 10 大 AI Tells 审计与残酷减法；五域运行时验收 SSOT 归位 `frontend-qa-gate`。 | 具备子智能体派发能力的智能体 / CLI |
+| **`frontend-qa-gate`** | [`skills/frontend-qa-gate`](./skills/frontend-qa-gate/SKILL.md) | **前端产物验收硬门禁（V2.0）**（源于 kejun《前端开发转向 AI Coding 的常见问题全景》）。<br/>双轨门禁破解无头死锁：Tier 1 自动化阻断门禁（23 项：`D-R` 5 / `D-S` 8 / `D-A` 7 / `D-P` 3）+ Tier 2 人工/真机签收清单（4 项：`pending_human` 不阻断自动化放行）；现代探针编排（`chrome-devtools-mcp` / `agent-browser` / Playwright+axe+LHCI / `webapp-testing`）+ Fail-Closed 真实磁盘证据 JSON 门禁（`check-qa-report.py` Schema v2）；按四类回流路由分流缺陷。 | 具备浏览器驱动能力的智能体 / CLI |
 
 > ⚠️ **新增技能须知**：`SKILL.md` 的 frontmatter 必须是**合法 YAML**。`description` 若含 `": "`（冒号+空格，如 `evidence: xxx`）必须整体加引号，否则 `npx skills` 解析失败会**静默跳过该技能**（命令仍 exit 0，`Found N skills` 少一个）。规范细节见 [agentskills.io specification](https://agentskills.io/specification)。
 
