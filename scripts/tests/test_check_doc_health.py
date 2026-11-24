@@ -188,3 +188,101 @@ def test_router_guardrail_and_missing_root(tmp_path: Path) -> None:
     _write(root, "AGENTS.md", "# 路由\n\n## 读取顺序\n1. a\n\n## 硬约束\n" + "\n".join(["- r"] * 26) + "\n")
     assert _run(root).returncode == 1
     assert _run(root, "--max-router-lines", "40").returncode == 0
+
+
+def test_r1_1_inline_backticks_at_line_start_not_ghost_fence(tmp_path: Path) -> None:
+    root = _make_root(tmp_path)
+    _write(root, "ghost.md", (
+        "# Ghost Fence\n\n"
+        "```inline``` 说明文本\n\n"
+        "> - **文档状态**: Deprecated\n"
+        "> - **取代于**: /etc/passwd\n"
+    ))
+    res = _run(root)
+    assert res.returncode == 1
+    assert "文档状态非法 [ghost.md]" in res.stdout
+
+    # 合法围栏与含 info string 的波浪线行不会误闭合，内部示例保持忽略
+    (root / "ghost.md").unlink()
+    _write(root, "real_fence.md", (
+        "# Real Fence\n\n"
+        "~~~markdown\n"
+        "~~~not-closing\n"
+        "> - **文档状态**: Deprecated\n"
+        "~~~\n"
+    ))
+    assert _run(root).returncode == 0
+
+
+def test_r1_2_yaml_priority_marker_note_blank_and_bom(tmp_path: Path) -> None:
+    # 1. YAML 优先级高于正文前 80 行引用块（禁止洗白，禁止误杀）
+    root1 = _make_root(tmp_path / "c1")
+    _write(root1, "launder.md", "---\n文档状态: Deprecated\n---\n# L\n\n> - **文档状态**: Active\n")
+    res1 = _run(root1)
+    assert res1.returncode == 1
+    assert "文档状态非法 [launder.md]" in res1.stdout
+
+    root2 = _make_root(tmp_path / "c2")
+    _write(root2, "safe.md", "---\n文档状态: Active\n---\n# S\n\n> - **文档状态**: Deprecated\n")
+    assert _run(root2).returncode == 0
+
+    # 2. ## 文档控制信息 下先写 > 备注 + 空行 + 表格，不漏扫
+    root3 = _make_root(tmp_path / "c3")
+    _write(root3, "marker_note.md", (
+        "# M\n\n## 文档控制信息\n\n> 备注说明\n\n"
+        "| 字段 | 值 |\n| :--- | :--- |\n| **文档状态** | Deprecated |\n"
+    ))
+    res3 = _run(root3)
+    assert res3.returncode == 1
+    assert "文档状态非法 [marker_note.md]" in res3.stdout
+
+    # 3. 带 UTF-8 BOM 的 YAML frontmatter 仍正确解析
+    root4 = _make_root(tmp_path / "c4")
+    _write(root4, "bom.md", "\ufeff---\n文档状态: Deprecated\n---\n# BOM\n")
+    res4 = _run(root4)
+    assert res4.returncode == 1
+    assert "文档状态非法 [bom.md]" in res4.stdout
+
+
+def test_r1_4_outside_symlink_superseded_no_crash(tmp_path: Path) -> None:
+    if not hasattr(os, "symlink"):
+        pytest.skip("当前平台不支持 os.symlink")
+    root = _make_root(tmp_path)
+    _write(root, "new.md", "# New\n")
+    outside = tmp_path / "outside.md"
+    outside.write_text("# Outside\n\n> - **文档状态**: Superseded\n> - **取代于**: ./new.md\n", encoding="utf-8")
+    link_path = root / "old_link.md"
+    try:
+        link_path.symlink_to(outside)
+    except OSError:
+        pytest.skip("当前环境无创建符号链接权限")
+    _write(root, "active.md", "# Active\n\nSee [old](./old_link.md).\n")
+    res = _run(root)
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "ValueError" not in res.stderr
+    assert "Active 引用 Superseded [active.md]: old_link.md" in res.stdout
+
+
+def test_r1_5_double_backtick_inline_code_no_false_warning(tmp_path: Path) -> None:
+    root = _make_root(tmp_path)
+    _write(root, "new.md", "# New\n")
+    _write(root, "old.md", "# Old\n\n> - **文档状态**: Superseded\n> - **取代于**: ./new.md\n")
+    _write(root, "active.md", "# Active\n\n示例：``use ` to quote [old](./old.md)`` 不应告警。\n")
+    res = _run(root)
+    assert res.returncode == 0
+    assert "Active 引用 Superseded" not in res.stdout
+
+
+def test_r1_6_superseded_url_unquote_query_and_encoded_escape_blocked(tmp_path: Path) -> None:
+    root = _make_root(tmp_path)
+    _write(root, "my new.md", "# My New\n")
+    _write(root, "old_ok.md", "# Old\n\n> - **文档状态**: Superseded\n> - **取代于**: ./my%20new.md?v=1#sec\n")
+    assert _run(root).returncode == 0
+
+    (tmp_path / "outside.md").write_text("# Out\n", encoding="utf-8")
+    for bad in ("%2e%2e/outside.md", "%2fetc%2fpasswd.md", "./bad%00.md"):
+        _write(root, "old_bad.md", f"# Bad\n\n> - **文档状态**: Superseded\n> - **取代于**: {bad}\n")
+        res = _run(root)
+        assert res.returncode == 1
+        assert "Traceback" not in res.stderr
+        assert "状态机违规 [old_bad.md]" in res.stdout

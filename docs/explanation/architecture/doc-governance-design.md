@@ -55,7 +55,7 @@ cr-agent-arsenal/
 ├── skills/doc-governance/       # 【第一层：公共可复用技能（Convention-First）】
 │   ├── SKILL.md                 # 精简核心规程（≤120 行）：工作流、Diátaxis/RFC/MADR 准则与影响矩阵
 │   ├── references/              # 可按需加载的方法论参考库（四象限 / RFC 结晶 / MADR / 命名 / 联动 / 迁移）
-│   ├── templates/               # 通用登记与控制头最小参考模板
+│   ├── templates/               # 通用变更联动登记模板（change-registration.md）
 │   └── scripts/check-doc-links.py  # 零依赖通用断链扫描器（支持可重复 --exclude <rel_prefix>）
 │
 ├── scripts/doc-gates/           # 【第二层：本仓私有文档门禁（仅服务 cr-agent-arsenal）】

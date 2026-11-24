@@ -203,6 +203,9 @@ def _validate_exclude_prefixes(
         except ValueError:
             problems.append(f"--exclude 越出根目录: {raw} → {candidate}")
             continue
+        if candidate == root_resolved:
+            problems.append(f"--exclude 不能排除根目录自身（禁止静默全跳）: {raw!r} → {candidate}")
+            continue
         resolved_excludes.append(candidate)
     return resolved_excludes, problems
 

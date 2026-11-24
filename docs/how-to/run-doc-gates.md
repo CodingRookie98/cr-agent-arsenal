@@ -71,7 +71,7 @@ git config core.hooksPath .githooks
 ### 体量超限（RFC-0008）
 
 ```text
-⛔ 文档体量超限: project/plans/x.md: 72100 字节 > 65536
+❌ 体量超限 [project/plans/x.md]: 72100 字节 > 65536
 ```
 
 * **单文档 > 64 KB（65,536 字节）**：按「总纲 + 子册」拆分为多篇文档并互相链接；
@@ -81,7 +81,7 @@ git config core.hooksPath .githooks
 ### 文档状态机违规（RFC-0007）
 
 * `文档状态` 只允许 `Active` / `Contested` / `Superseded`（缺省视同 `Active`）；
-* `Superseded` 必须填写仓库内真实有效的 `.md` 相对路径 `取代于`（不能指向自身或越出仓库根）；
+* `Superseded` 必须填写文档根（`--root`，如 `docs/`）内真实有效的 `.md` 相对路径 `取代于`（不能指向自身或越出文档根目录）；
 * `Active`（含缺省）不得携带 `取代于`。
 
 ### 路由文件守卫失败

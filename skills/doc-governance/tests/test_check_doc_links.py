@@ -217,6 +217,16 @@ def test_exclude_invalid_paths_fail_closed(tmp_path: Path, bad_prefix: str):
     assert res.stderr.strip()
 
 
+@pytest.mark.parametrize("root_alias", [".", "./", "sub/..", "dir/../."])
+def test_exclude_root_self_rejected_fail_closed(tmp_path: Path, root_alias: str):
+    _write(tmp_path / "index.md", "# Root\n\n[broken](./missing.md)\n")
+    res = _run_cli(tmp_path, "--exclude", root_alias)
+    assert res.returncode == 2, f"--exclude={root_alias!r} 应拦截禁止静默全跳: rc={res.returncode}"
+    assert "根目录自身" in res.stderr
+    with pytest.raises(ValueError, match="根目录自身"):
+        cdl.scan_directory(tmp_path, exclude_prefixes=[root_alias])
+
+
 def test_optional_llms_txt_root_scan(tmp_path: Path):
     _write(tmp_path / "sub" / "doc.md", "# Doc\n")
     assert _run_cli(tmp_path).returncode == 0

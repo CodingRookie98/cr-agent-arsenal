@@ -114,7 +114,7 @@ docs/
 2. **⛔ 严禁跨象限职责混淆**：技术参考（Reference）只记录冷峻事实，严禁加入教程或背景说理；操作指南（How-To）直奔步骤，理论分析外链至 Explanation；
 3. **⛔ 严禁瀑布生命周期旧目录**：严禁创建 `docs/requirements/`、`docs/design/`、`docs/planning/` 等旧时代目录，必须归入对应 Diátaxis 象限；
 4. **⛔ 严禁文件命名随意混乱**：新项目与新增标准文档一律采用纯小写 `kebab-case` 命名风格（如 `goal-loop-design.md`），禁止驼峰与无规则空格（已有历史中文命名除外）；
-5. **⛔ 严禁伪造文档状态（RFC-0007）**：控制头 `文档状态` 只允许 `Active` / `Contested` / `Superseded`（缺省视同 `Active`）；`Superseded` 必须填写仓库内真实有效的 `.md` 相对路径 `取代于`（非自身且不越出仓库根）；`Active`（含隐式 `Active`）不得携带 `取代于`；`Contested` 建议填写 `争议点`；
+5. **⛔ 严禁伪造文档状态（RFC-0007）**：控制头 `文档状态` 只允许 `Active` / `Contested` / `Superseded`（缺省视同 `Active`）；`Superseded` 必须填写文档根（`--root`，如 `docs/`）内真实有效的 `.md` 相对路径 `取代于`（非自身且不越出文档根目录）；`Active`（含隐式 `Active`）不得携带 `取代于`；`Contested` 建议填写 `争议点`；
 6. **⛔ 严禁文档体量失控（RFC-0008）**：单文档 `> 64 KB`（65,536 字节）或最长单行 `> 1,000` 字符即阻断；行数 `> 800` 仅警告。超限时必须采用总纲-子册拆分或语义换行，不得豁免。
 
 ---

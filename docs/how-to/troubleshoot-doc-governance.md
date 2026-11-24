@@ -95,12 +95,12 @@ python3 scripts/backlog/manage-backlog.py create "知识库缺口：<主题>" --
 ## 文档状态判非法
 
 ```text
-⛔ 文档状态违规: x.md: 文档状态取值非法（Deprecated），只允许 Active/Contested/Superseded
+❌ 文档状态非法 [x.md]: 'Deprecated'
 ```
 
 三态只有 `Active` / `Contested` / `Superseded`。另外：
 
-* `Superseded` 必须带 `取代于`（仓库内相对 `.md` 路径、非自身、不越出仓库根、目标存在）；
+* `Superseded` 必须带 `取代于`（文档根 `--root` 内相对 `.md` 路径、非自身、不越出文档根目录、目标存在）；
 * `Active`（含缺省未写该字段）不得带 `取代于`；
 * `Contested` 建议带 `争议点`。
 

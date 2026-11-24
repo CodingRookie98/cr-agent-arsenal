@@ -22,7 +22,8 @@ VALID_STATES = {"Active", "Contested", "Superseded"}
 SKIP_DIRS = {"node_modules", ".git", "dist", "build"}
 EXPLAIN_HEADERS = {"说明", "含义", "描述", "解释", "示例", "备注", "description", "meaning"}
 
-_FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})")
+_FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})(.*)$")
+_INLINE_CODE_RE = re.compile(r"(?<!`)(`+)(?!`)([\s\S]*?)(?<!`)\1(?!`)")
 _QUOTE_KV_RE = re.compile(r"^(?:[-*+]\s+)?([^:：\n]+?)\s*[:：]\s*(.*)$")
 _MARKER_RE = re.compile(r"^(?:文档控制信息|文档控制头)(?:$|\s|\(|（|:|：|\*)")
 _THEMATIC_RE = re.compile(r"^(?:-{3,}|\*{3,}|_{3,})\s*$")
@@ -43,15 +44,18 @@ def _unfenced_lines(lines: List[str]) -> List[str]:
     out: List[str] = []
     fence: Optional[Tuple[str, int]] = None
     for line in lines:
-        s = line.strip()
+        m = _FENCE_RE.match(line)
+        if m:
+            token, rest = m.group(1), m.group(2)
+            if fence is None:
+                if token[0] == "~" or "`" not in rest:
+                    fence = (token[0], len(token))
+                    continue
+            elif token[0] == fence[0] and len(token) >= fence[1] and not rest.strip():
+                fence = None
+                continue
         if fence is None:
-            m = _FENCE_RE.match(line)
-            if m:
-                fence = (m.group(1)[0], len(m.group(1)))
-            else:
-                out.append(line)
-        elif s.startswith(fence[0] * fence[1]) and set(s) == {fence[0]}:
-            fence = None
+            out.append(line)
     return out
 
 
@@ -71,7 +75,7 @@ def _clean_val(raw: str) -> str:
 
 def _parse_yaml_frontmatter(lines: List[str]) -> Tuple[Dict[str, str], int]:
     meta: Dict[str, str] = {}
-    if not lines or lines[0].strip() != "---":
+    if not lines or lines[0].lstrip("\ufeff").strip() != "---":
         return meta, 0
     end_idx = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
     if end_idx is None:
@@ -96,17 +100,19 @@ def _parse_table_row(line: str) -> Optional[List[str]]:
 
 def _scan_marker_table(block_lines: List[str]) -> Dict[str, str]:
     meta: Dict[str, str] = {}
-    in_block = block_lines[0].lstrip().startswith((">", "|"))
-    for line in block_lines[1:]:
+    is_quote_marker = block_lines[0].lstrip().startswith(">")
+    in_table = block_lines[0].lstrip().startswith("|")
+    for line in block_lines[1:40]:
         s = line.lstrip()
         if s.startswith((">", "|")):
-            in_block = True
+            if s.startswith("|"):
+                in_table = True
             inner = re.sub(r"^(?:\s*>\s*)+", "", line) if s.startswith(">") else line
             cells = _parse_table_row(inner)
             if cells and len(cells) == 2 and (canon := _canon_key(cells[0])):
-                meta[canon] = _clean_val(cells[1])
+                meta.setdefault(canon, _clean_val(cells[1]))
             continue
-        if not in_block and not line.strip():
+        if not line.strip() and not is_quote_marker and not in_table:
             continue
         break
     return meta
@@ -139,12 +145,15 @@ def _scan_fallback_table(head_lines: List[str]) -> Dict[str, str]:
 
 def _parse_header_meta(lines: List[str]) -> Tuple[Dict[str, str], List[str]]:
     meta, body_start = _parse_yaml_frontmatter(lines)
-    unfenced = _unfenced_lines(lines[body_start:])
+    body_lines = lines[body_start:]
+    if body_start == 0 and body_lines:
+        body_lines = [body_lines[0].lstrip("\ufeff"), *body_lines[1:]]
+    unfenced = _unfenced_lines(body_lines)
     for line in unfenced[:80]:
         if line.lstrip().startswith(">"):
             inner = re.sub(r"^(?:\s*>\s*)+", "", line).strip()
             if (m := _QUOTE_KV_RE.match(inner)) and (canon := _canon_key(m.group(1))):
-                meta[canon] = _clean_val(m.group(2))
+                meta.setdefault(canon, _clean_val(m.group(2)))
     marker_idx = next((i for i, ln in enumerate(unfenced[:80]) if _MARKER_RE.match(re.sub(r"^[#>\s*_`]+", "", ln).strip())), None)
     tbl = _scan_marker_table(unfenced[marker_idx:]) if marker_idx is not None else _scan_fallback_table(unfenced[:40])
     for k, v in tbl.items():
@@ -153,11 +162,15 @@ def _parse_header_meta(lines: List[str]) -> Tuple[Dict[str, str], List[str]]:
 
 
 def _validate_superseded_target(doc: Path, root: Path, raw_target: str) -> Optional[str]:
-    part = raw_target.split("#", 1)[0].strip() if raw_target else ""
+    raw_part = raw_target.split("#", 1)[0].split("?", 1)[0].strip() if raw_target else ""
+    part = urllib.parse.unquote(raw_part).strip()
     if not part:
         return "Superseded 文档缺少有效「取代于」相对路径"
-    if part.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", part) or "://" in part:
-        return f"「取代于」必须是相对路径: {raw_target}"
+    if "\x00" in part or "\x00" in raw_part:
+        return f"「取代于」包含非法空字节: {raw_target}"
+    for candidate in (raw_part, part):
+        if candidate.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", candidate) or "://" in candidate:
+            return f"「取代于」必须是相对路径: {raw_target}"
     depth = len(doc.parent.relative_to(root).parts)
     for seg in part.replace("\\", "/").split("/"):
         if seg not in ("", "."):
@@ -179,7 +192,7 @@ def _validate_superseded_target(doc: Path, root: Path, raw_target: str) -> Optio
 def _extract_md_links(unfenced: List[str]) -> List[str]:
     links: List[str] = []
     for line in unfenced:
-        clean_line = re.sub(r"`[^`\n]+`", "", line)
+        clean_line = _INLINE_CODE_RE.sub("", line)
         links.extend(m.group(1) or m.group(2) for m in _INLINE_LINK_RE.finditer(clean_line))
         if rm := _REF_DEF_RE.match(clean_line):
             links.append(rm.group(1) or rm.group(2))
@@ -219,7 +232,7 @@ def _check_router(root: Path, max_router_lines: int, errors: List[str]) -> None:
 
 def _evaluate_status(
     path: Path, rel_posix: str, root: Path, lines: List[str], counts: Dict[str, int],
-    errors: List[str], active_links: List[Tuple[str, Path, List[str]]], superseded: Set[Path],
+    errors: List[str], active_links: List[Tuple[str, Path, List[str]]], superseded: Dict[Path, str],
 ) -> None:
     meta, unfenced = _parse_header_meta(lines)
     status = meta.get("文档状态", "Active")
@@ -228,7 +241,7 @@ def _evaluate_status(
         return
     counts[status] += 1
     if status == "Superseded":
-        superseded.add(path.resolve())
+        superseded.setdefault(path.resolve(), rel_posix)
         if err := _validate_superseded_target(path, root, meta.get("取代于", "")):
             errors.append(f"状态机违规 [{rel_posix}]: {err}")
     elif "取代于" in meta:
@@ -238,16 +251,19 @@ def _evaluate_status(
 
 
 def _collect_superseded_warnings(
-    root: Path, active_links: List[Tuple[str, Path, List[str]]], superseded: Set[Path], warnings: List[str],
+    active_links: List[Tuple[str, Path, List[str]]], superseded: Dict[Path, str], warnings: List[str],
 ) -> None:
     seen: Set[Tuple[str, str]] = set()
     for rel_posix, doc_path, links in active_links:
         for raw_url in links:
             clean = urllib.parse.unquote(raw_url.split("#", 1)[0].split("?", 1)[0].strip())
-            if not clean or "://" in clean or clean.startswith(("/", "\\", "mailto:")) or not clean.lower().endswith(".md"):
+            if (
+                not clean or "\x00" in clean or "://" in clean
+                or clean.startswith(("/", "\\", "mailto:")) or not clean.lower().endswith(".md")
+            ):
                 continue
             if (target := (doc_path.parent / clean).resolve()) in superseded:
-                target_rel = target.relative_to(root).as_posix()
+                target_rel = superseded[target]
                 if (rel_posix, target_rel) not in seen:
                     seen.add((rel_posix, target_rel))
                     warnings.append(f"Active 引用 Superseded [{rel_posix}]: {target_rel}")
@@ -256,7 +272,7 @@ def _collect_superseded_warnings(
 def _scan_docs(root: Path, args: argparse.Namespace) -> Tuple[List[str], List[str], Dict[str, int]]:
     errors, warnings = [], []
     counts = {"Active": 0, "Contested": 0, "Superseded": 0}
-    superseded: Set[Path] = set()
+    superseded: Dict[Path, str] = {}
     active_links: List[Tuple[str, Path, List[str]]] = []
     _check_router(root, args.max_router_lines, errors)
 
@@ -281,7 +297,7 @@ def _scan_docs(root: Path, args: argparse.Namespace) -> Tuple[List[str], List[st
         if need_status:
             _evaluate_status(path, rel.as_posix(), root, lines, counts, errors, active_links, superseded)
 
-    _collect_superseded_warnings(root, active_links, superseded, warnings)
+    _collect_superseded_warnings(active_links, superseded, warnings)
     return errors, warnings, counts
 
 
