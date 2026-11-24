@@ -13,19 +13,19 @@
 
 - **分支隔离**：代码或技能实质修改必须在独立功能/修复分支进行，严禁直接在 `master` 编写改动；严禁破坏性 Git 命令（`reset` / `rebase` / `revert` / `restore` / `clean -fd` / `push -f` / `branch -D`）。
 - **公私边界**：`skills/<name>/` 内的技能资产面向跨仓复用，禁止写入个人绝对路径、个人真名、单项目私有组件约定或硬编码过时具体模型名。
-- **文档与测试同步**：改动技能脚本/契约后必须同步对应测试与架构设计书；任何 `docs/` 结构或索引变更必须重新运行 `generate-llms-txt.py --split` 保持机器地图逐字节一致。
+- **文档与测试同步**：改动技能脚本/契约后必须同步对应测试与架构设计书；涉及 `docs/` 增删改名或结构变动须同步更新 `docs/index.md` 与受影响的象限索引。
 
 ## 3. 核心验收门禁命令
 
 ```bash
-# 全量文档治理与 doc-governance 测试门禁（7 项）
-python3 skills/doc-governance/scripts/check-all.py --full
+# 全量文档治理门禁与测试（断链 / 健康体检 / 可回答性 / pytest，4 项）
+python3 scripts/doc-gates/check-all.py --full
 
-# 全仓库技能单元测试
-python3 -m pytest skills/ -q
+# 全仓库技能与私有工具单元测试
+python3 -m pytest skills/ scripts/ -q
 
-# 重新生成分层机器地图（变更 docs/ 目录或标题后执行）
-python3 skills/doc-governance/scripts/generate-llms-txt.py --root docs --output docs/llms.txt --split
+# 通用物理断链扫描（排除 Write-Once 审查凭据归档）
+python3 skills/doc-governance/scripts/check-doc-links.py --root docs --exclude project/reviews
 ```
 
 ## 4. 提交信息与取证红线

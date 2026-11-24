@@ -1,13 +1,10 @@
 # Reference / Rules 象限索引 (Quadrant Index)
 
-<!-- doc-index:managed -->
-> ⚙️ **托管索引声明**: 本文件由 `manage-doc-index.py` 自动创建与维护（`scaffold-doc.py` 生成文档时同步登记）。删除上方托管标记即可转为人工维护，届时脚本将不再改写本文件。
-
 > **文档控制信息**
 > - **文档标识**: DOCIDX-REFERENCE-RULES-2026
-> - **当前版本**: V1.0.9
+> - **当前版本**: V1.1.0
 > - **文档状态**: Active
-> - **生效日期**: 2026-10-19
+> - **生效日期**: 2026-11-24
 > - **文档所有者**: AI Agent / 工程师
 
 ---
@@ -16,16 +13,17 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.1.0** | 2026-11-24 | AI Agent | 王辉 | 随 Wave 2C（ADR-0005）退役托管脚本，本索引改为目录分流入口、按需人工维护 |
 | **V1.0.9** | 2026-11-21 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.4（§4 预设枚举同步 `frontend-slides.json` → `ppt.json`） |
 | **V1.0.8** | 2026-11-19 | AI Agent | 架构师 | 登记 commit-evidence.md |
 | **V1.0.7** | 2026-10-19 | AI Agent | 架构师 | 托管索引声明中的生成器脚本名同步为 `scaffold-doc.py`（技能脚本 Python 统一化） |
 | **V1.0.6** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.3（归并边界限定至整组安装路径） |
-| **V1.0.5** | 2026-10-13 | AI Agent | 架构师 | source-group-inclusion.md 升至 V1.2.2（反查键语义与同源多组归并边界精确化） |
 
 ---
 
 ## 文档清单 (Document Inventory)
 
-<!-- 本清单由 manage-doc-index.py 自动维护；全库总入口见根级 docs/index.md -->
+> 本索引为 `reference/rules/` 目录分流入口，按需人工维护；全库总入口见 [docs/index.md](../../index.md)。
+
 - [来源组收录判据](./source-group-inclusion.md) — Reference
 - [提交信息取证口径](./commit-evidence.md) — Reference

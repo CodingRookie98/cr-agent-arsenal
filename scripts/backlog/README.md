@@ -49,7 +49,7 @@ docs/project/
 * **纯粹性负向红线**：
   * ⛔ **严禁在热区长期堆积已关闭条目**：条目一旦完成，必须在当期交付批次物理迁出至冷区归档文件；
   * ⛔ **严禁在 Backlog 混合已落地长篇叙事**：已完成特性的技术细节、Commit SHA 与设计复盘统一归入 `docs/project/changelog.md`，严禁在 Backlog 编写特性叙事；
-  * ⛔ **严禁手写自然语言算术对账日记**：严禁在文档内手写类似“活跃项 30→34、46=A0+B2+C1...”等算术过程，指标统计全部由 `audit-doc-health.py` 动态扫描输出。
+  * ⛔ **严禁手写自然语言算术对账日记**：严禁在文档内手写类似“活跃项 30→34、46=A0+B2+C1...”等算术过程，指标统计全部由 `scripts/backlog/manage-backlog.py` 动态扫描输出。
 
 ### 1.2 冷区历史归档 (`docs/project/archive/backlog-*.md`)
 * **职责定位**：永久沉淀已结项条目的历史记录、结项日期与去向闭环；
@@ -73,9 +73,9 @@ docs/project/
 为兼顾人类高可读性与智能体高解析度，条目采用**带语义标签的紧凑结构化契约**：
 
 ```markdown
-- [ ] **BK-0157** `[Type:TechDebt]` `[Pri:P2]` `[Trigger:文献库>1000篇]` 文献聚合的服务端分页与截断可观测性
-  - **来源**: [RFC-0003 §8](../proposals/RFC-0003.md) / [P3 批次 2 审查报告](./reviews/2026-10-04-p3-batch2/README.md)
-  - **验收**: 超过 1000 篇时返回 truncated=true 标志与截断告警，自动化集成用例覆盖边界
+- [ ] **BK-0157** `[Type:TechDebt]` `[Pri:P2]` `[Trigger:条目数>1000]` 列表聚合的服务端分页与截断可观测性
+  - **来源**: RFC-0001 §4 / P3 批次 2 审查报告 (`project/reviews/2026-10-04-p3-batch2/README.md`)
+  - **验收**: 超过 1000 条时返回 truncated=true 标志与截断告警，自动化集成用例覆盖边界
 ```
 
 #### 维度元数据标签字典
@@ -163,25 +163,25 @@ acceptance_criteria:
 > **占位语与 DoD 收敛**：建卡写入的 `*(未开工)*` 由 `close` 归档时机械删除，归档卡不再同时出现占位与结项记录；§3 DoD 复选框由作者在结项前人工核验勾选，`close` 不代勾，仅在结项记录中以「提示」行给出未勾选项数（统计范围限 §3 小节内）。
 
 #### 2.3.4 脚本化提取与可编程运维工具 (`manage-backlog.py`)
-为方便人类与 AI 智能体程序化读取、过滤和流转待办，提供配套脚本 `scripts/manage-backlog.py`：
+为方便人类与 AI 智能体程序化读取、过滤和流转待办，提供配套脚本 `scripts/backlog/manage-backlog.py`：
 
 ```bash
 # 1. 脚本化提取：查询所有处于 active 状态的 P1 待办 (表格输出)
-python3 skills/doc-governance/scripts/manage-backlog.py list --status active --priority P1
+python3 scripts/backlog/manage-backlog.py list --status active --priority P1
 
 # 2. 机器流转：输出纯 JSON 数组，供其他 AI 智能体消费执行
-python3 skills/doc-governance/scripts/manage-backlog.py list --status active --json
+python3 scripts/backlog/manage-backlog.py list --status active --json
 
 # 3. 快速创建新待办 (自动分配 BK 递增编号，创建卡片并刷新 index.md)
-python3 skills/doc-governance/scripts/manage-backlog.py create "文献地图配色下限加固" \
-  --type TechDebt --priority P2 --source "R1 审查建议" --acceptance "通过 OKLab 色差断言"
+python3 scripts/backlog/manage-backlog.py create "示例任务：补齐分页边界测试" \
+  --type TechDebt --priority P2 --source "R1 审查建议" --acceptance "通过分页截断断言"
 
-# 4. 结项归档 (更新元数据为 completed，物理迁入 archive/v0.9/ 目录并自动刷新 index.md)
-python3 skills/doc-governance/scripts/manage-backlog.py close BK-0157 \
+# 4. 结项归档 (更新元数据为 completed，物理迁入 archive/v0.10.0/ 目录并自动刷新 index.md)
+python3 scripts/backlog/manage-backlog.py close BK-0157 \
   --resolution delivered --dest "v0.10.0 I3 交付" --version "v0.10.0"
 
 # 5. 手动重新生成 index.md 索引页
-python3 skills/doc-governance/scripts/manage-backlog.py sync-index
+python3 scripts/backlog/manage-backlog.py sync-index
 ```
 
 > **`close` 的收口行为**：除更新元数据（`status`、`closed_at`、`resolution`、`destination`）与物理归档外，还会机械删除 §4 的 `*(未开工)*` 占位语；若 §3 小节内仍有未勾选项，在结项记录中追加一行提示（仅项数统计，不改变卡片语义）。`reopen` 保留历史结项记录并追加 `### 重启记录`，当前状态以元数据 `status: active` 为准。
@@ -223,30 +223,22 @@ graph LR
 
 ---
 
-## 5. 自动化审计与对账门禁 (Audit & Machine Verifiability)
+## 5. 自动化统计与索引同步 (Machine Verifiability)
 
-为消除“手工对账日记”并确保规范刚性落地，`scripts/audit-doc-health.py` 集成自动化 Backlog 巡检门禁：
+为消除“手工对账日记”并确保规范刚性落地，`scripts/backlog/manage-backlog.py` 与 `scripts/doc-gates/check-all.py` 提供机械统计与门禁巡检：
 
-### 5.1 机械阻断项 (Hard Blockers ➔ 导致 Gate REJECTED)
-1. **顶层条目缺号**：热区或冷区存在未标有 `BK-XXXX` 的顶层复选框条目；
-2. **全局编号冲突**：在全域（热区 + 所有冷区归档文件）中出现相同的 `BK-XXXX` 编号；
-3. **格式畸变**：编号未紧跟复选框（例如位置错位、缺少空格等）。
+### 5.1 形态 A 基础巡检约定（如采用单文件 `backlog.md`）
+1. **顶层条目编号**：热区或冷区顶层复选框条目应标有 `BK-XXXX`，且紧跟复选框；
+2. **全局编号唯一**：全项目内不得出现重复的 `BK-XXXX` 编号；
+3. **冷热分离**：热区 `backlog.md` 不长期堆积已完成项（`[x]`），建议不超过 **300 行** / **60 条**活跃条目，并标注 `Type` / `Pri`。
 
-### 5.2 卫生巡检告警 (Hygiene Warnings ➔ 提示整改)
-1. **冷热分离违规**：`backlog.md` 中存在已完成项（`[x]`）或包含 `## 已关闭` 分区，体检告警提示及时迁出归档；
-2. **热区体积超标**：`backlog.md` 物理行数超过 **300 行** 或活跃条目超过 **60 条**，告警提示执行 Backlog 理牌与归档；
-3. **元数据缺失**：活跃待办未标注 `[Type:...]` 或 `[Pri:...]`。
-
-### 5.3 自动化指标仪表盘（消灭自然语言手写对账）
-运行 `audit-doc-health.py` 时，脚本自动统计并输出 Backlog 真实指标：
+### 5.2 自动化指标输出（消灭自然语言手写对账）
+运行 `python3 scripts/backlog/manage-backlog.py sync-index` 或 `list --json` 时，脚本自动统计并输出 Backlog 真实指标到 `docs/project/backlog/index.md`：
 ```text
-📋 [Backlog 演进与待办健康仪表盘]:
-   * 活跃待办总数: 42 条 (进行中: 3 条, 计划中: 39 条)
-   * 历史已归档数: 128 条 (归档目录: docs/project/archive/)
-   * 优先级分布:   P0: 2, P1: 8, P2: 18, P3: 14
-   * 领域类型分布: TechDebt: 22, Feature: 12, Security: 5, Bug: 3
+- 现役活跃待办: N 项 (进行中: X, 计划中: Y)
+- 历史已归档项: M 项 (物理归档于 archive/ 目录)
 ```
-人类与 AI 直接以该机器输出为准，**严禁在文档内编写任何形式的手动加减日记**。
+人类与 AI 直接以该机器生成视图为准，**严禁在文档内编写任何形式的手动加减日记**。
 
 ---
 
@@ -274,8 +266,8 @@ graph LR
 
 ### 6.3 阶段三：机器索引构建与门禁验收 (Reindex & Verification)
 1. **自动构建 Active 索引**：
-   - 运行 `python3 scripts/manage-backlog.py --root docs sync-index`，自动生成包含健康仪表盘与按优先级排序的 `docs/project/backlog/index.md`；
+   - 运行 `python3 scripts/backlog/manage-backlog.py --root docs sync-index`，自动生成包含健康仪表盘与按优先级排序的 `docs/project/backlog/index.md`；
 2. **更新全局索引链接**：
    - 在项目主索引（如 `docs/index.md`）与相关计划文档中，将旧待办文件链接更新为 `docs/project/backlog/index.md`；
 3. **门禁体检验收**：
-   - 运行 `python3 scripts/audit-doc-health.py --root docs`，验证无重复编号、无断链且健康度达到 100 分。
+   - 运行 `python3 scripts/doc-gates/check-all.py`，验证无断链且全部文档门禁通过。

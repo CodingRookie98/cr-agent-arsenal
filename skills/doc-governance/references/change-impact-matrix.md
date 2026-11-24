@@ -1,17 +1,17 @@
 # 文档-代码全向联动维护矩阵 (Change Impact Matrix Protocol)
 
 > **控制信息**
-> - **规范版本**: V1.4.0
-> - **核心原则**: 严禁孤立修改，代码与契约必须双向闭环同步
+> - **规范版本**: V2.0.0
+> - **核心原则**: 严禁孤立修改，代码与契约必须双向闭环同步；路径按宿仓既有约定映射（以下以 Diátaxis 拓扑为例）
 > - **适用范围**: 所有涉及功能演进、接口调整与重构任务的代码交付门禁
 
 ---
 
 ## 1. 核心铁律：代码与文档全向闭环
 
-在大模型编程与团队协作中，“代码改了但文档没改”或“文档改了但代码没跟进”是造成架构腐蚀与 AI 幻觉的根源。
-本项目实行**双向联动触发机制**：
-* **正向演进**：代码落地 ➔ 自动触发关联文档的契约同步、待办关闭与版本更新；
+在 AI 辅助研发与团队协作中，“代码改了但文档没改”或“文档改了但代码没跟进”是造成架构腐蚀与幻觉的根源。
+实行**双向联动触发机制**：
+* **正向演进**：代码落地 ➔ 自动触发关联文档的契约同步、变更日志记录与 Issue 状态闭环；
 * **反向驱动**：需求/契约修改 ➔ 必须先行更新文档并作为测试/编码基准，严禁代码已变而契约脱节。
 
 ---
@@ -20,58 +20,41 @@
 
 | 代码或资产变更特征 | 涉及物理路径示例 | 必须同步更新的文档集合 | 验收与门禁标准 (Exit Criteria) |
 |:---|:---|:---|:---|
-| **新增/调整业务功能与规则** | `src/lib/services/*`<br>`src/rules/*` | 1. `docs/reference/rules/`<br>2. `docs/project/changelog.md`<br>3. `docs/project/backlog/`（形态 B：`active/` 卡片；形态 A：`backlog.md`） | 业务规则/状态机图更新，发布日志记录 Commit SHA，对应 BK 编号待办按 `backlog-specification.md` 移入对应冷区归档。 |
-| **调整 API 接口契约** | `src/controllers/*`<br>`src/api/*`<br>`src/routes/*` | 1. `docs/reference/api/`<br>2. `docs/reference/models/` | Endpoint、HTTP Method、请求/响应 Payload 字段、错误信封 100% 镜像一致。 |
+| **新增/调整业务功能与规则** | `src/lib/services/*`<br>`src/rules/*` | 1. `docs/reference/rules/`（或宿仓规则文档）<br>2. 宿仓 `CHANGELOG.md` / 变更日志与关联 Issue | 业务规则/状态机描述更新，变更日志与关联 Issue 状态同步闭环。 |
+| **调整 API 接口契约** | `src/controllers/*`<br>`src/api/*`<br>`src/routes/*` | 1. `docs/reference/api/`<br>2. `docs/reference/models/` | Endpoint、方法签名、请求/响应 Payload 字段、错误信封 100% 一致。 |
 | **调整数据模型与数据库实体** | `src/models/*`<br>`src/entities/*`<br>`prisma/schema.prisma` | 1. `docs/reference/models/`<br>2. `docs/reference/api/` (若影响响应结构) | 字段命名、类型定义（nullable/optional）、枚举值严格对齐，零遗漏。 |
 | **前端页面、组件与设计 Token** | `src/components/*`<br>`src/styles/tokens.css`<br>`src/app/*` | 1. `docs/reference/ui/`<br>2. `docs/how-to/` (若涉及新页面操作流) | 设计 Token 变量名一致，组件 Props 与事件契约更新，无虚构组件。 |
-| **核心架构、框架与基础设施** | `src/core/*`<br>`package.json`<br>`docker-compose.yml` | 1. `docs/explanation/architecture/`<br>2. `docs/explanation/decisions/` (新建 MADR)<br>3. `docs/explanation/analysis/` | 记录架构分层演进、选型评估对比与 MADR 决策记录。 |
+| **核心架构、框架与基础设施** | `src/core/*`<br>`package.json`<br>`docker-compose.yml` | 1. `docs/explanation/architecture/`<br>2. `docs/explanation/decisions/` (新建 MADR)<br>3. `docs/explanation/analysis/` | 记录架构分层演进、选型评估对比与 Append-Only MADR 决策记录。 |
 | **部署配置、环境与调试脚本** | `.env.example`<br>`Dockerfile`<br>`scripts/deploy.sh` | 1. `docs/how-to/deployment.md`<br>2. `docs/how-to/local-setup.md` | 环境变量清单 100% 完整，部署与启动命令在干净环境中可复现。 |
-| **文档拓扑变动 (增/删/重命名)** | `docs/**/*.md` | 1. `docs/index.md` (全局人类索引)<br>2. `docs/llms.txt` + `docs/_llms/*.md`（分层机器地图，`--split` 重生成）<br>3. 受影响目录的象限索引 `<dir>/index.md`（托管索引由 `manage-doc-index.py` 自动登记）<br>4. 所有上游引用文件相对路径 | 运行 `check-doc-links.py` 严格 Exit Code 0，全局零 404 断链；托管索引控制头版本与修订表联动一致。 |
-| **文档代码锚点失效（被锚定路径改动/移动/删除）** | `代码锚点` 声明的任意路径（如 `src/**`、`skills/**`） | 1. 受影响文档本体（更新断言并刷新 `复核于`）<br>2. `docs/project/changelog.md`（若断言涉及对外契约） | 运行 `check-doc-drift.py --root docs --fail-on-drift` 严格 Exit Code 0（账本缺席/损坏按 rc=2 fail-closed，先 `--write-baseline` 重建并提交）；`audit-doc-health.py --truth=warn` 真值分不低于 12/15（未声明锚点的文档不计入分母）。 |
-
----
-
-> **矩阵第 8 行的用法（真值轴，RFC-0005）**：`代码锚点` 是「文档断言所依赖的代码位置」。锚点文件一被改动，文档即进入 `drifted` 状态——这是**怀疑信号而非结论**：要么刷新内容并改 `复核于`，要么确认断言仍成立只更新复核点。禁止为了清零漂移而删掉锚点声明（那会让文档退出真值统计，等于自我豁免）。
->
-> **同一次提交豁免的判定（BK-0055）**：`复核于` 的 `commit` 必须指向本次提交的父提交（pre-commit 下的 `HEAD`），**只改日期不算刷新**；新文档仅当**所有锚点也在本提交新增**时才适用豁免，否则按 `drifted` fail-closed。
+| **文档拓扑变动 (增/删/重命名)** | `docs/**/*.md` | 1. 宿仓根级总索引（如 `docs/index.md` 或导航配置）<br>2. 受影响目录的入口（按需维护的 `index.md` / `README.md`）<br>3. 所有上游引用文件相对路径 | 运行宿仓断链/文档门禁（或兜底 `check-doc-links.py`）严格 Exit Code 0，全局零 404 断链。 |
 
 ---
 
 ## 3. 伴随式联动操作标准作业程序 (Sync SOP)
 
-在完成代码编写并通过本地测试后、准备提交 Git 前，执行以下三步：
+在完成代码编写并通过本地测试后、准备提交 Git 前，执行以下四步：
 
-### 步骤 1：扫描代码 Diff 推导影响面
+### 步骤 1：检视 Git Diff 推导影响面
 ```bash
 git diff --name-only HEAD~1
-# 或当前未提交的代码
+# 或检视当前工作区/暂存区改动
 git status -s
 ```
-根据输出的文件路径，在上方矩阵中检索对应的文档类别。
+根据输出的文件路径，在上方矩阵中定位对应的文档类别（若宿仓采用非 Diátaxis 目录，按职责映射到宿仓既有对应目录）。
 
-### 步骤 2：精准同步受影响文档
-1. **契约镜像同步**：如果是修改了字段名，打开对应的 `reference/api/` 或 `reference/models/`，将变更行更新；
-2. **待办闭环**：按 [backlog-specification.md](./backlog-specification.md) 处置对应 **BK 编号**——形态 B 用 `manage-backlog.py close` 从 `project/backlog/active/` 迁入 `project/backlog/archive/<version>/`；形态 A 将条目移入 `project/archive/backlog-*.md` 顶部并置 `[x]`。均须追加去向与日期（`YYYY-MM-DD`）；Commit SHA 只记录于 changelog，严禁在 backlog 重复维护，保持热区纯粹精炼；
-3. **日志追加**：打开 `docs/project/changelog.md`，在当前未发布的版本段落中追加一条变更陈述；
-4. **版本号与滑动修订记录**：
-   - 检查被修改文档的头部 Frontmatter，根据语义化版本升级（破坏性升 Major，新增功能升 Minor，补丁修正升 Patch）；
-   - 在修订历史表格追加一行，并确保表格**总行数不超过 5 行**（超额需裁剪最早一行）。
+### 步骤 2：同步对应契约、架构与 MADR
+- 若修改了接口字段或数据模型，同步更新对应的 `reference/api/` 或 `reference/models/`；
+- 若改变了业务规则或操作流程，同步更新 `reference/rules/` 或 `how-to/`；
+- 若涉及不可逆技术选型或架构分层演进，在 `explanation/decisions/` 追加新的 MADR 3.0 记录。
 
-### 步骤 3：断链与健康静态验证
+### 步骤 3：更新宿仓 Changelog 与关联 Issue
+- 在宿仓 `CHANGELOG.md`（或 `docs/project/changelog.md`）当前未发布版本段落追加变更摘要；
+- 更新关联 Issue / PR 的验收状态与文档链接（历史版本与修改时间由 Git 原生提交记录承载，无需手写文档修订历史表）。
+
+### 步骤 4：运行文档规范与断链检查器（Exit 0）
+- 优先运行宿仓已配置的文档校验命令（如 `lychee`、`markdownlint-cli2`、`vale`、`mkdocs build --strict` 等）；
+- 若宿仓未配备专用工具，运行零依赖兜底扫描器：
 ```bash
-# 验证全局链接合法性
-python3 skills/doc-governance/scripts/check-doc-links.py --root docs
+python3 scripts/check-doc-links.py --root <docs_root> [--exclude <rel_dir>]
 ```
-必须返回 Exit Code 0 方可进行 `git commit`。
-
----
-
-## 修订历史
-
-| 版本 | 日期 | 变更摘要 |
-|:---|:---|:---|
-| V1.4.0 | 2026-11-22 | 机器地图改分层（RFC-0006）：拓扑变动须以 `--split` 重生成根 + 子地图，手改子地图即判漂移 |
-| V1.3.0 | 2026-11-22 | 新增「文档代码锚点失效」联动行与真值轴用法说明（RFC-0005）：锚点漂移进入机械门禁，禁用「删锚点清零」的自我豁免 |
-| V1.2.0 | 2026-10-04 | 对齐 Backlog V2.0.0 规范：待办闭环全面移入 `docs/project/archive/` 冷区，保持热区待办精炼 |
-| V1.1.0 | 2026-09-30 | 待办闭环对齐 backlog-specification.md：BK 编号引用、移入已关闭区、SHA 单一事实源归于 changelog |
-| V1.0.0 | 2026-09-10 | 初版发布：全向联动矩阵与 Sync SOP |
+必须返回 `Exit Code 0` 后方可进行 `git commit`；若因故跳过某项同步，须按 [change-registration.md](../templates/change-registration.md) 显式登记理由。

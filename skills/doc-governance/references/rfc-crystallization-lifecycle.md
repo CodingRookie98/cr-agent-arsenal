@@ -33,7 +33,7 @@ docs/proposals/RFC-0001-xxx.md                 Diátaxis 四象限活文档体�
 └──────────────┬───────────────┘                │ docs/explanation/decisions/  │
                │                                │ 提炼生成的不可篡改 MADR 记录  │
        状态流转: Accepted                       ├──────────────────────────────┤
-               ▼                                │ docs/project/backlog/        │
+               ▼                                │ 宿仓 Issue 平台 / 实施计划   │
 原 RFC 置为 Implemented 归档历史溯源             │ 任务拆解与开发排期            │
                                                 └──────────────────────────────┘
 ```
@@ -180,9 +180,9 @@ stateDiagram-v2
 ### 步骤 3：合并系统全景至 Explanation Architecture
 * 将 RFC 中的全景架构拓扑与交互时序图，整合进 `docs/explanation/architecture/` 对应的模块总纲或子册中。
 
-### 步骤 4：生成操作指引与拆解 Backlog
+### 步骤 4：生成操作指引与拆解实施任务
 * 若该特性引入了新的环境配置或调试命令，沉淀至 `docs/how-to/`；
-* 将具体的实施切片拆解录入 `docs/project/backlog/`（形态 B 用 `manage-backlog.py create`；每片按 [backlog-specification.md](./backlog-specification.md) 赋予 BK 编号，供 changelog 与 commit 引用），准备进入 TDD 编码循环。
+* 按宿仓既有协作方式将具体的实施切片拆解录入 Issue 平台或项目实施计划，准备进入开发与验证循环。
 
 ### 步骤 5：原提案封存与防腐声明 (Archive & Quarantine)
 * 将原 RFC 状态更新为 **`Implemented`**；
@@ -196,4 +196,4 @@ stateDiagram-v2
   > - 核心架构决策请查阅: [0004-xxx.md](../explanation/decisions/0004-xxx.md)
   > 本文件仅作为立项决策历史证据保留，**不再增量维护**。
   ```
-* 将该文件保留在 `docs/proposals/` 或归档至 `docs/proposals/archive/`；**当 `docs/project/reviews/` 等 Write-Once 历史凭据仍以相对路径引用该提案时，必须原位保留**——历史报告逐字留存、不得改写，移动会造成不可修复断链。
+* 将该文件保留在 `docs/proposals/` 或归档至 `docs/proposals/archive/`；**当历史审查凭据等 Write-Once 归档仍以相对路径引用该提案时，必须原位保留**——历史报告逐字留存、不得改写，移动会造成不可修复断链。

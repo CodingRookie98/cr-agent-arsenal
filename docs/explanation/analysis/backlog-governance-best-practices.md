@@ -13,7 +13,7 @@
 >   - **上下文工程**: Anthropic《Effective context engineering for AI agents》(2025-09-29) / Chroma *Context Rot* / Claude Code 官方最佳实践
 >   - **变更与决策治理**: Keep a Changelog v1.1.0 / MADR 3.0 Supersede 机制 / Bugzilla 拒绝状态
 >   - **实证与反面意见**: ETH Zurich《Evaluating AGENTS.md》(arXiv:2602.11988) / GitHub「永恒九月」/ Fowler 对 SDD 的批评 / Zep《Markdown is not agent memory》
-> - **调研动机**: 现有 [backlog-specification.md](../../../skills/doc-governance/references/backlog-specification.md)（V1.0.0）只解决了条目引用键（BK 编号），未解决容量治理与生命周期出口；实测样本已膨胀至 117,325 字符并出现双写漂移
+> - **调研动机**: 现有 [scripts/backlog/README.md](../../../scripts/backlog/README.md)（原 `skills/doc-governance/references/backlog-specification.md` V1.0.0，Wave 2C 已随 ADR-0005 迁出公共技能）只解决了条目引用键（BK 编号），未解决容量治理与生命周期出口；实测样本已膨胀至 117,325 字符并出现双写漂移
 
 ---
 
@@ -260,7 +260,7 @@ Claude Code 官方最佳实践把"**给 agent 一个能自己跑的验证信号*
 
 ## 5. 与现有 `doc-governance` 规范的差距映射
 
-现有 [backlog-specification.md](../../../skills/doc-governance/references/backlog-specification.md)（V1.0.0，2026-09-30 落地）共六节，逐条对照十四条实践：
+现有 [scripts/backlog/README.md](../../../scripts/backlog/README.md)（原 `skills/doc-governance/references/backlog-specification.md` V1.0.0，2026-09-30 落地，Wave 2C 已迁至本仓私有目录）共六节，逐条对照十四条实践：
 
 | 现有规范章节 | 已覆盖 | 缺口 | 对应实践 |
 | :--- | :--- | :--- | :--- |
@@ -346,5 +346,5 @@ Claude Code 官方最佳实践把"**给 agent 一个能自己跑的验证信号*
 ### 8.3 仓库内相关文档
 
 23. [doc-governance 技能架构设计书](../architecture/doc-governance-design.md)（§2.4 双受众公理与总纲-子册拓扑）
-24. [backlog-specification.md](../../../skills/doc-governance/references/backlog-specification.md)（V1.0.0，待按本报告升级）
+24. [scripts/backlog/README.md](../../../scripts/backlog/README.md)（原 `skills/doc-governance/references/backlog-specification.md` V1.0.0，Wave 2C 迁至本仓私有目录 `scripts/backlog/`）
 25. [GOVERNANCE.md](../../GOVERNANCE.md)（本仓库知识库治理规程 V1.4.0）

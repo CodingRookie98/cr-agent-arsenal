@@ -1,186 +1,79 @@
 ---
 name: doc-governance
-description: Standardized documentation engineering and knowledge base governance skill based on the Diátaxis framework, RFC-to-Crystallization lifecycle, MADR architecture decisions, and Docs-as-Code automation. Use when creating or structuring docs, managing API/model contracts, executing doc-code synchronization, auditing doc links and health, scaffolding new docs, governing hierarchical quadrant index conventions, or migrating legacy docs.
+description: Convention-first documentation governance skill using the Diátaxis framework, RFC-to-Crystallization lifecycle, Append-Only MADR 3.0 architecture decisions, and change-impact synchronization. Use when structuring docs, aligning RFC proposals, maintaining API/model contracts via git diff, migrating legacy docs, or verifying markdown links.
 license: MIT
 ---
 
-# 文档工程与知识库治理技能 (Documentation Governance Skill)
+# 文档工程与知识库治理 (Documentation Governance)
 
-## 概述 (Overview)
+面向软件工程与 AI 智能体协作的 **Convention-First** 轻量化文档治理体系，聚焦高信噪比结构与联动纪律，不强加冗余文档税。
 
-在 AI 智能体软件研发时代，文档不再只是人类工程师的静态备忘录，更是**智能体执行架构推演、接口对齐与 TDD 编码的核心上下文（Context Window）与真理源**。
+## 1. Convention-First 优先原则（操作既有项目必读）
 
-`doc-governance` 是面向现代软件工程与 AI 智能体协作的一体化文档治理体系，立足于四大理论基石：
-1. **Diátaxis 四象限架构**：依据读者心智划分 Tutorials、How-To、Reference、Explanation，严禁职责混杂；
-2. **RFC 提案孵化与结晶流转模型 (RFC-to-Crystallization Lifecycle)**：解决初期对齐高认知阻抗难题，初期单文件集中孵化，定案后解构结晶下沉；
-3. **Docs-as-Code 与自动化 CI 门禁**：物理链接校验、5 条滑动窗口自愈、零 404 断链与机器可读索引生成；
-4. **语言习惯继承与命名标准**：尊重工程主语言连续性，初期推荐 kebab-case 规范，杜绝割裂。
-
-```mermaid
-graph TD
-    Trigger(["📚 doc-governance 触发"]) --> Select{"选择运行模式"}
-
-    Select -->|"模式 1: 伴随式全向联动 (Sync Mode)"| M1["比对变更集 (Git Diff) ➔ 推导受影响文档<br/>同步 API/模型/规则 ➔ 关闭待办 ➔ 更新 Changelog"]
-    Select -->|"模式 2: 全局健康巡检 (Audit & Heal Mode)"| M2["静态扫描 404 断链 ➔ 修订历史滑动裁剪<br/>Frontmatter 合规校验 ➔ 自动生成 llms.txt"]
-    Select -->|"模式 3: 脚手架与生命周期 (Scaffold & Archive Mode)"| M3["一键生成 Diátaxis / RFC 标准模板<br/>执行定案结晶下沉 ➔ 提案历史归档防腐"]
-
-    M1 --> Verify{"自动化门禁校验"}
-    M2 --> Verify
-    M3 --> Verify
-
-    Verify -->|存在断链或格式缺陷| Heal["自动化脚本自愈 / 报错阻断"] --> Verify
-    Verify -->|零警告零断链| Done(["🏁 治理闭环完成 (Governance Completed) ✅"])
-```
+在新建、修改或重构任何文档前，**先侦察宿仓现状**，尊重既有约定：
+1. **目录与导航约定**：若宿仓已有明确的文档目录（如 `docs/guides/`、`docs/api/`、`mkdocs.yml`）或根索引，沿用宿仓拓扑；仅在 **0-to-1 新建**或**结构混乱需重构**时引入标准 Diátaxis 四象限布局。
+2. **语言与命名习惯**：继承宿仓既有的正文语言与文件命名风格（见 [language-naming-conventions.md](references/language-naming-conventions.md)）。
+3. **工具链与 Git 原生历史**：版本演进与变更溯源优先依赖 Git 原生历史（`git log` / `git diff` / `CHANGELOG.md`）与宿仓 Issue 平台，不强加手写版本号或修订历史表。若宿仓已配置 `lychee`、`markdownlint-cli2`、`vale` 或 `mkdocs build --strict` 等检查器，优先运行既有工具。
 
 ---
 
-## 适用场景 (When to Use)
+## 2. 适用边界 (Scope)
 
-### 必须触发 (Mandatory)
-* **API / 契约 / 模型变更**：任何新增、修改、废弃 API 接口、数据字段、枚举值或请求/响应信封时；
-* **业务规则与状态机变更**：调整工作流状态机状态节点、权限校验矩阵或安全红线时；
-* **核心架构与重大技术决策**：发生框架选型、分层解耦或基础设施演进，需产出 MADR 记录时；
-* **项目初期需求与设计对齐**：发起新功能提案（RFC / Proposal），经历多轮审查并最终准备定案结晶时；
-* **代码交付前与 PR 合并门禁**：版本交付或合并主干前，必须执行全局断链扫描与健康度巡检；
-* **文档重构与既有项目迁移**：将历史瀑布生命周期目录（requirements, design, planning 等）渐进式迁移至标准 Diátaxis 目录。
-
-### 无需触发 (When NOT to Use)
-* 纯代码内部单行重构（未改变函数签名、数据模型、API 契约及业务状态流转）；
-* 仅修复代码语法警告且不涉及任何外部行为契约变动。
+- **应当触发**：新增/变更/废弃 API 契约、数据模型、业务规则或状态机；重大架构选型需留存 ADR；立项期提案（RFC）孵化与定案结晶；旧文档目录重构迁移；交付前断链核查。
+- **无需触发**：不改变外部行为契约的纯内部实现重构、拼写修正或临时草稿。
 
 ---
 
-## 目录拓扑与职责划分 (Directory Topology)
+## 3. 四大核心资产与 0-to-1 推荐拓扑
 
-标准知识库根目录为 `docs/`，严禁在不同象限间混淆内容：
+| 资产支柱 | 核心职责 | 权威规程 |
+|:---|:---|:---|
+| **Diátaxis 四象限** | 按读者心智隔离 `tutorials` / `how-to` / `reference` / `explanation` | [diataxis-standard.md](references/diataxis-standard.md) · [language-naming-conventions.md](references/language-naming-conventions.md) |
+| **RFC 孵化-结晶流** | 草案期单文件高内聚对齐，定案后解构下沉至稳态象限并防腐封存 | [rfc-crystallization-lifecycle.md](references/rfc-crystallization-lifecycle.md) |
+| **Append-Only MADR 3.0** | 重大技术决策只追加不篡改，推翻旧决策须新建 `Supersedes` ADR | [adr-specification.md](references/adr-specification.md) |
+| **变更联动与平滑迁移** | 基于 `git diff --name-only` 同步契约/指引；用 `git mv` 渐进迁移旧目录 | [change-impact-matrix.md](references/change-impact-matrix.md) · [change-registration.md](templates/change-registration.md) · [legacy-migration-guide.md](references/legacy-migration-guide.md) |
 
 ```text
-docs/
-├── index.md                 # 【全局人类总入口】全景知识库拓扑与分类索引
-├── llms.txt                 # 【AI 智能体机器地图】象限级入口（≤8 KB），条目级清单在 _llms/ 下
-├── AGENTS.md                # 【路由规则】读取顺序与硬约束（≤30 行，不承载知识）
-├── _llms/                   # 分层子地图（生成物，禁手改）：<象限>.md 全量条目清单
-├── GOVERNANCE.md            # 【知识库治理规程】文档分类、生命周期与 CI 门禁规则
-│
-├── proposals/               # 💡 0. 需求与设计孵化层 (Inception / RFC Proposals)
-│   │                        # ⭐ 项目初期单文件聚焦对齐空间，定案后结晶下沉至 Diátaxis 稳态
-│   ├── RFC-0001-xxx.md      # 初期对齐提案草案 (Draft -> In Review -> Accepted)
-│   └── archive/             # 可选：已结晶提案归档（存在历史审查引用时原位保留）
-│
-├── tutorials/               # 🎓 1. 教程象限 (Learning-Oriented / Newcomer Success)
-│   ├── quick-start.md       # 5 分钟上手开发与运行首个特性
-│   └── onboarding.md        # 新成员/新智能体工作流与环境就绪向导
-│
-├── how-to/                  # 🛠️ 2. 操作指南象限 (Problem-Oriented / Task Recipes)
-│   ├── deployment.md        # 生产环境容器化构建与服务发布 SOP
-│   ├── local-setup.md       # 本地多服务联调与数据库初始装配
-│   ├── testing-guide.md     # 单元/集成/E2E 测试套件执行与覆盖率校验
-│   └── troubleshooting.md   # 隐蔽缺陷排查、异步死锁与框架踩坑手册 (SOP)
-│
-├── reference/               # 📖 3. 技术参考象限 (Information-Oriented / Machine Truth)
-│   │                        # ⭐ AI 智能体生成代码的核心上下文真相源 (Single Source of Truth)!
-│   ├── api/                 # 外部与内部 API 契约规格、统一错误信封、Endpoint 清单
-│   ├── models/              # 领域数据模型、Schema 契约、数据库实体与 DTO 定义
-│   ├── rules/               # 平台业务规则、状态机状态图、权限矩阵与智能体行为协议/提示词契约
-│   └── ui/                  # 前端设计 Token、UI 基础组件规范、交互事件契约
-│
-├── explanation/             # 💡 4. 深度剖析象限 (Understanding-Oriented / The "Why")
-│   ├── architecture/        # 系统总体代码架构总纲 (Hub) 与各子系统深度剖析 (Spokes)
-│   ├── decisions/           # ADR 架构决策记录 (MADR 3.0 格式, 0001-xxx.md, Append-Only)
-│   ├── analysis/            # 技术调研备忘录、第三方框架选型评估、可行性分析报告
-│   └── concepts/            # 核心业务领域深层概念、设计哲学与数学/算法模型阐释
-│
-└── project/                 # 🚀 5. 工程演进与项目管理 (Project Management & Evolution)
-    ├── changelog.md         # 版本发布日志与交付物归档（已落地成果技术叙事单一事实源）
-    ├── plans/               # 实施计划与结项记录
-    ├── reviews/             # 审查凭据归档（Write-Once，逐字留存）
-    └── backlog/             # 【热区】形态 B：index.md + active/ + archive/<version>/
+docs/                         # 0-to-1 绿色新建推荐拓扑（已有约定以宿仓为准）
+├── index.md                  # 根级人类总入口（子目录按需放置 index.md 或 README.md）
+├── proposals/                # 孵化期提案（Draft -> In Review -> Accepted -> Implemented）
+├── tutorials/                # 新手上手教程（Learning-Oriented）
+├── how-to/                   # 任务型操作手册（Problem-Oriented）
+├── reference/                # 权威技术事实真相源：api/、models/、rules/、ui/
+└── explanation/              # 深度剖析与架构演进：architecture/、decisions/ (MADR)
 ```
 
-### 目录级索引约定 (Directory Index Convention)
+---
 
-索引是**分层**的，但**根级人类入口唯一**：
+## 4. 核心工作流 (Workflows)
 
-| 层级 | 文件 | 地位 | 维护者 |
-|:---|:---|:---|:---|
-| 根级 | `docs/index.md` | **唯一**的全局人类总索引入口（全景拓扑与分类） | 人工，纳入版本治理 |
-| 根级机器地图 | `docs/llms.txt` | 供智能体消费的机器可读拓扑 | `generate-llms-txt.py` |
-| 象限/子目录 | `<dir>/index.md` 或 `<dir>/README.md` | 本目录分流入口，**按需存在、非强制** | 托管（脚本）或人工 |
+### 模式 A：伴随式变更联动 (Change-Impact Sync)
+1. 运行 `git diff --name-only`（或 `git status -s`）识别代码变更路径；
+2. 对照 [change-impact-matrix.md](references/change-impact-matrix.md) 同步受影响的 `reference/` 契约、`how-to/` 操作说明或 `explanation/decisions/` MADR 记录；
+3. 按宿仓规范更新 `CHANGELOG.md`（或项目变更日志）与关联 Issue，重大变更可按 [change-registration.md](templates/change-registration.md) 留存影响面与门禁证据；
+4. 运行宿仓文档门禁（或兜底断链扫描器）至 `Exit Code 0`。
 
-1. **目录即入口铁律**：任何链接指向目录时，该目录必须含 `index.md` 或 `README.md`（由 `check-doc-links.py` 强制校验）；
-2. **托管索引自动生成**：`scaffold-doc.py` 生成文档后自动调用 [manage-doc-index.py](./scripts/manage-doc-index.py) 创建象限索引并**幂等登记**本文档；托管索引正文含标记 `<!-- doc-index:managed -->`，携带标准控制头并随登记递增补丁版本（修订历史恒 ≤ 5 条）；
-3. **人工索引零改写**：不含托管标记的索引视为人工维护，脚本只读不改（安全 no-op）；
-4. **严禁追溯性空索引**：象限索引按需生成，严禁为凑齐拓扑批量创建空目录与空索引；
-5. **收录边界**：象限索引只收录本目录**直属**文档，跨象限收录统一归根级 `docs/index.md`。
+### 模式 B：RFC 孵化、定案结晶与旧目录迁移
+1. **立项孵化**：未定型设计集中于单篇 RFC 草案对齐边界、术语表与默认假设，严禁直接写入 `reference/`；
+2. **结晶归档**：方案 `Accepted` 后将契约、规则、MADR 与操作指引下沉至对应象限，原 RFC 置为 `Implemented` 并附归档提示（若已有历史审查凭据以相对路径引用该提案，应原位保留以免断链）；
+3. **旧目录迁移**：按 [legacy-migration-guide.md](references/legacy-migration-guide.md) 用 `git mv` 分模块小步迁移，同步更新引用路径与总索引。
 
-> 🔧 手动维护命令：
-> ```bash
-> python3 scripts/manage-doc-index.py ensure   --root docs --dir how-to
-> python3 scripts/manage-doc-index.py register --root docs --dir how-to --file deployment.md --title "生产部署 SOP" --kind HowTo
-> ```
+### 模式 C：零依赖物理断链兜底校验
+当宿仓未配置 `lychee` 等成熟链接校验器时，运行本技能自带的零依赖静态扫描器（校验相对路径、目录入口 `index.md`/`README.md`、`.md` 后缀与 `#anchor` 标题锚点，自动忽略行内代码及围栏代码块）：
+
+```bash
+python3 scripts/check-doc-links.py --root <docs_root> [--exclude <rel_dir>]
+```
+
+* `--dir <rel_path>`：收窄扫描至指定子目录或单文件（可重复；越界或不存在返回 Exit 2）；
+* `--exclude <rel_prefix>`：跳过指定根内相对前缀，如只读历史审查归档（可重复；禁止绝对路径或 `..` 越界，fail-closed 返回 Exit 2）；
+* `--no-strict-ext`：允许省略 `.md` 后缀（仅用于兼容特定静态站点）。
 
 ---
 
-## 核心运行模式 SOP (Operational Modes)
+## 5. 不可妥协红线 (Invariants)
 
-### 模式 1：伴随式全向联动治理 (Sync Mode)
-当开发任务涉及功能演进或契约调整时执行：
-1. **变更集逆向推导**：运行 `git diff --name-only` 检视所有修改的代码文件；
-2. **对照《变更联动触发矩阵》**（见 [change-impact-matrix.md](./references/change-impact-matrix.md)）：
-   - 修改后端 Controller/Service ➔ 联动同步 `reference/api/` 与 `reference/models/`；
-   - 修改状态机枚举/守卫 ➔ 联动同步 `reference/rules/`；
-   - 修改前端组件/样式 Token ➔ 联动同步 `reference/ui/`；
-   - 核心架构演化 ➔ 编写一条 MADR 决策追加至 `explanation/decisions/`；
-3. **项目演进记录闭环**：在 `project/changelog.md` 追加发版记录，并将 `project/backlog/active/` 中对应 **BK 编号**的卡片通过 `manage-backlog.py close` 迁入 `project/backlog/archive/<version>/`（标注去向与日期，保持热区纯粹精炼，规范见 [backlog-specification.md](./references/backlog-specification.md)）；
-4. **版本号与修订历史**：按语义化规范提升受影响文档版本，遵循 **5 条滑动窗口** 在修订表首行（标准降序）追加修订行，并同步更新控制头版本；
-5. **门禁校验**：运行 `check-doc-links.py` 与 `check-doc-control-sync.py` 确保零断链与零版本漂移；若改动触及文档声明的 `代码锚点`，再跑 `check-doc-drift.py` 并刷新 `复核于`（见矩阵「文档代码锚点失效」行）。`--staged` 口径下 `复核于` 的 `commit` 必须指向本次提交的父提交（`HEAD`），只改日期不算刷新。
-
-### 模式 2：知识库全局巡检与自愈 (Audit & Heal Mode)
-在版本发布前、大型重构后或定期维护时执行：
-1. **断链静态审计**：运行 `python3 scripts/check-doc-links.py --root docs`，检查所有相对链接有效性、`.md` 后缀与锚点是否存在；
-2. **控制头与修订表版本一致性审计**：运行 `python3 scripts/check-doc-control-sync.py --root docs`，断言控制头版本号与修订表最新行版本号严格一致，杜绝版本漂移；
-3. **真值轴漂移审计**：运行 `python3 scripts/check-doc-drift.py --root docs --repo .`，对声明了 `代码锚点` 的文档判定 `drifted / missing_anchor / stale / unverified / fresh`；需要阻断时加 `--fail-on-drift`（**任何非 fresh 的已声明文档**——漂移/锚点缺失/墓碑违规/过期/未复核 → 1；`--allow-unverified` 显式豁免后两类；**账本缺席或损坏 → 2**，fail-closed）；首次启用或合法迁移（改名/拆分/归档）后运行 `--write-baseline` 刷新账本并在提交信息登记原因；
-4. **修订历史自动裁剪**：运行 `python3 scripts/trim-revision.py --root docs --fix --keep 5`，自动将所有文档的修订历史截断在最近 5 条；
-5. **健康度全面体检**：运行 `python3 scripts/audit-doc-health.py --root docs`，输出知识库覆盖率、孤儿文档、Backlog 演进指标、版本一致性与基线合规评分；真值轴以 `--truth=warn|require` 并行报告（默认 warn；`require` 依次校验「未启用 → 覆盖率 < `--min-coverage`（默认 0.5）→ 真值分 < `--truth-threshold`」）；
-6. **机器地图生成**：运行 `python3 scripts/generate-llms-txt.py --root docs --output docs/llms.txt --split`，刷新分层机器地图（根=象限入口 ≤8 KB，全量条目下沉 `_llms/<象限>.md`）；CI 可用 `--check` 只校验不写盘，`--max-root-bytes` 控制根体量。
-7. **一键门禁（推荐）**：`python3 scripts/check-all.py` 一次跑完六道门禁（机器地图/断链/版本一致/真值轴/健康体检/可回答性），失败即非零退出；`--full` 追加 pytest。建议 `git config core.hooksPath .githooks` 安装 pre-commit。
-
-### 模式 3：脚手架与结晶归档 (Scaffold & Archive Mode)
-1. **新建文档/提案**：运行 `python3 scripts/scaffold-doc.py <type> <name>`（如 `scaffold-doc.py rfc canvas-collab`），基于规范模板创建脚手架，自动填入合规控制头，并自动 ensure 象限索引与登记本文档（跨象限链接按目标索引是否存在自动降级，杜绝 404）；
-2. **初期 RFC 对齐**：在 `docs/proposals/` 单文档中闭环业务故事、契约草案与选型权衡；
-3. **定案结晶下沉**：方案批准后，遵循 [rfc-crystallization-lifecycle.md](./references/rfc-crystallization-lifecycle.md) 将接口、规则、架构解构沉淀至 Diátaxis 对应目录；
-4. **提案归档防腐**：原 RFC 标记为 `Implemented` 并加注 `[!IMPORTANT]` 防腐历史备忘；归档位置二选一——移至 `docs/proposals/archive/`，或当 `docs/project/reviews/` 等 Write-Once 凭据仍以相对路径引用该提案时**原位保留**（历史报告逐字留存、不得改写，移动即断链）。
-
----
-
-## ⛔ 核心红线与负向规范 (Negative Invariants)
-
-1. **⛔ 严禁在 Reference 中混合教学或推演**：`reference/` 必须纯粹，只记录权威机械事实，严禁塞入“为什么要这样做”或“怎么操作”；
-2. **⛔ 严禁未定型的实验草案污染 Reference**：未定案的设想必须保留在 `proposals/` 中对齐，定案结晶前绝不可作为权威真相写入 `reference/`；
-3. **⛔ 严禁断链与隐式概念引用**：文档间引用必须显式保留 `.md` 后缀相对路径（如 `[规则.md](./rules/rule.md)`），严禁使用无后缀的裸路由或绝对物理路径；
-4. **⛔ 严禁修订历史无限膨胀**：修订历史严格限制在最近 5 条之内，超额部分必须裁剪；
-5. **⛔ 严禁破坏工程语言连续性**：既有中文项目必须使用中文撰写正文与解释，严禁中英文混乱杂糅；初期文件命名优先遵循全小写 kebab-case；
-6. **⛔ 严禁单体巨石文档**：以**字节数（≤64 KB）与最长单行（≤1000 字符）**为阻断判据，行数（≤800）仅作提示——行数度量已被证明失效（399 行 / 201 KB 仍判合规）；存量超限登记于 `docs/.doc-size-baseline.json`（棘轮，只降不升），复杂系统必须采用「总纲-子册」拓扑分离；
-7. **⛔ 严禁 Backlog 堆积冷数据与手写对账**：`project/backlog/active/` 为热区待办池，严禁堆积已关闭条目（必须随批次迁出至 `archive/`），严禁在 Backlog 记录历史成果实现细节（归 changelog.md），严禁手写自然语言算术对账日记（指标统计由 `audit-doc-health.py` 动态扫描输出）。
-
----
-
-## 📚 详细规程参考库 (Detailed References)
-
-| 参考手册 | 核心内容概要 |
-|:---|:---|
-| [diataxis-standard.md](./references/diataxis-standard.md) | Diátaxis 四象限写作边界、分类决策树与反模式详析 |
-| [rfc-crystallization-lifecycle.md](./references/rfc-crystallization-lifecycle.md) | 初期提案孵化、多轮对齐与定案结晶下沉完整 SOP |
-| [language-naming-conventions.md](./references/language-naming-conventions.md) | 项目语言习惯继承铁律、文件命名规则与中英文正交分离标准 |
-| [change-impact-matrix.md](./references/change-impact-matrix.md) | 代码修改与契约演进全向联动矩阵与门禁要求 |
-| [backlog-specification.md](./references/backlog-specification.md) | Backlog V2.0.0 冷热物理隔离、结构化条目契约、自动化门禁与归档 SOP |
-| [adr-specification.md](./references/adr-specification.md) | MADR 3.0 架构决策记录格式规范与 Append-Only 演进流 |
-| [legacy-migration-guide.md](./references/legacy-migration-guide.md) | 瀑布老目录（requirements, design, planning 等）平滑映射指引 |
-
-### 交付面模板 (Templates)
-
-| 模板 | 用途 |
-|:---|:---|
-| [doc-control-header.md](./templates/doc-control-header.md) | 手写／迁移文档的控制头、修订历史与填写规则骨架（`scaffold-doc.py` 之外的手写文档） |
-| [change-registration.md](./templates/change-registration.md) | 变更联动登记骨架（影响面扫描 → 四类同步 → 门禁证据 → 未同步项） |
-
+1. **⛔ 象限隔离与真相源纯洁**：严禁在 `reference/` 中夹带操作教学、原理辩论或未定案草案；
+2. **⛔ 决策不可原地篡改**：已 `Accepted` 的 ADR 严禁改写历史结论，演进必须通过新 ADR 的 `Superseded` 链衔接；
+3. **⛔ 零断链与显式相对引用**：文档内相对路径须保持物理可达并显式保留 `.md` 后缀（宿仓另有路由规则除外），目录链接目标须包含 `index.md` 或 `README.md`；
+4. **⛔ 宣称与取证同宽**：未实际运行校验命令不得宣称断链清零或文档已同步。

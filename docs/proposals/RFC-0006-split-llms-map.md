@@ -2,7 +2,9 @@
 
 > **提案元数据**
 > - **标识**: RFC-2026-SPLIT-LLMS-MAP
-> - **当前状态**: Implemented
+> - **当前状态**: Superseded
+> - **文档状态**: Superseded
+> - **取代于**: ../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md
 > - **发起人**: DSH AI Agent
 > - **当前版本**: V1.0.0
 > - **初次发起日期**: 2026-11-22
@@ -12,12 +14,12 @@
 
 > [!IMPORTANT]
 > **历史溯源备忘 (Archival Notice)**:
-> 本提案已于 2026-11-22 经两轮独立审查（Light 红队 3×P1 + Delta 复核 0 Blockers）闭环并结晶下沉至系统生产基线（2026-11-23 补登防腐备忘）。
-> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§4 红线 7：机器地图逐字节一致）
-> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（模式 2 机器地图生成）
-> - 权威实现与产物: `skills/doc-governance/scripts/generate-llms-txt.py --split` 与 `docs/_llms/*.md`
+> 本提案曾于 2026-11-22 经两轮独立审查闭环，并已于 **2026-11-24 随 [ADR-0005](../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)（Wave 2C 三刀切割）正式取代并退出现役门禁**（`generate-llms-txt.py`、`docs/llms.txt` 与 `docs/_llms/` 均已退役删除，知识库导航收敛至 `docs/AGENTS.md` → `docs/index.md` → 象限 `index.md`）。
+> - 接替决策请查阅: [ADR-0005](../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)
 > - 审查凭据全文请查阅: [../project/reviews/2026-11-22-split-llms-map/README.md](../project/reviews/2026-11-22-split-llms-map/README.md)
-> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
+> 本文件仅作为历史立项证据原位保留，**不再增量维护**。
 
 ---
 

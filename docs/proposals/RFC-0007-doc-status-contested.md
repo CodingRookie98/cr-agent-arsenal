@@ -3,6 +3,7 @@
 > **提案元数据**
 > - **标识**: RFC-2026-DOC-STATUS-CONTESTED
 > - **当前状态**: Implemented
+> - **文档状态**: Active
 > - **发起人**: DSH AI Agent
 > - **当前版本**: V1.0.0
 > - **初次发起日期**: 2026-11-22
@@ -12,10 +13,10 @@
 
 > [!IMPORTANT]
 > **历史溯源备忘 (Archival Notice)**:
-> 本提案已于 2026-11-22 经两轮独立审查（Light 红队 1×P1 + Delta 复核 0 Blockers）闭环并结晶下沉至系统生产基线（2026-11-23 补登防腐备忘）。
-> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§4 红线 8：三态状态机）
-> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（模式 2 状态巡检）
-> - 权威实现: `skills/doc-governance/scripts/audit-doc-health.py`（`check_doc_status`）
+> 本提案已于 2026-11-22 经两轮独立审查（Light 红队 1×P1 + Delta 复核 0 Blockers）闭环并结晶下沉至系统生产基线。
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§4 红线：三态状态机）
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)
+> - 权威实现（Wave 2C 迁至本仓私有工具）: 其本仓自动化门禁实现已于 2026-11-24 随 [ADR-0005](../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)（Wave 2C）从公共技能迁至本仓私有工具 `scripts/doc-gates/check-doc-health.py`
 > - 审查凭据全文请查阅: [../project/reviews/2026-11-22-doc-status-machine/README.md](../project/reviews/2026-11-22-doc-status-machine/README.md)
 > 本文件仅作为立项决策历史证据保留，**不再增量维护**。
 

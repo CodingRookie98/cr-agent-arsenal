@@ -2,7 +2,9 @@
 
 > **提案元数据**
 > - **标识**: RFC-2026-DOC-TRUTH-AXIS
-> - **当前状态**: Implemented
+> - **当前状态**: Superseded
+> - **文档状态**: Superseded
+> - **取代于**: ../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md
 > - **发起人**: DSH AI Agent
 > - **当前版本**: V0.2.2
 > - **初次发起日期**: 2026-11-22
@@ -12,12 +14,12 @@
 
 > [!IMPORTANT]
 > **历史溯源备忘 (Archival Notice)**:
-> 本提案已于 2026-11-22 经六轮对抗审查（R1 → R2 → Delta → 放行确认 → 收口确认 ×2）取得 **Zero Blockers / 准予交付**，并结晶下沉至系统生产基线（2026-11-23 补登防腐备忘）。
-> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§3 工具表 `check-doc-drift.py`、§4 红线 7）
-> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（模式 2 真值轴巡检）
-> - 权威实现与账本: `skills/doc-governance/scripts/check-doc-drift.py` 与 `docs/.doc-truth-baseline.json`
+> 本提案曾于 2026-11-22 经六轮对抗审查取得 **Zero Blockers / 准予交付**，并已于 **2026-11-24 随 [ADR-0005](../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)（Wave 2C 三刀切割）正式取代并退出现役门禁**（已退役 `check-doc-drift.py` 与 `docs/.doc-truth-baseline.json`，代码-文档一致性回归 `doc-governance` 变更影响面联动与人工审查）。
+> - 接替决策请查阅: [ADR-0005](../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)
 > - 审查凭据全文请查阅: [../project/reviews/2026-11-22-doc-truth-axis/README.md](../project/reviews/2026-11-22-doc-truth-axis/README.md)
-> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
+> 本文件仅作为历史立项证据原位保留，**不再增量维护**。
 
 ---
 

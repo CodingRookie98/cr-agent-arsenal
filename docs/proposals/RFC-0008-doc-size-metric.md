@@ -3,6 +3,7 @@
 > **提案元数据**
 > - **标识**: RFC-2026-DOC-SIZE-METRIC
 > - **当前状态**: Implemented
+> - **文档状态**: Active
 > - **发起人**: DSH AI Agent
 > - **当前版本**: V1.0.0
 > - **初次发起日期**: 2026-11-22
@@ -13,9 +14,9 @@
 > [!IMPORTANT]
 > **历史溯源备忘 (Archival Notice)**:
 > 本提案已于 2026-11-23 经批量门禁审查（batch-gates：Light 红队 → Delta 复核 → 最终确认，5 个 P1 全部收口）并结晶下沉至系统生产基线。
-> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§3 工具表 `check_doc_size`、§4 红线 6 与红线 9、§4.1 外部文献豁免）
-> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（模式 2 巡检、负向规范 6）
-> - 权威实现与基线: `skills/doc-governance/scripts/audit-doc-health.py`（`check_doc_size` / `--write-size-baseline`）与 `docs/.doc-size-baseline.json`
+> - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（§3 工具表、§4 体量红线、§4.1 外部文献豁免）
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)
+> - 权威实现（Wave 2C 迁至本仓私有工具）: 其本仓自动化门禁实现已于 2026-11-24 随 [ADR-0005](../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)（Wave 2C）从公共技能迁至本仓私有工具 `scripts/doc-gates/check-doc-health.py`（保留 ≤64 KB / ≤1,000 字符体量硬限；原空棘轮基线 `.doc-size-baseline.json` 已随存量清零而退役）
 > - 审查凭据全文请查阅: [../project/reviews/2026-11-22-batch-gates/README.md](../project/reviews/2026-11-22-batch-gates/README.md)
 > - 存量消化待办请查阅: [../project/backlog/index.md](../project/backlog/index.md)（BK-0050）
 > 本文件仅作为立项决策历史证据保留，**不再增量维护**。

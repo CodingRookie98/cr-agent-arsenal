@@ -2,12 +2,15 @@
 
 > **文档控制信息**
 > - **文档标识**: ANA-DOC-GOVERNANCE-EVAL-2026
-> - **当前版本**: V1.0.0
+> - **当前版本**: V1.0.1
 > - **文档状态**: Active
-> - **生效日期**: 2026-11-23
+> - **生效日期**: 2026-11-24
 > - **文档所有者**: 核心架构组
 > - **评估依据**: 基于 `skills/doc-governance/` 全部 32 个 Git 追踪源码文件（12,889 行 / 598.6 KB）、`docs/GOVERNANCE.md`、`docs/explanation/architecture/doc-governance-design.md`、全仓 218 篇文档与 Git 全史 390 commits 实证统计，并综合衔接 [llm-wiki-implementation-research.md](./llm-wiki-implementation-research.md) 与增量调研 [2026-11-23-doc-governance-peer-research.md](./2026-11-23-doc-governance-peer-research.md)。
 > - **证据分级**: 【A】一手（本仓库全量源码/行号/Git 统计/脚本实跑、外部标杆 `gh api` 源码）｜【B】二手转引（工程文与学术基准摘要）｜【C】架构师诊断与重构方案设计
+
+> [!NOTE]
+> **执行注记 (2026-11-24)**：**Wave 2C（[ADR-0005](../decisions/0005-split-doc-governance-public-vs-repo-local.md)）已按本报告推荐的方案 A 完成「三刀切割」落地**——公共 `skills/doc-governance/` 已大幅瘦身为 Convention-First 轻内核 + 通用 `--exclude` 断链扫描器；本仓私有门禁已迁至 `scripts/doc-gates/`（`check-all.py` / `check-doc-health.py` / `check-golden-tasks.py`）；Backlog 管理已迁至 `scripts/backlog/`（`manage-backlog.py` / `README.md`）。下文所有体量与文件引用均为 **Wave 2C 重构前审计时刻的历史快照**（原相对链接已转为代码标识以避免已迁移/退役路径断链）。
 
 ---
 
@@ -15,6 +18,7 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.0.1** | 2026-11-24 | AI Agent | 王辉 | 补充 Wave 2C（ADR-0005）已按方案 A 完成三刀切割落地的执行注记，并将下文指向已迁移/已退役脚本及文档的相对链接转为纯反引号代码片段防止 404 断链 |
 | **V1.0.0** | 2026-11-23 | AI Agent | 王辉 | 初版：完成 `doc-governance` 598.6 KB 巨无霸体量与 9 大异构子系统解构、12 脚本跨仓可移植性审计、390 commits 治理税实证、7 处真实源码 Bug 定位及三刀切割瘦身路线图 |
 
 ---
@@ -45,8 +49,8 @@
 | 分层 | 文件数 | 行数 | 字节数 | 占比 | 核心体量异常 |
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | 规范与模板（`SKILL.md` + 7 ref + 2 tpl） | 10 | 1,193 | 82.5 KB | 13.5% | `SKILL.md` 186 行尚克制，但 `backlog-specification.md` 占 281 行 |
-| Python 脚本工具箱（11 `.py` + 1 `.sh`） | 12 | 5,896 | 255.5 KB | 41.7% | **[audit-doc-health.py](../../../skills/doc-governance/scripts/audit-doc-health.py) 达 1,457 行**（超千行红线 +45.7%） |
-| 自动化测试套件（10 文件 / 302 用例） | 10 | 5,800 | 274.9 KB | 44.8% | **[test_doc_governance_scripts.py](../../../skills/doc-governance/tests/test_doc_governance_scripts.py) 1,938 行**、**[test_doc_drift.py](../../../skills/doc-governance/tests/test_doc_drift.py) 1,709 行**（双双大幅破千行红线） |
+| Python 脚本工具箱（11 `.py` + 1 `.sh`） | 12 | 5,896 | 255.5 KB | 41.7% | **`audit-doc-health.py`（原 `skills/doc-governance/scripts/audit-doc-health.py`）达 1,457 行**（超千行红线 +45.7%） |
+| 自动化测试套件（10 文件 / 302 用例） | 10 | 5,800 | 274.9 KB | 44.8% | **`test_doc_governance_scripts.py` 1,938 行**、**`test_doc_drift.py` 1,709 行**（双双大幅破千行红线） |
 | **Git 追踪合计** | **32** | **12,889** | **598.6 KB** | **100%** | **另含设计书 [doc-governance-design.md](../architecture/doc-governance-design.md) 38.1 KB** |
 
 ### 1.2 单壳塞入 9 个异构子系统全景
@@ -55,13 +59,13 @@
 | :-: | :--- | :--- | :---: | :--- |
 | **①** | Diátaxis / RFC / MADR 写作规程与脚手架 | `SKILL.md` + 5 references + `scaffold-doc.py/.sh` (664 L) | ~42 KB | **规程属公共核心**；但 664 行 bash 仿写脚手架过重 |
 | **②** | Markdown 物理断链与 `#anchor` 扫描器 | [check-doc-links.py](../../../skills/doc-governance/scripts/check-doc-links.py) (330 L) | ~14 KB | **唯一被全仓其他技能测试调用过的高普适脚本**（成熟开源替代：`lychee`） |
-| **③** | 手写修订历史 5 行滑动窗口裁剪 | [trim-revision.py](../../../skills/doc-governance/scripts/trim-revision.py) (230 L) | ~10 KB | **自造需求闭环**：Git 已原生记录全史，却强迫手写修订表再写脚本裁剪 |
-| **④** | 分层 `llms.txt` + `_llms/` 生成与身份保护 | [generate-llms-txt.py](../../../skills/doc-governance/scripts/generate-llms-txt.py) (532 L) + 2 测试 | ~65 KB | 错位把 Web 公开站分发标准做成 Git 本地仓每次提交的逐字节硬阻断 |
-| **⑤** | 目录级托管索引（`<dir>/index.md`）维护 | [manage-doc-index.py](../../../skills/doc-governance/scripts/manage-doc-index.py) (372 L) + 704 L 测试 | ~53 KB | 1,076 行代码仅服务全仓 4 个索引文件，配合自造「孤儿扣分」门禁 |
-| **⑥** | 真值轴代码锚点漂移检测 + 墓碑账本 | [check-doc-drift.py](../../../skills/doc-governance/scripts/check-doc-drift.py) (807 L) + 1,709 L 测试 | **114.5 KB** | **2,516 行代码仅覆盖 3 篇自引用文档（4.0%）**，却催生 22% 重钉提交税 |
-| **⑦** | 控制头同步 + 文档三态 + 体量棘轮 + 百分体检 | [check-doc-control-sync.py](../../../skills/doc-governance/scripts/check-doc-control-sync.py) + `audit-doc-health.py` + 3 测试 | ~103 KB | 把 5 套正交规则揉成 1,457 行巨石；`.doc-size-baseline.json` 当前为 `{}` 空对象 |
-| **⑧** | 20 条可回答性黄金断言 + pre-commit 聚合器 | [check-golden-tasks.py](../../../skills/doc-governance/scripts/check-golden-tasks.py) (297 L) + [check-all.py](../../../skills/doc-governance/scripts/check-all.py) (111 L) | ~22 KB | **100% 是本仓 `cr-agent-arsenal` 私有 CI 套件**，完全不该放在公共技能内 |
-| **⑨** | **项目管理待办系统（Mini-Jira / Issue-as-File）** | [manage-backlog.py](../../../skills/doc-governance/scripts/manage-backlog.py) (785 L) + `audit_backlog` (245 L) + [backlog-specification.md](../../../skills/doc-governance/references/backlog-specification.md) (281 L) + 测试 (226 L) | **~73 KB**（1,537 行） | **严重越界寄宿！** 含 140 行手写零依赖 YAML 编解码器，因状态语义冲突被迫在 4 处门禁打豁免补丁 |
+| **③** | 手写修订历史 5 行滑动窗口裁剪 | `trim-revision.py` (230 L，已退役) | ~10 KB | **自造需求闭环**：Git 已原生记录全史，却强迫手写修订表再写脚本裁剪 |
+| **④** | 分层 `llms.txt` + `_llms/` 生成与身份保护 | `generate-llms-txt.py` (532 L，已退役) + 2 测试 | ~65 KB | 错位把 Web 公开站分发标准做成 Git 本地仓每次提交的逐字节硬阻断 |
+| **⑤** | 目录级托管索引（`<dir>/index.md`）维护 | `manage-doc-index.py` (372 L，已退役) + 704 L 测试 | ~53 KB | 1,076 行代码仅服务全仓 4 个索引文件，配合自造「孤儿扣分」门禁 |
+| **⑥** | 真值轴代码锚点漂移检测 + 墓碑账本 | `check-doc-drift.py` (807 L，已退役) + 1,709 L 测试 | **114.5 KB** | **2,516 行代码仅覆盖 3 篇自引用文档（4.0%）**，却催生 22% 重钉提交税 |
+| **⑦** | 控制头同步 + 文档三态 + 体量棘轮 + 百分体检 | `check-doc-control-sync.py` + `audit-doc-health.py` + 3 测试 | ~103 KB | 把 5 套正交规则揉成 1,457 行巨石；`.doc-size-baseline.json` 当前为 `{}` 空对象 |
+| **⑧** | 20 条可回答性黄金断言 + pre-commit 聚合器 | `check-golden-tasks.py` (297 L，已迁 `scripts/doc-gates/`) + `check-all.py` (111 L，已迁 `scripts/doc-gates/`) | ~22 KB | **100% 是本仓 `cr-agent-arsenal` 私有 CI 套件**，完全不该放在公共技能内 |
+| **⑨** | **项目管理待办系统（Mini-Jira / Issue-as-File）** | `manage-backlog.py` (785 L，已迁 `scripts/backlog/`) + `audit_backlog` (245 L) + `backlog-specification.md` (281 L，已迁 `scripts/backlog/README.md`) + 测试 (226 L) | **~73 KB**（1,537 行） | **严重越界寄宿！** 含 140 行手写零依赖 YAML 编解码器，因状态语义冲突被迫在 4 处门禁打豁免补丁 |
 
 ---
 

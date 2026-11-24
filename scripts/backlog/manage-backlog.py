@@ -3,6 +3,8 @@
 """
 manage-backlog.py - Backlog 形态 B (Issue-as-File) 自动化管理与可编程查询工具
 
+用法: python3 scripts/backlog/manage-backlog.py <command> [options]
+
 功能:
   1. 脚本化提取与解析: list 命令支持按状态 (active/in-progress/completed)、优先级 (P0-P3)、
      类型 (Feature/TechDebt 等) 过滤，支持 --json 输出供 AI 智能体或外部脚本消费；
@@ -62,8 +64,8 @@ def slugify(text: str) -> str:
 
 # YAML 标量的最小加引号判据：只对「直写会改变结构或语义」的值做双引号转义编码，
 # 其余保持裸标量（status: active / priority: P1 这类），避免零依赖写出的卡片
-# 与 PyYAML 写出的卡片在文本层大面积分叉，也避免 audit-doc-health 的只读解析器
-# （不剥引号）把带引号的状态值读成 '"active"'。
+# 与 PyYAML 写出的卡片在文本层大面积分叉，也避免简单只读解析器（不剥引号）
+# 把带引号的状态值读成 '"active"'。
 _YAML_INDICATOR_START = "-?:,[]{}#&*!|>'\"%@`"
 
 # PyYAML 会把下列裸标量解析成 bool / None / int / date，字符串字段必须加引号才不会

@@ -2,7 +2,7 @@
 
 > **文档控制信息**
 > - **文档标识**: CHANGELOG-CR-ARSENAL
-> - **当前版本**: V1.6.0
+> - **当前版本**: V1.7.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-22
 > - **文档所有者**: 核心架构组
@@ -13,17 +13,35 @@
 
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **V1.7.0** | 2026-11-24 | AI Agent | 王辉 | 新增 2026-11-24「Wave 2C：`doc-governance` V3.0 三刀切割与公私物理分离」记录（ADR-0005） |
 | **V1.6.0** | 2026-11-24 | AI Agent | 王辉 | 新增 2026-11-24「Wave 2B：`dual-round-review` V3.0 瘦身与现代化升级」记录 |
 | **V1.5.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「Wave 2A：`goal-loop` V3.0 瘦身与现代化升级」记录 |
 | **V1.4.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「Wave 1 架构瘦身：退役 `agy-delegation-workflow` 与精简 `clarification-protocol` V2.0.0」记录 |
 | **V1.3.0** | 2026-11-23 | AI Agent | 王辉 | 新增 2026-11-23「退役 `spec-evolution` 技能并下沉核心哨兵」（ADR-0003）：移除技能目录与对外发行条目，C-01/C-05+YAML/C-07 迁移至 `skills/_shared/tests/` |
-| **V1.2.0** | 2026-11-23 | DSH AI Agent | 王辉 | 新增 2026-11-23「真值轴残余收口与存量文档拆分」：BK-0055（--staged 新文档/BD-9 判据）与 BK-0050（spec-evolution 拆分、skill-scripts 长行改写、体量基线清空） |
 
 ---
 
 本文件记录**已交付**的成果。进行中的工作在 [backlog](./backlog/index.md)，逐日过程在 git log。
 
 格式参照 Keep a Changelog，按交付单元聚合（不按提交逐条罗列）。
+
+## [2026-11-24] Wave 2C：doc-governance V3.0 三刀切割与公私物理分离
+
+### 决策与移除
+
+- **[ADR-0005](../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)**：物理执行「三刀切割」公私分离重构，终结公共技能混装私有门禁、Mini-Jira 与高摩擦生成物的历史耦合。
+- 物理退役 `docs/llms.txt`、`docs/_llms/*.md`、`docs/.doc-truth-baseline.json`、`docs/.doc-size-baseline.json`，以及公共技能中的私有/高仪式脚本与对应旧测试集（`audit-doc-health.py`、`check-doc-drift.py`、`check-doc-control-sync.py`、`generate-llms-txt.py`、`manage-doc-index.py`、`scaffold-doc.py/.sh`、`trim-revision.py`）。
+
+### 公私分离与重构
+
+- **第一刀（公共核纯化）**：`skills/doc-governance/` 瘦身为 Convention-First 轻内核（保留 Diátaxis、RFC 结晶、MADR 3.0 与变更联动触发矩阵），`check-doc-links.py` 剥离硬编码路径改为可重复 `--exclude <rel_prefix>` 参数并修复围栏闭合。
+- **第二刀（待办拆出）**：将形态 B 待办管理器与规范从公共技能迁至本仓私有目录 `scripts/backlog/`（`manage-backlog.py` 与 `README.md`）。
+- **第三刀（私有门禁精简）**：`scripts/doc-gates/` 承接本仓三道低摩擦门禁（`check-all.py`、精简重建的 `check-doc-health.py` 与更新 `G-18` 校验 `docs/index.md` 的 `check-golden-tasks.py`）；`.githooks/pre-commit` 与仓库根 `AGENTS.md` 同步切换至此入口。
+
+### 状态流转与文档同步
+
+- 原位将 `RFC-0003`、`RFC-0005`、`RFC-0006` 流转为 `Superseded`（取代于 `ADR-0005`），保持 `project/reviews/` 历史归档链接有效；`RFC-0007` 与 `RFC-0008` 标注实现迁移至 `scripts/doc-gates/check-doc-health.py`。
+- 同步更新 `AGENTS.md`、`README.md`、`docs/AGENTS.md`、`docs/GOVERNANCE.md`（V2.0.0）、[doc-governance-design.md](../explanation/architecture/doc-governance-design.md)（V3.0.0）、[2026-11-23-doc-governance-architecture-evaluation.md](../explanation/analysis/2026-11-23-doc-governance-architecture-evaluation.md)（V1.0.1）、[backlog-governance-best-practices.md](../explanation/analysis/backlog-governance-best-practices.md)、How-To/Tutorial、象限索引与 [docs/index.md](../index.md)（登记 [Wave 2C 实施计划](./plans/2026-11-24-wave2c-doc-governance-v3.md)）。
 
 ## [2026-11-24] Wave 2B：dual-round-review V3.0 瘦身与现代化升级
 

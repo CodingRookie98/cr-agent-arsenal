@@ -2,7 +2,9 @@
 
 > **提案元数据**
 > - **标识**: RFC-2026-QUADRANT-INDEX-CONVENTION
-> - **当前状态**: Implemented
+> - **当前状态**: Superseded
+> - **文档状态**: Superseded
+> - **取代于**: ../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md
 > - **发起人**: 工程师 / AI Agent
 > - **当前版本**: V0.3.0
 > - **初次发起日期**: 2026-10-09
@@ -11,14 +13,15 @@
 
 > [!IMPORTANT]
 > **历史溯源备忘 (Archival Notice)**:
-> 本提案已于 2026-10-09 经三轮双轮对抗审查（R1 → R2 → Delta R1 → Delta R2；共 6 份归档报告）取得 **Zero Blockers ✅ 准予交付**，并结晶下沉至系统生产基线。
-> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)（「目录级索引约定」节）
+> 本提案曾于 2026-10-09 经三轮双轮对抗审查取得 **Zero Blockers ✅ 准予交付**，并已于 **2026-11-24 随 [ADR-0005](../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)（Wave 2C 三刀切割）正式取代并退出现役门禁**（托管索引脚本 `manage-doc-index.py` 与脚手架 `scaffold-doc.py` 均已退役；象限索引回归按需人工/智能体维护）。
+> - 接替决策请查阅: [ADR-0005](../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)
+> - 权威技能规程请查阅: [../../skills/doc-governance/SKILL.md](../../skills/doc-governance/SKILL.md)
 > - 权威治理语义请查阅: [../GOVERNANCE.md](../GOVERNANCE.md)（目录拓扑与工具链表）
-> - 架构设计书请查阅: [../explanation/architecture/doc-governance-design.md](../explanation/architecture/doc-governance-design.md)（目录级索引约定）
+> - 架构设计书请查阅: [../explanation/architecture/doc-governance-design.md](../explanation/architecture/doc-governance-design.md)
 > - 实施计划请查阅: [../project/plans/2026-10-09-quadrant-index-convention.md](../project/plans/2026-10-09-quadrant-index-convention.md)
 > - 审查凭据全文请查阅: [../project/reviews/2026-10-09-quadrant-index-convention/README.md](../project/reviews/2026-10-09-quadrant-index-convention/README.md)
 > - 遗留待办请查阅: [../project/backlog/index.md](../project/backlog/index.md)（BK-0016~BK-0022）
-> 本文件仅作为立项决策历史证据保留，**不再增量维护**。
+> 本文件仅作为历史立项证据原位保留，**不再增量维护**。
 
 ---
 

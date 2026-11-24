@@ -23,9 +23,10 @@ from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPTS_DIR.parents[2]
+REPO_ROOT = SCRIPTS_DIR.parents[1]
 
 Status = str  # "pass" | "gap" | "fail"
+CORE_QUADRANTS = ("proposals", "tutorials", "how-to", "reference", "explanation", "project")
 
 
 def _read(path: Path) -> str:
@@ -39,12 +40,8 @@ def _md_files(root: Path, sub: str = "") -> List[Path]:
     base = root / sub if sub else root
     if not base.is_dir():
         return []
-    return sorted(
-        f for f in base.rglob("*.md")
-        if not any(p in f.parts for p in ("node_modules", ".git", "dist", "build"))
-        and "reviews" not in f.parts
-        and "_llms" not in f.parts
-    )
+    skip = {"node_modules", ".git", "dist", "build", "reviews", "_llms"}
+    return sorted(f for f in base.rglob("*.md") if not any(p in f.relative_to(base).parts for p in skip))
 
 
 # ---------------------------------------------------------------- 断言实现
@@ -189,16 +186,23 @@ def g17_reviews_indexed(root: Path) -> Tuple[Status, str]:
     return ("fail", f"缺索引: {', '.join(missing[:3])}") if missing else ("pass", f"{len(dirs)} 个归档均有 README")
 
 
-def g18_llms_root_budget(root: Path) -> Tuple[Status, str]:
-    f = root / "llms.txt"
+def g18_root_index_nav(root: Path) -> Tuple[Status, str]:
+    f = root / "index.md"
     if not f.is_file():
-        return "fail", "llms.txt 缺失"
-    size = len(f.read_bytes())
-    sections = len(re.findall(r"^## ", _read(f), re.M))
-    if size > 8192:
-        return "fail", f"根机器地图 {size} 字节 > 8192"
-    return ("pass", f"{size} 字节 / {sections} 个象限节") if sections >= 4 \
-        else ("fail", f"仅 {sections} 个象限节")
+        return "fail", "index.md 缺失"
+    raw = f.read_bytes()
+    if not raw or len(raw) > 65536:
+        return "fail", f"全局入口体量异常 ({len(raw)} 字节)"
+    text = raw.decode("utf-8", errors="replace")
+    targets = re.findall(r"\]\(\s*([^)\s]+)", text) + re.findall(r"^\s*\[[^\]]+\]:\s*(\S+)", text, re.M)
+    covered = set()
+    for t in targets:
+        clean = re.sub(r"^(?:\./)+", "", t.lstrip("<").split("#", 1)[0].split("?", 1)[0])
+        top = clean.split("/", 1)[0]
+        if top in CORE_QUADRANTS:
+            covered.add(top)
+    return ("pass", f"index.md ({len(raw)} 字节) 覆盖 {len(covered)} 个象限") if len(covered) >= 4 \
+        else ("fail", f"index.md 仅覆盖 {len(covered)} 个象限 (< 4)")
 
 
 def g19_agents_router(root: Path) -> Tuple[Status, str]:
@@ -214,20 +218,15 @@ def g19_agents_router(root: Path) -> Tuple[Status, str]:
 
 
 def g20_all_have_header(root: Path) -> Tuple[Status, str]:
-    # ADR 用「ADR 控制元数据」+ MADR 格式；backlog 卡片用 YAML frontmatter——两者各有契约，
-    # 不套用标准控制头（GOVERNANCE §4.1 已登记）。
+    # ADR 用「ADR 控制元数据」；backlog 用 YAML frontmatter；外部文献原文不可改写（GOVERNANCE §4.1）
     files = [
         f for f in _md_files(root)
-        if f.parent != root
-        and "decisions" not in f.parts
-        and "backlog" not in f.parts
-        and not (len(f.relative_to(root).parts) >= 2 and f.relative_to(root).parts[:2] == ("reference", "articles"))
+        if len(f.relative_to(root).parts) > 1
+        and "decisions" not in f.relative_to(root).parts
+        and "backlog" not in f.relative_to(root).parts
+        and f.relative_to(root).parts[:2] != ("reference", "articles")
     ]
-    # RFC 用「提案元数据」、其余用「文档控制信息」——两者都是有效控制头
-    bad = [
-        f.name for f in files
-        if "文档控制信息" not in _read(f) and "提案元数据" not in _read(f)
-    ]
+    bad = [f.name for f in files if "文档控制信息" not in _read(f) and "提案元数据" not in _read(f)]
     return ("fail", f"{len(bad)} 篇缺控制头: {', '.join(bad[:3])}") if bad else ("pass", f"{len(files)} 篇均有控制头")
 
 
@@ -249,7 +248,7 @@ TASKS: List[Dict] = [
     {"id": "G-15", "q": "这个计划执行到哪一步了？", "fn": g15_plans_have_status},
     {"id": "G-16", "q": "上次发布交付了什么？", "fn": g16_changelog},
     {"id": "G-17", "q": "这次交付的审查结论在哪？", "fn": g17_reviews_indexed},
-    {"id": "G-18", "q": "知识库有哪些象限？", "fn": g18_llms_root_budget},
+    {"id": "G-18", "q": "知识库有哪些象限？", "fn": g18_root_index_nav},
     {"id": "G-19", "q": "读文档的顺序是什么？", "fn": g19_agents_router},
     {"id": "G-20", "q": "这篇文档的版本与所有者是谁？", "fn": g20_all_have_header},
 ]
@@ -257,6 +256,7 @@ TASKS: List[Dict] = [
 
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", newline="\n")
+    sys.stderr.reconfigure(encoding="utf-8", newline="\n")
     parser = argparse.ArgumentParser(description="知识库可回答性评测（20 条机械断言）")
     parser.add_argument("--root", default="docs", help="文档根目录（默认 docs）")
     parser.add_argument("--json", action="store_true", help="输出 JSON")
@@ -279,7 +279,6 @@ def main() -> int:
     counts = {k: sum(1 for r in results if r["status"] == k) for k in ("pass", "gap", "fail")}
     if args.json:
         import json
-
         print(json.dumps({"counts": counts, "results": results}, ensure_ascii=False, indent=2))
     else:
         print(f"🔎 知识库可回答性评测：{len(results)} 条断言")

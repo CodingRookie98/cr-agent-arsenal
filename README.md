@@ -18,7 +18,7 @@ cr-agent-arsenal/
 │   ├── goal-loop/              # 工业级长程任务目标实现循环
 │   ├── dual-round-review/      # 对抗性非讨好型双轮代码终审硬门禁
 │   ├── clarification-protocol/ # 需求澄清与收敛规程 (提问排序 / 决策台账 / 三项自检)
-│   ├── doc-governance/         # 工业级文档工程与知识库治理体系
+│   ├── doc-governance/         # Convention-First 文档工程与知识库治理体系 (V3.0)
 │   ├── taste-driven-designer/  # 品味驱动设计三阶段流程 (D1 发散 / D2 Critic 闭环 / D3 减法)
 │   ├── frontend-qa-gate/       # 前端产物验收硬门禁 (五域断言 + 证据三态)
 │   └── _shared/                # 跨技能共享策略与测试 (非技能包，无 SKILL.md)
@@ -32,10 +32,13 @@ cr-agent-arsenal/
 │       ├── skills_manager.py   # 核心管理 CLI (支持 list/install/uninstall)
 │       └── collections/        # 技能集分类预设 (8 个：common / frontend / architecture / cr-agent-arsenal 等)
 │
-├── docs/                       # 4.【方法论与架构文档】
+├── scripts/                    # 4.【本仓私有门禁与待办工具】(仅服务 cr-agent-arsenal)
+│   ├── doc-gates/              # 本仓三道文档门禁 (check-all.py / check-doc-health.py / check-golden-tasks.py)
+│   └── backlog/                # 本仓待办形态 B 管理器 (manage-backlog.py / README.md)
+│
+├── docs/                       # 5.【方法论与架构文档】
 │   ├── index.md                # 知识库全景索引
 │   ├── GOVERNANCE.md           # 知识库治理规程
-│   ├── llms.txt                # 智能体机器可读地图 (由 doc-governance 脚本生成)
 │   ├── explanation/            # 解释象限 (architecture 现役设计书 6 份 / analysis / decisions)
 │   ├── reference/              # 参考象限 (rules 平台规则与不可变约束 / articles 外部文献)
 │   ├── project/                # 工程治理 (plans 计划 / reviews 审查报告 / backlog 待办)
@@ -56,7 +59,7 @@ cr-agent-arsenal/
 | **`goal-loop`** | [`skills/goal-loop`](./skills/goal-loop/SKILL.md) | **工业级端到端长任务目标实现循环（V3.0）**。<br/>以计划文件为唯一可读真相源，收敛为五主阶段（`Align → Plan → Execute → Verify → Close`）与三轨分流；具备事件驱动上下文工程、极薄文件指针交接（`pack-handoff.py`）、自适应测试分级裁定（L0~L3）、宿主无关执行后端适配与 3-Tries 非阻塞熔断自愈机制。 | Claude Code / Antigravity / DSH / 全局 Shell |
 | **`dual-round-review`** | [`skills/dual-round-review`](./skills/dual-round-review/SKILL.md) | **对抗性非讨好型双轮代码终审硬门禁（V3.0）**。<br/>第一轮红队第一性原理极限穿透 + 第二轮资深元架构师审判校准；支持 Full / Light / Scoped Delta（`delta-r1` 零缺陷免派 `delta-r2`）三模式与能力档位分层，注入 Untrusted Data 防注入与空结果优先准则，保留 Write-Once 原文归档与机械门禁（`check-review-report.py`）。 | 具备子智能体派发能力的智能体 / CLI |
 | **`clarification-protocol`** | [`skills/clarification-protocol`](./skills/clarification-protocol/SKILL.md) | **需求澄清与收敛规程**（源于提问收敛律）。<br/>先自查事实再向人类发问；术语先行对齐易歧义词；按「依赖强度 × 实现影响」筛问并设 ≤5 题软预算（低影响直转默认假设）；原地维护 4 列单表决策台账（已决项 / 已排除边界 / 默认假设，禁止重开已排除项）；出口三问内联自核（目标 / 边界 / 矛盾）。 | 宿主无关（任意具备对话能力的智能体） |
-| **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance/SKILL.md) | **工业级文档工程与知识库治理体系**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转模型与 Docs-as-Code 自动化门禁，彻底杜绝文档与代码漂移。 | Claude Code / Antigravity / 全局 Shell |
+| **`doc-governance`** | [`skills/doc-governance`](./skills/doc-governance/SKILL.md) | **Convention-First 文档工程与知识库治理体系（V3.0）**。<br/>立足 Diátaxis 四象限、RFC 提案结晶流转、MADR 决策记录与变更联动触发矩阵；优先适配宿仓规范与既有工具链，内置零依赖通用 `--exclude` 物理断链与 `#anchor` 静态扫描器（`check-doc-links.py`）。 | Claude Code / Antigravity / 全局 Shell |
 | **`taste-driven-designer`** | [`skills/taste-driven-designer`](./skills/taste-driven-designer/SKILL.md) | **品味驱动设计三阶段流程**（源于 Anshu Chimala AI 双钻模型）。<br/>D1 种子字符串发散（外部随机性）→ D2 独立 Critic 闭环（三信号门禁：结构清单 + 盲比改进 + 人类签收，分数仅作遥测）+ 每轮内嵌产物自检→ D3 AI Tells 审计与残酷减法；图像/视频增强能力门控，宿主无关、可降级。 | 具备子智能体派发能力的智能体 / CLI |
 | **`frontend-qa-gate`** | [`skills/frontend-qa-gate`](./skills/frontend-qa-gate/SKILL.md) | **前端产物验收硬门禁**（源于 kejun《前端开发转向 AI Coding 的常见问题全景》）。<br/>五域断言：响应式视口 / 交互状态矩阵 / 无障碍键盘与读屏 / 浏览器覆盖 / 性能预算；证据三态（已实现 / 已运行验证 / 未验证）、结论仅 PASS / FAIL / BLOCKED，不做分数判据；审产物不审代码（代码级判据路由 `dual-round-review`），回流缺陷按路由表分流。 | 具备浏览器驱动能力的智能体 / CLI |
 
@@ -120,7 +123,7 @@ python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a an
 
 ## 📚 4. 架构与设计规范文档 (Documentation)
 
-* 📖 **[知识库总索引 (Knowledge Base Index)](./docs/index.md)** & **[知识库治理规程 (Governance Specification)](./docs/GOVERNANCE.md)** & **[智能体机器地图 (llms.txt)](./docs/llms.txt)**
+* 📖 **[知识库总索引 (Knowledge Base Index)](./docs/index.md)** & **[知识库治理规程 (Governance Specification)](./docs/GOVERNANCE.md)**
 * 📐 **技能架构设计书 (`docs/explanation/architecture/`)**
   * `doc-governance`: [doc-governance-design.md](./docs/explanation/architecture/doc-governance-design.md)
   * `goal-loop`: [goal-loop-design.md](./docs/explanation/architecture/goal-loop-design.md)
@@ -134,15 +137,14 @@ python3 tools/skills-manager/skills_manager.py install -f cr-agent-arsenal -a an
   * [ai-coding-frontend-common-problems.md](./docs/reference/articles/ai-coding-frontend-common-problems.md) — kejun：AI Coding 前端常见问题全景（`frontend-qa-gate` 需求源）
   * [how-to-turn-your-ai-into-a-world-class-designer.md](./docs/reference/articles/how-to-turn-your-ai-into-a-world-class-designer.md) — Anshu Chimala：AI 设计双钻模型（`taste-driven-designer` 理论源）
 * 🧭 **智能体路由规则**: [docs/AGENTS.md](./docs/AGENTS.md)（读取顺序与硬约束，≤30 行）
-* 🗂️ **分层机器地图**: `docs/llms.txt`（象限入口）+ `docs/_llms/<象限>.md`（全量条目，生成物禁手改）
 
 ### 文档门禁自动化（BK-0048）
 
-五道门禁（机器地图 / 断链 / 版本一致 / 真值轴 / 健康体检）由一个入口聚合，实测 **1.5 s**：
+本仓三道私有门禁（断链 / 健康体检 / 可回答性）由 [`scripts/doc-gates/check-all.py`](./scripts/doc-gates/check-all.py) 聚合：
 
 ```bash
-python3 skills/doc-governance/scripts/check-all.py          # 五道门禁
-python3 skills/doc-governance/scripts/check-all.py --full   # 追加 pytest 全量
+python3 scripts/doc-gates/check-all.py          # 三道本仓门禁（断链 / 健康体检 / 可回答性）
+python3 scripts/doc-gates/check-all.py --full   # 追加 pytest 全量（skills/ 与 scripts/）
 ```
 
 **推荐安装 pre-commit hook（每个克隆执行一次）**：
@@ -157,5 +159,5 @@ git config core.hooksPath .githooks
 
 ## 📄 规范与许可 (Standards & License)
 
-* **技能规范**：本仓库 6 个技能均遵循 [`agentskills.io` 规范](https://agentskills.io/specification)——`name` 与所在目录同名、`description` 为合法 YAML 且不超过规范上限（1024 字符）与 500 字符建议值（现役 6 个技能全部收敛达标：`dual-round-review` V3.0 已由 738 压降至 310 字符、`clarification-protocol` 362、`goal-loop` 369、`doc-governance` 434、`frontend-qa-gate` 487、`taste-driven-designer` 490；历史债务溯源见 [BK-0041](./docs/project/backlog/archive/2026-Q4/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md)）、`SKILL.md` 正文均 < 500 行，可直接被 `npx skills` 拉取。
+* **技能规范**：本仓库 6 个技能均遵循 [`agentskills.io` 规范](https://agentskills.io/specification)——`name` 与所在目录同名、`description` 为合法 YAML 且不超过规范上限（1024 字符）与 500 字符建议值（现役 6 个技能全部收敛达标；历史债务溯源见 [BK-0041](./docs/project/backlog/archive/2026-Q4/BK-0041-存量技能交付面残余债务-agy-设计书缺失-两条-description-超建议.md)）、`SKILL.md` 正文均 < 500 行，可直接被 `npx skills` 拉取。
 * **许可**：本项目采用 [MIT 许可证](./LICENSE)（Copyright © 2026 CodingRookie98），6 个技能 frontmatter 均已声明 `license: MIT`；可自由使用、修改与再分发，但须保留版权与许可声明。

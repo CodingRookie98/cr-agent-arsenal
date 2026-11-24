@@ -30,7 +30,7 @@ if [ -n "$UNSTAGED" ]; then
     exit 1
 fi
 
-if ! "$PYTHON_BIN" skills/doc-governance/scripts/check-all.py --quiet; then
+if ! "$PYTHON_BIN" scripts/doc-gates/check-all.py --quiet; then
     echo "" >&2
     echo "🚫 提交被阻断：文档门禁未通过。" >&2
     echo "   修复后重新提交；如确需跳过：git commit --no-verify（须在提交信息登记原因）" >&2

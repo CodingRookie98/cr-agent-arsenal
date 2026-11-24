@@ -2,419 +2,114 @@
 
 > **文档控制信息**
 > - **文档标识**: SKILL-DES-DOC-GOVERNANCE-2026
-> - **当前版本**: V1.5.0 (治理轴扩展：真值轴 / 分层机器地图 / 状态机 / 体量门禁 / 门禁自动化与可回答性)
-> - **代码锚点**: skills/doc-governance/SKILL.md, skills/doc-governance/scripts/audit-doc-health.py, skills/doc-governance/scripts/check-doc-drift.py
-> - **复核于**: 2026-11-23 / commit 7a91c22
+> - **当前版本**: V3.0.0 (Wave 2C 三刀切割：公共技能回归 Convention-First 轻内核，私有门禁与待办工具迁至仓库根 `scripts/`)
+> - **文档状态**: Active
 > - **设计所有者**: 王辉
 > - **设计架构师**: Antigravity AI Agent
 > - **创建日期**: 2026-09-10
-> - **理论与实践源流**:
->   - **现代软件工程规范**: Daniele Procida 的 **Diátaxis 框架** (四象限系统化文档架构，Python/Canonical/Django/NumPy 官方标准)
->   - **Docs-as-Code (DaC)**: Write the Docs 哲学 (文档即代码、版本化、CI/CD 自动化门禁)
->   - **架构决策治理**: **MADR 3.0 / Michael Nygard ADR** (不可逆决策审计与演进追踪)
->   - **需求演进标准**: **RFC / KEP / PEP 提案模型** (初期单文件多轮对齐与定案结晶机制)
->   - **AI 智能体时代规范**:
->     - **Dual-Audience 原则**: 人类可读性 (Human-Readable) 与智能体机器可读性 (Agent-Consumable) 统一
->     - **Machine-Readable Index**: `llms.txt` + `index.md` 双重全局导航（根级唯一，象限级按需托管）
->     - **Manus AI / Ralph Loop**: 上下文防腐与物理持久化唯一真相源
->     - **Paperclip 逐行凭证**: Line-pinned Citations 与显式物理文件链接 (`` `[xxx.md](./path/xxx.md)` ``)
-
----
-
-## 1. 背景与核心痛点 (Problem Statement)
-
-在以大语言模型（LLM）为核心的 AI 智能体软件研发时代，传统的文档管理模式正在遭遇前所未有的范式危机。文档不再仅仅是给人类工程师偶尔查阅的静态参考书，更是**直接作为 AI 智能体生成代码、规划架构与执行 TDD 的核心上下文（Context Window）**。
-
-在多次复杂项目实战中，暴露出以下系统性痛点：
-
-### 1.1 瀑布周期切分目录导致的“职责混杂与查找割裂” (Waterfall Lifecycle Anti-Pattern)
-* **表象**：许多团队习惯按项目开发的阶段来组织目录（如 `requirements/`、`design/`、`planning/`、`operations/`）；
-* **致命危害**：
-  1. **内容属性严重混淆**：API 契约明明是权威技术参考（Reference），却被当作初期的“需求”塞在 `requirements/backend/`；架构设计（`design/`）与框架选型评估（`planning/`）明明都是系统原理解释（Explanation），却因为发生在不同阶段被物理隔绝；
-  2. **违反 Diátaxis 核心铁律 (No Mixing)**：一份文档里既有“怎么部署（How-To）”，又有“API 字段（Reference）”，还充斥着“为什么要这样选型（Explanation）”。智能体为了查一个字段，被迫吃进整页背景说明，导致上下文预算急速枯竭并引发严重的“注意力稀释（Attention Dilution）”；
-  3. **职责模糊引发多份事实**：开发者在设计阶段写一套 API 契约，在后端实现时又更新另一套，造成致命的数据模型分歧。
-
-### 1.2 文档与代码的严重漂移 (Doc Drift & Hallucination)
-* **表象**：代码库已经过多次重构、API 字段重命名或业务规则调整，但设计文档和契约规格依然停留在历史版本；
-* **致命危害**：后续接手的 AI 智能体基于陈旧文档作为 Context 编写代码，生成了已被弃用的废弃字段或调用了已删除的接口，导致单测大面积崩溃，产生灾难性的“文档引发代码幻觉（Doc-Induced Hallucinations）”。
-
-### 1.3 巨石单体文档与长上下文反噬 (Context Rot in Monolithic Docs)
-* **表象**：将几万字的需求、架构、接口、历史记录全部揉入一个或少数几个几千行的超大单体 Markdown 文件；
-* **致命危害**：智能体在读取此类文档时，瞬间消耗 30k~50k 的 Context Token，引发“迷失在中间（Lost in the Middle）”现象，更导致在局部修改文档时频繁发生行号失配、内容被截断与覆盖性破坏。
-
-### 1.4 概念指代模糊与断链地狱 (Broken Links & Ambiguous Entities)
-* **表象**：文档中使用纯文本概念名指代业务模块（如“详见用户管理文档”），或者重命名/移动文件后未同步更新外部引用；
-* **致命危害**：人类与 AI 均无法一键点击溯源，形成“404 断链死胡同”；AI 智能体因无法定位物理文件而凭空臆测，破坏了工程的可维护性与审计性。
-
-### 1.5 版本号失控与修订历史无限膨胀 (Unbounded Revision Inflation)
-* **表象**：每次小修小补随意自增版本号，修订历史表格追加至数十上百行，导致文档头部严重喧宾夺主；
-* **致命危害**：大量过期的历史流水账挤占了本应留给业务规则与接口契约的黄金注意力窗口。
-
----
-
-## 2. 理论源流与现代架构基石 (Theoretical Foundations)
-
-`doc-governance` 作为通用的公共技能，必须立足于**行业公认的最佳实践与 AI 时代的第一性原理**，拒绝为了兼容局部历史项目的旧习惯而削足适履。确立以下四大理论支柱：
-
-```
-                        ┌─────────────────────────────────────┐
-                        │   doc-governance 技能理论四大支柱   │
-                        └──────────────────┬──────────────────┘
-                                           │
-         ┌──────────────────┬──────────────┴─────┬──────────────────┐
-         ▼                  ▼                    ▼                  ▼
-   【Diátaxis 架构】   【Docs-as-Code】   【ADR 演进治理】   【AI 双受众与上下文工程】
-   - 4 象限正交分类    - 文档即代码       - 历史不可篡改     - Human + Agent 双受众
-   - 彻底消灭混杂      - CI 门禁/自动化   - 状态机演进       - 总纲-子册拓扑
-   - 读者意图导向      - Lint 静态检测    - 记录"Why"抉择    - 变动影响矩阵联动
-```
-
-### 2.1 现代软件工程：Diátaxis 四象限架构体系
-Diátaxis 是被 Python 官方文档、Canonical/Ubuntu、Django、NumPy 等顶级开源生态广泛采纳的权威架构。它根据**读者的即时意图（Intent）与心智状态**，将文档划分为四个互不重叠的正交维度：
-
-| 象限维度 | 导向目标 | 读者心智 | 内容特征 | 典型文档形态 |
-|:---|:---|:---|:---|:---|
-| **1. Tutorials (教程)** | 学习导向 (Learning-oriented) | “带领我入门，给我一个成功体验” | 步骤化、循序渐进、目标是让新手建立信心，不掺杂高级理论 | 快速上手向导、5分钟创建第一个智能体工作流 |
-| **2. How-To Guides (操作指南)** | 解决具体问题导向 (Problem-oriented) | “我有特定任务，告诉我如何做” | 目标明确、食谱式步骤（Recipes）、直接给出操作命令，无背景铺垫 | 生产部署指南、本地多容器搭建、故障排查 SOP |
-| **3. Reference (技术参考)** | 事实与信息导向 (Information-oriented) | “查阅权威机械规格，确认事实” | 极度严谨、客观、描述技术实体本身（字段/类型/状态机/约束），不教学、不解释 | API 契约规格、数据模型 Schema、业务规则矩阵、Token 定义 |
-| **4. Explanation (深度剖析)** | 理解与洞见导向 (Understanding-oriented) | “深入剖析原理，解释为什么这样设计” | 宏观全景、阐述设计背景、技术对比、架构决策推演，回答“Why” | 总体架构设计说明、技术选型备忘录、ADR 决策记录 |
-
-> **Diátaxis 核心铁律 (Strict Separation Rule)**：
-> **严禁在单份文档中混合不同象限的内容！**
-> 如果在写 Reference（API 规格）时想解释为什么选这个算法，必须拆分为独立的 Explanation 文档并通过超链接引用；如果在写 How-To（部署步骤）时想阐述底层网络拓扑，必须链接到架构说明，绝不在操作指南中展开大篇幅理论。
-
-### 2.2 Docs-as-Code (DaC) 与自动化门禁
-* **同源版本化**：文档与源码同在一个 Git 仓库中，遵循 Pull Request、Code Review、Git Tag 发布流程；
-* **Docs-as-Tests（文档即测试）**：将断链扫描、Frontmatter 合规性、修订历史滑动裁剪做成 CI 门禁（Exit Code 0 机制）；
-* **不可逾越的阻断线**：接口改动未同步文档、或文档中存在 404 断链时，严格阻断代码合并。
-
-### 2.3 MADR 3.0 / Nygard 架构决策治理 (ADR)
-* **不可逆决策追溯**：对重大的技术选型、架构分层、数据流演进采用 MADR 3.0 标准模板记录背景与利弊权衡；
-* **Append-Only（追加日志原则）**：已通过的 ADR 绝不原地篡改。若发生变更，通过新建 ADR 并显式声明 `Supersedes ADR-xxx`，确保系统演进脉络清晰可审计。
-
-### 2.4 AI 智能体时代的文档革命：双受众与上下文防腐
-* **Dual-Audience (双受众公理)**：
-  - **人类工程师**：需要可视化 Mermaid 架构图、清晰的层级、良好的排版体验；
-  - **AI 智能体 (Agent-Ready Context)**：需要精确的无歧义概念、显式物理文件链接 (`` `[xxx.md](./path/xxx.md)` ``)、严格的负向约束清单（Negative Invariants）、结构化表格；
-* **Machine-Readable Index (`llms.txt` + `index.md`)**：
-  - 既有给人类浏览的全局 Markdown 索引（`index.md`），又有给 LLM 爬取和加载全局知识拓扑的机器地图（`llms.txt`）；
-* **总纲-子册架构 (Hub-and-Spoke Topology)**：
-  - 总纲控制在 300 行以内，负责全景限界上下文与分流索引；底层细节完全下沉至子册，智能体按需调阅，降低 Token 消耗 70% 以上；
-* **变动影响矩阵 (Change Impact Matrix)**：
-  - 代码变动实时触发对应文档的联动更新，闭环杜绝“代码已变而文档脱节”。
-
----
-
-## 3. 现代标准知识库目录拓扑 (Modern Standard Directory Topology)
-
-基于 Diátaxis 四象限标准、ADR 演进治理与 AI 智能体机器可读性，`doc-governance` 技能确立如下**通用标准知识库目录拓扑**：
-
-```text
-docs/
-├── index.md                 # 【全局人类总入口】全景知识库拓扑与分类索引
-├── llms.txt                 # 【AI 智能体机器地图】象限级入口（≤8 KB）
-├── _llms/                   # 分层子地图（生成物，禁手改）：<象限>.md 承载全量条目
-├── AGENTS.md                # 【路由规则】读取顺序与硬约束（≤30 行，不承载知识）
-├── GOVERNANCE.md            # 【知识库治理规程】文档分类、生命周期与 CI 门禁规则
-│
-├── proposals/               # 💡 0. 需求与设计孵化层 (Inception / RFC Proposals)
-│   │                        # ⭐ 项目初期单文件聚焦对齐空间，定案后结晶下沉至 Diátaxis 稳态
-│   ├── RFC-0001-xxx.md      # 提案 (Draft -> In Review -> Accepted -> Implemented)
-│   └── archive/             # 可选：已结晶提案归档（存在历史审查引用时优先原位保留）
-│
-├── tutorials/               # 🎓 1. 教程象限 (Learning-Oriented / Newcomer Success)
-│   ├── quick-start.md       # 5 分钟上手开发与运行首个特性
-│   └── onboarding.md        # 新成员/新智能体工作流与环境就绪向导
-│
-├── how-to/                  # 🛠️ 2. 操作指南象限 (Problem-Oriented / Task Recipes)
-│   ├── deployment.md        # 生产环境容器化构建与服务发布 SOP
-│   ├── local-setup.md       # 本地多服务联调与数据库初始装配
-│   ├── testing-guide.md     # 单元/集成/E2E 测试套件执行与覆盖率校验
-│   └── troubleshooting.md   # 隐蔽缺陷排查、异步死锁与框架踩坑手册 (SOP)
-│
-├── reference/               # 📖 3. 技术参考象限 (Information-Oriented / Machine Truth)
-│   │                        # ⭐ AI 智能体生成代码的核心上下文真相源 (Single Source of Truth)!
-│   ├── api/                 # 外部与内部 API 契约规格、统一错误信封、Endpoint 清单
-│   ├── models/              # 领域数据模型、Schema 契约、数据库实体与 DTO 定义
-│   ├── rules/               # 平台业务规则、状态机状态图、权限矩阵与智能体行为协议/提示词契约
-│   └── ui/                  # 前端设计 Token、UI 基础组件规范、交互事件契约
-│
-├── explanation/             # 💡 4. 深度剖析象限 (Understanding-Oriented / The "Why")
-│   ├── architecture/        # 系统总体代码架构总纲 (Hub) 与各子系统深度剖析 (Spokes)
-│   ├── decisions/           # ADR 架构决策记录 (MADR 3.0 格式, 0001-xxx.md, Append-Only)
-│   ├── analysis/            # 技术调研备忘录、第三方框架选型评估、可行性分析报告
-│   └── concepts/            # 核心业务领域深层概念、设计哲学与数学/算法模型阐释
-│
-└── project/                 # 🚀 5. 工程演进与项目管理 (Project Management & Evolution)
-    ├── roadmap.md           # 产品规划路线图与版本里程碑矩阵
-    ├── changelog.md         # 版本发布日志与交付物归档
-    ├── plans/               # 实施计划与结项记录（YYYY-MM-DD-<feature>.md）
-    ├── reviews/             # 审查凭据归档（Write-Once，逐字留存）
-    └── backlog/             # 待办形态 B：index.md + active/BK-XXXX-*.md + archive/<version>/
-```
-
-### 目录级索引约定 (Directory Index Convention)
-
-索引是**分层**的，但**根级人类入口唯一**。`check-doc-links.py` 与 `audit-doc-health.py` 早已实现"目录即入口"判定（指向目录的链接要求目标目录含 `index.md` 或 `README.md`；任意层级的入口文件均豁免孤儿判定），本节将该既有事实固化为成文契约：
-
-| 层级 | 文件 | 地位 | 维护者 |
-|:---|:---|:---|:---|
-| 根级 | `docs/index.md` | **唯一**的全局人类总索引入口 | 人工（纳入版本治理） |
-| 根级机器地图 | `docs/llms.txt` | 供智能体消费的机器可读拓扑 | `generate-llms-txt.py` |
-| 象限/子目录 | `<dir>/index.md` 或 `<dir>/README.md` | 本目录分流入口，**按需存在、非强制** | 托管（脚本）或人工 |
-
-* **托管索引 (Managed Index)**：正文含标记 `<!-- doc-index:managed -->`，由 `scaffold-doc.py`（`scaffold-doc.sh` 为兼容壳）生成文档时经 `manage-doc-index.py` 自动创建与**幂等登记**，携带标准控制头并随登记递增补丁版本（修订历史恒 ≤ 5 条）；
-* **人工索引 (Hand-authored Index)**：不含托管标记，脚本**只读不改**（安全 no-op）；
-* **禁止追溯性空索引**：象限索引按需生成，严禁为凑齐拓扑批量创建空目录与空索引；
-* **收录边界**：象限索引只收录本目录直属文档，跨象限收录统一归根级 `docs/index.md`。
-* **分层机器地图 (Layered Machine Map)**：根 `docs/llms.txt` 只保留象限入口（≤8 KB），全量条目由 `generate-llms-txt.py --split` 下沉至 `docs/_llms/<section>.md`；根与子地图必须逐字节等于生成器产物，手改或不同步即触发「机器地图不一致」硬阻断；
-* **状态可判定 (Mechanical Status)**：控制头 `文档状态` 取 `Active | Contested | Superseded` 三态；`Contested` 必填 `争议点`，`Superseded` 必填 `取代于`，`Active` 携带 `取代于` 即阻断——「哪份该信」由状态回答，不再靠读全文。
-
-### 目录分层职责与单一事实来源对比表
-
-| 目录层级 | Diátaxis 定位 | 唯一事实来源 (Single Source of Truth) | 严禁承载内容 |
-|:---|:---|:---|:---|
-| `proposals/` | Inception / Proposals | **项目初期与重大特性需求、设计草案、权衡对齐的临时单文件孵化空间** | 长期已生效的运行态基线（定案后必须结晶下沉至 Diátaxis） |
-| `tutorials/` | Tutorials | 新手入门第一步体验 | 详细 API 错误码、深层架构选型争论 |
-| `how-to/` | How-To Guides | 具体的任务解决步骤（操作 SOP） | 领域理论长篇论述、接口数据模型声明 |
-| `reference/` | Technical Reference | **所有对外接口、数据模型、业务状态机与安全规则的唯一真相源** | 操作教程、方案背景为什么这么选的辩论 |
-| `explanation/` | Explanation | **系统架构设计总纲、ADR 决策演进记录与选型理由的唯一真相源** | 具体 API 字段定义、临时任务排期 |
-| `project/` | Project Governance | **版本发布日志、发版历史与待办 Backlog 的唯一真相源** | 架构实现细节、操作指南 |
-
----
-
-## 4. 核心治理规范与执行基线 (Core Governance Standards)
-
-### 4.1 文档控制头与修订历史滑动窗口标准 (Frontmatter & Sliding Window)
-
-所有纳入知识库管理的长期 Markdown 文档必须配置标准化头部：
-
-```markdown
-# [文档标题]
-
-> **文档控制信息**
-> - **文档标识**: [项目标识]-[分类码]-[简写]-[年份] (如: CR-REF-API-2026, CR-EXP-ARCH-2026)
-> - **当前版本**: V{major}.{minor}.{patch} (严格遵循语义化版本)
-> - **文档状态**: [Active | Contested | Superseded]（Contested 必填「争议点」；Superseded 必填「取代于」）
-> - **机密等级**: [内部公开 | 敏感限制]
-> - **生效日期**: YYYY-MM-DD
-> - **文档所有者**: [负责人/角色]
-> - **审核人**: [审核人/角色]
-> - **来源**: [可选：需求 / RFC / 调研文档的相对链接，逗号分隔]
-> - **代码锚点**: [可选：仓库相对路径，逗号分隔；支持 `path:行区间`]
-> - **复核于**: [可选：YYYY-MM-DD / commit <sha>]
+> - **生效日期**: 2026-11-24
+> - **参考基准**:
+>   - [skills/doc-governance/SKILL.md](../../../skills/doc-governance/SKILL.md) —— 公共技能规程唯一入口（Convention-First 写作与联动规程 + `--exclude` 断链扫描）
+>   - [ADR-0005 物理切割公共技能与本仓私有门禁](../decisions/0005-split-doc-governance-public-vs-repo-local.md) —— V3.0 三刀公私分离架构裁决
+>   - [架构重构评估报告](../analysis/2026-11-23-doc-governance-architecture-evaluation.md) —— V2.x 598.6 KB 巨石体检与治理税实证
+>   - [Wave 2C 实施计划](../../project/plans/2026-11-24-wave2c-doc-governance-v3.md) —— V3.0 物理切割重构实施基线
 
 ---
 
 ### 修订历史记录 (Revision History)
 
-> 仅保留最近 5 条记录，更早历史可通过 `git log --oneline <file>` 查阅。
-
 | 版本号 | 修订日期 | 修订人 | 审核人 | 修订描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **V1.5.0** | 2026-11-23 | DSH AI Agent | 王辉 | **治理轴扩展成文**：§3 拓扑补 `_llms/`、`AGENTS.md`、`plans/`、`reviews/`、形态 B backlog；§4.1 控制头补三态状态与真值三字段；§4.4 明确提案归档「archive 或原位保留」判据；§6 工具表补全 11 个脚本并新增 §6.1 五条治理轴；§8 登记阶段 5 |
-| **V1.4.2** | 2026-11-22 | DSH AI Agent | 王辉 | 复核点跟随 Delta 修复提交 eb8a9c0 重钉（SKILL.md 已被改动） |
-| **V1.4.1** | 2026-11-22 | DSH AI Agent | 王辉 | 复核点升级为「日期 + commit `fb62d02`」，与锚点提交对齐（R2 残留风险 ②） |
-| **V1.4.0** | 2026-11-22 | DSH AI Agent | 王辉 | 新增真值轴（RFC-0005）：控制头三字段（来源/代码锚点/复核于）、`check-doc-drift.py` 五态判定与 `audit-doc-health.py --truth` 双轴报告；本设计书自身登记锚点与复核点 |
-| **V1.3.0** | 2026-10-09 | AI Agent | 王辉 | 详细描述本次修改的核心架构点、对应提交 SHA 与闭环状态。 |
-```
-
-* **5 条滑动窗口硬门禁**：修订历史表格**最多保留最近 5 条记录**。新增记录时若总数超过 5 条，必须剔除最早记录，保持文档头部精悍聚焦；
-* **语义化版本联动**：重大结构/破坏性变动升 `major`，功能/规则增改升 `minor`，勘误与微调升 `patch`。
+| **V3.0.0** | 2026-11-24 | AI Agent | 王辉 | **Wave 2C 三刀切割（ADR-0005）**：移除 `代码锚点`/`复核于` 字段；公共技能瘦身为 Convention-First 轻内核 + 通用 `--exclude` 断链扫描；本仓私有门禁下沉 `scripts/doc-gates/`，Backlog 拆至 `scripts/backlog/`；退役 9 个高税/私有脚本与 `llms.txt`/`_llms/` |
+| **V1.5.0** | 2026-11-23 | DSH AI Agent | 王辉 | 治理轴扩展成文：补 `_llms/`、`AGENTS.md`、`plans/`、`reviews/`、形态 B backlog 与五条治理轴（已由 V3.0.0 重构分离） |
+| **V1.4.0** | 2026-11-22 | DSH AI Agent | 王辉 | 新增真值轴（RFC-0005）：控制头三字段与 `check-doc-drift.py` 五态判定（已于 V3.0.0 退役） |
+| **V1.3.0** | 2026-10-09 | AI Agent | 王辉 | 增补目录级索引约定（RFC-0003）与 `manage-doc-index.py`（已于 V3.0.0 退役） |
 
 ---
 
-### 4.2 显式物理文件链接与断链零容忍 (Explicit Physical Links)
-* **链接格式铁律**：文档间的交叉引用必须采用**带 `.md` 后缀的相对路径物理文件链接**：
-  - ✅ 正确：`` `[视觉设计规范.md](../reference/ui/视觉设计规范.md)` ``
-  - ❌ 错误：`` `[视觉设计规范](/reference/ui/视觉设计规范)` `` (缺失后缀，破坏本地 IDE 与无头环境解析)
-  - ❌ 错误：`` `[视觉设计规范](file:///abs/path/to/...)` `` (硬编码绝对路径，破坏跨机器移植性)
-* **全局索引同步**：任何新增、重命名、移动或归档文档的操作，**必须同步更新 `docs/index.md` 与 `docs/llms.txt`**，并运行链接检测工具确保全局零断链（Exit Code 0）。
+## 1. 背景与核心痛点 (Problem Statement)
+
+在 AI 智能体工程实践中，文档既是人类工程师的知识沉淀，也是智能体规划、契约对齐与编码的上下文真相源。围绕文档治理，系统需要同时解决两类正交问题：
+
+1. **通用的文档工程方法论问题**：消除「需求/设计/规划」瀑布目录混杂，贯彻 Diátaxis 四象限内容纯度、RFC 孵化到 Diátaxis 结晶、MADR 3.0 不可逆决策记录、代码变更联动触发，以及零 404 物理断链保障；
+2. **公共技能与单仓私有治理的边界失控问题（Wave 2C 根治）**：V1.x–V2.x 将本仓私有 CI 断言（20 条黄金可回答性测试）、强绑定中文控制头的千行审计巨石、1,500+ 行 Mini-Jira 待办系统与高摩擦同步生成物（`llms.txt` / `_llms/`、`复核于 SHA` 真值轴、5 行修订表裁剪）全部塞入公共技能 `skills/doc-governance/`，导致其膨胀至 **598.6 KB / 32 文件 / 3 个超千行巨石**，跨仓可移植度塌方并制造高昂的文档治理税。
 
 ---
 
-### 4.3 文档-代码全向联动维护规程 (Change Impact Matrix)
+## 2. 理论源流与核心原则 (Theoretical Foundations)
 
-无论是代码演进还是需求契约调整，必须严格按照以下矩阵双向闭环：
-
-| 代码或功能变更特征 | 必须同步更新的文档集合 | 验收与门禁标准 |
-|:---|:---|:---|
-| **新增/修改业务功能** | 1. `docs/reference/rules/` (规则)<br>2. `docs/project/changelog.md` (发布日志)<br>3. `docs/project/backlog/` (关闭对应待办：形态 B `active/` → `archive/`) | 进度状态标记准确，关联合并 Commit SHA |
-| **调整接口契约 / 数据模型** | 1. `docs/reference/api/` (API 规格)<br>2. `docs/reference/models/` (数据模型与 Schema) | 字段名、类型、必填项与错误信封 100% 镜像对齐 |
-| **前端页面 / UI 组件演进** | 1. `docs/reference/ui/` (Token 与组件契约)<br>2. `docs/how-to/` (若涉及新页面操作指引) | 交互流与 Token 命名一致，无虚构组件 |
-| **底层核心架构 / 框架选型** | 1. `docs/explanation/architecture/` (架构总纲与子册)<br>2. `docs/explanation/decisions/` (新建 MADR 记录)<br>3. `docs/explanation/analysis/` (选型评估) | 记录决策权衡、为什么否决其他备选方案 |
-| **部署配置 / 环境脚本变更** | 1. `docs/how-to/deployment.md`<br>2. `docs/how-to/local-setup.md` | 环境变量清单完整，启动命令可复现 |
-| **文档拓扑变动 (新增/移动/删除)** | 1. `docs/index.md` (总索引)<br>2. `docs/llms.txt` (机器地图)<br>3. 所有受影响的相对引用上游文件 | 执行链接审计工具，零 404 断链 |
+1. **Convention-First（先适配宿仓）**：公共技能进入新仓库时，先识别宿仓既有文档目录规范、静态检查工具（如 `lychee`、`markdownlint-cli2`、`vale`）与 Git 原生变更历史，拒绝强行覆盖或引入冗余仪式；
+2. **Diátaxis 四象限正交分类**：严格按读者即时心智划分 `tutorials/`（学习）、`how-to/`（任务步骤）、`reference/`（权威事实）、`explanation/`（原理解析），严禁单文档跨象限混写；
+3. **RFC → Diátaxis 两阶段演进**：高变动的探索期特性先在 `proposals/RFC-XXXX-*.md` 单文件自洽对齐（`Draft → In Review → Accepted`），定案后解构下沉至稳态 Diátaxis 目录，原 RFC 标注 `Implemented` 或 `Superseded` 防腐保留；
+4. **MADR 3.0 Append-Only 决策流**：重大架构权衡沉淀于 `explanation/decisions/NNNN-*.md`，不可原地篡改，演进采用新 ADR 显式 `Supersedes`；
+5. **变更影响面联动与零断链底线**：API/模型/规则/架构变更时同步评估关联文档，相对链接必须显式保留 `.md` 后缀，杜绝裸路由与失效绝对路径。
 
 ---
 
-### 4.4 初期探索向稳态演进：RFC 提案孵化与 Diátaxis 结晶流转规程 (Proposal-to-Crystallization Lifecycle Protocol)
+## 3. V3.0 公私分离架构（三刀切割，ADR-0005）
 
-在项目初期（0-to-1 阶段）或重大特性立项探索期，需求具有高变动性，方案需经历多次反复对齐、争辩与设计推演。若在此阶段过早将未成熟设想生硬打散进 Diátaxis 各象限，不仅会导致极高的多文件对齐认知摩擦，更会严重污染 `reference/` 这一神圣的“当前机器权威真理源”。
-
-为此，`doc-governance` 确立**“两阶段生命周期演进模型 (Two-Phase Evolution Model)”**：
-
-```mermaid
-graph TD
-    subgraph 阶段一: 提案孵化与反复对齐期 [单文件聚焦 / 多轮对齐 / 快速试错]
-        Idea["💡 原始需求 / 架构设想"] --> Proposal["📄 创建单一自洽提案<br>docs/proposals/RFC-0001-xxx.md<br>(背景+用户故事+契约草案+权衡对比)"]
-        Proposal --> Align["🔄 深度对齐与多轮拷问 (Grill-Me / Review)<br>状态流转: Draft ➔ In Review"]
-        Align -->|"分歧迭代 / 方案翻修"| Proposal
-        Align -->|"评审通过"| Approved["✅ 方案定案 (Status: Accepted)"]
-    end
-
-    subgraph 阶段二: 实施与结晶沉淀期 [Diátaxis 解构 / 机器真实真理源]
-        Approved -->|"实施触发结晶<br>(Crystallization)"| Dissect{"解构下沉"}
-        Dissect -->|"定型 API / 模型 / 规则"| Ref["📖 docs/reference/<br>(api, models, rules)"]
-        Dissect -->|"重大不可逆决策权衡"| ADR["💡 docs/explanation/decisions/<br>(生成不可篡改 MADR)"]
-        Dissect -->|"系统全景架构图"| Arch["💡 docs/explanation/architecture/"]
-        Dissect -->|"环境装配与操作 SOP"| HowTo["🛠️ docs/how-to/"]
-        Dissect -->|"任务拆解录入"| Backlog["🚀 docs/project/backlog/"]
-        
-        Approved --> Archive["📦 原 RFC 状态置为 Implemented 封存<br>(加注防腐备忘，保留历史溯源)"]
-    end
-```
-
-#### 1. 提案孵化规范 (RFC Proposal Standards)
-* **单文件自洽 (Self-Contained Unit)**：每个新功能或重大改动在 `docs/proposals/` 下创建单一文档（如 `RFC-0001-canvas-collab.md`），集中呈现背景、场景、契约草案、选型对比与未决问题列表；
-* **状态机流转控制**：提案头部 Frontmatter 必须标明状态：`Draft`（草拟） ➔ `In Review`（多轮对齐中） ➔ `Accepted`（定案批准） / `Rejected`（被否决）；
-* **对齐高内聚**：人类与 AI 针对该单一文件进行高效的批注、修改或使用 `/grill-me` 深度盘问，所有探讨在此闭环，绝不污染 `reference/`。
-
-#### 2. 定案结晶下沉 SOP (Crystallization SOP)
-当提案被正式批准（状态变更为 `Accepted`）并进入代码开发阶段时，严格执行**结晶解构**：
-1. **实体契约下沉**：将已定型的 API、Schema、错误信封提取至 `docs/reference/api/` 与 `docs/reference/models/`；
-2. **业务规则下沉**：将状态机流转与权限策略提取至 `docs/reference/rules/`；
-3. **决策证据沉淀**：将方案备选权衡与否决原因提炼为 MADR 记录存入 `docs/explanation/decisions/`；
-4. **宏观架构下沉**：将全景流程与分层拓扑更新至 `docs/explanation/architecture/`；
-5. **历史提案封存防腐**：将原 RFC 状态更新为 `Implemented`，并在文档头部显式声明 `[!IMPORTANT]` 防腐块（结晶去向 + 不再增量维护）。归档位置二选一：`docs/proposals/archive/` 或**原位保留**——当 `docs/project/reviews/` 等 Write-Once 历史凭据仍以相对路径引用该提案时，必须原位保留（历史报告逐字留存、不得改写，移动会造成不可修复断链）：
-   > ⚠️ **历史溯源备忘**：本提案已于 YYYY-MM-DD 定案结晶。当前系统权威接口与模型以 `` `[reference/...](...)` `` 为准，本文件仅作为立项决策历史溯源，不再增量维护。
-
----
-
-### 4.5 项目语言习惯与文件命名规范 (Language Habit & Naming Standards)
-
-为了保证跨团队、跨项目、跨人机协作的认知连贯性，`doc-governance` 确立如下语言与命名基线：
-
-#### 1. 语言习惯继承铁律 (Language Continuity Rule)
-* **尊重既有工程语言基线**：
-  - 若目标工程既有文档以**中文**为主（如本工程及多数国内研发生态），后续所有新增、演进与修订的文档**强制统一使用中文**编写标题、正文与架构说明，严禁无故引入中英文混杂割裂；
-  - 若目标工程既有文档为**纯英文**，则后续文档继续严格保持英文。
-* **概念与术语正交分离**：
-  - 文档叙述、业务背景、操作指引使用项目主语言（如中文）；
-  - 计算机科学标准标识符、API Endpoint、JSON 字段名、Git Commit 规范前缀（`feat`, `fix`, `docs` 等）遵循行业通用英文，严禁生硬翻译或音译破坏代码可读性。
-
-#### 2. 文件命名规范 (File Naming Conventions)
-* **项目初期 (0-to-1 Inception Phase)**：
-  - 文件命名优先推荐使用**全小写中划线 (kebab-case)** 英文命名风格（如 `quick-start.md`, `canvas-collab.md`, `rfc-0001-multi-agent.md`），以保障在不同操作系统（Linux、macOS、Windows 大小写敏感度差异）、Git 索引以及 Web URL 路由解析中的最高兼容性与零歧义；
-* **既有项目与用户偏好确认 (Respect Existing & Inquire on Ambiguity)**：
-  - 若工程已有成体系的中文文件命名习惯（如 `前端功能设计文档.md`、`视觉设计规范.md`），智能体必须**优先尊重既有命名体系**，严禁擅自对既有稳定文件进行重命名；
-  - 在初期立项或面临中英文命名歧义时，智能体应**主动向用户询问确认**，将文件命名倾向的最终裁决权交予人类架构师。
-
----
-
-## 5. `doc-governance` 技能定位与核心运行模式 (Skill Architecture)
-
-技能物理定位为公共技能：`skills/doc-governance/`。
-
-### 5.1 三大运行模式
-
-```mermaid
-graph TD
-    Start(["📚 doc-governance 技能调用"]) --> Mode{"选择运行模式"}
-    
-    Mode -->|"模式 1: 变更伴随式治理<br>(Sync Mode)"| SyncFlow["模式 1: 伴随式全向联动治理<br/>比对 Git Diff 自动推导受影响文档集合<br/>指导契约同步、待办关闭、更新日志与版本升级"]
-    
-    Mode -->|"模式 2: 知识库全局巡检与自愈<br>(Audit & Heal Mode)"| AuditFlow["模式 2: 全局文档健康巡检与自愈<br/>自动化扫描断链、修订历史滑动裁剪、<br/>目录拓扑脱节与 Frontmatter 基线合法性"]
-    
-    Mode -->|"模式 3: 标准化脚手架与归档<br>(Scaffold & Archive Mode)"| ScaffFlow["模式 3: Diátaxis 脚手架与生命周期流转<br/>一键生成标准模板 (Tutorial/How-To/Ref/Exp/ADR)<br/>执行契约回迁与废弃文档规范化归档"]
-    
-    SyncFlow --> Gate["终审校验门禁 (Doc Lint & Link Check)"]
-    AuditFlow --> Gate
-    ScaffFlow --> Gate
-    
-    Gate --> Pass{"验证是否 100% 达标?"}
-    Pass -->|"否 - 存在断链或格式错误"| AutoHeal["执行定向自愈或提示修复"] --> Gate
-    Pass -->|"是 - 零警告零断链"| Done(["🏁 治理闭环完成 (Governance Completed) ✅"])
-```
-
----
-
-## 6. 自动化工具箱与脚本体系设计 (Tooling & Automation Suite)
-
-存放于 `skills/doc-governance/scripts/`：
-
-| 脚本工具 | 核心功能 | 自动化与门禁行为 |
-|:---|:---|:---|
-| **`check-doc-links.py`** | 全域物理链接与锚点断链静态扫描器 | 递归扫描所有 Markdown 相对链接，校验目标文件物理存在、校验 `.md` 后缀、校验 `#anchor` 标题有效性；断链 Exit Code 1 阻断。 |
-| **`check-doc-control-sync.py`** | 控制头版本与修订历史一致性扫描器 | 断言「控制头版本 == 修订历史最新行版本」，杜绝静默版本漂移；无修订表的短文档允许跳过。 |
-| **`check-doc-drift.py`** | 真值轴漂移检测器 | 解析控制头 `来源 / 代码锚点 / 复核于`，输出 `fresh / drifted / missing_anchor / stale / unverified` 五态；`--fail-on-drift` 下任何非 fresh 的已声明文档 → 1，账本缺席/损坏 → 2（fail-closed）；`--write-baseline` 刷新账本，`--staged` 供 pre-commit 使用。 |
-| **`check-golden-tasks.py`** | 知识库可回答性评测器 | 20 条 golden task 机械断言，输出 `PASS / GAP / FAIL` 三态；GAP 表示「文档存在但缺关键事实」，FAIL 表示「断言本身不成立」。 |
-| **`check-all.py`** | 门禁聚合器 | 一次跑完六道门禁（机器地图 / 断链 / 版本一致 / 真值轴 / 健康体检 / 可回答性），任一失败非零退出；`--full` 追加 pytest；作为 `.githooks/pre-commit` 入口。 |
-| **`audit-doc-health.py`** | 知识库全面健康度体检引擎 | 综合计算链接完整率、基线合规率、修订合规率、Diátaxis 拓扑覆盖率，检测孤儿文档并出具健康诊断报告；内置 `check_doc_status`（状态机）、`check_doc_size`（体量门禁）与 Backlog 仪表盘；`--truth=warn|require` 输出真值轴双轴报告。 |
-| **`generate-llms-txt.py`** | 分层机器地图生成器 | 基于拓扑与 Frontmatter 摘要生成 `docs/llms.txt`；`--split` 时根降为象限入口（≤8 KB）并把全量条目下沉 `_llms/`；`--check` 只校验不写盘。 |
-| **`trim-revision.py`** | 修订历史滑动窗口自愈裁剪器 | 检查修订表格行数，`--fix --keep 5` 自动就地裁剪超额历史行，保持头部精悍。 |
-| **`manage-backlog.py`** | 形态 B 待办管理器 | `list / get / create / close / reopen / sync-index` 六子命令；`create` 自动递增 BK 编号并刷新索引，`close` 归档并机械收敛 §4 占位语。 |
-| **`manage-doc-index.py`** | 托管索引管理器 | `ensure / register` 幂等创建与登记象限索引（`<!-- doc-index:managed -->`），人工索引只读不改。 |
-| **`scaffold-doc.py`** | Diátaxis & RFC 标准脚手架生成脚本 | 生成教程 / 指南 / 参考 / 解释 / ADR / RFC 标准模板并自动登记象限索引；`scaffold-doc.sh` 为兼容壳，转发至 Python 实现。 |
-
-### 6.1 五条治理轴（2026-11 扩展）
-
-2026-11-22 至 2026-11-23，技能从「结构合规」扩展到五条可机械判定的治理轴，每条都有独立门禁与已登记阈值：
-
-| 治理轴 | 回答的问题 | 实现载体 | 门禁与阈值 |
-|:---|:---|:---|:---|
-| **真值轴**（RFC-0005） | 文档依赖的代码变了没有？ | `check-doc-drift.py` + `.doc-truth-baseline.json` | 五态判定；`--fail-on-drift` 下非 fresh → 1、账本损坏 → 2；`--truth=require` 另校覆盖率（默认 0.5）与真值分（默认 12/15） |
-| **分层机器地图**（RFC-0006） | `llms.txt` 还是入口，还是已退化为全集？ | `generate-llms-txt.py --split` | 根 ≤8 KB；根与 `_llms/*.md` 必须逐字节等于生成物，手改即阻断 |
-| **文档状态机**（RFC-0007） | 这份文档还能信吗？有没有被取代/有争议？ | `check_doc_status`（audit 内置） | 三态取值；`Contested` 必填争议点、`Superseded` 必填取代于、`Active` 不得带取代于；输出未决冲突清单 |
-| **体量门禁**（RFC-0008） | 单体巨石是否失控？ | `check_doc_size`（audit 内置）+ `.doc-size-baseline.json` | 字节 ≤64 KB、最长单行 ≤1000 字符阻断；行数 >800 仅警告；棘轮基线只降不升 |
-| **门禁自动化与可回答性**（BK-0048/0049） | 门禁靠人记？文档能不能回答真实问题？ | `check-all.py` + `check-golden-tasks.py` + `.githooks/pre-commit` | 六道门禁聚合，任一失败非零退出；20 条 golden task 三态，GAP/FAIL 均计入非通过 |
-
-> **凭据完整性优先于体量治理**：`docs/project/reviews/**` 为 Write-Once 审查凭据，不参与体量三指标与可回答性控制头断言；这是 RFC-0008 §4.3 显式登记的有意取舍，不是遗漏。
-
----
-
-## 7. 既有项目平滑迁移机制 (Legacy Migration Protocol)
-
-针对像 `DeepResearcher` 这样已存在历史目录结构（requirements, design, planning, operations）的项目，`doc-governance` 技能提供明确的**渐进式映射与迁移路径**，杜绝硬推倒破坏既有索引：
+依据 [ADR-0005](../decisions/0005-split-doc-governance-public-vs-repo-local.md)，V3.0 将原单体「God Skill」按可复用边界物理切分为互不寄生、职责单一的三层：
 
 ```text
-【既有老目录】                     【Diátaxis 现代标准目录】
-requirements/agent/         ───►  reference/rules/ (智能体行为协议与规约)
-requirements/backend/       ───►  reference/api/ + reference/models/ (API与数据模型)
-requirements/frontend/      ───►  reference/ui/ (设计Token与组件规范)
-requirements/business/      ───►  reference/rules/ (业务规则与状态机)
-design/architecture/        ───►  explanation/architecture/ (系统架构剖析)
-planning/*选型评估.md        ───►  explanation/analysis/ (选型与可行性分析)
-operations/deployment.md    ───►  how-to/deployment.md (部署指南)
-operations/试用指南.md       ───►  tutorials/onboarding.md (新手试用教程)
-planning/版本进度跟踪.md      ───►  project/changelog.md (发版历史)
-planning/后续优化方向汇总.md   ───►  project/backlog/ (待办与优化清单，形态 B)
+cr-agent-arsenal/
+├── skills/doc-governance/       # 【第一层：公共可复用技能（Convention-First）】
+│   ├── SKILL.md                 # 精简核心规程（≤120 行）：工作流、Diátaxis/RFC/MADR 准则与影响矩阵
+│   ├── references/              # 可按需加载的方法论参考库（四象限 / RFC 结晶 / MADR / 命名 / 联动 / 迁移）
+│   ├── templates/               # 通用登记与控制头最小参考模板
+│   └── scripts/check-doc-links.py  # 零依赖通用断链扫描器（支持可重复 --exclude <rel_prefix>）
+│
+├── scripts/doc-gates/           # 【第二层：本仓私有文档门禁（仅服务 cr-agent-arsenal）】
+│   ├── check-all.py             # pre-commit 与 CI 聚合入口：顺序执行 3 道门禁（--full 追加 pytest）
+│   ├── check-doc-health.py      # 本仓健康体检：RFC-0007 三态、RFC-0008 体量上限、docs/AGENTS.md 30 行守卫
+│   └── check-golden-tasks.py    # 本仓 20 条可回答性机械断言（G-18 校验 docs/index.md 象限导航）
+│
+└── scripts/backlog/             # 【第三层：本仓私有 Mini-Jira 待办管理】
+    ├── manage-backlog.py        # 形态 B 待办目录（index.md + active/ + archive/）自动化管理
+    └── README.md                # 本仓待办契约与生命周期说明
 ```
 
-* 技能脚本自带 `--compat` 兼容探测能力，支持在老结构项目上平稳运行健康检查，同时提供一键迁移映射规划。
+### 3.1 第一刀：公共技能纯化（`skills/doc-governance/`）
+
+* **方法论轻内核**：`SKILL.md` 聚焦可跨任何语言/仓库复用的原则——优先适配宿仓工具链与 Git 历史，仅在缺乏成熟工具时提供零依赖兜底；
+* **通用断链与锚点扫描器 `check-doc-links.py`**：
+  * 剥离硬编码的 `project/reviews` 路径特判，改为可重复 `--exclude <rel_prefix>` 参数（越界 `..` 或非法前缀直接 `exit 2` fail-closed）；
+  * 严格按开围栏字符与长度配对闭合多反引号/波浪线代码块，忽略行内代码示例；
+  * 校验相对链接目标存在性、`.md` 物理后缀、目录入口（`index.md` / `README.md`）与 `#anchor` 标题 Slug。
+
+### 3.2 第二刀：待办管理拆出（`scripts/backlog/`）
+
+* 将与通用文档工程正交的形态 B 文件型待办管理系统（`manage-backlog.py` 与 `README.md`）彻底移出 `skills/doc-governance/`；
+* 外部业务仓默认沿用各自的 GitHub Issues / Linear 等平台，不再被迫继承跨界补丁与额外文件。
+
+### 3.3 第三刀：本仓私有门禁瘦身与去仪式税（`scripts/doc-gates/`）
+
+本仓通过 `check-all.py`（`.githooks/pre-commit` 默认入口）顺序执行 **3 道低摩擦、无重复读盘的硬门禁**：
+
+1. **通用断链扫描**：调用公共 `skills/doc-governance/scripts/check-doc-links.py --root docs --exclude project/reviews`；
+2. **精简健康检查 `check-doc-health.py`**：
+   * **RFC-0007 三态状态机**：校验 `Active` / `Contested` / `Superseded` 取值与 `取代于` 仓库内 `.md` 相对路径有效性；
+   * **RFC-0008 体量硬限**：单文档字节 `≤ 65,536`（64 KB）与最长单行 `≤ 1,000` 字符（行数 `> 800` 仅警告），严格落实 `reference/articles/**` 豁免；
+   * **路由文件守卫**：校验 `docs/AGENTS.md` `≤ 30` 行且包含「读取顺序」与「硬约束」两节；
+3. **可回答性评测 `check-golden-tasks.py`**：校验 20 条知识库结构与检索可达性断言（`G-18` 校验人类总入口 `docs/index.md` 象限导航；`FAIL` 阻断，`GAP` 登记 backlog）；`--full` 模式追加运行 `pytest skills/ scripts/ -q`。
+
+**同步退役的低 ROI 机制**：废除强制手写 5 行修订表一致性校验、2,516 行自激重钉型代码锚点漂移检测（`check-doc-drift.py` 与 `.doc-truth-baseline.json`）、同步刷盘型分层机器地图（`generate-llms-txt.py`、`docs/llms.txt`、`docs/_llms/`）、托管索引脚本与中文模板生成器（`manage-doc-index.py`、`scaffold-doc.py/.sh`）及空体量基线（`.doc-size-baseline.json`）。知识库导航统一收敛为「`docs/AGENTS.md`（≤30 行路由）→ `docs/index.md`（全局总索引）→ 按需人工/Agent 维护的象限 `index.md` → 正文」。
 
 ---
 
-## 8. 实施计划与交付里程碑 (Implementation Roadmap)
+## 4. 知识库目录职责矩阵 (Repository Topology Reference)
 
-- [x] **阶段 1：现代架构设计方案编写与用户审批 (<已由王辉正式审批定案>)**
-  - 产出物：`docs/explanation/architecture/doc-governance-design.md` (V1.2.0)
-- [x] **阶段 2：`doc-governance` 核心技能规程与参考库落地 (<已交付并入库: cd4731b>)**
-  - 目标目录：`skills/doc-governance/`
-  - 交付物：
-    - `SKILL.md` (主规程：适用场景、三种运行模式 SOP、反模式清单与硬门禁)
-    - `references/diataxis-standard.md` (Diátaxis 详细分层与写作边界标准)
-    - `references/rfc-crystallization-lifecycle.md` (初期 RFC 提案与结晶下沉生命周期规程)
-    - `references/language-naming-conventions.md` (项目语言习惯与文件命名规范)
-    - `references/change-impact-matrix.md` (代码-文档全向联动触发矩阵)
-    - `references/adr-specification.md` (MADR 3.0 决策规范与生命周期)
-    - `references/legacy-migration-guide.md` (既有老项目平滑迁移映射操作手册)
-- [x] **阶段 3：自动化辅助脚本工具箱实现与自测 (<已交付并100%单测通过>)**
-  - 目标目录：`skills/doc-governance/scripts/`
-  - 交付物：`check-doc-links.py`、`trim-revision.py`、`audit-doc-health.py`、`generate-llms-txt.py`、`scaffold-doc.sh`，配套单元测试 `test_doc_governance_scripts.py` 11/11 全绿通过。
-- [x] **阶段 4：实战集成与全量体检验证 (<已完成: audit-doc-health 100/100 满分通过>)**
-  - 在项目中挂载技能，执行首轮全域健康体检并出具诊断报告，链接零断链，生成全局索引 `index.md` 与机器地图 `llms.txt`。
-- [x] **阶段 5：五条治理轴扩展 (<2026-11-22/23 交付并归档>)**
-  - 真值轴（RFC-0005）、分层机器地图（RFC-0006）、文档状态机（RFC-0007）、体量门禁（RFC-0008）、门禁自动化与可回答性（BK-0048/0049）；
-  - 交付物：`check-doc-drift.py`、`check-all.py`、`check-golden-tasks.py`、`generate-llms-txt.py --split`、`check_doc_status`、`check_doc_size`、`.githooks/pre-commit`；
-  - 审查凭据：`docs/project/reviews/2026-11-22-doc-truth-axis/`、`2026-11-22-split-llms-map/`、`2026-11-22-doc-status-machine/`、`2026-11-22-batch-gates/`。
+| 目录层级 | Diátaxis 定位 | 核心职责与唯一真相源 | 常见豁免（见 [GOVERNANCE.md](../../GOVERNANCE.md) §4.1） |
+| :--- | :--- | :--- | :--- |
+| `proposals/` | Inception | 初期高变动需求/方案单文件对齐；有历史审查引用的已定案/被取代 RFC 原位保留 | — |
+| `tutorials/` | Tutorials | 新人上手成功路径，按需人工维护 `index.md` | — |
+| `how-to/` | How-To Guides | 面向具体任务的操作 SOP 与排障手册 | — |
+| `reference/` | Reference | 对外规则、模型、API 契约与外部文献（`articles/`） | `reference/articles/**` 豁免体量与控制头 |
+| `explanation/` | Explanation | 系统设计书（`architecture/`）、MADR 决策（`decisions/`）、调研评估（`analysis/`） | `decisions/` 采用 MADR 元数据头 |
+| `project/` | Project Mgmt | 发布日志（`changelog.md`）、计划（`plans/`）、审查凭据（`reviews/`）、待办（`backlog/`） | `reviews/**` 全豁免；`backlog/**` 豁免文档状态机 |
+
+---
+
+## 5. 演进与兼容性保障 (Evolution & Compatibility)
+
+* **公共技能零私有泄漏**：`skills/doc-governance/` 不含任何本仓相对路径（如 `docs/reference/rules/`）或私有文件型待办假设，可零修改分发至任意外部仓库；
+* **历史审查凭据零破坏**：`RFC-0003`、`RFC-0005`、`RFC-0006` 原位保留并流转状态为 `Superseded`（指向 [ADR-0005](../decisions/0005-split-doc-governance-public-vs-repo-local.md)），保障 `docs/project/reviews/` 历史归档中所有相对链接永久有效且逐字不改。
