@@ -5,7 +5,7 @@
 > - **当前版本**: V1.0.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-24
-> - **执行通道**: **Heavy Track（核心终审门禁技能架构级精简）** —— 独立分支 + Full Mode 双轮对抗审查（R1 → R2 Zero Blockers 放行）
+> - **执行通道**: **Heavy Track（核心终审门禁技能架构级精简）** —— 独立分支 + Full Mode 双轮对抗审查（R1 → R2 → Delta-R1 零缺陷放行）
 > - **分支**: `refactor/wave2b-dual-round-review-v3`（基于 `master` `a31de61`）
 > - **评估与调研依据**: [dual-round-review 评估报告](../../explanation/analysis/2026-11-23-dual-round-review-architecture-evaluation.md) · [dual-round-review 同类调研](../../explanation/analysis/2026-11-23-dual-round-review-peer-research.md) · [全仓组合总纲](../../explanation/analysis/2026-11-23-arsenal-skills-portfolio-overview.md)
 
@@ -13,10 +13,10 @@
 
 ### Active Checkpoint
 
-- **当前阶段**: `Verify`（进入独立 Full Mode 双轮对抗审查）
-- **状态**: 进行中
-- **已完成**: 精读评估报告与全部 24 个现役文件、核查 `docs/project/reviews/` 全部 20 个真实归档兼容性、W2B-1（规程/模板/设计书 V3.0.0 与评估注记）与 W2B-2（门禁脚本去 Artifact/测试重构与全局入口同步）均已完成并独立验证全绿（`pytest skills/ -q` 534 passed、`check-all.py --full` 7/7 PASS、`check-golden-tasks.py --root docs` 20/20 PASS）
-- **待办**: 提交审查前基线 → 派发独立 R1 红队穿透 → 派发独立 R2 元架构师终审裁决 → 条件性 Delta 修复复验 → 封档与合入 `master`
+- **当前阶段**: `DONE`（已完成并终审放行）
+- **状态**: 已完成
+- **已完成**: W2B-1 与 W2B-2 完成实现并提交 pre-review 基线（`c9eed38`） → 独立 R1（`1dfd0c7f25a4`，发现 2 P1 阻断项 `R1-1`/`R1-2` 与 3 建议 `R1-3..R1-5`）与 R2（`1cad3827450c`，裁定 `拒绝交付`） → 独立 W2B-Delta 修复（`c7f5f79`，闭合 `R1-1`..`R1-4` 并拆分 `test_v3_surface_contract.py`） → 独立 Scoped Delta R1（`107aa32a14dd`）复核 **0 缺陷**免 `delta-r2` 直接收口准予交付，审查归档见 [wave2b-dual-round-review-v3](../reviews/2026-11-24-wave2b-dual-round-review-v3/README.md)
+- **待办**: 无（已封档交付）
 
 ---
 
