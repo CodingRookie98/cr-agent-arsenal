@@ -5,7 +5,7 @@
 > - **当前版本**: V1.0.0
 > - **文档状态**: Active
 > - **生效日期**: 2026-11-24
-> - **执行通道**: **Heavy Track（核心治理技能与全局门禁架构重构）** —— 独立分支 + Full Mode 双轮对抗审查（R1 → R2 Zero Blockers 放行）
+> - **执行通道**: **Heavy Track（核心治理技能与全局门禁架构重构）** —— 独立分支 + Full Mode 双轮对抗审查（R1 → R2 → Delta-R1 零缺陷放行）
 > - **分支**: `refactor/wave2c-doc-governance-v3`（基于 `master` `d63ee31`）
 > - **决策与评估依据**: [ADR-0005](../../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md) · [doc-governance 评估报告](../../explanation/analysis/2026-11-23-doc-governance-architecture-evaluation.md) · [Docs-as-Code 增量调研](../../explanation/analysis/2026-11-23-doc-governance-peer-research.md)
 
@@ -13,13 +13,14 @@
 
 ### Active Checkpoint
 
-- **当前阶段**: `Verify`（进入独立 Full Mode 双轮对抗审查）
-- **状态**: 进行中
+- **当前阶段**: `DONE`（已完成并终审放行）
+- **状态**: 已完成
 - **已完成**:
   - 调研全部 32 文件与下游引用并定稿 [ADR-0005](../../explanation/decisions/0005-split-doc-governance-public-vs-repo-local.md)；
-  - 三路并行完成 W2C-1（公共核心瘦身至 11 文件 / 1,457 行 / 76,292 字节，移除 19 个冗余资产，`SKILL.md` 79 行 / 6,339 字节 / `description` 340 字符）、W2C-2（`check-doc-health.py` / `check-all.py` / `check-golden-tasks.py` / `.githooks/pre-commit` / `scripts/backlog/` 与 3 份单测）与 W2C-3（退役 `llms.txt`/`_llms`/旧基线、流转 RFC 与同步治理文档/索引/日志），并解决测试模块重名冲突；
-  - 独立验收全绿：`scripts/doc-gates/check-all.py --full`（4/4 PASS）、`check-golden-tasks.py`（PASS 20 | GAP 0 | FAIL 0）、`check-doc-links.py`（`docs/` 144 篇与 `skills/doc-governance` 8 篇均 0 断链）、`pytest skills/ scripts/ -q`（290 passed）。
-- **待办**: 提交审查前基线 → 独立 R1 红队穿透 → 独立 R2 元架构师终审裁决 → 条件性 Delta 修复复验 → 封档快进合入 `master`
+  - 三路并行完成 W2C-1（公共核心瘦身至 11 文件 / 1,457 行 / 76,292 字节，移除 19 个冗余资产，`SKILL.md` 79 行 / 6,339 字节 / `description` 340 字符）、W2C-2（`check-doc-health.py` / `check-all.py` / `check-golden-tasks.py` / `.githooks/pre-commit` / `scripts/backlog/` 与 3 份单测）与 W2C-3（退役 `llms.txt`/`_llms`/旧基线、流转 RFC 与同步治理文档/索引/日志），并解决测试模块重名冲突，提交审查前基线 `3e0b501`；
+  - 独立 R1（`eedff73b27fe`）与 R2（`34d78dacde6a`，裁定 `阻断交付`，坐实 `R1-1`–`R1-4`） → 独立 W2C-Delta 修复（`b7ce47a`，根治 `R1-1`–`R1-4` 并顺并 `R1-5`/`R1-6`/`R1-9`） → 独立 Scoped Delta R1（`17487bb4a768`）复核 **🔴 0 / 🟡 0 / ⚪ 0** 免派 `delta-r2` 直接收口准予交付，归档见 [wave2c-doc-governance-v3](../reviews/2026-11-24-wave2c-doc-governance-v3/README.md)；
+  - 全量终验：`check-review-report.py --require-verdict=PASS` Exit 0、`scripts/doc-gates/check-all.py --full`（4/4 PASS）、`check-golden-tasks.py --root docs`（`PASS 20 | GAP 0 | FAIL 0`）、`pytest skills/ scripts/ -q`（`299 passed`）与 `.githooks/pre-commit` 全绿。
+- **待办**: 无（准备 Fast-Forward 合入 `master` 并推送）
 
 ---
 
