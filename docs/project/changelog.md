@@ -39,7 +39,7 @@
 
 ### 测试迁移与文档同步
 
-- 将 `test_existing_archives_all_pass_gate`（含 4 项 `2026-11-22-*` 冻结集合及防漂移断言）与轮次列容错回归迁移至 `skills/dual-round-review/tests/test_check_review_report.py`，并补齐模板/参考/脚本零漂移、Scoped Delta 零缺陷 `--require-verdict=PASS`、frontmatter 预算、围栏配对与防回流哨兵测试。
+- 将 `test_existing_archives_all_pass_gate`（含 4 项 `2026-11-22-*` 冻结集合及防漂移断言）与轮次列容错回归迁移至 `skills/dual-round-review/tests/test_check_review_report.py`（补齐 `(stage, base)` 阶段隔离、Scoped Delta 零缺陷 `--require-verdict=PASS` 与 `## 4.` fail-closed 守卫），并将模板/参考/脚本零漂移、R2 三源 7 列表头对齐、frontmatter 与体积预算、围栏配对及全目录防回流哨兵独立至 `skills/dual-round-review/tests/test_v3_surface_contract.py`。
 - 同步更新架构设计书 [dual-round-review-design.md](../explanation/architecture/dual-round-review-design.md)、评估报告执行注记 [2026-11-23-dual-round-review-architecture-evaluation.md](../explanation/analysis/2026-11-23-dual-round-review-architecture-evaluation.md)、全局入口 `README.md`、`docs/index.md` 与 [Wave 2B 实施计划](./plans/2026-11-24-wave2b-dual-round-review-v3.md)。
 
 ## [2026-11-23] Wave 2A：goal-loop V3.0 瘦身与现代化升级

@@ -11,16 +11,19 @@
   2) 轮次台账登记的每个报告文件实际存在且非空；
   3) 台账登记的 SHA256 前 12 位与文件实际值一致（防篡改与转录漂移）；
   4) R1 报告 5 个必需区块齐备，且不得仅出现在围栏代码块内；
-  5) R2 报告 3 个必需区块齐备（仅当台账含 R2 / delta-r2 行）；
+  5) R2 报告 3 个必需区块齐备（仅当台账含 R2 / delta-r2 行；Scoped Delta 零缺陷免 R2 时放行）；
   6) 稳定 ID 对齐：R2 裁决明细表出现的 R1-<n> 必须全部存在于 R1 缺陷清单；
-     且该方向**按文件名基线逐轮配对**施加，并断言「R1 清单非空 ⇒ 同基线 R2 明细表非空」
-     （BK-0003：全局 ID 并集会让早轮 R2 行替新一轮顶包，空明细表静默放行）；
+     且方向二**按阶段与文件名基线 `(stage, base)` 逐轮配对**施加，校验同键 R2 数量不少于非空 R1 数量，
+     并拦截含非空表格数据行却抽出 0 个 ID 的解析失败 R1 报告
+     （BK-0003：全局 ID 并集或同基线跨阶段碰撞会让早轮 R2 行替新一轮顶包）；
   7) 可选 --require-verdict=PASS：终审裁决必须为「准予交付」，或「准予交付」+ 一个含数字的
-   括号统计串（真实归档形态，BK-0043）；占位/否定/无统计后缀一律不成立；
+     全角中文括号统计串（真实归档形态，BK-0043）；占位/否定/无统计后缀一律不成立；
   8) 写入形态合法性：台账每行的「写入形态」列必须存在且取值 ∈ {direct, transcribed}
      （RFC-0002 §3.5——该列是唯一能区分「子智能体直写原文」与「主智能体转录产物」的可审计属性）。
   9) 轮次列容错（2026-10-11）：台账「轮次」列允许带人类描述（如 `delta-r1 · 第6轮`），
      门禁按**前导标记值**解析；标记值之外的写法（如 `round-1`）仍判为未登记 R1。
+  10) 孤儿报告校验（BK-0012）：归档目录内所有带轮次前缀（`r1-` / `r2-` / `delta-r1-` / `delta-r2-`）
+      的 `.md` 文件必须全部在轮次台账登记。
 
 用法: python3 check-review-report.py <归档目录> [--require-verdict=PASS]
 退出码: 0 = 通过；1 = 结构/证据缺陷；2 = 用法错误
@@ -32,6 +35,7 @@ import hashlib
 import os
 import re
 import sys
+from typing import NamedTuple
 
 R1_SECTIONS = (
     "## 1. 第一性原理与本质溯源分析",
@@ -68,6 +72,9 @@ USAGE = """用法: check-review-report.sh <归档目录> [--require-verdict=PASS
 校验项 9：台账「轮次」列按前导标记值解析——允许带人类描述（如 `delta-r1 · 第6轮`），
   但标记值须为 r1 / r2 / delta-r1 / delta-r2 之一（如 `round-1` 判为未登记 R1）。
 
+校验项 10：归档内无未登记孤儿报告——带轮次前缀（`r1-` / `r2-` / `delta-r1-` / `delta-r2-`）的 `.md`
+  文件须全部在轮次台账登记（BK-0012）。
+
 归档目录结构（推荐默认根 docs/project/reviews/）:
   README.md                   归档索引（交付单元 / 归档根 / 终审裁决 + 轮次台账）
   r1-<base>..<head>.md        R1 报告全文
@@ -83,6 +90,7 @@ _ID_HEADER_RE = re.compile(r"^\|\s*(?:R1\s+)?稳定 ID")
 _ID_CELL_RE = re.compile(r"^D?R1?-[0-9]+$")
 # 仅用于 fail-closed 守卫的「ID 记号」探测（宽松匹配，不要求单元格列结构规范）。
 _ID_TOKEN_RE = re.compile(r"D?R1?-[0-9]+")
+_TABLE_SEP_RE = re.compile(r"^\|\s*:?-{2,}:?(?:\s*\|\s*:?-{2,}:?)*\s*\|?$")
 _ROUND_PREFIX_RE = re.compile(r"^(delta-r1|delta-r2|r1|r2)")
 _MD_LINK_RE = re.compile(r"^\[[^\]]*\]\(([^)]+)\)$")
 _NON_FILE_CHARS_RE = re.compile(r"[^A-Za-z0-9._-]")
@@ -155,10 +163,6 @@ def _sort_u(text: str) -> str:
     return "\n".join(lines).rstrip("\n")
 
 
-def _has_line(text: str, value: str) -> bool:
-    return any(line == value for line in text.split("\n"))
-
-
 def _read_fields(line: str) -> tuple[str, str, str, str]:
     """复刻 `IFS=$'\\t' read -r round fname declared write_mode` 的字段切分语义。
 
@@ -214,7 +218,7 @@ def _ledger_rows(lines: list[str]) -> list[str]:
         else:
             raw_mode = fields[7] if len(fields) > 7 else ""
         round_name = raw_round.strip(SPACE)
-        # 轮次列容错（第 10 项）：允许人类记述带描述（如 `delta-r1 · 第6轮`），只取前导标记值。
+        # 轮次列容错（第 9 项）：允许人类记述带描述（如 `delta-r1 · 第6轮`），只取前导标记值。
         matched = _ROUND_PREFIX_RE.match(round_name)
         if matched:
             round_name = matched.group(0)
@@ -264,42 +268,80 @@ def _section_ids(path: str, header: str) -> str:
     return _sort_u("\n".join(found))
 
 
-def _has_unparsed_id_rows(path: str, header: str) -> bool:
-    """区块内存在「稳定 ID」表头与含 ID 记号的数据行，但 `_section_ids` 未抽取到任何 ID。
-
-    R1-01 回归：仅做「解析失败」判别——只有表头之后确实出现形如 `R1-1`/`DR1-1` 的数据行、
-    却一个都没被捕获时，才 fail-closed（防止空白字符/列结构漂移让两向对齐与「R2 空表放行」
-    保护整体静默跳过）。真正的零缺陷报告（表头后无数据行）不触发，避免误拒干净审查。
-    """
-    lines = _strip_fences(_read_lines(path))
+def _section_pipe_blocks(path: str, header: str) -> list[list[str]]:
+    """提取二级区块内所有连续管道表格块（已剥离围栏与行首尾空白）。"""
+    blocks: list[list[str]] = []
+    current: list[str] = []
     in_section = False
-    header_seen = False
-    for line in lines:
+    for line in _strip_fences(_read_lines(path)):
         if line.startswith(header):
             in_section = True
             continue
         if line.startswith("## "):
+            if current:
+                blocks.append(current)
+                current = []
             in_section = False
-        if not in_section or not line.startswith("|"):
+        if not in_section:
             continue
-        if not header_seen:
-            if "稳定 ID" in line:
-                header_seen = True
-            continue
-        if _ID_TOKEN_RE.search(line):
+        stripped = line.strip()
+        if stripped.startswith("|"):
+            current.append(stripped)
+        elif current:
+            blocks.append(current)
+            current = []
+    if current:
+        blocks.append(current)
+    return blocks
+
+
+def _has_unparsed_id_rows(path: str, header: str, *, strict_table: bool = False) -> bool:
+    """判定区块内是否存在未抽取到 ID 的有效表格数据行（fail-closed 守卫）。
+
+    Light 模式（`strict_table=False`）保留既有探测：表头含「稳定 ID」且后续行含 `_ID_TOKEN_RE`；
+    `strict_table=True`（存在 R2 报告时）进一步拦截带分隔行且后续有非空数据行、或无分隔行但
+    存在 ≥ 2 条非空管道行的表格，确保非标准 ID/变体表头/畸形表在 `_section_ids` 返回空时 fail-closed。
+    """
+    for block in _section_pipe_blocks(path, header):
+        saw_sep = False
+        header_seen = False
+        content_rows = 0
+        for row in block:
+            if _TABLE_SEP_RE.fullmatch(row):
+                saw_sep = True
+                continue
+            if not row.strip("|" + SPACE).strip():
+                continue
+            if strict_table and saw_sep:
+                return True
+            content_rows += 1
+            if not header_seen:
+                header_seen = "稳定 ID" in row
+            elif _ID_TOKEN_RE.search(row):
+                return True
+        if strict_table and not saw_sep and content_rows >= 2:
             return True
     return False
 
 
-def _base_key(path: str) -> str:
-    """轮次配对键 = 报告文件名的**基线**段（`<前缀>-<base7>..<head7>.md` 的 <base7>）。"""
+def _stage_and_base(path: str) -> tuple[str, str]:
+    """轮次配对键 = `(stage, base)`，隔离 `r1`/`r2` 与 `delta-r1`/`delta-r2` 阶段。"""
     name = os.path.basename(path)
     if name.endswith(".md"):
         name = name[: -len(".md")]
-    for prefix in ("delta-", "r1-", "r2-"):
+    for prefix, stage in (
+        ("delta-r1-", "delta"),
+        ("delta-r2-", "delta"),
+        ("r1-", "initial"),
+        ("r2-", "initial"),
+    ):
         if name.startswith(prefix):
-            name = name[len(prefix):]
-    return name.split("..")[0]
+            return stage, name[len(prefix) :].split("..")[0]
+    return "other", name.split("..")[0]
+
+
+def _display_key(stage: str, base: str) -> str:
+    return base if stage == "initial" else f"{stage}:{base}"
 
 
 def _check_sections(path: str, label: str, sections: tuple[str, ...], messages: list[str]) -> int:
@@ -443,76 +485,104 @@ def _check_reports(
     return report_count, r1_files, r2_files, errors
 
 
-def _check_id_alignment(r1_files: list[str], r2_files: list[str], messages: list[str]) -> int:
-    """6) 稳定 ID 对齐（方向一：凭空引入；方向二：按基线逐轮配对）。"""
-    errors = 0
-    r1_ids_text = ""
-    r2_ids_text = ""
-    r1_by_base: dict[str, str] = {}
-    r2_by_base: dict[str, str] = {}
-    bases: list[str] = []
-    unparsed_r1: set[str] = set()
+class _AlignmentData(NamedTuple):
+    all_r1: set[str]
+    all_r2: set[str]
+    keys: list[tuple[str, str]]
+    r1_ids_by_key: dict[tuple[str, str], set[str]]
+    r2_ids_by_key: dict[tuple[str, str], set[str]]
+    nonempty_r1_count: dict[tuple[str, str], int]
+    r2_count: dict[tuple[str, str], int]
+    unparsed_errors: list[str]
+
+
+def _collect_alignment_data(r1_files: list[str], r2_files: list[str]) -> _AlignmentData:
+    """抽取 R1/R2 稳定 ID 集合、同阶段计数，并按文件独立记录解析失败。"""
+    all_r1: set[str] = set()
+    all_r2: set[str] = set()
+    r1_ids_by_key: dict[tuple[str, str], set[str]] = {}
+    r2_ids_by_key: dict[tuple[str, str], set[str]] = {}
+    nonempty_r1_count: dict[tuple[str, str], int] = {}
+    r2_count: dict[tuple[str, str], int] = {}
+    keys: list[tuple[str, str]] = []
+    unparsed_errors: list[str] = []
+    strict_table = bool(r2_files)
     for path in r1_files:
         ids = _section_ids(path, CODE_R1_ID_SECTION)
-        r1_ids_text += ids + "\n"
-        key = _base_key(path)
-        if ids == "" and _has_unparsed_id_rows(path, CODE_R1_ID_SECTION):
-            # R1-01 回归：表头之后出现 ID 记号行却抽不到任何 ID（解析失败）时 fail-closed。
-            unparsed_r1.add(key)
-        if not r1_by_base.get(key, ""):
-            bases.append(key)
-        r1_by_base[key] = r1_by_base.get(key, "") + ids + "\n"
-    r1_ids = _sort_u(r1_ids_text)
+        key = _stage_and_base(path)
+        if ids == "":
+            if _has_unparsed_id_rows(path, CODE_R1_ID_SECTION, strict_table=strict_table):
+                unparsed_errors.append(
+                    f"错误: 基线 {_display_key(*key)} 的 R1 报告（{os.path.basename(path)}）"
+                    f"在「{CODE_R1_ID_SECTION}」存在未抽取到任何稳定 ID 的表格数据行"
+                    "（禁止空表放行；请检查表头「稳定 ID」、分隔行、空白字符与列结构）"
+                )
+            continue
+        id_set = set(ids.split("\n"))
+        if key not in r1_ids_by_key:
+            keys.append(key)
+            r1_ids_by_key[key] = set()
+        r1_ids_by_key[key].update(id_set)
+        nonempty_r1_count[key] = nonempty_r1_count.get(key, 0) + 1
+        all_r1.update(id_set)
     for path in r2_files:
         ids = _section_ids(path, R2_ID_SECTION)
-        r2_ids_text += ids + "\n"
-        key = _base_key(path)
-        r2_by_base[key] = r2_by_base.get(key, "") + ids + "\n"
-    r2_ids = _sort_u(r2_ids_text)
+        id_set = set(ids.split("\n")) if ids else set()
+        key = _stage_and_base(path)
+        r2_count[key] = r2_count.get(key, 0) + 1
+        r2_ids_by_key.setdefault(key, set()).update(id_set)
+        all_r2.update(id_set)
+    return _AlignmentData(
+        all_r1, all_r2, keys, r1_ids_by_key, r2_ids_by_key,
+        nonempty_r1_count, r2_count, unparsed_errors,
+    )
 
-    # 方向一：R2 裁决表出现的 ID 必须在 R1 缺陷清单中定义（防凭空引入）
-    for identity in r2_ids.split("\n"):
-        if identity == "":
-            continue
-        if not _has_line(r1_ids, identity):
-            messages.append(f"错误: 稳定 ID 未在 R1 缺陷清单中定义: {identity}（出现在 R2 裁决明细表）")
-            errors += 1
 
-    # 方向二：**按基线逐轮配对**施加——R1 的每一条缺陷都必须被**同一轮**的 R2 定性。
-    # 仅当台账登记了 R2 报告时适用——Light 模式为单轮红队，无 R2，不做此校验；
-    # Full 模式下的 Scoped Delta（delta-r1 零缺陷且未派发 delta-r2）在下方 round_r1 为空分支放行。
-    if not r2_files:
-        return errors
-    for key in bases:
-        if key == "":
-            continue
-        round_r1 = _sort_u(r1_by_base[key])
-        if not round_r1:
-            if key in unparsed_r1:
-                messages.append(
-                    f"错误: 基线 {key} 的 R1 缺陷清单存在「稳定 ID」表头但未抽取到任何稳定 ID"
-                    "（禁止空表放行；请检查表头/单元格的空白字符与列结构）"
-                )
-                errors += 1
-            continue
-        if not r2_by_base.get(key, ""):
-            messages.append(f"错误: 基线 {key} 的 R1 报告未配同基线 R2 报告（轮次未闭环，禁止靠他轮 R2 顶包放行）")
+def _check_cross_round_pairing(data: _AlignmentData, messages: list[str]) -> int:
+    """方向二：按 `(stage, base)` 分组校验 R2 报告数量与稳定 ID 全覆盖。"""
+    errors = 0
+    for key in data.keys:
+        dkey = _display_key(*key)
+        r1_count = data.nonempty_r1_count.get(key, 0)
+        r2_count = data.r2_count.get(key, 0)
+        if r2_count == 0:
+            messages.append(f"错误: 基线 {dkey} 的 R1 报告未配同基线 R2 报告（轮次未闭环，禁止靠他轮 R2 顶包放行）")
             errors += 1
             continue
-        round_r2 = _sort_u(r2_by_base[key])
+        if r2_count < r1_count:
+            messages.append(
+                f"错误: 基线 {dkey} 的 R1 报告（{r1_count} 份非空）多于同基线 R2 报告（{r2_count} 份）"
+                "（轮次未闭环，禁止靠他轮 R2 顶包放行）"
+            )
+            errors += 1
+            continue
+        round_r2 = data.r2_ids_by_key.get(key, set())
         if not round_r2:
-            messages.append(f"错误: 基线 {key} 的 R1 缺陷清单非空，但同基线 R2 裁决明细表为空（禁止空表放行）")
+            messages.append(f"错误: 基线 {dkey} 的 R1 缺陷清单非空，但同基线 R2 裁决明细表为空（禁止空表放行）")
             errors += 1
             continue
-        for identity in round_r1.split("\n"):
-            if identity == "":
-                continue
-            if not _has_line(round_r2, identity):
+        for identity in sorted(data.r1_ids_by_key[key]):
+            if identity not in round_r2:
                 messages.append(
                     f"错误: R1 缺陷 {identity} 未出现在**同基线** R2 裁决明细表中（禁止静默吞并；误报须显式登记为驳回项）"
                 )
                 errors += 1
     return errors
+
+
+def _check_id_alignment(r1_files: list[str], r2_files: list[str], messages: list[str]) -> int:
+    """6) 稳定 ID 对齐（方向一：凭空引入；方向二：按 `(stage, base)` 逐轮计数与 ID 配对）。"""
+    data = _collect_alignment_data(r1_files, r2_files)
+    errors = 0
+    for identity in sorted(data.all_r2 - data.all_r1):
+        messages.append(f"错误: 稳定 ID 未在 R1 缺陷清单中定义: {identity}（出现在 R2 裁决明细表）")
+        errors += 1
+    if not r2_files:
+        return errors
+    for err in data.unparsed_errors:
+        messages.append(err)
+        errors += 1
+    return errors + _check_cross_round_pairing(data, messages)
 
 
 def _check_verdict(index: str, require_verdict: str, messages: list[str]) -> tuple[int, str]:
@@ -546,7 +616,7 @@ _REPORT_NAME_RE = re.compile(r"^(r1|r2|delta-r1|delta-r2)-.+\.md$")
 
 
 def _check_orphan_reports(archive: str, index: str, messages: list[str]) -> int:
-    """11) 归档目录内的**未登记**报告文件必须报缺陷（BK-0012）。
+    """10) 归档目录内的**未登记**报告文件必须报缺陷（BK-0012）。
 
     背景：台账只校验「已登记项」，未入台账的报告文件此前完全不可见——它们在
     Write-Once 证据面里既不被门禁枚举、也不被任何结论引用，等于凭据黑盒。

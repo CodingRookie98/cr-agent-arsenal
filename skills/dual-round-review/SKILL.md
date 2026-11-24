@@ -88,9 +88,9 @@ python3 "$SKILL_DIR/scripts/prepare-review-context.py" --slug=<slug> [BASE_SHA] 
 
 ### 3. 派发与裁决收口
 - **宿主无关派发**：按宿主实际子智能体能力派发；同步工具当回合取回，异步工具启动后结束回合等待唤醒。
-- **R1 派发**：使用 [round-1-red-team.md](references/round-1-red-team.md) 模板，内联 Spec、Diff、`Previous Blockers`（Delta 时）、`[REPORT_PATH]` 及 [verdict-rubric.md](references/verdict-rubric.md) §3 边界锁；非代码规范变更复用同模板并核验契约完整性、引用真实性与误用失效。核验落盘并过门禁后方进入 R2：
+- **R1 派发**：使用 [round-1-red-team.md](references/round-1-red-team.md) 模板，内联 Spec、Diff、`Previous Blockers`（Delta 时）、`[REPORT_PATH]` 及 [verdict-rubric.md](references/verdict-rubric.md) §3 边界锁；非代码规范变更复用同模板并核验契约完整性、引用真实性与误用失效。首轮核验落盘并过结构门禁后进入 R2：
   - **Light 模式**：由主智能体对照 [verdict-rubric.md](references/verdict-rubric.md) 直接裁决（复用 7 列明细表）；
-  - **Scoped Delta**：若 `delta-r1` 产出 **0 缺陷**，直接收口放行，**免派发无增量的 `delta-r2`**。
+  - **Scoped Delta**：若 `delta-r1` 发现缺陷，待 `delta-r2` 落盘后再一并过机械门禁（避免既有 `r2` 触发未闭环报错）；若 **0 缺陷**，直接收口放行并过 `--require-verdict=PASS` 门禁（免派 `delta-r2`）。
 - **R2 派发**：仅在收到 R1 真实报告后派发（模板 [round-2-meta-architect.md](references/round-2-meta-architect.md)），传入 Spec、Diff 与 R1 原文（优先通道 A 归档路径+指纹核验；无读能力走通道 B 内联降级并显式标注）。核验 `transcribed` 残差与 `file:line` 反证据后合成裁决，过 `--require-verdict=PASS` 门禁。
 - **裁决分流**：🔴 P0/P1 阻断并实施最小精准修复后走 Scoped Delta 再循环；🟡 P2/P3（含历史债）记入待办放行；⚪ 驳回项直接丢弃。
 
